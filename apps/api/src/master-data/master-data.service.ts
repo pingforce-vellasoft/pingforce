@@ -60,7 +60,7 @@ export class MasterDataService {
 
   async findAll(tenantId: string, type: string) {
     const cacheKey = `master_data_${tenantId}_${type}`;
-    let cachedData = await this.cacheManager.get(cacheKey);
+    const cachedData = await this.cacheManager.get(cacheKey);
 
     if (cachedData) {
       return cachedData;

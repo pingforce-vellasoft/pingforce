@@ -540,7 +540,7 @@ export class EmployeeDetailsComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private location = inject(Location);
 
-  employeeId: string = '';
+  employeeId = '';
 
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {

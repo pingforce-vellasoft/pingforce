@@ -13,8 +13,8 @@ export class WorkforceService {
   private http = inject(HttpClient);
 
   getAttendanceLogs(
-    page: number = 1,
-    limit: number = 10,
+    page = 1,
+    limit = 10,
     search?: string,
     sortBy?: string,
     sortDir?: string,

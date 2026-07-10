@@ -685,7 +685,7 @@ export class TenantDetailsComponent implements OnInit {
   tenant: any = null;
   editMode = false;
   editData: any = {};
-  tenantId: string = '';
+  tenantId = '';
 
   constructor(
     private route: ActivatedRoute,

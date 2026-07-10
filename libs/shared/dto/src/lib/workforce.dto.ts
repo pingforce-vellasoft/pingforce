@@ -8,7 +8,7 @@ export interface AttendanceLog {
       lastName: string;
     }
   };
-  sessions: any[];
+  sessions: unknown[];
 }
 
 export interface LeaveRequest {

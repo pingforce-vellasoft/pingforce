@@ -8,7 +8,6 @@ import {
   UseGuards,
   Query,
   Req,
-  BadRequestException,
 } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -19,19 +18,27 @@ import {
 } from './dto/attendance.dto';
 import { ManualCheckoutDto } from './dto/manual-checkout.dto';
 
+interface AuthRequest {
+  user: {
+    userId: string;
+    tenantId: string;
+    role: string;
+  };
+}
+
 @Controller('attendance')
 @UseGuards(JwtAuthGuard)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post('device/register')
-  async registerDevice(@Req() req: any, @Body() dto: RegisterDeviceDto) {
+  async registerDevice(@Req() req: AuthRequest, @Body() dto: RegisterDeviceDto) {
     return this.attendanceService.registerDevice(req.user, dto);
   }
 
   @Post('device/revoke')
   async revokeDevice(
-    @Req() req: any,
+    @Req() req: AuthRequest,
     @Body('employeeId') employeeId: string,
     @Body('deviceId') deviceId: string,
   ) {
@@ -39,25 +46,25 @@ export class AttendanceController {
   }
 
   @Post('punch')
-  async punch(@Req() req: any, @Body() dto: PunchDto) {
+  async punch(@Req() req: AuthRequest, @Body() dto: PunchDto) {
     return this.attendanceService.punch(req.user, dto);
   }
 
   @Post('manual-checkout')
-  async manualCheckout(@Req() req: any, @Body() dto: ManualCheckoutDto) {
+  async manualCheckout(@Req() req: AuthRequest, @Body() dto: ManualCheckoutDto) {
     return this.attendanceService.manualCheckout(req.user, dto);
   }
 
   @Get('device')
-  async getDevices(@Req() req: any) {
+  async getDevices(@Req() req: AuthRequest) {
     return this.attendanceService.getDevices(req.user);
   }
 
   @Get('logs')
   async getLogs(
-    @Req() req: any,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Req() req: AuthRequest,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
     @Query('search') search?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortDir') sortDir?: string,
@@ -73,17 +80,17 @@ export class AttendanceController {
   }
 
   @Post('geofence')
-  async createGeofence(@Req() req: any, @Body() dto: CreateGeofenceDto) {
+  async createGeofence(@Req() req: AuthRequest, @Body() dto: CreateGeofenceDto) {
     return this.attendanceService.createGeofence(req.user, dto);
   }
 
   @Get('geofence')
-  async getGeofences(@Req() req: any) {
+  async getGeofences(@Req() req: AuthRequest) {
     return this.attendanceService.getGeofences(req.user);
   }
 
   @Delete('geofence/:id')
-  async deleteGeofence(@Req() req: any, @Param('id') id: string) {
+  async deleteGeofence(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.attendanceService.deleteGeofence(req.user, id);
   }
 }
