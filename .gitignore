@@ -43,3 +43,22 @@ Thumbs.db
 .nx/migrate-runs
 .claude/worktrees
 .claude/settings.local.json
+
+.angular
+
+__screenshots__/
+
+/generated/prisma
+
+# ============================================================
+# SECURITY: Never commit secrets or private keys to version control
+# ============================================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+*.pfx
+# Keep the example file committed
+!.env.example

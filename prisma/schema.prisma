@@ -1,0 +1,1386 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Note: In Prisma 7, the connection URL is configured in prisma.config.ts, NOT here.
+  // See prisma/prisma.config.ts for the DATABASE_URL configuration.
+}
+
+// -----------------------------------------------------------------------------
+// TENANT MODULE (Foundation for Multi-Tenancy)
+// -----------------------------------------------------------------------------
+
+model Tenant {
+  id        String    @id @default(uuid())
+  name      String
+  code      String    @unique
+  domain    String?   @unique
+  status    String    @default("ACTIVE") // ACTIVE, SUSPENDED
+  logoUrl   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  
+  // Contact & Company Details
+  legalName    String?
+  contactEmail String?
+  contactPhone String?
+  industry     String?
+
+  // Billing & Invoicing
+  billingEmail String?
+  taxId        String?
+  address      String?
+  city         String?
+  state        String?
+  country      String?
+  postalCode   String?
+
+  // Subscription Details
+  subscriptionStatus String    @default("TRIAL") // TRIAL, ACTIVE, PAST_DUE, CANCELLED
+  subscriptionPlan   String    @default("BASIC") // BASIC, PROFESSIONAL, ENTERPRISE
+  subscriptionStart  DateTime?
+  subscriptionEnd    DateTime?
+
+  // Localization & Branding
+  timezone   String? @default("UTC")
+  currency   String? @default("USD")
+  themeColor String?
+
+  // Module Provisioning
+  isAttendanceEnabled Boolean @default(true)
+  maxFieldStaff       Int?
+
+  // Relations
+  users                 User[]
+  sessions              Session[]
+  companies             Company[]
+  departments           Department[]
+  designations          Designation[]
+  branches              Branch[]
+  leaveTypes            LeaveType[]
+  employees             Employee[]
+  customers             Customer[]
+  pipelineStages        PipelineStage[]
+  leadStatuses          LeadStatus[]
+  leads                 Lead[]
+  shifts                Shift[]
+  attendances           Attendance[]
+  attendanceSessions    AttendanceSession[]
+  teams                 Team[]
+  leadSources           LeadSource[]
+  campaigns             Campaign[]
+  leadPriorities        LeadPriority[]
+  attendancePolicies    AttendancePolicy[]
+  leaveBalances         LeaveBalance[]
+  leaveRequests         LeaveRequest[]
+  attendanceBreaks      AttendanceBreak[]
+  attendanceCorrections AttendanceCorrection[]
+  shiftAssignments      ShiftAssignment[]
+  geofences             Geofence[]
+  employeeLocations     EmployeeLocation[]
+  gpsValidationLogs     GpsValidationLog[]
+  offlineQueues         OfflineQueue[]
+  syncLogs              SyncLog[]
+  auditLogs             AuditLog[]
+  salaryStructures      SalaryStructure[]
+  slaPolicies           SlaPolicy[]
+  payrollCycles         PayrollCycle[]
+  payslips              Payslip[]
+  expenseCategories     ExpenseCategory[]
+  expenseClaims         ExpenseClaim[]
+  claimTimelines        ClaimTimeline[]
+  faults                Fault[]
+  faultTimelines        FaultTimeline[]
+
+  roles                 Role[]
+  tenantSettings        TenantSetting?
+  fileAttachments       FileAttachment[]
+  notificationTemplates NotificationTemplate[]
+  notificationLogs      NotificationLog[]
+
+  @@map("tenants")
+}
+
+// -----------------------------------------------------------------------------
+// AUTH & USERS MODULE
+// -----------------------------------------------------------------------------
+
+model SuperAdmin {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String?
+  status       String    @default("ACTIVE")
+  tokenVersion Int       @default(1)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+  createdBy    String?
+  updatedBy    String?
+
+  @@map("super_admins")
+}
+
+
+model User {
+  id           String  @id @default(uuid())
+  tenantId     String
+  email        String?
+  phone        String?
+  passwordHash String
+  clientCode   String? // A unique code for the user within a tenant (e.g., employee ID)
+
+  roleId       String?
+  role         Role?     @relation(fields: [roleId], references: [id])
+  status       String    @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+  tokenVersion Int       @default(1)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+  createdBy    String?
+  updatedBy    String?
+
+  // Relations
+  tenant               Tenant                 @relation(fields: [tenantId], references: [id])
+  profile              UserProfile?
+  sessions             Session[]
+  refreshTokens        RefreshToken[]
+  otpCodes             OtpCode[]
+  deviceTokens         DeviceToken[]
+  employee             Employee?
+  leads                Lead[]                 @relation("LeadOwner")
+  customers            Customer[]             @relation("CustomerAccountManager")
+  approvedCorrections  AttendanceCorrection[]
+  assignedFaults       Fault[]                @relation("FaultAssignee")
+  escalatedSlaPolicies SlaPolicy[]            @relation("SlaEscalationUser")
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, phone])
+  @@unique([tenantId, clientCode])
+  @@unique([id, tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("users")
+}
+
+model UserProfile {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  firstName String
+  lastName  String
+  avatar    String?
+  gender    String?
+  dob       DateTime?
+  address   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  updatedBy String?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String
+  deviceId  String?
+  ip        String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@index([userId])
+  @@map("sessions")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tenantId  String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([userId])
+  @@index([tenantId])
+  @@map("refresh_tokens")
+}
+
+model OtpCode {
+  id        String    @id @default(uuid())
+  userId    String
+  otp       String
+  purpose   String // e.g., PASSWORD_RESET, LOGIN
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("otp_codes")
+}
+
+model DeviceToken {
+  id         String   @id @default(uuid())
+  userId     String
+  deviceId   String
+  fcmToken   String
+  platform   String? // ANDROID, IOS, WEB
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@map("device_tokens")
+}
+
+// -----------------------------------------------------------------------------
+// MASTER DATA MODULE
+// -----------------------------------------------------------------------------
+
+model Company {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employees Employee[]
+  customers Customer[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("companies")
+}
+
+model Department {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employees Employee[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("departments")
+}
+
+model Designation {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employees Employee[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("designations")
+}
+
+model Branch {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employees Employee[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("branches")
+}
+
+model LeaveType {
+  id          String    @id @default(uuid())
+  tenantId    String
+  name        String
+  code        String
+  description String?
+  isPaid      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  createdBy   String?
+  updatedBy   String?
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leaveBalances LeaveBalance[]
+  leaveRequests LeaveRequest[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("leave_types")
+}
+
+model Team {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employees Employee[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("teams")
+}
+
+// -----------------------------------------------------------------------------
+// USER MANAGEMENT (EMPLOYEE & CUSTOMER)
+// -----------------------------------------------------------------------------
+
+model Employee {
+  id                     String    @id @default(uuid())
+  tenantId               String
+  employeeCode           String
+  userId                 String?   @unique
+  companyId              String?
+  departmentId           String?
+  designationId          String?
+  branchId               String?
+  teamId                 String?
+  firstName              String
+  middleName             String?
+  lastName               String
+  displayName            String?
+  gender                 String?
+  maritalStatus          String?
+  nationality            String?
+  bloodGroup             String?
+  dateOfBirth            DateTime?
+  photograph             String?
+  primaryMobile          String?
+  alternateMobile        String?
+  primaryEmail           String?
+  alternateEmail         String?
+  emergencyContactName   String?
+  emergencyContactNumber String?
+  employmentType         String? // Permanent, Contract, etc.
+  employmentStatus       String    @default("ACTIVE") // ACTIVE, RESIGNED, SUSPENDED
+  joiningDate            DateTime?
+  confirmationDate       DateTime?
+  workLocation           String?
+  reportingManagerId     String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  deletedAt              DateTime?
+  createdBy              String?
+  updatedBy              String?
+
+  // Relations
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user                  User?                  @relation(fields: [userId], references: [id])
+  company               Company?               @relation(fields: [companyId], references: [id])
+  department            Department?            @relation(fields: [departmentId], references: [id])
+  designation           Designation?           @relation(fields: [designationId], references: [id])
+  branch                Branch?                @relation(fields: [branchId], references: [id])
+  team                  Team?                  @relation(fields: [teamId], references: [id])
+  reportingManager      Employee?              @relation("EmployeeToManager", fields: [reportingManagerId], references: [id])
+  subordinates          Employee[]             @relation("EmployeeToManager")
+  attendances           Attendance[]
+  attendanceSessions    AttendanceSession[]
+  leaveBalances         LeaveBalance[]
+  leaveRequests         LeaveRequest[]         @relation("EmployeeLeaveRequests")
+  approvedLeaves        LeaveRequest[]         @relation("LeaveApprover")
+  attendanceCorrections AttendanceCorrection[]
+  shiftAssignments      ShiftAssignment[]
+  employeeLocations     EmployeeLocation[]
+  gpsValidationLogs     GpsValidationLog[]
+  offlineQueues         OfflineQueue[]
+  salaryStructures      SalaryStructure[]
+  payslips              Payslip[]
+  expenseClaims         ExpenseClaim[]
+
+  @@unique([tenantId, employeeCode])
+  @@unique([id, tenantId])
+  @@index([tenantId, companyId])
+  @@index([tenantId, departmentId])
+  @@index([tenantId, branchId])
+  @@index([tenantId, designationId])
+  @@index([tenantId, teamId])
+  @@index([tenantId, reportingManagerId])
+  @@map("employees")
+  devices EmployeeDevice[]
+}
+
+model Customer {
+  id                 String    @id @default(uuid())
+  tenantId           String
+  companyId          String?
+  customerCode       String
+  legalName          String
+  displayName        String?
+  customerType       String? // Enterprise, SME, Retail
+  status             String    @default("ACTIVE")
+  primaryEmail       String?
+  primaryMobile      String?
+  gstVat             String?
+  registrationNumber String?
+  website            String?
+  industry           String?
+  accountManagerId   String?
+  notes              String?
+  metadata           Json?
+  parentCustomerId   String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+  createdBy          String?
+  updatedBy          String?
+
+  tenant         Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company        Company?   @relation(fields: [companyId], references: [id])
+  accountManager User?      @relation("CustomerAccountManager", fields: [accountManagerId], references: [id])
+  parentCustomer Customer?  @relation("ParentCustomer", fields: [parentCustomerId], references: [id])
+  childCustomers Customer[] @relation("ParentCustomer")
+  faults         Fault[]
+
+  @@unique([tenantId, customerCode])
+  @@unique([id, tenantId])
+  @@index([tenantId, companyId])
+  @@index([tenantId, parentCustomerId])
+  @@index([tenantId, accountManagerId])
+  @@index([tenantId, createdAt])
+  @@map("customers")
+}
+
+// -----------------------------------------------------------------------------
+// CRM MODULE (LEADS)
+// -----------------------------------------------------------------------------
+
+model PipelineStage {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leads  Lead[]
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@map("pipeline_stages")
+}
+
+model LeadStatus {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leads  Lead[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("lead_statuses")
+}
+
+model LeadSource {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leads  Lead[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("lead_sources")
+}
+
+model Campaign {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leads  Lead[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("campaigns")
+}
+
+model LeadPriority {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leads  Lead[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("lead_priorities")
+}
+
+model Lead {
+  id                 String    @id @default(uuid())
+  tenantId           String
+  leadNumber         String
+  firstName          String
+  lastName           String?
+  companyName        String?
+  mobile             String?
+  alternateMobile    String?
+  email              String?
+  expectedValue      Float?
+  currencyCode       String?
+  qualificationScore Int?
+  sourceId           String?
+  campaignId         String?
+  priorityId         String?
+  ownerUserId        String?
+  statusId           String?
+  pipelineStageId    String?
+  tags               Json?
+  customFields       Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+  createdBy          String?
+  updatedBy          String?
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ownerUser     User?          @relation("LeadOwner", fields: [ownerUserId], references: [id])
+  status        LeadStatus?    @relation(fields: [statusId], references: [id])
+  pipelineStage PipelineStage? @relation(fields: [pipelineStageId], references: [id])
+  source        LeadSource?    @relation(fields: [sourceId], references: [id])
+  campaign      Campaign?      @relation(fields: [campaignId], references: [id])
+  priority      LeadPriority?  @relation(fields: [priorityId], references: [id])
+
+  @@unique([tenantId, leadNumber])
+  @@unique([id, tenantId])
+  @@index([tenantId, ownerUserId])
+  @@index([tenantId, statusId])
+  @@index([tenantId, pipelineStageId])
+  @@index([tenantId, sourceId])
+  @@index([tenantId, campaignId])
+  @@index([tenantId, priorityId])
+  @@index([tenantId, createdAt])
+  @@map("leads")
+}
+
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+}
+
+enum AttendanceMethod {
+  MANUAL
+  GPS
+  BIOMETRIC
+}
+
+// -----------------------------------------------------------------------------
+// ATTENDANCE MODULE
+// -----------------------------------------------------------------------------
+
+model Shift {
+  id             String    @id @default(uuid())
+  tenantId       String
+  name           String
+  code           String
+  startTime      String // e.g., "09:00"
+  endTime        String // e.g., "18:00"
+  gracePeriod    Int       @default(15) // minutes
+  shiftType      String    @default("REGULAR") // REGULAR, NIGHT, ROTATING
+  overtimeRuleId String?
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+  createdBy      String?
+  updatedBy      String?
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  attendances      Attendance[]
+  shiftAssignments ShiftAssignment[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("shifts")
+}
+
+model Attendance {
+  id               String    @id @default(uuid())
+  tenantId         String
+  employeeId       String
+  shiftId          String?
+  attendanceDate   DateTime  @db.Date
+  status           String // PRESENT, ABSENT, LATE, HALF_DAY
+  totalWorkMinutes Int       @default(0)
+  overtimeMinutes  Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+  createdBy        String?
+  updatedBy        String?
+
+  tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee    Employee               @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shift       Shift?                 @relation(fields: [shiftId], references: [id])
+  sessions    AttendanceSession[]
+  corrections AttendanceCorrection[]
+  gpsLogs     GpsValidationLog[]
+
+  @@unique([tenantId, employeeId, attendanceDate])
+  @@unique([id, tenantId])
+  @@index([tenantId, attendanceDate])
+  @@index([employeeId, attendanceDate])
+  @@index([status])
+  @@map("attendances")
+}
+
+
+model EmployeeDevice {
+  id         String   @id @default(uuid())
+  employeeId String
+  deviceId   String   @unique
+  publicKey  String
+  isTrusted  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_devices")
+}
+
+model AttendanceSession {
+  id                String    @id @default(uuid())
+  tenantId          String
+  attendanceId      String
+  employeeId        String
+  sessionStatus     String?
+  punchIn           DateTime
+  punchOut          DateTime?
+  checkInLatitude   Float?
+  checkInLongitude  Float?
+  checkOutLatitude  Float?
+  checkOutLongitude Float?
+  gpsAccuracy       Float?
+  punchInDevice     String?
+  punchOutDevice    String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+  createdBy         String?
+  updatedBy         String?
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  attendance Attendance        @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  employee   Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  breaks     AttendanceBreak[]
+
+  attendanceMethod  AttendanceMethod @default(GPS)
+  deviceSignature   String?
+  isSpoofed         Boolean   @default(false)
+  location          Unsupported("geography(Point, 4326)")?
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@index([attendanceId])
+  @@index([tenantId, employeeId, punchIn])
+  @@map("attendance_sessions")
+}
+
+model AttendancePolicy {
+  id                   String    @id @default(uuid())
+  tenantId             String
+  workingHours         Int       @default(8)
+  gracePeriod          Int       @default(15) // minutes
+  gpsRequired          Boolean   @default(false)
+  biometricRequired    Boolean   @default(false)
+  geofenceRequired     Boolean   @default(false)
+  overtimeEnabled      Boolean   @default(true)
+  correctionWindowDays Int       @default(7)
+  autoCheckout         Boolean   @default(true)
+  multipleBreaks       Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt            DateTime?
+  createdBy            String?
+  updatedBy            String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@map("attendance_policies")
+}
+
+model AttendanceBreak {
+  id                  String    @id @default(uuid())
+  tenantId            String
+  attendanceSessionId String
+  breakType           String    @default("LUNCH")
+  paidBreak           Boolean   @default(false)
+  startTime           DateTime
+  endTime             DateTime?
+  durationMinutes     Int?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  tenant  Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session AttendanceSession @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@index([attendanceSessionId])
+  @@map("attendance_breaks")
+}
+
+model AttendanceCorrection {
+  id             String    @id @default(uuid())
+  tenantId       String
+  attendanceId   String
+  employeeId     String
+  correctionType String
+  currentValue   String?
+  requestedValue String
+  reason         String?
+  workflowStatus String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy     String?
+  approvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approver   User?      @relation(fields: [approvedBy], references: [id])
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([attendanceId])
+  @@map("attendance_corrections")
+}
+
+model ShiftAssignment {
+  id             String    @id @default(uuid())
+  tenantId       String
+  employeeId     String
+  shiftId        String
+  effectiveFrom  DateTime  @db.Date
+  effectiveTo    DateTime? @db.Date
+  assignmentType String    @default("REGULAR")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@index([employeeId])
+  @@map("shift_assignments")
+}
+
+model Geofence {
+  id           String    @id @default(uuid())
+  tenantId     String
+  name         String
+  latitude     Float
+  longitude    Float
+  radiusMeters Int
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  location Unsupported("geography(Point, 4326)")?
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@map("geofences")
+}
+
+model EmployeeLocation {
+  id           String   @id @default(uuid())
+  tenantId     String
+  employeeId   String
+  latitude     Float
+  longitude    Float
+  accuracy     Float?
+  capturedAt   DateTime
+  speed        Float?
+  provider     String?
+  batteryLevel Int?
+  createdAt    DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@index([employeeId, capturedAt])
+  @@map("employee_locations")
+}
+
+model GpsValidationLog {
+  id           String   @id @default(uuid())
+  tenantId     String
+  employeeId   String
+  attendanceId String?
+  latitude     Float
+  longitude    Float
+  result       String // VALID, OUTSIDE_GEOFENCE, MOCK_LOCATION, LOW_ACCURACY
+  createdAt    DateTime @default(now())
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee   Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  attendance Attendance? @relation(fields: [attendanceId], references: [id])
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@index([employeeId])
+  @@map("gps_validation_logs")
+}
+
+model OfflineQueue {
+  id           String    @id @default(uuid())
+  tenantId     String
+  employeeId   String
+  payload      Json
+  retryCount   Int       @default(0)
+  syncStatus   String    @default("PENDING") // PENDING, SYNCED, FAILED
+  lastAttempt  DateTime?
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@map("offline_queue")
+}
+
+model SyncLog {
+  id               String    @id @default(uuid())
+  tenantId         String
+  startedAt        DateTime
+  completedAt      DateTime?
+  recordsProcessed Int       @default(0)
+  result           String
+  createdAt        DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@map("sync_logs")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  actorId    String?
+  entityName String
+  entityId   String
+  action     String
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  deviceId   String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@index([entityName])
+  @@map("audit_logs")
+}
+
+// -----------------------------------------------------------------------------
+// LEAVE MODULE
+// -----------------------------------------------------------------------------
+
+model LeaveBalance {
+  id            String    @id @default(uuid())
+  tenantId      String
+  employeeId    String
+  leaveTypeId   String
+  totalDays     Float     @default(0)
+  usedDays      Float     @default(0)
+  availableDays Float     @default(0)
+  year          Int
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  createdBy     String?
+  updatedBy     String?
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, employeeId, leaveTypeId, year])
+  @@unique([id, tenantId])
+  @@map("leave_balances")
+}
+
+model LeaveRequest {
+  id          String    @id @default(uuid())
+  tenantId    String
+  employeeId  String
+  leaveTypeId String
+  startDate   DateTime  @db.Date
+  endDate     DateTime  @db.Date
+  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED, CANCELLED
+  reason      String?
+  approvedBy  String?
+  approvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  createdBy   String?
+  updatedBy   String?
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee  Employee  @relation("EmployeeLeaveRequests", fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  approver  Employee? @relation("LeaveApprover", fields: [approvedBy], references: [id])
+
+  @@unique([id, tenantId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
+  @@index([tenantId, startDate])
+  @@map("leave_requests")
+}
+
+// -----------------------------------------------------------------------------
+// PAYROLL MODULE (Sprint 4)
+// -----------------------------------------------------------------------------
+
+model SalaryStructure {
+  id                 String   @id @default(uuid())
+  tenantId           String
+  employeeId         String
+  basicPay           Float    @default(0)
+  hra                Float    @default(0)
+  specialAllowance   Float    @default(0)
+  standardDeductions Float    @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@index([employeeId])
+  @@map("salary_structures")
+}
+
+model PayrollCycle {
+  id        String   @id @default(uuid())
+  tenantId  String
+  month     Int
+  year      Int
+  status    String   @default("DRAFT") // DRAFT, APPROVED, DISBURSED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payslips Payslip[]
+
+  @@unique([tenantId, month, year])
+  @@unique([id, tenantId])
+  @@map("payroll_cycles")
+}
+
+model Payslip {
+  id              String   @id @default(uuid())
+  tenantId        String
+  employeeId      String
+  payrollCycleId  String
+  grossPay        Float    @default(0)
+  totalDeductions Float    @default(0)
+  netPay          Float    @default(0)
+  status          String   @default("PENDING") // PENDING, DISBURSED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  payrollCycle PayrollCycle @relation(fields: [payrollCycleId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, employeeId, payrollCycleId])
+  @@unique([id, tenantId])
+  @@index([tenantId, status])
+  @@map("payslips")
+}
+
+// -----------------------------------------------------------------------------
+// CLAIMS MODULE (Sprint 4)
+// -----------------------------------------------------------------------------
+
+model ExpenseCategory {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  maxLimit  Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  expenseClaims ExpenseClaim[]
+
+  @@unique([tenantId, name])
+  @@unique([id, tenantId])
+  @@map("expense_categories")
+}
+
+model ExpenseClaim {
+  id                String   @id @default(uuid())
+  tenantId          String
+  employeeId        String
+  expenseCategoryId String
+  amount            Float
+  date              DateTime
+  receiptUrl        String?
+  status            String   @default("PENDING") // PENDING, APPROVED, REJECTED, PAID
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee        Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  expenseCategory ExpenseCategory @relation(fields: [expenseCategoryId], references: [id], onDelete: Cascade)
+  claimTimelines  ClaimTimeline[]
+
+  @@unique([id, tenantId])
+  @@index([tenantId, status])
+  @@index([employeeId])
+  @@index([tenantId, createdAt])
+  @@map("expense_claims")
+}
+
+model ClaimTimeline {
+  id             String   @id @default(uuid())
+  tenantId       String
+  expenseClaimId String
+  status         String
+  notes          String?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  expenseClaim ExpenseClaim @relation(fields: [expenseClaimId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId, expenseClaimId])
+  @@map("claim_timelines")
+}
+
+// -----------------------------------------------------------------------------
+// FAULT MANAGEMENT MODULE (Sprint 5 & 6)
+// -----------------------------------------------------------------------------
+
+model SlaPolicy {
+  id             String  @id @default(uuid())
+  tenantId       String
+  priority       String // LOW, MEDIUM, HIGH, CRITICAL
+  resolveInHours Int
+  escalateToId   String? // User ID to escalate to
+
+  tenant         Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  escalationUser User?  @relation("SlaEscalationUser", fields: [escalateToId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, priority])
+  @@unique([id, tenantId])
+  @@map("sla_policies")
+}
+
+model Fault {
+  id              String    @id @default(uuid())
+  tenantId        String
+  faultNumber     String
+  customerId      String?
+  title           String
+  description     String
+  status          String    @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  priority        String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  assignedToId    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  createdBy       String?
+  updatedBy       String?
+  slaDeadline     DateTime?
+  escalationLevel Int       @default(0)
+  isEscalated     Boolean   @default(false)
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer       Customer?       @relation(fields: [customerId], references: [id])
+  assignedToUser User?           @relation("FaultAssignee", fields: [assignedToId], references: [id])
+  faultTimelines FaultTimeline[]
+
+  @@unique([tenantId, faultNumber])
+  @@unique([id, tenantId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, assignedToId])
+  @@index([tenantId, customerId])
+  @@index([tenantId, slaDeadline])
+  @@index([tenantId, isEscalated])
+  @@map("faults")
+}
+
+model FaultTimeline {
+  id        String   @id @default(uuid())
+  tenantId  String
+  faultId   String
+  status    String
+  notes     String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fault  Fault  @relation(fields: [faultId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId, faultId])
+  @@map("fault_timelines")
+}
+
+// -----------------------------------------------------------------------------
+// SPRINT 6.5: RBAC, SETTINGS, FILES
+// -----------------------------------------------------------------------------
+
+model Role {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  code        String
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users       User[]
+  permissions RolePermission[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  module      String
+  action      String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(uuid())
+  roleId       String
+  permissionId String
+  dataScope    String   @default("OWN") // OWN, TEAM, BRANCH, ALL
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model TenantSetting {
+  id           String   @id @default(uuid())
+  tenantId     String   @unique
+  theme        String   @default("LIGHT")
+  primaryColor String?
+  logoUrl      String?
+  timezone     String   @default("UTC")
+  dateFormat   String   @default("YYYY-MM-DD")
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+model FileAttachment {
+  id         String   @id @default(uuid())
+  tenantId   String
+  entityType String
+  entityId   String
+  fileName   String
+  fileSize   Int
+  mimeType   String
+  fileUrl    String
+  storageKey String
+  uploadedBy String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId, entityType, entityId])
+  @@map("file_attachments")
+}
+
+// -----------------------------------------------------------------------------
+// SPRINT 7: WORKFLOW & NOTIFICATIONS
+// -----------------------------------------------------------------------------
+
+model NotificationTemplate {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  type      String // EMAIL, SMS, PUSH
+  subject   String?
+  body      String   @db.Text
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("notification_templates")
+}
+
+model NotificationLog {
+  id          String    @id @default(uuid())
+  tenantId    String
+  recipientId String?
+  type        String // EMAIL, SMS, PUSH
+  subject     String?
+  body        String    @db.Text
+  status      String    @default("PENDING") // PENDING, SENT, FAILED
+  sentAt      DateTime?
+  error       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, recipientId])
+  @@index([tenantId, status])
+  @@map("notification_logs")
+}
+
+// -----------------------------------------------------------------------------
+// SUPER ADMIN MODULE (Platform-wide configuration)
+// -----------------------------------------------------------------------------
+
+model PlatformSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String   
+  category    String   
+  description String?
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+}

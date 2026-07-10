@@ -1,0 +1,29 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "paths": {
+      "@pingforce-monorepo/dto": ["./libs/shared/dto/src/index.ts"],
+      "@pingforce-monorepo/enums": ["./libs/shared/enums/src/index.ts"],
+      "@pingforce-monorepo/interfaces": [
+        "./libs/shared/interfaces/src/index.ts"
+      ],
+      "@pingforce-monorepo/shared": ["./libs/shared/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}
