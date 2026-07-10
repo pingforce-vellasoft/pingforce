@@ -1,4 +1,10 @@
-import { Injectable, Inject, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
@@ -10,7 +16,7 @@ export class PayrollService {
   constructor(
     @Inject('IPrismaService')
     private readonly prisma: IPrismaService,
-    @InjectQueue('payroll') private payrollQueue: Queue
+    @InjectQueue('payroll') private payrollQueue: Queue,
   ) {}
 
   async createStructure(tenantId: string, data: any) {
@@ -41,7 +47,12 @@ export class PayrollService {
     });
   }
 
-  async getPayslips(tenantId: string, payrollCycleId: string, skip?: number, take?: number) {
+  async getPayslips(
+    tenantId: string,
+    payrollCycleId: string,
+    skip?: number,
+    take?: number,
+  ) {
     return this.prisma.payslip.findMany({
       where: {
         tenantId,
@@ -55,15 +66,21 @@ export class PayrollService {
     });
   }
 
-  async generatePayslip(tenantId: string, employeeId: string, payrollCycleId: string) {
+  async generatePayslip(
+    tenantId: string,
+    employeeId: string,
+    payrollCycleId: string,
+  ) {
     // Enqueue job for background processing
     const job = await this.payrollQueue.add('generate-payslip', {
       tenantId,
       employeeId,
       payrollCycleId,
     });
-    
-    this.logger.log(`Enqueued payroll generation job ${job.id} for employee ${employeeId}`);
+
+    this.logger.log(
+      `Enqueued payroll generation job ${job.id} for employee ${employeeId}`,
+    );
 
     return {
       message: 'Payslip generation enqueued',

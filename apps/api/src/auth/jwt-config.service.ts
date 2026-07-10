@@ -16,10 +16,15 @@ export class JwtConfigService {
     if (this.privateKeyConfig) return this.privateKeyConfig;
 
     try {
-      const key = fs.readFileSync(path.join(process.cwd(), 'private.pem'), 'utf8');
+      const key = fs.readFileSync(
+        path.join(process.cwd(), 'private.pem'),
+        'utf8',
+      );
       this.privateKeyConfig = { key, algorithm: 'RS256' };
     } catch (e) {
-      throw new Error('FATAL: private.pem not found. Cannot start server securely!');
+      throw new Error(
+        'FATAL: private.pem not found. Cannot start server securely!',
+      );
     }
     return this.privateKeyConfig;
   }
@@ -28,10 +33,15 @@ export class JwtConfigService {
     if (this.publicKeyConfig) return this.publicKeyConfig;
 
     try {
-      const key = fs.readFileSync(path.join(process.cwd(), 'public.pem'), 'utf8');
+      const key = fs.readFileSync(
+        path.join(process.cwd(), 'public.pem'),
+        'utf8',
+      );
       this.publicKeyConfig = { key, algorithm: 'RS256' };
     } catch (e) {
-      throw new Error('FATAL: public.pem not found. Cannot start server securely!');
+      throw new Error(
+        'FATAL: public.pem not found. Cannot start server securely!',
+      );
     }
     return this.publicKeyConfig;
   }

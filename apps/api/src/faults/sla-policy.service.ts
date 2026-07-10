@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { CreateSlaPolicyDto } from './dto/create-sla-policy.dto';
 import { UpdateSlaPolicyDto } from './dto/update-sla-policy.dto';
 import { IPrismaService } from '@pingforce-monorepo/shared';
@@ -7,7 +12,7 @@ import { IPrismaService } from '@pingforce-monorepo/shared';
 export class SlaPolicyService {
   constructor(
     @Inject('IPrismaService')
-    private readonly prisma: IPrismaService
+    private readonly prisma: IPrismaService,
   ) {}
 
   async create(tenantId: string, dto: CreateSlaPolicyDto) {
@@ -24,7 +29,10 @@ export class SlaPolicyService {
       where: { tenantId },
       include: {
         escalationUser: {
-          select: { id: true, employee: { select: { firstName: true, lastName: true } } },
+          select: {
+            id: true,
+            employee: { select: { firstName: true, lastName: true } },
+          },
         },
       },
       skip,

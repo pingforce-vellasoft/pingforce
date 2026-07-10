@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, Request, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Request,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentTenant } from '@pingforce-monorepo/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PayrollService } from './payroll.service';
@@ -22,9 +31,13 @@ export class PayrollController {
   getCycles(
     @CurrentTenant() tenantId: string,
     @Query('skip') skip?: string,
-    @Query('take') take?: string
+    @Query('take') take?: string,
   ) {
-    return this.payrollService.getCycles(tenantId, skip ? parseInt(skip, 10) : undefined, take ? parseInt(take, 10) : undefined);
+    return this.payrollService.getCycles(
+      tenantId,
+      skip ? parseInt(skip, 10) : undefined,
+      take ? parseInt(take, 10) : undefined,
+    );
   }
 
   @Get('cycle/:cycleId/payslips')
@@ -32,13 +45,25 @@ export class PayrollController {
     @CurrentTenant() tenantId: string,
     @Param('cycleId') cycleId: string,
     @Query('skip') skip?: string,
-    @Query('take') take?: string
+    @Query('take') take?: string,
   ) {
-    return this.payrollService.getPayslips(tenantId, cycleId, skip ? parseInt(skip, 10) : undefined, take ? parseInt(take, 10) : undefined);
+    return this.payrollService.getPayslips(
+      tenantId,
+      cycleId,
+      skip ? parseInt(skip, 10) : undefined,
+      take ? parseInt(take, 10) : undefined,
+    );
   }
 
   @Post('generate-payslip')
-  generatePayslip(@CurrentTenant() tenantId: string, @Body() data: { employeeId: string; payrollCycleId: string }) {
-    return this.payrollService.generatePayslip(tenantId, data.employeeId, data.payrollCycleId);
+  generatePayslip(
+    @CurrentTenant() tenantId: string,
+    @Body() data: { employeeId: string; payrollCycleId: string },
+  ) {
+    return this.payrollService.generatePayslip(
+      tenantId,
+      data.employeeId,
+      data.payrollCycleId,
+    );
   }
 }

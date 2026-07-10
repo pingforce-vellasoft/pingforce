@@ -11,19 +11,21 @@ export interface UserProfile {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
-  
+
   private readonly TOKEN_KEY = 'pingforce_admin_token';
   private readonly REFRESH_TOKEN_KEY = 'pingforce_admin_refresh_token';
   private readonly IMPERSONATED_TENANT_KEY = 'pingforce_impersonated_tenant';
-  
+
   isAuthenticated = signal<boolean>(this.hasToken());
   currentUser = signal<UserProfile | null>(null);
-  impersonatedTenantId = signal<string | null>(localStorage.getItem(this.IMPERSONATED_TENANT_KEY));
+  impersonatedTenantId = signal<string | null>(
+    localStorage.getItem(this.IMPERSONATED_TENANT_KEY),
+  );
 
   constructor() {}
 
@@ -38,13 +40,13 @@ export class AuthService {
 
   login(credentials: any) {
     return this.http.post<any>('/api/v1/auth/login', credentials).pipe(
-      tap(response => {
+      tap((response) => {
         if (response && response.accessToken) {
           this.setTokens(response.accessToken, response.refreshToken);
           this.isAuthenticated.set(true);
           this.fetchProfile().subscribe();
         }
-      })
+      }),
     );
   }
 
@@ -54,18 +56,20 @@ export class AuthService {
       this.logout();
       return of(null);
     }
-    
-    return this.http.post<any>('/api/v1/auth/refresh', { refreshToken: rToken }).pipe(
-      tap(response => {
-        if (response && response.accessToken) {
-          this.setTokens(response.accessToken, response.refreshToken);
-        }
-      }),
-      catchError(err => {
-        this.logout();
-        throw err;
-      })
-    );
+
+    return this.http
+      .post<any>('/api/v1/auth/refresh', { refreshToken: rToken })
+      .pipe(
+        tap((response) => {
+          if (response && response.accessToken) {
+            this.setTokens(response.accessToken, response.refreshToken);
+          }
+        }),
+        catchError((err) => {
+          this.logout();
+          throw err;
+        }),
+      );
   }
 
   logout() {
@@ -96,21 +100,21 @@ export class AuthService {
     }
 
     this.profileFetch$ = this.http.get<UserProfile>('/api/v1/auth/me').pipe(
-      tap(profile => {
+      tap((profile) => {
         console.log('Fetched profile:', profile);
         if (profile) {
           profile.roleCode = profile.roleCode || 'SUPER_ADMIN';
         }
         this.currentUser.set(profile);
       }),
-      catchError(err => {
+      catchError((err) => {
         console.error('Failed to fetch profile', err);
         return of(null);
       }),
       finalize(() => {
         this.profileFetch$ = null;
       }),
-      shareReplay(1)
+      shareReplay(1),
     );
     return this.profileFetch$;
   }

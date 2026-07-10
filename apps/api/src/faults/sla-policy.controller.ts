@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { SlaPolicyService } from './sla-policy.service';
 import { CreateSlaPolicyDto } from './dto/create-sla-policy.dto';
 import { UpdateSlaPolicyDto } from './dto/update-sla-policy.dto';
@@ -11,10 +21,7 @@ export class SlaPolicyController {
   constructor(private readonly slaPolicyService: SlaPolicyService) {}
 
   @Post()
-  create(
-    @CurrentTenant() tenantId: string,
-    @Body() dto: CreateSlaPolicyDto
-  ) {
+  create(@CurrentTenant() tenantId: string, @Body() dto: CreateSlaPolicyDto) {
     return this.slaPolicyService.create(tenantId, dto);
   }
 
@@ -22,16 +29,17 @@ export class SlaPolicyController {
   findAll(
     @CurrentTenant() tenantId: string,
     @Query('skip') skip?: string,
-    @Query('take') take?: string
+    @Query('take') take?: string,
   ) {
-    return this.slaPolicyService.findAll(tenantId, skip ? parseInt(skip, 10) : undefined, take ? parseInt(take, 10) : undefined);
+    return this.slaPolicyService.findAll(
+      tenantId,
+      skip ? parseInt(skip, 10) : undefined,
+      take ? parseInt(take, 10) : undefined,
+    );
   }
 
   @Get(':id')
-  findOne(
-    @CurrentTenant() tenantId: string,
-    @Param('id') id: string
-  ) {
+  findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.slaPolicyService.findOne(tenantId, id);
   }
 
@@ -39,16 +47,13 @@ export class SlaPolicyController {
   update(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateSlaPolicyDto
+    @Body() dto: UpdateSlaPolicyDto,
   ) {
     return this.slaPolicyService.update(tenantId, id, dto);
   }
 
   @Delete(':id')
-  remove(
-    @CurrentTenant() tenantId: string,
-    @Param('id') id: string
-  ) {
+  remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.slaPolicyService.remove(tenantId, id);
   }
 }

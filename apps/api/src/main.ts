@@ -23,7 +23,9 @@ async function bootstrap() {
 
   // CORS — origins from env var (comma-separated)
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? ['http://localhost:4200'],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [
+      'http://localhost:4200',
+    ],
     credentials: true,
   });
 
@@ -34,23 +36,23 @@ async function bootstrap() {
   });
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
-  
+
   // Validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-    })
+    }),
   );
-  
+
   app.useGlobalFilters(
     new GlobalExceptionFilter(),
-    new PrismaClientExceptionFilter()
+    new PrismaClientExceptionFilter(),
   );
 
   app.useGlobalInterceptors(new DatabaseRetryInterceptor());
-  
+
   // Swagger Configuration
   const config = new DocumentBuilder()
     .setTitle('PingForce API')
@@ -63,10 +65,10 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  
+
   const logger = app.get(Logger);
   logger.log(
-    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}/v1`
+    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}/v1`,
   );
 }
 

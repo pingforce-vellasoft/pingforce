@@ -27,11 +27,11 @@ export interface Fault {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CrmSupportService {
   private http = inject(HttpClient);
-  
+
   // Leads
   getLeads(cursor?: string, take = 50) {
     let url = `/api/v1/leads?take=${take}`;
@@ -40,7 +40,9 @@ export class CrmSupportService {
   }
 
   updateLeadStage(leadId: string, pipelineStageId: string) {
-    return this.http.patch(`/api/v1/leads/${leadId}/stage`, { pipelineStageId });
+    return this.http.patch(`/api/v1/leads/${leadId}/stage`, {
+      pipelineStageId,
+    });
   }
 
   // Faults (Tickets)
@@ -49,7 +51,10 @@ export class CrmSupportService {
   }
 
   updateFaultStatus(faultId: string, status: string, notes?: string) {
-    return this.http.patch(`/api/v1/faults/${faultId}/status`, { status, notes });
+    return this.http.patch(`/api/v1/faults/${faultId}/status`, {
+      status,
+      notes,
+    });
   }
 
   escalateFault(faultId: string) {

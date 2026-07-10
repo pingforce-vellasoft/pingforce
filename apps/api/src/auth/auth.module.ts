@@ -18,9 +18,9 @@ import { JwtConfigService } from './jwt-config.service';
         const { key, algorithm } = jwtConfig.getPrivateKey();
         return {
           privateKey: key,
-          signOptions: { 
+          signOptions: {
             algorithm,
-            expiresIn: config.get<string>('JWT_EXPIRATION', '15m') as any 
+            expiresIn: config.get<string>('JWT_EXPIRATION', '15m') as any,
           },
         };
       },
@@ -28,11 +28,17 @@ import { JwtConfigService } from './jwt-config.service';
   ],
   controllers: [AuthController],
   providers: [
-    AuthService, 
+    AuthService,
     { provide: 'IAuthService', useExisting: AuthService },
-    JwtStrategy, 
-    JwtConfigService
+    JwtStrategy,
+    JwtConfigService,
   ],
-  exports: [AuthService, 'IAuthService', JwtStrategy, PassportModule, JwtConfigService],
+  exports: [
+    AuthService,
+    'IAuthService',
+    JwtStrategy,
+    PassportModule,
+    JwtConfigService,
+  ],
 })
 export class AuthModule {}

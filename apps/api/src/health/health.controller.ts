@@ -1,5 +1,10 @@
 import { Controller, Get, Inject } from '@nestjs/common';
-import { HealthCheck, HealthCheckService, MemoryHealthIndicator, PrismaHealthIndicator } from '@nestjs/terminus';
+import {
+  HealthCheck,
+  HealthCheckService,
+  MemoryHealthIndicator,
+  PrismaHealthIndicator,
+} from '@nestjs/terminus';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 
 @Controller('health')

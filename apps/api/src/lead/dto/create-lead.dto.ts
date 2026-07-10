@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsObject, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEmail,
+  IsObject,
+  IsNumber,
+} from 'class-validator';
 
 export class CreateLeadDto {
   @IsString()

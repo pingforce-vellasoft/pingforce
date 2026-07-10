@@ -1,16 +1,32 @@
-import { Injectable, Inject, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaRepository, IPrismaService } from '@pingforce-monorepo/shared';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
-export class LeadRepository extends PrismaRepository<any, CreateLeadDto, UpdateLeadDto, Prisma.LeadDelegate<any>> {
-  constructor(@Inject('IPrismaService') private readonly prismaClient: IPrismaService) {
+export class LeadRepository extends PrismaRepository<
+  any,
+  CreateLeadDto,
+  UpdateLeadDto,
+  Prisma.LeadDelegate<any>
+> {
+  constructor(
+    @Inject('IPrismaService') private readonly prismaClient: IPrismaService,
+  ) {
     super(prismaClient.lead);
   }
 
-  override async findAll(tenantId: string, cursor?: string | number, take?: number): Promise<any[]> {
+  override async findAll(
+    tenantId: string,
+    cursor?: string | number,
+    take?: number,
+  ): Promise<any[]> {
     const takeNum = take ? Number(take) : 50;
     const limit = Math.min(takeNum, 100);
     const cursorStr = cursor as string;
@@ -31,7 +47,7 @@ export class LeadRepository extends PrismaRepository<any, CreateLeadDto, UpdateL
       where: { id, tenantId },
       include: {
         ownerUser: true,
-      }
+      },
     });
 
     if (!lead) {
@@ -41,7 +57,11 @@ export class LeadRepository extends PrismaRepository<any, CreateLeadDto, UpdateL
     return lead;
   }
 
-  async getPipeline(tenantId: string, cursor?: string, take?: number): Promise<any[]> {
+  async getPipeline(
+    tenantId: string,
+    cursor?: string,
+    take?: number,
+  ): Promise<any[]> {
     const takeNum = take ? Number(take) : 50;
     const limit = Math.min(takeNum, 100);
 
@@ -57,13 +77,26 @@ export class LeadRepository extends PrismaRepository<any, CreateLeadDto, UpdateL
     });
   }
 
-  async assignOwner(tenantId: string, id: string, ownerUserId: string): Promise<any> {
-    const user = await this.prismaClient.user.findFirst({ where: { id: ownerUserId, tenantId } });
-    if (!user) throw new BadRequestException('Invalid user or does not belong to this tenant');
+  async assignOwner(
+    tenantId: string,
+    id: string,
+    ownerUserId: string,
+  ): Promise<any> {
+    const user = await this.prismaClient.user.findFirst({
+      where: { id: ownerUserId, tenantId },
+    });
+    if (!user)
+      throw new BadRequestException(
+        'Invalid user or does not belong to this tenant',
+      );
     return this.update(tenantId, id, { ownerUserId } as any);
   }
 
-  async updateStage(tenantId: string, id: string, pipelineStageId: string): Promise<any> {
+  async updateStage(
+    tenantId: string,
+    id: string,
+    pipelineStageId: string,
+  ): Promise<any> {
     return this.update(tenantId, id, { pipelineStageId } as any);
   }
 }

@@ -6,6 +6,6 @@ import { RbacModule } from '../rbac/rbac.module';
 @Module({
   imports: [RbacModule],
   controllers: [PlatformSettingsController],
-  providers: [PlatformSettingsService]
+  providers: [PlatformSettingsService],
 })
 export class PlatformSettingsModule {}

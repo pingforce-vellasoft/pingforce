@@ -7,7 +7,9 @@ import { RequirePermission } from '../rbac/decorators/require-permission.decorat
 @Controller('platform/settings')
 @UseGuards(JwtAuthGuard, RbacGuard)
 export class PlatformSettingsController {
-  constructor(private readonly platformSettingsService: PlatformSettingsService) {}
+  constructor(
+    private readonly platformSettingsService: PlatformSettingsService,
+  ) {}
 
   @Get()
   @RequirePermission('platform', 'manage')

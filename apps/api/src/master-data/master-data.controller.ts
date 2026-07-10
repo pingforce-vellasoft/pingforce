@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { MasterDataService } from './master-data.service';
 import { CreateMasterDataDto } from './dto/create-master-datum.dto';
 import { UpdateMasterDataDto } from './dto/update-master-datum.dto';
@@ -15,45 +24,47 @@ export class MasterDataController {
 
   @Post(':type')
   create(
-    @CurrentTenant() tenantId: string, 
-    @Param('type') type: string, 
-    @Body() createMasterDataDto: CreateMasterDataDto
+    @CurrentTenant() tenantId: string,
+    @Param('type') type: string,
+    @Body() createMasterDataDto: CreateMasterDataDto,
   ) {
     return this.masterDataService.create(tenantId, type, createMasterDataDto);
   }
 
   @Get(':type')
-  findAll(
-    @CurrentTenant() tenantId: string, 
-    @Param('type') type: string
-  ) {
+  findAll(@CurrentTenant() tenantId: string, @Param('type') type: string) {
     return this.masterDataService.findAll(tenantId, type);
   }
 
   @Get(':type/:id')
   findOne(
-    @CurrentTenant() tenantId: string, 
-    @Param('type') type: string, 
-    @Param('id') id: string
+    @CurrentTenant() tenantId: string,
+    @Param('type') type: string,
+    @Param('id') id: string,
   ) {
     return this.masterDataService.findOne(tenantId, type, id);
   }
 
   @Patch(':type/:id')
   update(
-    @CurrentTenant() tenantId: string, 
-    @Param('type') type: string, 
-    @Param('id') id: string, 
-    @Body() updateMasterDataDto: UpdateMasterDataDto
+    @CurrentTenant() tenantId: string,
+    @Param('type') type: string,
+    @Param('id') id: string,
+    @Body() updateMasterDataDto: UpdateMasterDataDto,
   ) {
-    return this.masterDataService.update(tenantId, type, id, updateMasterDataDto);
+    return this.masterDataService.update(
+      tenantId,
+      type,
+      id,
+      updateMasterDataDto,
+    );
   }
 
   @Delete(':type/:id')
   remove(
-    @CurrentTenant() tenantId: string, 
-    @Param('type') type: string, 
-    @Param('id') id: string
+    @CurrentTenant() tenantId: string,
+    @Param('type') type: string,
+    @Param('id') id: string,
   ) {
     return this.masterDataService.remove(tenantId, type, id);
   }

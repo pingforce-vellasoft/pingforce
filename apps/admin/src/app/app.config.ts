@@ -2,7 +2,7 @@ import {
   ApplicationConfig,
   provideBrowserGlobalErrorListeners,
   APP_INITIALIZER,
-  inject
+  inject,
 } from '@angular/core';
 import { provideRouter, withViewTransitions } from '@angular/router';
 import { appRoutes } from './app.routes';
@@ -17,9 +17,9 @@ import { lastValueFrom, of, catchError } from 'rxjs';
 export function initializeApp(authService: AuthService) {
   return () => {
     if (authService.getToken()) {
-      return lastValueFrom(authService.fetchProfile().pipe(
-        catchError(() => of(null))
-      ));
+      return lastValueFrom(
+        authService.fetchProfile().pipe(catchError(() => of(null))),
+      );
     }
     return Promise.resolve();
   };
@@ -29,7 +29,9 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(appRoutes, withViewTransitions()),
-    provideHttpClient(withInterceptors([jwtInterceptor, errorInterceptor, loadingInterceptor])),
+    provideHttpClient(
+      withInterceptors([jwtInterceptor, errorInterceptor, loadingInterceptor]),
+    ),
     provideAnimationsAsync(),
     {
       provide: APP_INITIALIZER,
@@ -37,7 +39,7 @@ export const appConfig: ApplicationConfig = {
         const authService = inject(AuthService);
         return initializeApp(authService);
       },
-      multi: true
-    }
+      multi: true,
+    },
   ],
 };

@@ -16,11 +16,23 @@ export class ClaimsService {
     return this.claimsRepository.listPendingClaims(tenantId, skip, take);
   }
 
-  async processClaim(tenantId: string, claimId: string, approverId: string, status: string, notes?: string) {
+  async processClaim(
+    tenantId: string,
+    claimId: string,
+    approverId: string,
+    status: string,
+    notes?: string,
+  ) {
     if (status !== 'APPROVED' && status !== 'REJECTED') {
       throw new BadRequestException('Invalid status transition');
     }
 
-    return this.claimsRepository.processClaim(tenantId, claimId, approverId, status, notes);
+    return this.claimsRepository.processClaim(
+      tenantId,
+      claimId,
+      approverId,
+      status,
+      notes,
+    );
   }
 }

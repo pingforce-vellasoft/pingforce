@@ -14,7 +14,9 @@ export const roleGuard: CanActivateFn = (route, state) => {
   }
 
   const checkRole = () => {
-    return authService.hasRole(requiredRoles) ? true : router.parseUrl('/dashboard');
+    return authService.hasRole(requiredRoles)
+      ? true
+      : router.parseUrl('/dashboard');
   };
 
   // If already loaded
@@ -24,9 +26,9 @@ export const roleGuard: CanActivateFn = (route, state) => {
 
   // Wait for profile to load (using the shared fetchProfile observable)
   return authService.fetchProfile().pipe(
-    map(profile => {
+    map((profile) => {
       if (!profile) return router.parseUrl('/login');
       return checkRole();
-    })
+    }),
   );
 };

@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaRepository, IPrismaService } from '@pingforce-monorepo/shared';
 import { FaultStatus } from './dto/update-fault-status.dto';
 import { Prisma } from '@prisma/client';
@@ -10,11 +15,17 @@ export class FaultsRepository extends PrismaRepository<
   any,
   Prisma.FaultDelegate<any>
 > {
-  constructor(@Inject('IPrismaService') private readonly prismaService: IPrismaService) {
+  constructor(
+    @Inject('IPrismaService') private readonly prismaService: IPrismaService,
+  ) {
     super(prismaService.fault);
   }
 
-  override async findAll(tenantId: string, skip?: number, take?: number): Promise<any[]> {
+  override async findAll(
+    tenantId: string,
+    skip?: number,
+    take?: number,
+  ): Promise<any[]> {
     return this.delegate.findMany({
       where: { tenantId },
       include: {
@@ -26,7 +37,12 @@ export class FaultsRepository extends PrismaRepository<
     });
   }
 
-  async findAssignedToMe(tenantId: string, userId: string, skip?: number, take?: number) {
+  async findAssignedToMe(
+    tenantId: string,
+    userId: string,
+    skip?: number,
+    take?: number,
+  ) {
     return this.delegate.findMany({
       where: { tenantId, assignedToId: userId },
       include: {
@@ -59,20 +75,25 @@ export class FaultsRepository extends PrismaRepository<
       where: {
         tenantId,
         slaDeadline: { lt: new Date() },
-        status: { notIn: [FaultStatus.RESOLVED, FaultStatus.CLOSED] }
+        status: { notIn: [FaultStatus.RESOLVED, FaultStatus.CLOSED] },
       },
       include: {
         assignedToUser: true,
       },
       orderBy: {
-        slaDeadline: 'asc'
+        slaDeadline: 'asc',
       },
       skip,
       take,
     });
   }
 
-  async createFaultWithTimeline(tenantId: string, userId: string, data: any, slaDeadline: Date | null) {
+  async createFaultWithTimeline(
+    tenantId: string,
+    userId: string,
+    data: any,
+    slaDeadline: Date | null,
+  ) {
     return this.prismaService.$transaction(async (tx: any) => {
       const fault = await tx.fault.create({
         data: {
@@ -96,7 +117,13 @@ export class FaultsRepository extends PrismaRepository<
     });
   }
 
-  async updateFault(tenantId: string, id: string, userId: string, data: any, slaDeadline: Date | undefined) {
+  async updateFault(
+    tenantId: string,
+    id: string,
+    userId: string,
+    data: any,
+    slaDeadline: Date | undefined,
+  ) {
     return this.prismaService.$transaction(async (tx: any) => {
       return tx.fault.update({
         where: { id_tenantId: { id, tenantId } },
@@ -109,11 +136,18 @@ export class FaultsRepository extends PrismaRepository<
     });
   }
 
-  async updateStatus(tenantId: string, id: string, userId: string, status: string, notes: string) {
+  async updateStatus(
+    tenantId: string,
+    id: string,
+    userId: string,
+    status: string,
+    notes: string,
+  ) {
     return this.prismaService.$transaction(async (tx: any) => {
       const fault = await tx.fault.findFirst({ where: { id, tenantId } });
       if (!fault) throw new NotFoundException(`Fault with ID ${id} not found`);
-      if (fault.status === FaultStatus.CLOSED) throw new BadRequestException('Cannot update a closed fault');
+      if (fault.status === FaultStatus.CLOSED)
+        throw new BadRequestException('Cannot update a closed fault');
 
       const updatedFault = await tx.fault.update({
         where: { id_tenantId: { id, tenantId } },
@@ -134,12 +168,24 @@ export class FaultsRepository extends PrismaRepository<
     });
   }
 
-  async escalateFault(tenantId: string, id: string, userId: string, escalateToId?: string) {
+  async escalateFault(
+    tenantId: string,
+    id: string,
+    userId: string,
+    escalateToId?: string,
+  ) {
     return this.prismaService.$transaction(async (tx: any) => {
-      const fault = await tx.fault.findUnique({ where: { id_tenantId: { id, tenantId } } });
+      const fault = await tx.fault.findUnique({
+        where: { id_tenantId: { id, tenantId } },
+      });
       if (!fault) throw new NotFoundException(`Fault with ID ${id} not found`);
-      if (fault.status === FaultStatus.CLOSED || fault.status === FaultStatus.RESOLVED) {
-        throw new BadRequestException('Cannot escalate a resolved or closed fault');
+      if (
+        fault.status === FaultStatus.CLOSED ||
+        fault.status === FaultStatus.RESOLVED
+      ) {
+        throw new BadRequestException(
+          'Cannot escalate a resolved or closed fault',
+        );
       }
 
       const escalatedFault = await tx.fault.update({

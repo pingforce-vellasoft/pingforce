@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 
@@ -6,13 +11,13 @@ import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 export class LeaveService {
   constructor(
     @Inject('IPrismaService')
-    private readonly prisma: IPrismaService
+    private readonly prisma: IPrismaService,
   ) {}
 
   async requestLeave(tenantId: string, dto: CreateLeaveRequestDto) {
     const startDate = new Date(dto.startDate);
     const endDate = new Date(dto.endDate);
-    
+
     return this.prisma.$transaction(async (tx) => {
       // Validate overlapping leaves
       const overlapping = await tx.leaveRequest.findFirst({
@@ -20,17 +25,20 @@ export class LeaveService {
           tenantId,
           employeeId: dto.employeeId,
           status: { in: ['PENDING', 'APPROVED'] },
-          OR: [
-            { startDate: { lte: endDate }, endDate: { gte: startDate } }
-          ],
+          OR: [{ startDate: { lte: endDate }, endDate: { gte: startDate } }],
         },
       });
 
       if (overlapping) {
-        throw new ConflictException('Leave request overlaps with an existing request');
+        throw new ConflictException(
+          'Leave request overlaps with an existing request',
+        );
       }
 
-      const daysRequested = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const daysRequested =
+        Math.floor(
+          (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+        ) + 1;
       const year = startDate.getFullYear();
 
       const balance = await tx.leaveBalance.findUnique({
@@ -39,21 +47,23 @@ export class LeaveService {
             tenantId,
             employeeId: dto.employeeId,
             leaveTypeId: dto.leaveTypeId,
-            year
-          }
-        }
+            year,
+          },
+        },
       });
 
       if (!balance || balance.availableDays < daysRequested) {
-        throw new ConflictException('Insufficient leave balance for the requested dates');
+        throw new ConflictException(
+          'Insufficient leave balance for the requested dates',
+        );
       }
 
       await tx.leaveBalance.update({
         where: { id: balance.id },
         data: {
           usedDays: { increment: daysRequested },
-          availableDays: { decrement: daysRequested }
-        }
+          availableDays: { decrement: daysRequested },
+        },
       });
 
       return tx.leaveRequest.create({
@@ -69,11 +79,17 @@ export class LeaveService {
     });
   }
 
-  async getLeaveBalances(tenantId: string, employeeId: string, year: number, skip = 0, take = 50) {
+  async getLeaveBalances(
+    tenantId: string,
+    employeeId: string,
+    year: number,
+    skip = 0,
+    take = 50,
+  ) {
     return this.prisma.leaveBalance.findMany({
       where: { tenantId, employeeId, year },
       skip,
-      take
+      take,
     });
   }
 
@@ -82,18 +98,23 @@ export class LeaveService {
       where: { tenantId, status: 'PENDING' },
       include: {
         employee: {
-          include: { user: true }
+          include: { user: true },
         },
-        leaveType: true
+        leaveType: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
-  async updateLeaveStatus(tenantId: string, leaveId: string, status: 'APPROVED' | 'REJECTED', managerId: string) {
+  async updateLeaveStatus(
+    tenantId: string,
+    leaveId: string,
+    status: 'APPROVED' | 'REJECTED',
+    managerId: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const leave = await tx.leaveRequest.findUnique({
-        where: { id: leaveId }
+        where: { id: leaveId },
       });
 
       if (!leave || leave.tenantId !== tenantId) {
@@ -101,19 +122,24 @@ export class LeaveService {
       }
 
       if (leave.status !== 'PENDING') {
-        throw new ConflictException('Can only approve/reject pending leave requests');
+        throw new ConflictException(
+          'Can only approve/reject pending leave requests',
+        );
       }
 
       const updatedLeave = await tx.leaveRequest.update({
         where: { id: leaveId },
-        data: { status, approvedBy: managerId }
+        data: { status, approvedBy: managerId },
       });
 
       // If rejected, refund the days to the balance
       if (status === 'REJECTED') {
         const startDate = new Date(leave.startDate);
         const endDate = new Date(leave.endDate);
-        const daysRequested = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
+        const daysRequested =
+          Math.floor(
+            (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24),
+          ) + 1;
         const year = startDate.getFullYear();
 
         const balance = await tx.leaveBalance.findUnique({
@@ -122,9 +148,9 @@ export class LeaveService {
               tenantId,
               employeeId: leave.employeeId,
               leaveTypeId: leave.leaveTypeId,
-              year
-            }
-          }
+              year,
+            },
+          },
         });
 
         if (balance) {
@@ -132,8 +158,8 @@ export class LeaveService {
             where: { id: balance.id },
             data: {
               usedDays: { decrement: daysRequested },
-              availableDays: { increment: daysRequested }
-            }
+              availableDays: { increment: daysRequested },
+            },
           });
         }
       }

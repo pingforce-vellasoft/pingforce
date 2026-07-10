@@ -9,13 +9,17 @@ export class PayrollProcessor {
 
   constructor(
     @Inject('IPrismaService')
-    private readonly prisma: IPrismaService
+    private readonly prisma: IPrismaService,
   ) {}
 
   @Process('generate-payslip')
-  async handleGeneratePayslip(job: Job<{ tenantId: string; employeeId: string; payrollCycleId: string }>) {
+  async handleGeneratePayslip(
+    job: Job<{ tenantId: string; employeeId: string; payrollCycleId: string }>,
+  ) {
     const { tenantId, employeeId, payrollCycleId } = job.data;
-    this.logger.debug(`Processing payroll generation for employee ${employeeId}`);
+    this.logger.debug(
+      `Processing payroll generation for employee ${employeeId}`,
+    );
     try {
       // 1. Fetch Cycle
       const cycle = await this.prisma.payrollCycle.findUnique({
@@ -27,11 +31,14 @@ export class PayrollProcessor {
       const structure = await this.prisma.salaryStructure.findFirst({
         where: { employeeId, tenantId },
       });
-      if (!structure) throw new Error('Salary structure not found for employee');
+      if (!structure)
+        throw new Error('Salary structure not found for employee');
 
       // 3. Fetch Attendance for the cycle's month/year
       const startDate = new Date(Date.UTC(cycle.year, cycle.month - 1, 1));
-      const endDate = new Date(Date.UTC(cycle.year, cycle.month, 0, 23, 59, 59));
+      const endDate = new Date(
+        Date.UTC(cycle.year, cycle.month, 0, 23, 59, 59),
+      );
 
       const presentDaysCount = await this.prisma.attendance.count({
         where: {
@@ -50,16 +57,20 @@ export class PayrollProcessor {
           status: 'APPROVED',
           leaveType: { isPaid: true },
           startDate: { lte: endDate },
-          endDate: { gte: startDate }
-        }
+          endDate: { gte: startDate },
+        },
       });
 
       let paidLeaveDays = 0;
       for (const leave of paidLeaves) {
-        const leaveStart = leave.startDate > startDate ? leave.startDate : startDate;
+        const leaveStart =
+          leave.startDate > startDate ? leave.startDate : startDate;
         const leaveEnd = leave.endDate < endDate ? leave.endDate : endDate;
         // +1 to include both start and end days
-        const days = Math.floor((leaveEnd.getTime() - leaveStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const days =
+          Math.floor(
+            (leaveEnd.getTime() - leaveStart.getTime()) / (1000 * 60 * 60 * 24),
+          ) + 1;
         paidLeaveDays += Math.max(0, days);
       }
 
@@ -67,7 +78,7 @@ export class PayrollProcessor {
       const EXPECTED_DAYS = 22;
       const totalValidDays = presentDaysCount + paidLeaveDays;
       const lwp = Math.max(0, EXPECTED_DAYS - totalValidDays);
-      
+
       // Convert Decimal to Number for calculation
       const basicPay = Number(structure.basicPay);
       const hra = Number(structure.hra);
@@ -76,7 +87,7 @@ export class PayrollProcessor {
 
       const grossPay = basicPay + hra + specialAllowance;
       const lwpDeduction = (basicPay / EXPECTED_DAYS) * lwp;
-      
+
       const totalDeductions = standardDeductions + lwpDeduction;
       const netPay = Math.max(0, grossPay - totalDeductions);
 
@@ -92,10 +103,15 @@ export class PayrollProcessor {
           status: 'DRAFT',
         },
       });
-      this.logger.debug(`Payslip generation for employee ${employeeId} completed.`);
+      this.logger.debug(
+        `Payslip generation for employee ${employeeId} completed.`,
+      );
     } catch (error) {
-       this.logger.error(`Error generating payslip for employee ${employeeId}:`, error);
-       throw error;
+      this.logger.error(
+        `Error generating payslip for employee ${employeeId}:`,
+        error,
+      );
+      throw error;
     }
   }
 }

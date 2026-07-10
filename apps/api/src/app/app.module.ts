@@ -39,16 +39,19 @@ import { TenantsModule } from '../tenants/tenants.module';
     }),
     EventEmitterModule.forRoot(),
     TerminusModule,
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     LoggerModule.forRoot({
       pinoHttp: {
         genReqId: (req: any) => req.requestId || req.headers['x-request-id'],
-        transport: process.env.NODE_ENV !== 'production'
-          ? { target: 'pino-pretty', options: { singleLine: true } }
-          : undefined,
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty', options: { singleLine: true } }
+            : undefined,
       },
     }),
     CacheModule.registerAsync({
@@ -91,7 +94,7 @@ import { TenantsModule } from '../tenants/tenants.module';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
-    }
+    },
   ],
 })
 export class AppModule implements NestModule {

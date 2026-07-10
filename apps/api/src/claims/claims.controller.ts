@@ -1,6 +1,19 @@
-import { Controller, Get, Post, Body, Param, Request, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Request,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ClaimsService } from './claims.service';
-import { CurrentTenant, CurrentUserContext, CurrentUser } from '@pingforce-monorepo/shared';
+import {
+  CurrentTenant,
+  CurrentUserContext,
+  CurrentUser,
+} from '@pingforce-monorepo/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
@@ -17,24 +30,28 @@ export class ClaimsController {
   listPendingClaims(
     @CurrentTenant() tenantId: string,
     @Query('skip') skip?: string,
-    @Query('take') take?: string
+    @Query('take') take?: string,
   ) {
-    return this.claimsService.listPendingClaims(tenantId, skip ? parseInt(skip, 10) : undefined, take ? parseInt(take, 10) : undefined);
+    return this.claimsService.listPendingClaims(
+      tenantId,
+      skip ? parseInt(skip, 10) : undefined,
+      take ? parseInt(take, 10) : undefined,
+    );
   }
 
   @Post(':id/process')
   processClaim(
     @CurrentTenant() tenantId: string,
     @CurrentUser() currentUser: CurrentUserContext,
-    @Param('id') id: string, 
-    @Body() data: { status: string; notes?: string }
+    @Param('id') id: string,
+    @Body() data: { status: string; notes?: string },
   ) {
     return this.claimsService.processClaim(
-      tenantId, 
-      id, 
-      currentUser.userId, 
-      data.status, 
-      data.notes
+      tenantId,
+      id,
+      currentUser.userId,
+      data.status,
+      data.notes,
     );
   }
 }

@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateMasterDataDto } from './dto/create-master-datum.dto';
 import { UpdateMasterDataDto } from './dto/update-master-datum.dto';
 import { IPrismaService } from '@pingforce-monorepo/shared';
@@ -6,14 +11,14 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 
 const MODEL_MAP: Record<string, string> = {
-  'companies': 'company',
-  'departments': 'department',
-  'designations': 'designation',
-  'branches': 'branch',
-  'teams': 'team',
+  companies: 'company',
+  departments: 'department',
+  designations: 'designation',
+  branches: 'branch',
+  teams: 'team',
   'leave-types': 'leaveType',
   'lead-sources': 'leadSource',
-  'campaigns': 'campaign',
+  campaigns: 'campaign',
   'lead-priorities': 'leadPriority',
 };
 
@@ -34,7 +39,11 @@ export class MasterDataService {
     return this.prisma[modelName as keyof IPrismaService] as any;
   }
 
-  async create(tenantId: string, type: string, createMasterDataDto: CreateMasterDataDto) {
+  async create(
+    tenantId: string,
+    type: string,
+    createMasterDataDto: CreateMasterDataDto,
+  ) {
     const model = this.getModel(type);
     const result = await model.create({
       data: {
@@ -42,10 +51,10 @@ export class MasterDataService {
         ...createMasterDataDto,
       },
     });
-    
+
     // Invalidate cache
     await this.cacheManager.del(`master_data_${tenantId}_${type}`);
-    
+
     return result;
   }
 
@@ -78,9 +87,14 @@ export class MasterDataService {
     return result;
   }
 
-  async update(tenantId: string, type: string, id: string, updateMasterDataDto: UpdateMasterDataDto) {
+  async update(
+    tenantId: string,
+    type: string,
+    id: string,
+    updateMasterDataDto: UpdateMasterDataDto,
+  ) {
     const model = this.getModel(type);
-    
+
     try {
       const result = await model.update({
         where: { id_tenantId: { id, tenantId } },

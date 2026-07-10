@@ -11,44 +11,65 @@ import { ConfirmDialogComponent } from '../../core/components/confirm-dialog.com
 @Component({
   selector: 'app-device-management',
   standalone: true,
-  imports: [MatCardModule, MatButtonModule, MatTableModule, MatSnackBarModule, MatDialogModule],
+  imports: [
+    MatCardModule,
+    MatButtonModule,
+    MatTableModule,
+    MatSnackBarModule,
+    MatDialogModule,
+  ],
   template: `
     <div style="padding: 24px;">
       <h2>Device Management</h2>
       <p>Manage and revoke trusted biometric attendance devices</p>
-    
+
       <mat-card>
         <table mat-table [dataSource]="devices">
           <ng-container matColumnDef="employee">
-            <th mat-header-cell *matHeaderCellDef> Employee </th>
+            <th mat-header-cell *matHeaderCellDef>Employee</th>
             <td mat-cell *matCellDef="let element">
-              {{element.employee?.user?.profile?.firstName}} {{element.employee?.user?.profile?.lastName}}
+              {{ element.employee?.user?.profile?.firstName }}
+              {{ element.employee?.user?.profile?.lastName }}
             </td>
           </ng-container>
           <ng-container matColumnDef="deviceId">
-            <th mat-header-cell *matHeaderCellDef> Device ID </th>
-            <td mat-cell *matCellDef="let element"> {{element.deviceId}} </td>
+            <th mat-header-cell *matHeaderCellDef>Device ID</th>
+            <td mat-cell *matCellDef="let element">{{ element.deviceId }}</td>
           </ng-container>
           <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef> Status </th>
+            <th mat-header-cell *matHeaderCellDef>Status</th>
             <td mat-cell *matCellDef="let element">
               <span [style.color]="element.isTrusted ? 'green' : 'red'">
-                {{element.isTrusted ? 'Trusted' : 'Revoked'}}
+                {{ element.isTrusted ? 'Trusted' : 'Revoked' }}
               </span>
             </td>
           </ng-container>
           <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef> Actions </th>
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
             <td mat-cell *matCellDef="let element">
-              <button mat-button color="warn" (click)="revokeDevice(element)" [disabled]="!element.isTrusted">
+              <button
+                mat-button
+                color="warn"
+                (click)="revokeDevice(element)"
+                [disabled]="!element.isTrusted"
+              >
                 Revoke Device
               </button>
             </td>
           </ng-container>
-          <tr mat-header-row *matHeaderRowDef="['employee', 'deviceId', 'status', 'actions']"></tr>
-          <tr mat-row *matRowDef="let row; columns: ['employee', 'deviceId', 'status', 'actions'];"></tr>
+          <tr
+            mat-header-row
+            *matHeaderRowDef="['employee', 'deviceId', 'status', 'actions']"
+          ></tr>
+          <tr
+            mat-row
+            *matRowDef="
+              let row;
+              columns: ['employee', 'deviceId', 'status', 'actions']
+            "
+          ></tr>
         </table>
-    
+
         @if (devices.length === 0) {
           <div style="padding: 48px; text-align: center; color: #757575;">
             No registered devices found.
@@ -56,13 +77,13 @@ import { ConfirmDialogComponent } from '../../core/components/confirm-dialog.com
         }
       </mat-card>
     </div>
-    `
+  `,
 })
 export class DeviceManagementComponent implements OnInit {
   private http = inject(HttpClient);
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
-  
+
   devices: any[] = [];
 
   ngOnInit() {
@@ -71,8 +92,8 @@ export class DeviceManagementComponent implements OnInit {
 
   loadDevices() {
     this.http.get<any[]>('/api/v1/attendance/device').subscribe({
-      next: (data) => this.devices = data,
-      error: (err) => console.error(err)
+      next: (data) => (this.devices = data),
+      error: (err) => console.error(err),
     });
   }
 
@@ -82,27 +103,34 @@ export class DeviceManagementComponent implements OnInit {
       panelClass: 'premium-dialog',
       data: {
         title: 'Revoke Device',
-        message: 'Are you sure you want to revoke this device? The employee will need to register a new device.',
+        message:
+          'Are you sure you want to revoke this device? The employee will need to register a new device.',
         confirmText: 'Revoke',
         color: 'warn',
-        icon: 'phonelink_erase'
-      }
+        icon: 'phonelink_erase',
+      },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.http.post('/api/v1/attendance/device/revoke', {
-          employeeId: device.employeeId,
-          deviceId: device.deviceId
-        }).subscribe({
-          next: () => {
-            this.snackBar.open('Device revoked successfully', 'Close', { duration: 3000 });
-            this.loadDevices();
-          },
-          error: (err) => {
-            this.snackBar.open('Failed to revoke device', 'Close', { duration: 3000 });
-          }
-        });
+        this.http
+          .post('/api/v1/attendance/device/revoke', {
+            employeeId: device.employeeId,
+            deviceId: device.deviceId,
+          })
+          .subscribe({
+            next: () => {
+              this.snackBar.open('Device revoked successfully', 'Close', {
+                duration: 3000,
+              });
+              this.loadDevices();
+            },
+            error: (err) => {
+              this.snackBar.open('Failed to revoke device', 'Close', {
+                duration: 3000,
+              });
+            },
+          });
       }
     });
   }

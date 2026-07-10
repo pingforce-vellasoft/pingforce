@@ -5,14 +5,18 @@ import { IPrismaService } from '@pingforce-monorepo/shared';
 export class LocationService {
   constructor(
     @Inject('IPrismaService')
-    private readonly prisma: IPrismaService
+    private readonly prisma: IPrismaService,
   ) {}
 
   /**
    * Validates if a given coordinate is within any active geofence for the tenant.
    * Uses raw SQL with the Haversine formula for efficient distance calculation.
    */
-  async isWithinGeofence(tenantId: string, latitude: number, longitude: number): Promise<boolean> {
+  async isWithinGeofence(
+    tenantId: string,
+    latitude: number,
+    longitude: number,
+  ): Promise<boolean> {
     const result = await this.prisma.$queryRaw<any[]>`
       SELECT id FROM "geofences" 
       WHERE "tenantId" = ${tenantId} AND "active" = true 
@@ -22,7 +26,7 @@ export class LocationService {
       )) <= "radiusMeters"
       LIMIT 1;
     `;
-    
+
     return result.length > 0;
   }
 }

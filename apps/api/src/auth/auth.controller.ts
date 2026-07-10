@@ -1,7 +1,26 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards, Get, Request, Inject } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+  Get,
+  Request,
+  Inject,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { IAuthService } from '@pingforce-monorepo/shared';
-import { LoginDto, RefreshTokenDto, ResetPasswordDto } from '@pingforce-monorepo/dto';
+import {
+  LoginDto,
+  RefreshTokenDto,
+  ResetPasswordDto,
+} from '@pingforce-monorepo/dto';
 import { RegisterTenantDto } from './dto/register-tenant.dto';
 import { RegisterEmployeeDto } from './dto/register-employee.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
@@ -10,7 +29,9 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(@Inject('IAuthService') private readonly authService: IAuthService) {}
+  constructor(
+    @Inject('IAuthService') private readonly authService: IAuthService,
+  ) {}
 
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({ status: 200, description: 'User successfully logged in.' })
@@ -23,7 +44,10 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Refresh JWT token' })
   @ApiResponse({ status: 200, description: 'Token successfully refreshed.' })
-  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid or expired refresh token.',
+  })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(@Body() refreshDto: RefreshTokenDto) {
@@ -39,7 +63,10 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Sign in with Google' })
-  @ApiResponse({ status: 200, description: 'User successfully logged in via Google.' })
+  @ApiResponse({
+    status: 200,
+    description: 'User successfully logged in via Google.',
+  })
   @ApiResponse({ status: 401, description: 'Invalid Google token.' })
   @Post('google')
   @HttpCode(HttpStatus.OK)
@@ -55,7 +82,10 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Register a new employee' })
-  @ApiResponse({ status: 201, description: 'Employee registered successfully.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Employee registered successfully.',
+  })
   @Post('register-employee')
   async registerEmployee(@Body() registerDto: RegisterEmployeeDto) {
     return (this.authService as any).registerEmployee(registerDto);

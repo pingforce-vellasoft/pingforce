@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { LeadService } from './lead.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
@@ -15,7 +25,7 @@ export class LeadController {
   @Post()
   create(
     @CurrentTenant() tenantId: string,
-    @Body() createLeadDto: CreateLeadDto
+    @Body() createLeadDto: CreateLeadDto,
   ) {
     return this.leadService.create(tenantId, createLeadDto);
   }
@@ -24,25 +34,30 @@ export class LeadController {
   findAll(
     @CurrentTenant() tenantId: string,
     @Query('cursor') cursor?: string,
-    @Query('take') take?: string
+    @Query('take') take?: string,
   ) {
-    return this.leadService.findAll(tenantId, cursor, take ? parseInt(take, 10) : undefined);
+    return this.leadService.findAll(
+      tenantId,
+      cursor,
+      take ? parseInt(take, 10) : undefined,
+    );
   }
 
   @Get('pipeline')
   getPipeline(
     @CurrentTenant() tenantId: string,
     @Query('cursor') cursor?: string,
-    @Query('take') take?: string
+    @Query('take') take?: string,
   ) {
-    return this.leadService.getPipeline(tenantId, cursor, take ? parseInt(take, 10) : undefined);
+    return this.leadService.getPipeline(
+      tenantId,
+      cursor,
+      take ? parseInt(take, 10) : undefined,
+    );
   }
 
   @Get(':id')
-  findOne(
-    @CurrentTenant() tenantId: string,
-    @Param('id') id: string
-  ) {
+  findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.leadService.findOne(tenantId, id);
   }
 
@@ -50,7 +65,7 @@ export class LeadController {
   update(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
-    @Body() updateLeadDto: UpdateLeadDto
+    @Body() updateLeadDto: UpdateLeadDto,
   ) {
     return this.leadService.update(tenantId, id, updateLeadDto);
   }
@@ -59,7 +74,7 @@ export class LeadController {
   assignOwner(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateLeadOwnerDto
+    @Body() dto: UpdateLeadOwnerDto,
   ) {
     return this.leadService.assignOwner(tenantId, id, dto.ownerUserId);
   }
@@ -68,16 +83,13 @@ export class LeadController {
   updateStage(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateLeadStageDto
+    @Body() dto: UpdateLeadStageDto,
   ) {
     return this.leadService.updateStage(tenantId, id, dto.pipelineStageId);
   }
 
   @Delete(':id')
-  remove(
-    @CurrentTenant() tenantId: string,
-    @Param('id') id: string
-  ) {
+  remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.leadService.remove(tenantId, id);
   }
 }

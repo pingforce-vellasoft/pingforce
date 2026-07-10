@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { LeaveService } from './leave.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentTenant } from '@pingforce-monorepo/shared';
@@ -23,9 +32,15 @@ export class LeaveController {
     @Param('employeeId') employeeId: string,
     @Query('year') year: number,
     @Query('skip') skip?: string,
-    @Query('take') take?: string
+    @Query('take') take?: string,
   ) {
-    return this.leaveService.getLeaveBalances(tenantId, employeeId, Number(year) || new Date().getFullYear(), skip ? parseInt(skip, 10) : undefined, take ? parseInt(take, 10) : undefined);
+    return this.leaveService.getLeaveBalances(
+      tenantId,
+      employeeId,
+      Number(year) || new Date().getFullYear(),
+      skip ? parseInt(skip, 10) : undefined,
+      take ? parseInt(take, 10) : undefined,
+    );
   }
 
   @Get('pending')
@@ -37,17 +52,27 @@ export class LeaveController {
   async approveLeave(
     @CurrentTenant() tenantId: string,
     @Param('id') leaveId: string,
-    @Request() req: any
+    @Request() req: any,
   ) {
-    return this.leaveService.updateLeaveStatus(tenantId, leaveId, 'APPROVED', req.user.id);
+    return this.leaveService.updateLeaveStatus(
+      tenantId,
+      leaveId,
+      'APPROVED',
+      req.user.id,
+    );
   }
 
   @Post(':id/reject')
   async rejectLeave(
     @CurrentTenant() tenantId: string,
     @Param('id') leaveId: string,
-    @Request() req: any
+    @Request() req: any,
   ) {
-    return this.leaveService.updateLeaveStatus(tenantId, leaveId, 'REJECTED', req.user.id);
+    return this.leaveService.updateLeaveStatus(
+      tenantId,
+      leaveId,
+      'REJECTED',
+      req.user.id,
+    );
   }
 }

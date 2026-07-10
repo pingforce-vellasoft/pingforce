@@ -11,11 +11,11 @@ export interface MasterData {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MasterDataService {
   private http = inject(HttpClient);
-  
+
   findAll(type: string) {
     return this.http.get<MasterData[]>(`/api/v1/master-data/${type}`);
   }
@@ -29,7 +29,10 @@ export class MasterDataService {
   }
 
   update(type: string, id: string, data: Partial<MasterData>) {
-    return this.http.patch<MasterData>(`/api/v1/master-data/${type}/${id}`, data);
+    return this.http.patch<MasterData>(
+      `/api/v1/master-data/${type}/${id}`,
+      data,
+    );
   }
 
   remove(type: string, id: string) {

@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, NotFoundException, Inject, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  NotFoundException,
+  Inject,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { v4 as uuidv4 } from 'uuid';
@@ -28,20 +34,30 @@ export class AuthService implements IAuthService {
       if (!superAdmin) {
         throw new UnauthorizedException('Invalid super admin credentials');
       }
-      const isPasswordValid = await argon2.verify(superAdmin.passwordHash, loginDto.password);
+      const isPasswordValid = await argon2.verify(
+        superAdmin.passwordHash,
+        loginDto.password,
+      );
       if (!isPasswordValid) {
         throw new UnauthorizedException('Invalid super admin credentials');
       }
       if (superAdmin.status !== 'ACTIVE') {
         throw new UnauthorizedException('Super admin account is suspended');
       }
-      
+
       const portalType = (loginDto as any).portalType;
       if (portalType === 'MOBILE_APP') {
-        throw new UnauthorizedException('Super admins can only login via the admin portal');
+        throw new UnauthorizedException(
+          'Super admins can only login via the admin portal',
+        );
       }
 
-      return this.generateTokens(superAdmin.id, 'SYSTEM', superAdmin.tokenVersion, 'SUPER_ADMIN');
+      return this.generateTokens(
+        superAdmin.id,
+        'SYSTEM',
+        superAdmin.tokenVersion,
+        'SUPER_ADMIN',
+      );
     }
 
     // Tenant User Login
@@ -60,15 +76,18 @@ export class AuthService implements IAuthService {
         ...(loginDto.phone ? { phone: loginDto.phone } : {}),
       },
       include: {
-        role: true
-      }
+        role: true,
+      },
     });
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await argon2.verify(user.passwordHash, loginDto.password);
+    const isPasswordValid = await argon2.verify(
+      user.passwordHash,
+      loginDto.password,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -78,30 +97,49 @@ export class AuthService implements IAuthService {
     }
 
     // Role-based platform access control
-    const roleCode = user.role?.code || (user.clientCode === 'SYS_ADMIN' ? 'SUPER_ADMIN' : 'UNKNOWN');
+    const roleCode =
+      user.role?.code ||
+      (user.clientCode === 'SYS_ADMIN' ? 'SUPER_ADMIN' : 'UNKNOWN');
     const portalType = (loginDto as any).portalType; // using any to bypass strict type if DTO didn't rebuild yet
 
     if (portalType === 'ADMIN_PORTAL') {
       if (roleCode === 'EMPLOYEE_FIELD_STAFF' || roleCode === 'CUSTOMER') {
-        throw new UnauthorizedException('This account is restricted to the mobile app only');
+        throw new UnauthorizedException(
+          'This account is restricted to the mobile app only',
+        );
       }
     } else if (portalType === 'MOBILE_APP') {
       if (roleCode === 'SUPER_ADMIN') {
-        throw new UnauthorizedException('Super admins can only login via the admin portal');
+        throw new UnauthorizedException(
+          'Super admins can only login via the admin portal',
+        );
       }
     }
 
     return this.generateTokens(user.id, tenant.id, user.tokenVersion, roleCode);
   }
 
-  async generateTokens(userId: string, tenantId: string, tokenVersion: number, roleCode: string) {
+  async generateTokens(
+    userId: string,
+    tenantId: string,
+    tokenVersion: number,
+    roleCode: string,
+  ) {
     const payload = { sub: userId, tenantId, tokenVersion, role: roleCode };
     const accessToken = this.jwtService.sign(payload);
-    
+
     const tokenId = uuidv4();
-    const refreshTokenPayload = { sub: userId, tenantId, tokenVersion, role: roleCode, jti: tokenId };
+    const refreshTokenPayload = {
+      sub: userId,
+      tenantId,
+      tokenVersion,
+      role: roleCode,
+      jti: tokenId,
+    };
     // Usually refresh tokens have longer expiry
-    const refreshToken = this.jwtService.sign(refreshTokenPayload, { expiresIn: '7d' });
+    const refreshToken = this.jwtService.sign(refreshTokenPayload, {
+      expiresIn: '7d',
+    });
 
     const expiresIn = new Date();
     expiresIn.setDate(expiresIn.getDate() + 7);
@@ -134,18 +172,33 @@ export class AuthService implements IAuthService {
           where: { id: decoded.sub },
         });
 
-        if (!superAdmin || superAdmin.tokenVersion !== decoded.tokenVersion || superAdmin.status !== 'ACTIVE') {
-          throw new UnauthorizedException('Token invalid or super admin suspended');
+        if (
+          !superAdmin ||
+          superAdmin.tokenVersion !== decoded.tokenVersion ||
+          superAdmin.status !== 'ACTIVE'
+        ) {
+          throw new UnauthorizedException(
+            'Token invalid or super admin suspended',
+          );
         }
 
-        return this.generateTokens(superAdmin.id, 'SYSTEM', superAdmin.tokenVersion, 'SUPER_ADMIN');
+        return this.generateTokens(
+          superAdmin.id,
+          'SYSTEM',
+          superAdmin.tokenVersion,
+          'SUPER_ADMIN',
+        );
       }
 
       const storedToken = await this.prisma.refreshToken.findUnique({
         where: { tokenHash: tokenId },
       });
 
-      if (!storedToken || storedToken.revokedAt || storedToken.expiresAt < new Date()) {
+      if (
+        !storedToken ||
+        storedToken.revokedAt ||
+        storedToken.expiresAt < new Date()
+      ) {
         throw new UnauthorizedException('Refresh token is invalid or expired');
       }
 
@@ -155,7 +208,9 @@ export class AuthService implements IAuthService {
       });
 
       if (!user || user.tokenVersion !== decoded.tokenVersion) {
-        throw new UnauthorizedException('Token version mismatch or user not found');
+        throw new UnauthorizedException(
+          'Token version mismatch or user not found',
+        );
       }
 
       if (user.status !== 'ACTIVE' || user.tenant.status !== 'ACTIVE') {
@@ -168,8 +223,12 @@ export class AuthService implements IAuthService {
       });
 
       const roleCode = user.role?.code || 'UNKNOWN';
-      return this.generateTokens(user.id, user.tenantId, user.tokenVersion, roleCode);
-
+      return this.generateTokens(
+        user.id,
+        user.tenantId,
+        user.tokenVersion,
+        roleCode,
+      );
     } catch (e) {
       if (e instanceof TokenExpiredError) {
         throw new UnauthorizedException('Refresh token expired');
@@ -178,7 +237,11 @@ export class AuthService implements IAuthService {
     }
   }
   private generateTenantCode(tenantName: string): string {
-    const prefix = tenantName.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase().padEnd(3, 'X');
+    const prefix = tenantName
+      .replace(/[^a-zA-Z]/g, '')
+      .substring(0, 3)
+      .toUpperCase()
+      .padEnd(3, 'X');
     const randomNum = Math.floor(100 + Math.random() * 900);
     return `${prefix}${randomNum}`;
   }
@@ -196,7 +259,9 @@ export class AuthService implements IAuthService {
     }
 
     if (!payload || !payload.email) {
-      throw new UnauthorizedException('Google token did not contain an email address');
+      throw new UnauthorizedException(
+        'Google token did not contain an email address',
+      );
     }
 
     const tenant = await this.prisma.tenant.findUnique({
@@ -213,21 +278,21 @@ export class AuthService implements IAuthService {
         email: payload.email,
       },
       include: {
-        role: true
-      }
+        role: true,
+      },
     });
 
     if (!user) {
       // Auto-register the user if they don't exist
       const defaultRole = await this.prisma.role.findFirst({
-        where: { code: 'EMPLOYEE_FIELD_STAFF', tenantId: tenant.id }
+        where: { code: 'EMPLOYEE_FIELD_STAFF', tenantId: tenant.id },
       });
-      
+
       if (!defaultRole) {
         throw new BadRequestException('Default role not found for tenant');
       }
 
-      user = await this.prisma.user.create({
+      user = (await this.prisma.user.create({
         data: {
           tenantId: tenant.id,
           roleId: defaultRole.id,
@@ -238,9 +303,9 @@ export class AuthService implements IAuthService {
           status: 'ACTIVE',
         },
         include: {
-          role: true
-        }
-      }) as any;
+          role: true,
+        },
+      })) as any;
     }
 
     if (user!.status !== 'ACTIVE' || tenant.status !== 'ACTIVE') {
@@ -248,12 +313,17 @@ export class AuthService implements IAuthService {
     }
 
     const roleCode = user!.role?.code || 'UNKNOWN';
-    return this.generateTokens(user!.id, tenant.id, user!.tokenVersion, roleCode);
+    return this.generateTokens(
+      user!.id,
+      tenant.id,
+      user!.tokenVersion,
+      roleCode,
+    );
   }
 
   async registerTenant(dto: RegisterTenantDto) {
     const existingTenant = await this.prisma.tenant.findFirst({
-      where: { name: dto.tenantName }
+      where: { name: dto.tenantName },
     });
     if (existingTenant) {
       throw new BadRequestException('A tenant with this name already exists.');
@@ -262,7 +332,9 @@ export class AuthService implements IAuthService {
     let tenantCode = this.generateTenantCode(dto.tenantName);
     let isCodeUnique = false;
     while (!isCodeUnique) {
-      const existingCode = await this.prisma.tenant.findUnique({ where: { code: tenantCode } });
+      const existingCode = await this.prisma.tenant.findUnique({
+        where: { code: tenantCode },
+      });
       if (!existingCode) {
         isCodeUnique = true;
       } else {
@@ -279,12 +351,12 @@ export class AuthService implements IAuthService {
           name: dto.tenantName,
           code: tenantCode,
           domain: dto.domain,
-          status: 'ACTIVE'
-        }
+          status: 'ACTIVE',
+        },
       });
 
       let adminRole = await prisma.role.findFirst({
-        where: { tenantId: tenant.id, code: 'ADMIN_MANAGER' }
+        where: { tenantId: tenant.id, code: 'ADMIN_MANAGER' },
       });
 
       if (!adminRole) {
@@ -294,8 +366,8 @@ export class AuthService implements IAuthService {
             name: 'Admin / Manager',
             code: 'ADMIN_MANAGER',
             description: 'Management access',
-            isSystem: true
-          }
+            isSystem: true,
+          },
         });
       }
 
@@ -308,13 +380,13 @@ export class AuthService implements IAuthService {
           profile: {
             create: {
               firstName: dto.adminFirstName,
-              lastName: dto.adminLastName
-            }
+              lastName: dto.adminLastName,
+            },
           },
           phone: dto.adminPhone,
           status: 'ACTIVE',
-          clientCode: 'TENANT_ADMIN'
-        }
+          clientCode: 'TENANT_ADMIN',
+        },
       });
 
       return { tenant, adminUser };
@@ -322,13 +394,13 @@ export class AuthService implements IAuthService {
 
     return {
       message: 'Tenant registered successfully',
-      tenantCode: result.tenant.code
+      tenantCode: result.tenant.code,
     };
   }
 
   async registerEmployee(dto: RegisterEmployeeDto) {
     const tenant = await this.prisma.tenant.findUnique({
-      where: { code: dto.tenantCode }
+      where: { code: dto.tenantCode },
     });
 
     if (!tenant) {
@@ -340,17 +412,19 @@ export class AuthService implements IAuthService {
     }
 
     const existingUser = await this.prisma.user.findFirst({
-      where: { tenantId: tenant.id, email: dto.email }
+      where: { tenantId: tenant.id, email: dto.email },
     });
 
     if (existingUser) {
-      throw new BadRequestException('An employee with this email already exists in this tenant.');
+      throw new BadRequestException(
+        'An employee with this email already exists in this tenant.',
+      );
     }
 
     const passwordHash = await argon2.hash(dto.password);
 
     let employeeRole = await this.prisma.role.findFirst({
-      where: { tenantId: tenant.id, code: 'EMPLOYEE_FIELD_STAFF' }
+      where: { tenantId: tenant.id, code: 'EMPLOYEE_FIELD_STAFF' },
     });
 
     if (!employeeRole) {
@@ -360,8 +434,8 @@ export class AuthService implements IAuthService {
           name: 'Employee / Field Staff',
           code: 'EMPLOYEE_FIELD_STAFF',
           description: 'Standard employee (Mobile App Only)',
-          isSystem: true
-        }
+          isSystem: true,
+        },
       });
     }
 
@@ -374,18 +448,18 @@ export class AuthService implements IAuthService {
         profile: {
           create: {
             firstName: dto.firstName,
-            lastName: dto.lastName
-          }
+            lastName: dto.lastName,
+          },
         },
         phone: dto.phone,
         status: 'ACTIVE',
-        clientCode: `EMP_${Date.now()}`
-      }
+        clientCode: `EMP_${Date.now()}`,
+      },
     });
 
     return {
       message: 'Employee registered successfully. You can now log in.',
-      userId: employee.id
+      userId: employee.id,
     };
   }
 }

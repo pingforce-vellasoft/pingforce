@@ -1,4 +1,11 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 
 @Catch()
@@ -20,7 +27,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         ? exception.getResponse()
         : 'Internal server error';
 
-    const requestId = request.headers['x-request-id'] || request.id || 'unknown';
+    const requestId =
+      request.headers['x-request-id'] || request.id || 'unknown';
 
     // Structured logging
     this.logger.error(
@@ -33,9 +41,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       requestId,
-      message: typeof message === 'object' && message !== null && 'message' in message 
-        ? message['message'] 
-        : message,
+      message:
+        typeof message === 'object' && message !== null && 'message' in message
+          ? message['message']
+          : message,
     });
   }
 }

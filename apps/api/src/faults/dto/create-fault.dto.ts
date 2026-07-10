@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsEnum, IsUUID, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsUUID,
+  IsNotEmpty,
+} from 'class-validator';
 import { FaultPriority } from '@pingforce-monorepo/shared';
 
 export class CreateFaultDto {

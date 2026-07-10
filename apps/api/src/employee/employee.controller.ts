@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Request, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+  Request,
+  ForbiddenException,
+} from '@nestjs/common';
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
@@ -14,10 +26,15 @@ export class EmployeeController {
   create(
     @CurrentTenant() tenantId: string,
     @Body() createEmployeeDto: CreateEmployeeDto,
-    @Request() req: any
+    @Request() req: any,
   ) {
-    if (req.user?.clientCode === 'SYS_ADMIN' || req.user?.role?.code === 'SUPER_ADMIN') {
-      throw new ForbiddenException('Super Admins cannot directly create standard employees. Please use Tenant Admin credentials.');
+    if (
+      req.user?.clientCode === 'SYS_ADMIN' ||
+      req.user?.role?.code === 'SUPER_ADMIN'
+    ) {
+      throw new ForbiddenException(
+        'Super Admins cannot directly create standard employees. Please use Tenant Admin credentials.',
+      );
     }
     return this.employeeService.create(tenantId, createEmployeeDto);
   }
@@ -26,17 +43,14 @@ export class EmployeeController {
   findAll(
     @CurrentTenant() tenantId: string,
     @Query('cursor') cursor?: string,
-    @Query('take') take?: string
+    @Query('take') take?: string,
   ) {
     const takeVal = take ? parseInt(take, 10) : 50;
     return this.employeeService.findAll(tenantId, { cursor, take: takeVal });
   }
 
   @Get(':id')
-  findOne(
-    @CurrentTenant() tenantId: string,
-    @Param('id') id: string
-  ) {
+  findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.employeeService.findOne(tenantId, id);
   }
 
@@ -44,16 +58,13 @@ export class EmployeeController {
   update(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
-    @Body() updateEmployeeDto: UpdateEmployeeDto
+    @Body() updateEmployeeDto: UpdateEmployeeDto,
   ) {
     return this.employeeService.update(tenantId, id, updateEmployeeDto);
   }
 
   @Delete(':id')
-  remove(
-    @CurrentTenant() tenantId: string,
-    @Param('id') id: string
-  ) {
+  remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.employeeService.remove(tenantId, id);
   }
 }

@@ -18,16 +18,21 @@ export interface Permission {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class RbacService {
   private http = inject(HttpClient);
-  
+
   findAllRoles() {
     return this.http.get<Role[]>(`/api/v1/rbac/roles`);
   }
 
-  createRole(data: { name: string; code: string; description?: string; permissionIds?: string[] }) {
+  createRole(data: {
+    name: string;
+    code: string;
+    description?: string;
+    permissionIds?: string[];
+  }) {
     return this.http.post<Role>(`/api/v1/rbac/roles`, data);
   }
 
@@ -40,7 +45,9 @@ export class RbacService {
   }
 
   updateRolePermissions(roleId: string, permissionIds: string[]) {
-    return this.http.put<Role>(`/api/v1/rbac/roles/${roleId}/permissions`, { permissionIds });
+    return this.http.put<Role>(`/api/v1/rbac/roles/${roleId}/permissions`, {
+      permissionIds,
+    });
   }
 
   deleteRole(roleId: string) {

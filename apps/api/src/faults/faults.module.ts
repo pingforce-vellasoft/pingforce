@@ -14,9 +14,9 @@ import { QueryHandlers } from './queries/handlers';
   providers: [
     ...CommandHandlers,
     ...QueryHandlers,
-    SlaPolicyService, 
-    SlaComputationService, 
-    FaultsRepository
+    SlaPolicyService,
+    SlaComputationService,
+    FaultsRepository,
   ],
   exports: [SlaPolicyService, FaultsRepository],
 })

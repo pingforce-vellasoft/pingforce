@@ -4,11 +4,33 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
 const softDeleteModels = [
-  'Tenant', 'User', 'UserProfile', 'Company', 'Department', 'Designation', 'Branch',
-  'LeaveType', 'Employee', 'Customer', 'PipelineStage', 'LeadStatus', 'Lead',
-  'Shift', 'Attendance', 'AttendanceSession', 'Team', 'LeadSource', 'Campaign', 'LeadPriority',
-  'AttendancePolicy', 'LeaveBalance', 'LeaveRequest', 'AttendanceBreak',
-  'AttendanceCorrection', 'ShiftAssignment', 'Geofence'
+  'Tenant',
+  'User',
+  'UserProfile',
+  'Company',
+  'Department',
+  'Designation',
+  'Branch',
+  'LeaveType',
+  'Employee',
+  'Customer',
+  'PipelineStage',
+  'LeadStatus',
+  'Lead',
+  'Shift',
+  'Attendance',
+  'AttendanceSession',
+  'Team',
+  'LeadSource',
+  'Campaign',
+  'LeadPriority',
+  'AttendancePolicy',
+  'LeaveBalance',
+  'LeaveRequest',
+  'AttendanceBreak',
+  'AttendanceCorrection',
+  'ShiftAssignment',
+  'Geofence',
 ];
 
 function createPrismaClient() {
@@ -40,17 +62,17 @@ function createPrismaClient() {
               return result;
             }
             if (operation === 'findMany' || operation === 'count') {
-               const anyArgs = args as any;
-               anyArgs.where = anyArgs.where ? { ...anyArgs.where } : {};
-               if (anyArgs.where.deletedAt === undefined) {
-                 anyArgs.where.deletedAt = null;
-               }
+              const anyArgs = args as any;
+              anyArgs.where = anyArgs.where ? { ...anyArgs.where } : {};
+              if (anyArgs.where.deletedAt === undefined) {
+                anyArgs.where.deletedAt = null;
+              }
             }
           }
           return query(args);
-        }
-      }
-    }
+        },
+      },
+    },
   });
 }
 

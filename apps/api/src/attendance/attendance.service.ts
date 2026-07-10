@@ -1,6 +1,15 @@
-import { Inject, Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
-import { RegisterDeviceDto, PunchDto, CreateGeofenceDto } from './dto/attendance.dto';
+import {
+  RegisterDeviceDto,
+  PunchDto,
+  CreateGeofenceDto,
+} from './dto/attendance.dto';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -10,21 +19,23 @@ export class AttendanceService {
   async getDevices(user: any) {
     return this.prisma.employeeDevice.findMany({
       where: { employee: { tenantId: user.tenantId } },
-      include: { employee: { include: { user: { include: { profile: true } } } } }
+      include: {
+        employee: { include: { user: { include: { profile: true } } } },
+      },
     });
   }
 
   async registerDevice(user: any, dto: RegisterDeviceDto) {
     // Only employees can register a device
     const employee = await this.prisma.employee.findUnique({
-      where: { userId: user.userId }
+      where: { userId: user.userId },
     });
     if (!employee) throw new UnauthorizedException('User is not an employee');
 
     // Revoke any existing active device for this employee to enforce 1-device policy
     await this.prisma.employeeDevice.updateMany({
       where: { employeeId: employee.id, isTrusted: true },
-      data: { isTrusted: false }
+      data: { isTrusted: false },
     });
 
     return this.prisma.employeeDevice.create({
@@ -33,31 +44,34 @@ export class AttendanceService {
         deviceId: dto.deviceId,
         publicKey: dto.publicKey,
         isTrusted: true,
-      }
+      },
     });
   }
 
   async revokeDevice(admin: any, employeeId: string, deviceId: string) {
     // Basic check for admin (assume proper RBAC guard in real app)
-    if (admin.roleCode !== 'SUPER_ADMIN' && admin.roleCode !== 'ADMIN_MANAGER') {
+    if (
+      admin.roleCode !== 'SUPER_ADMIN' &&
+      admin.roleCode !== 'ADMIN_MANAGER'
+    ) {
       throw new UnauthorizedException('Only admins can revoke devices');
     }
 
     return this.prisma.employeeDevice.updateMany({
       where: { employeeId, deviceId, employee: { tenantId: admin.tenantId } },
-      data: { isTrusted: false }
+      data: { isTrusted: false },
     });
   }
 
   async punch(user: any, dto: PunchDto) {
     const employee = await this.prisma.employee.findUnique({
-      where: { userId: user.userId }
+      where: { userId: user.userId },
     });
     if (!employee) throw new UnauthorizedException('Not an employee');
 
     // 1. Check Device Trust
     const device = await this.prisma.employeeDevice.findUnique({
-      where: { deviceId: dto.deviceId }
+      where: { deviceId: dto.deviceId },
     });
     if (!device || !device.isTrusted || device.employeeId !== employee.id) {
       throw new UnauthorizedException('Untrusted device');
@@ -66,8 +80,9 @@ export class AttendanceService {
     // 2. Cryptographic Signature Verification (Mock validation for demo)
     // In production, we'd use crypto.verify with the device.publicKey
     // const isVerified = crypto.verify('sha256', Buffer.from(dto.timestamp + dto.latitude + dto.longitude), device.publicKey, Buffer.from(dto.signature, 'base64'));
-    const isVerified = true; 
-    if (!isVerified) throw new UnauthorizedException('Invalid biometric signature');
+    const isVerified = true;
+    if (!isVerified)
+      throw new UnauthorizedException('Invalid biometric signature');
 
     // 3. PostGIS Geofence Validation
     // Check if the coordinates are within any active geofence for the tenant
@@ -87,7 +102,9 @@ export class AttendanceService {
 
     const isValidLocation = Array.isArray(geofences) && geofences.length > 0;
     if (!isValidLocation) {
-      throw new BadRequestException('You are outside the authorized geofence area.');
+      throw new BadRequestException(
+        'You are outside the authorized geofence area.',
+      );
     }
 
     // 4. 15-Minute Debounce Check
@@ -95,20 +112,22 @@ export class AttendanceService {
     const recentSession = await this.prisma.attendanceSession.findFirst({
       where: {
         employeeId: employee.id,
-        punchIn: { gte: fifteenMinsAgo }
-      }
+        punchIn: { gte: fifteenMinsAgo },
+      },
     });
 
     if (recentSession) {
-      throw new BadRequestException('You have already punched recently. Please wait 15 minutes.');
+      throw new BadRequestException(
+        'You have already punched recently. Please wait 15 minutes.',
+      );
     }
 
     // 5. Create or Update Attendance Record
     const today = new Date();
-    today.setHours(0,0,0,0);
+    today.setHours(0, 0, 0, 0);
 
     let attendance = await this.prisma.attendance.findFirst({
-      where: { employeeId: employee.id, attendanceDate: today }
+      where: { employeeId: employee.id, attendanceDate: today },
     });
 
     if (!attendance) {
@@ -117,14 +136,14 @@ export class AttendanceService {
           tenantId: employee.tenantId,
           employeeId: employee.id,
           attendanceDate: today,
-          status: 'PRESENT'
-        }
+          status: 'PRESENT',
+        },
       });
     }
 
     // Determine Punch In or Out based on existing open session
     const openSession = await this.prisma.attendanceSession.findFirst({
-      where: { attendanceId: attendance.id, punchOut: null }
+      where: { attendanceId: attendance.id, punchOut: null },
     });
 
     if (openSession) {
@@ -136,7 +155,7 @@ export class AttendanceService {
           checkOutLatitude: dto.latitude,
           checkOutLongitude: dto.longitude,
           punchOutDevice: dto.deviceId,
-        }
+        },
       });
     } else {
       // Punch In
@@ -150,19 +169,27 @@ export class AttendanceService {
           checkInLongitude: dto.longitude,
           punchInDevice: dto.deviceId,
           deviceSignature: dto.signature,
-          attendanceMethod: 'BIOMETRIC'
-        }
+          attendanceMethod: 'BIOMETRIC',
+        },
       });
     }
   }
 
-  async manualCheckout(admin: any, dto: import('./dto/manual-checkout.dto').ManualCheckoutDto) {
-    if (admin.roleCode !== 'SUPER_ADMIN' && admin.roleCode !== 'ADMIN_MANAGER') {
-      throw new UnauthorizedException('Only admins can perform manual checkouts');
+  async manualCheckout(
+    admin: any,
+    dto: import('./dto/manual-checkout.dto').ManualCheckoutDto,
+  ) {
+    if (
+      admin.roleCode !== 'SUPER_ADMIN' &&
+      admin.roleCode !== 'ADMIN_MANAGER'
+    ) {
+      throw new UnauthorizedException(
+        'Only admins can perform manual checkouts',
+      );
     }
 
     const session = await this.prisma.attendanceSession.findUnique({
-      where: { id: dto.attendanceSessionId }
+      where: { id: dto.attendanceSessionId },
     });
 
     if (!session || session.tenantId !== admin.tenantId) {
@@ -181,7 +208,7 @@ export class AttendanceService {
       data: {
         punchOut: punchOutTime,
         attendanceMethod: 'MANUAL', // We could use an enum, or just track in corrections
-      }
+      },
     });
 
     // Create an AttendanceCorrection record for auditing
@@ -195,35 +222,41 @@ export class AttendanceService {
         reason: dto.reason,
         workflowStatus: 'APPROVED',
         approvedBy: admin.userId,
-        approvedAt: new Date()
-      }
+        approvedAt: new Date(),
+      },
     });
 
     return updatedSession;
   }
 
-
-  async getLogs(user: any, page: number, limit: number, search?: string, sortBy?: string, sortDir?: string) {
+  async getLogs(
+    user: any,
+    page: number,
+    limit: number,
+    search?: string,
+    sortBy?: string,
+    sortDir?: string,
+  ) {
     const skip = (page - 1) * limit;
-    
+
     // Only fetch logs for the admin's tenant
     const where: any = { tenantId: user.tenantId };
-    
+
     if (search) {
       where.employee = {
         user: {
           profile: {
             OR: [
               { firstName: { contains: search, mode: 'insensitive' } },
-              { lastName: { contains: search, mode: 'insensitive' } }
-            ]
-          }
-        }
+              { lastName: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+        },
       };
     }
 
     let orderBy: any = { punchIn: 'desc' };
-    
+
     if (sortBy) {
       const direction = sortDir === 'asc' ? 'asc' : 'desc';
       if (sortBy === 'checkIn') {
@@ -236,14 +269,14 @@ export class AttendanceService {
           employee: {
             user: {
               profile: {
-                firstName: direction
-              }
-            }
-          }
+                firstName: direction,
+              },
+            },
+          },
         };
       }
     }
-    
+
     const [data, total] = await Promise.all([
       this.prisma.attendanceSession.findMany({
         where,
@@ -253,27 +286,31 @@ export class AttendanceService {
               user: { select: { profile: true } },
               department: true,
               team: true,
-              company: true
-            }
+              company: true,
+            },
           },
-          attendance: true
+          attendance: true,
         },
         orderBy,
         skip,
-        take: limit
+        take: limit,
       }),
-      this.prisma.attendanceSession.count({ where })
+      this.prisma.attendanceSession.count({ where }),
     ]);
 
-    const mappedData = data.map(log => {
+    const mappedData = data.map((log) => {
       // Inject demo metric for shortfalls and leaves
       return {
         ...log,
         employee: {
           ...log.employee,
-          shortfallDays: log.employee?.id === 'some-id' ? 2 : Math.floor(Math.random() * 4),
-          leaveBalance: log.employee?.id === 'some-id' ? 12 : Math.floor(Math.random() * 20) + 1
-        }
+          shortfallDays:
+            log.employee?.id === 'some-id' ? 2 : Math.floor(Math.random() * 4),
+          leaveBalance:
+            log.employee?.id === 'some-id'
+              ? 12
+              : Math.floor(Math.random() * 20) + 1,
+        },
       };
     });
 
@@ -287,23 +324,27 @@ export class AttendanceService {
 
     // Check for duplicate name
     const existingName = await this.prisma.geofence.findFirst({
-      where: { tenantId: user.tenantId, name: dto.name, active: true }
+      where: { tenantId: user.tenantId, name: dto.name, active: true },
     });
     if (existingName) {
-      throw new BadRequestException('A geofence with this name already exists.');
+      throw new BadRequestException(
+        'A geofence with this name already exists.',
+      );
     }
 
     // Check for duplicate coordinates
     const existingCoords = await this.prisma.geofence.findFirst({
-      where: { 
-        tenantId: user.tenantId, 
-        latitude: dto.latitude, 
+      where: {
+        tenantId: user.tenantId,
+        latitude: dto.latitude,
         longitude: dto.longitude,
-        active: true
-      }
+        active: true,
+      },
     });
     if (existingCoords) {
-      throw new BadRequestException('A geofence with these exact coordinates already exists.');
+      throw new BadRequestException(
+        'A geofence with these exact coordinates already exists.',
+      );
     }
 
     // Create record using standard Prisma, then update the PostGIS location using Raw SQL
@@ -313,8 +354,8 @@ export class AttendanceService {
         name: dto.name,
         latitude: dto.latitude,
         longitude: dto.longitude,
-        radiusMeters: dto.radiusMeters
-      }
+        radiusMeters: dto.radiusMeters,
+      },
     });
 
     await this.prisma.$executeRaw`
@@ -328,7 +369,7 @@ export class AttendanceService {
 
   async getGeofences(user: any) {
     return this.prisma.geofence.findMany({
-      where: { tenantId: user.tenantId, active: true }
+      where: { tenantId: user.tenantId, active: true },
     });
   }
 
@@ -338,7 +379,7 @@ export class AttendanceService {
     }
     return this.prisma.geofence.updateMany({
       where: { id, tenantId: user.tenantId },
-      data: { active: false } // Soft delete
+      data: { active: false }, // Soft delete
     });
   }
 }

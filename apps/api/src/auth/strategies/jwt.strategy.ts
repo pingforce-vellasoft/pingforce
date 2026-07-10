@@ -28,7 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     const cacheKey = `user_validate_${payload.sub}`;
-    
+
     if (payload.tenantId === 'SYSTEM') {
       let superAdmin = await this.cacheManager.get<any>(cacheKey);
       if (!superAdmin) {
@@ -51,7 +51,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         userId: payload.sub,
         tenantId: 'SYSTEM',
         email: superAdmin.email,
-        roleCode: 'SUPER_ADMIN'
+        roleCode: 'SUPER_ADMIN',
       };
     }
 
@@ -74,14 +74,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (user.tokenVersion !== payload.tokenVersion) {
       throw new UnauthorizedException('Token revoked');
     }
-    
-    const roleCode = user.role?.code || (user.clientCode === 'SYS_ADMIN' ? 'SUPER_ADMIN' : 'UNKNOWN');
 
-    return { 
-      userId: payload.sub, 
+    const roleCode =
+      user.role?.code ||
+      (user.clientCode === 'SYS_ADMIN' ? 'SUPER_ADMIN' : 'UNKNOWN');
+
+    return {
+      userId: payload.sub,
       tenantId: payload.tenantId,
       email: user.email,
-      roleCode: roleCode
+      roleCode: roleCode,
     };
   }
 }

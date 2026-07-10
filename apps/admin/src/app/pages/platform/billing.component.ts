@@ -11,15 +11,20 @@ import { MatCardModule } from '@angular/material/card';
       <h2>Billing & Subscriptions</h2>
       <mat-card>
         <mat-card-content>
-          <p>This is the super admin page for managing platform billing and tenant subscriptions.</p>
+          <p>
+            This is the super admin page for managing platform billing and
+            tenant subscriptions.
+          </p>
         </mat-card-content>
       </mat-card>
     </div>
   `,
-  styles: [`
-    .page-container {
-      padding: 24px;
-    }
-  `]
+  styles: [
+    `
+      .page-container {
+        padding: 24px;
+      }
+    `,
+  ],
 })
 export class BillingComponent {}
