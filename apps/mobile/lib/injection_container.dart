@@ -13,6 +13,8 @@ import 'features/auth/data/datasources/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/domain/usecases/login_command.dart';
+import 'features/auth/domain/usecases/signup_command.dart';
+import 'features/auth/domain/usecases/google_auth_command.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'core/network/token_interceptor.dart';
 
@@ -32,9 +34,13 @@ Future<void> init() async {
   // --- Features: Auth ---
   sl.registerFactory(() => AuthBloc(
     loginCommand: sl(),
+    signupCommand: sl(),
+    googleAuthCommand: sl(),
     authRepository: sl(),
   ));
   sl.registerLazySingleton(() => LoginCommand(sl()));
+  sl.registerLazySingleton(() => SignupCommand(sl()));
+  sl.registerLazySingleton(() => GoogleAuthCommand(sl()));
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(remoteDataSource: sl(), secureStorage: sl()),
   );

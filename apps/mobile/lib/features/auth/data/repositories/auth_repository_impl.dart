@@ -20,24 +20,57 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, User>> login(String email, String password) async {
     try {
       final responseData = await remoteDataSource.login(email, password);
-      
-      final token = responseData['access_token'];
-      final userData = responseData['user'];
-      
-      if (token == null) return const Left(ServerFailure('Invalid server response'));
-
-      // Securely store token (Hardness)
-      await secureStorage.write(key: 'jwt_token', value: token);
-      
-      final user = UserModel.fromJson(userData);
-      
-      // Cache user info securely
-      await secureStorage.write(key: 'user_cache', value: jsonEncode(userData));
-
-      return Right(user);
+      return _processAuthResponse(responseData);
     } catch (e) {
       return const Left(ServerFailure('Invalid email or password.'));
     }
+  }
+
+  @override
+  Future<Either<Failure, User>> signup(String firstName, String lastName, String email, String password) async {
+    try {
+      final responseData = await remoteDataSource.signup(firstName, lastName, email, password);
+      return _processAuthResponse(responseData);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, User>> googleAuth(String idToken) async {
+    try {
+      final responseData = await remoteDataSource.googleAuth(idToken);
+      return _processAuthResponse(responseData);
+    } catch (e) {
+      return const Left(ServerFailure('Google Authentication failed.'));
+    }
+  }
+
+  Future<Either<Failure, User>> _processAuthResponse(Map<String, dynamic> responseData) async {
+    final token = responseData['access_token'];
+    
+    // Create a mock user model since our backend only returns the token for now
+    // In Sprint 4/5 we should modify the backend to return user details with the token
+    final userData = responseData['user'] ?? {
+      'id': 'temp_id',
+      'email': 'user@example.com',
+      'firstName': 'PingForce',
+      'lastName': 'User',
+      'role': 'EMPLOYEE_FIELD_STAFF',
+      'tenantId': 'temp_tenant'
+    };
+    
+    if (token == null) return const Left(ServerFailure('Invalid server response'));
+
+    // Securely store token (Hardness)
+    await secureStorage.write(key: 'jwt_token', value: token);
+    
+    final user = UserModel.fromJson(userData);
+    
+    // Cache user info securely
+    await secureStorage.write(key: 'user_cache', value: jsonEncode(userData));
+
+    return Right(user);
   }
 
   @override

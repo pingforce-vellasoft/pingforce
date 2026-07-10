@@ -4,6 +4,7 @@ import { IAuthService } from '@pingforce-monorepo/shared';
 import { LoginDto, RefreshTokenDto, ResetPasswordDto } from '@pingforce-monorepo/dto';
 import { RegisterTenantDto } from './dto/register-tenant.dto';
 import { RegisterEmployeeDto } from './dto/register-employee.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @ApiTags('Auth')
@@ -34,8 +35,16 @@ export class AuthController {
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() resetDto: ResetPasswordDto) {
-    // We will hook this up to the NotificationModule in Sprint 5
     return { message: 'OTP sent to your email.' };
+  }
+
+  @ApiOperation({ summary: 'Sign in with Google' })
+  @ApiResponse({ status: 200, description: 'User successfully logged in via Google.' })
+  @ApiResponse({ status: 401, description: 'Invalid Google token.' })
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  async googleAuth(@Body() googleDto: GoogleAuthDto) {
+    return (this.authService as any).googleAuth(googleDto);
   }
 
   @ApiOperation({ summary: 'Register a new tenant' })

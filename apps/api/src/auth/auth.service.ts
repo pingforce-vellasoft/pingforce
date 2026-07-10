@@ -7,6 +7,10 @@ import { LoginDto } from '@pingforce-monorepo/dto';
 import { IAuthService, IPrismaService } from '@pingforce-monorepo/shared';
 import { RegisterTenantDto } from './dto/register-tenant.dto';
 import { RegisterEmployeeDto } from './dto/register-employee.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
+import { OAuth2Client } from 'google-auth-library';
+
+const googleClient = new OAuth2Client();
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -177,6 +181,74 @@ export class AuthService implements IAuthService {
     const prefix = tenantName.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase().padEnd(3, 'X');
     const randomNum = Math.floor(100 + Math.random() * 900);
     return `${prefix}${randomNum}`;
+  }
+
+  async googleAuth(dto: GoogleAuthDto) {
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: dto.idToken,
+        // audience: 'YOUR_CLIENT_ID.apps.googleusercontent.com', // Specify the CLIENT_ID of the app that accesses the backend if needed
+      });
+      payload = ticket.getPayload();
+    } catch (e) {
+      throw new UnauthorizedException('Invalid Google Identity Token');
+    }
+
+    if (!payload || !payload.email) {
+      throw new UnauthorizedException('Google token did not contain an email address');
+    }
+
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { code: dto.tenantCode },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found');
+    }
+
+    let user = await this.prisma.user.findFirst({
+      where: {
+        tenantId: tenant.id,
+        email: payload.email,
+      },
+      include: {
+        role: true
+      }
+    });
+
+    if (!user) {
+      // Auto-register the user if they don't exist
+      const defaultRole = await this.prisma.role.findFirst({
+        where: { code: 'EMPLOYEE_FIELD_STAFF', tenantId: tenant.id }
+      });
+      
+      if (!defaultRole) {
+        throw new BadRequestException('Default role not found for tenant');
+      }
+
+      user = await this.prisma.user.create({
+        data: {
+          tenantId: tenant.id,
+          roleId: defaultRole.id,
+          email: payload.email,
+          phone: '',
+          // Generate a random password hash since they use Google auth
+          passwordHash: await argon2.hash(uuidv4()),
+          status: 'ACTIVE',
+        },
+        include: {
+          role: true
+        }
+      }) as any;
+    }
+
+    if (user!.status !== 'ACTIVE' || tenant.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Account is inactive or suspended');
+    }
+
+    const roleCode = user!.role?.code || 'UNKNOWN';
+    return this.generateTokens(user!.id, tenant.id, user!.tokenVersion, roleCode);
   }
 
   async registerTenant(dto: RegisterTenantDto) {
