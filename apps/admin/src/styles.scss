@@ -409,7 +409,7 @@ h6 {
   .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
     background: rgba(99, 102, 241, 0.15) !important;
     color: var(--primary-accent) !important;
-    
+
     .mdc-list-item__primary-text {
       color: var(--primary-accent) !important;
     }
@@ -425,16 +425,20 @@ h6 {
 
   .mat-mdc-menu-item {
     color: var(--text-primary) !important;
-    
-    .mdc-list-item__primary-text, mat-icon {
+
+    .mdc-list-item__primary-text,
+    mat-icon {
       color: var(--text-primary) !important;
     }
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       background-color: rgba(99, 102, 241, 0.15) !important;
       color: var(--primary-accent) !important;
 
-      .mdc-list-item__primary-text, span, mat-icon {
+      .mdc-list-item__primary-text,
+      span,
+      mat-icon {
         color: var(--primary-accent) !important;
       }
     }
