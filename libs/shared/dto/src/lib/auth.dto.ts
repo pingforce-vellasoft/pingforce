@@ -1,15 +1,22 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, ValidateIf, IsEnum } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateIf,
+  IsEnum,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LoginDto {
   @ApiPropertyOptional({ description: 'User email address' })
-  @ValidateIf(o => !o.phone)
+  @ValidateIf((o) => !o.phone)
   @IsNotEmpty({ message: 'email or phone must be provided' })
   @IsEmail()
   email?: string;
 
   @ApiPropertyOptional({ description: 'User phone number' })
-  @ValidateIf(o => !o.email)
+  @ValidateIf((o) => !o.email)
   @IsNotEmpty({ message: 'email or phone must be provided' })
   @IsString()
   phone?: string;
@@ -19,12 +26,17 @@ export class LoginDto {
   @IsString()
   password!: string;
 
-  @ApiPropertyOptional({ description: 'Tenant code (required for non-super admins)' })
+  @ApiPropertyOptional({
+    description: 'Tenant code (required for non-super admins)',
+  })
   @IsOptional()
   @IsString()
   tenantCode?: string;
 
-  @ApiPropertyOptional({ description: 'The platform attempting login', enum: ['ADMIN_PORTAL', 'MOBILE_APP'] })
+  @ApiPropertyOptional({
+    description: 'The platform attempting login',
+    enum: ['ADMIN_PORTAL', 'MOBILE_APP'],
+  })
   @IsOptional()
   @IsEnum(['ADMIN_PORTAL', 'MOBILE_APP'])
   portalType?: 'ADMIN_PORTAL' | 'MOBILE_APP';

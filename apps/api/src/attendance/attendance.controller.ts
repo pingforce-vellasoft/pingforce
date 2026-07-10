@@ -32,7 +32,10 @@ export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post('device/register')
-  async registerDevice(@Req() req: AuthRequest, @Body() dto: RegisterDeviceDto) {
+  async registerDevice(
+    @Req() req: AuthRequest,
+    @Body() dto: RegisterDeviceDto,
+  ) {
     return this.attendanceService.registerDevice(req.user, dto);
   }
 
@@ -51,7 +54,10 @@ export class AttendanceController {
   }
 
   @Post('manual-checkout')
-  async manualCheckout(@Req() req: AuthRequest, @Body() dto: ManualCheckoutDto) {
+  async manualCheckout(
+    @Req() req: AuthRequest,
+    @Body() dto: ManualCheckoutDto,
+  ) {
     return this.attendanceService.manualCheckout(req.user, dto);
   }
 
@@ -80,7 +86,10 @@ export class AttendanceController {
   }
 
   @Post('geofence')
-  async createGeofence(@Req() req: AuthRequest, @Body() dto: CreateGeofenceDto) {
+  async createGeofence(
+    @Req() req: AuthRequest,
+    @Body() dto: CreateGeofenceDto,
+  ) {
     return this.attendanceService.createGeofence(req.user, dto);
   }
 

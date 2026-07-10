@@ -6,7 +6,7 @@ export interface AttendanceLog {
     user: {
       firstName: string;
       lastName: string;
-    }
+    };
   };
   sessions: unknown[];
 }
@@ -22,7 +22,7 @@ export interface LeaveRequest {
     user: {
       firstName: string;
       lastName: string;
-    }
+    };
   };
   leaveType: {
     name: string;

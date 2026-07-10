@@ -27,8 +27,6 @@ export class AuthService {
     localStorage.getItem(this.IMPERSONATED_TENANT_KEY),
   );
 
-
-
   setImpersonatedTenant(tenantId: string | null) {
     if (tenantId) {
       localStorage.setItem(this.IMPERSONATED_TENANT_KEY, tenantId);
