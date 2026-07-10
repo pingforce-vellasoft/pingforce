@@ -17,6 +17,8 @@ import 'features/auth/domain/usecases/signup_command.dart';
 import 'features/auth/domain/usecases/google_auth_command.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'core/network/token_interceptor.dart';
+import 'core/hardware/hardware_service.dart';
+import 'core/hardware/hardware_service_impl.dart';
 
 final sl = GetIt.instance;
 
@@ -24,6 +26,7 @@ Future<void> init() async {
   // --- Core ---
   sl.registerLazySingleton(() => const FlutterSecureStorage());
   sl.registerLazySingleton(() => LocalAuthentication());
+  sl.registerLazySingleton<HardwareService>(() => HardwareServiceImpl());
   
   sl.registerLazySingleton(() {
     final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000'));

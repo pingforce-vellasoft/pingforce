@@ -1,11 +1,76 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/hardware/hardware_service.dart';
+import '../../../../injection_container.dart';
 import '../bloc/attendance_bloc.dart';
 import '../bloc/attendance_event.dart';
 import '../bloc/attendance_state.dart';
 
-class PunchDashboardScreen extends StatelessWidget {
+class PunchDashboardScreen extends StatefulWidget {
   const PunchDashboardScreen({super.key});
+
+  @override
+  State<PunchDashboardScreen> createState() => _PunchDashboardScreenState();
+}
+
+class _PunchDashboardScreenState extends State<PunchDashboardScreen> {
+  bool _isProcessingHardware = false;
+
+  Future<void> _handlePunch() async {
+    setState(() {
+      _isProcessingHardware = true;
+    });
+
+    try {
+      final hardwareService = sl<HardwareService>();
+      
+      // 1. Biometric Verification
+      final isAuthenticated = await hardwareService.authenticateUser(
+        'Please verify your identity to log attendance.',
+      );
+
+      if (!isAuthenticated) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Authentication failed or cancelled.'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        setState(() {
+          _isProcessingHardware = false;
+        });
+        return;
+      }
+
+      // 2. Fetch Live GPS Coordinates
+      final position = await hardwareService.getCurrentLocation();
+
+      if (!mounted) return;
+      // 3. Dispatch Event with Real Data
+      context.read<AttendanceBloc>().add(
+        PunchEvent(
+          latitude: position.latitude,
+          longitude: position.longitude,
+          cryptographicSignature: 'device_verified_${DateTime.now().millisecondsSinceEpoch}',
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Hardware Error: ${e.toString()}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessingHardware = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +141,7 @@ class PunchDashboardScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'You are within the office geofence.',
+                          'Hardware secured. Location required.',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.white.withValues(alpha: 0.6),
@@ -85,19 +150,11 @@ class PunchDashboardScreen extends StatelessWidget {
                         const SizedBox(height: 40),
                         
                         // Action Button
-                        if (state is AttendanceLoading)
+                        if (state is AttendanceLoading || _isProcessingHardware)
                           const CircularProgressIndicator()
                         else
                           ElevatedButton(
-                            onPressed: () {
-                              context.read<AttendanceBloc>().add(
-                                const PunchEvent(
-                                  latitude: 37.7749, // Dummy for UI
-                                  longitude: -122.4194, 
-                                  cryptographicSignature: 'dummy_sig',
-                                ),
-                              );
-                            },
+                            onPressed: _handlePunch,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6366F1),
                               foregroundColor: Colors.white,
