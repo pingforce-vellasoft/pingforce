@@ -13,7 +13,7 @@ class UserModel extends User {
     return UserModel(
       id: json['id'],
       email: json['email'],
-      name: json['firstName'] + ' ' + json['lastName'],
+      name: '${json['firstName']} ${json['lastName']}',
       role: json['role'],
       tenantId: json['tenantId'],
     );

@@ -1,8 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:hive/hive.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:local_auth/local_auth.dart';
 
 import 'features/attendance/data/datasources/attendance_remote_data_source.dart';

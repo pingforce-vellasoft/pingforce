@@ -5,6 +5,8 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
 import 'features/auth/presentation/pages/login_screen.dart';
+import 'features/attendance/presentation/bloc/attendance_bloc.dart';
+import 'features/attendance/presentation/pages/punch_dashboard_screen.dart';
 import 'injection_container.dart' as di;
 
 void main() async {

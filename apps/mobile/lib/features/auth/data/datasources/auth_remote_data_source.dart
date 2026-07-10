@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import '../models/user_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<Map<String, dynamic>> login(String email, String password);
