@@ -188,7 +188,7 @@ export class AuthService implements IAuthService {
     try {
       const ticket = await googleClient.verifyIdToken({
         idToken: dto.idToken,
-        // audience: 'YOUR_CLIENT_ID.apps.googleusercontent.com', // Specify the CLIENT_ID of the app that accesses the backend if needed
+        audience: process.env.GOOGLE_CLIENT_ID,
       });
       payload = ticket.getPayload();
     } catch (e) {

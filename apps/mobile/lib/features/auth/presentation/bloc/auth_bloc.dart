@@ -12,7 +12,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SignupCommand signupCommand;
   final GoogleAuthCommand googleAuthCommand;
   final AuthRepository authRepository;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  
+  // Provide the Web Client ID here so the generated token matches the backend's audience
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+  );
 
   AuthBloc({
     required this.loginCommand,
