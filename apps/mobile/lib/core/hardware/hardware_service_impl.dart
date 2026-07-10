@@ -20,7 +20,7 @@ class HardwareServiceImpl implements HardwareService {
         localizedReason: reason,
         options: const AuthenticationOptions(
           stickyAuth: true,
-          biometricOnly: false, // Fallback to PIN/Pattern allowed
+          biometricOnly: false,
         ),
       );
     } catch (e) {
@@ -51,7 +51,7 @@ class HardwareServiceImpl implements HardwareService {
     }
 
     return await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high, // Ensure fine location accuracy for zero-trust tracking
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
     );
   }
 }

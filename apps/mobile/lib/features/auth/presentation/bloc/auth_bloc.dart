@@ -5,7 +5,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_command.dart';
 import '../../domain/usecases/signup_command.dart';
 import '../../domain/usecases/google_auth_command.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:google_sign_in/google_sign_in.dart' as gsi;
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginCommand loginCommand;
@@ -14,7 +14,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
   
   // Provide the Web Client ID here so the generated token matches the backend's audience
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
+  final gsi.GoogleSignIn _googleSignIn = gsi.GoogleSignIn(
     serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
   );
 
@@ -66,13 +66,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<GoogleSignInRequested>((event, emit) async {
       emit(AuthLoading());
       try {
-        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        final gsi.GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
         if (googleUser == null) {
           emit(const AuthError('Google Sign In was aborted.'));
           return;
         }
 
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final gsi.GoogleSignInAuthentication googleAuth = await googleUser.authentication;
         final String? idToken = googleAuth.idToken;
 
         if (idToken == null) {

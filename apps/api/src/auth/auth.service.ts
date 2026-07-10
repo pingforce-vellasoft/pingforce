@@ -188,7 +188,7 @@ export class AuthService implements IAuthService {
     try {
       const ticket = await googleClient.verifyIdToken({
         idToken: dto.idToken,
-        audience: process.env.GOOGLE_CLIENT_ID,
+        audience: process.env.GOOGLE_CLIENT_ID as string,
       });
       payload = ticket.getPayload();
     } catch (e) {
