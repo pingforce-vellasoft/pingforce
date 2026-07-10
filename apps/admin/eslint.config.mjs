@@ -24,11 +24,20 @@ export default [
           style: 'kebab-case',
         },
       ],
+      '@angular-eslint/prefer-inject': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-unused-vars': 'warn',
     },
   },
   {
     files: ['**/*.html'],
     // Override or add rules here
-    rules: {},
+    rules: {
+      '@angular-eslint/template/click-events-have-key-events': 'warn',
+      '@angular-eslint/template/interactive-supports-focus': 'warn',
+      '@angular-eslint/template/label-has-associated-control': 'warn',
+      '@angular-eslint/template/prefer-control-flow': 'warn',
+    },
   },
 ];

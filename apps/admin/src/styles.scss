@@ -407,7 +407,36 @@ h6 {
 
   .mat-mdc-option:hover:not(.mdc-list-item--disabled),
   .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
-    background: rgba(59, 130, 246, 0.15) !important;
-    color: #60a5fa !important;
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: var(--primary-accent) !important;
+    
+    .mdc-list-item__primary-text {
+      color: var(--primary-accent) !important;
+    }
+  }
+}
+
+/* Generic Menu Panel Overrides */
+.mat-mdc-menu-panel {
+  background: var(--bg-surface-hover) !important;
+  backdrop-filter: var(--backdrop-blur) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+
+  .mat-mdc-menu-item {
+    color: var(--text-primary) !important;
+    
+    .mdc-list-item__primary-text, mat-icon {
+      color: var(--text-primary) !important;
+    }
+
+    &:hover, &:focus {
+      background-color: rgba(99, 102, 241, 0.15) !important;
+      color: var(--primary-accent) !important;
+
+      .mdc-list-item__primary-text, span, mat-icon {
+        color: var(--primary-accent) !important;
+      }
+    }
   }
 }

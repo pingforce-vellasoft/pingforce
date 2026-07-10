@@ -2,7 +2,9 @@
   "name": "@pingforce-monorepo/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "postinstall": "npx prisma generate"
+  },
   "private": true,
   "devDependencies": {
     "@angular-devkit/core": "~21.2.0",
