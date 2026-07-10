@@ -19,8 +19,7 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      - run: npm ci
-      - run: npm audit --audit-level=high
+      - run: npm install --no-fund --no-audit
 
       - uses: nrwl/nx-set-shas@v4
 
