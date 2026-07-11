@@ -13,6 +13,7 @@ services:
     env_file:
       - .env.production
     volumes:
+      - ./.env.production:/app/.env
       - ./private.pem:/app/private.pem
       - ./public.pem:/app/public.pem
     environment:
