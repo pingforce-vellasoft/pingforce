@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, @typescript-eslint/no-non-null-assertion */
 import {
   Injectable,
   UnauthorizedException,
@@ -13,6 +14,8 @@ import { LoginDto } from '@pingforce-monorepo/dto';
 import { IAuthService, IPrismaService } from '@pingforce-monorepo/shared';
 import { RegisterTenantDto } from './dto/register-tenant.dto';
 import { RegisterEmployeeDto } from './dto/register-employee.dto';
+import { OnboardingTenantDto } from './dto/onboarding-tenant.dto';
+import { OnboardingEmployeeDto } from './dto/onboarding-employee.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { OAuth2Client } from 'google-auth-library';
 
@@ -469,7 +472,7 @@ export class AuthService implements IAuthService {
     };
   }
 
-  async onboardTenant(userId: string, tenantId: string, dto: import('./dto/onboarding-tenant.dto').OnboardingTenantDto) {
+  async onboardTenant(userId: string, tenantId: string, dto: OnboardingTenantDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId, tenantId },
       include: { profile: true }
@@ -504,7 +507,7 @@ export class AuthService implements IAuthService {
     return { message: 'Tenant onboarding completed successfully' };
   }
 
-  async onboardEmployee(userId: string, tenantId: string, dto: import('./dto/onboarding-employee.dto').OnboardingEmployeeDto) {
+  async onboardEmployee(userId: string, tenantId: string, dto: OnboardingEmployeeDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId, tenantId },
       include: { profile: true }

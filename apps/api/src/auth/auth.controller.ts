@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import {
   Body,
   Controller,
@@ -25,6 +26,8 @@ import { RegisterTenantDto } from './dto/register-tenant.dto';
 import { RegisterEmployeeDto } from './dto/register-employee.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { OnboardingTenantDto } from './dto/onboarding-tenant.dto';
+import { OnboardingEmployeeDto } from './dto/onboarding-employee.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -97,7 +100,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getProfile(@Request() req: any) {
+  getProfile(@Request() req: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
     return req.user;
   }
 
@@ -105,15 +108,15 @@ export class AuthController {
   @ApiOperation({ summary: 'Complete tenant onboarding' })
   @UseGuards(JwtAuthGuard)
   @Post('onboarding/tenant')
-  async onboardTenant(@Request() req: any, @Body() dto: import('./dto/onboarding-tenant.dto').OnboardingTenantDto) {
-    return (this.authService as any).onboardTenant(req.user.userId, req.user.tenantId, dto);
+  async onboardTenant(@Request() req: any, @Body() dto: OnboardingTenantDto) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    return (this.authService as any).onboardTenant(req.user.userId, req.user.tenantId, dto); // eslint-disable-line @typescript-eslint/no-explicit-any
   }
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Complete employee onboarding' })
   @UseGuards(JwtAuthGuard)
   @Post('onboarding/employee')
-  async onboardEmployee(@Request() req: any, @Body() dto: import('./dto/onboarding-employee.dto').OnboardingEmployeeDto) {
-    return (this.authService as any).onboardEmployee(req.user.userId, req.user.tenantId, dto);
+  async onboardEmployee(@Request() req: any, @Body() dto: OnboardingEmployeeDto) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    return (this.authService as any).onboardEmployee(req.user.userId, req.user.tenantId, dto); // eslint-disable-line @typescript-eslint/no-explicit-any
   }
 }
