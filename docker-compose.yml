@@ -4,6 +4,7 @@ services:
   # PostgreSQL 16 with PostGIS
   postgres:
     image: postgis/postgis:16-3.4
+    platform: linux/arm64
     container_name: pingforce_postgres
     environment:
       POSTGRES_USER: ${DB_USER:-pingforce_user}

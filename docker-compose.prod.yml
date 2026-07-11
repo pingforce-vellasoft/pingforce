@@ -28,6 +28,7 @@ services:
   # Production PostgreSQL Database
   postgres:
     image: postgis/postgis:16-3.4
+    platform: linux/arm64
     container_name: pingforce_postgres_prod
     restart: unless-stopped
     environment:
