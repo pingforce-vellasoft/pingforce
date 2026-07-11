@@ -52,8 +52,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignupRequested>((event, emit) async {
       emit(AuthLoading());
       final result = await signupCommand(SignupParams(
-        firstName: event.firstName,
-        lastName: event.lastName,
         email: event.email,
         password: event.password,
       ));

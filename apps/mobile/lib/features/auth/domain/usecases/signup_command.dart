@@ -5,14 +5,10 @@ import '../entities/user.dart';
 import '../repositories/auth_repository.dart';
 
 class SignupParams {
-  final String firstName;
-  final String lastName;
   final String email;
   final String password;
 
   SignupParams({
-    required this.firstName,
-    required this.lastName,
     required this.email,
     required this.password,
   });
@@ -26,8 +22,6 @@ class SignupCommand implements UseCase<User, SignupParams> {
   @override
   Future<Either<Failure, User>> call(SignupParams params) async {
     return await repository.signup(
-      params.firstName,
-      params.lastName,
       params.email,
       params.password,
     );

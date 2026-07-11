@@ -7,7 +7,10 @@ abstract class AuthRepository {
   Future<Either<Failure, User>> login(String email, String password);
 
   /// Registers a new user and securely caches the JWT
-  Future<Either<Failure, User>> signup(String firstName, String lastName, String email, String password);
+  Future<Either<Failure, User>> signup(
+    String email,
+    String password,
+  );
 
   /// Authenticates with Google and securely caches the JWT
   Future<Either<Failure, User>> googleAuth(String idToken);

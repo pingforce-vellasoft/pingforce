@@ -27,9 +27,12 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, User>> signup(String firstName, String lastName, String email, String password) async {
+  Future<Either<Failure, User>> signup(
+    String email,
+    String password,
+  ) async {
     try {
-      final responseData = await remoteDataSource.signup(firstName, lastName, email, password);
+      final responseData = await remoteDataSource.signup(email, password);
       return _processAuthResponse(responseData);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
