@@ -10,6 +10,8 @@ services:
     restart: unless-stopped
     ports:
       - '3000:3000'
+    env_file:
+      - .env.production
     volumes:
       - ./private.pem:/app/private.pem
       - ./public.pem:/app/public.pem
