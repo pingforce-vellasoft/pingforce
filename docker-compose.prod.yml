@@ -27,14 +27,14 @@ services:
 
   # Production PostgreSQL Database
   postgres:
-    image: postgis/postgis:16-3.4
+    image: kartoza/postgis:16-3.4
     platform: linux/arm64
     container_name: pingforce_postgres_prod
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER:-pingforce}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME:-pingforce_db}
+      POSTGRES_PASS: ${DB_PASSWORD}
+      POSTGRES_DBNAME: ${DB_NAME:-pingforce_db}
     # Optional: Expose if you need external access (e.g. for a GUI tool), otherwise keep internal
     ports:
       - '5432:5432'

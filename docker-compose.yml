@@ -3,15 +3,15 @@ version: '3.8'
 services:
   # PostgreSQL 16 with PostGIS
   postgres:
-    image: postgis/postgis:16-3.4
+    image: kartoza/postgis:16-3.4
     platform: linux/arm64
     container_name: pingforce_postgres
     environment:
       POSTGRES_USER: ${DB_USER:-pingforce_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-pingforce_password}
-      POSTGRES_DB: ${DB_NAME:-pingforce_db}
+      POSTGRES_PASS: ${DB_PASSWORD:-pingforce_password}
+      POSTGRES_DBNAME: ${DB_NAME:-pingforce_db}
     ports:
-      - '5433:5432'
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
