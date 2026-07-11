@@ -10,6 +10,9 @@ services:
     restart: unless-stopped
     ports:
       - '3000:3000'
+    volumes:
+      - ./private.pem:/app/private.pem
+      - ./public.pem:/app/public.pem
     environment:
       - NODE_ENV=production
       # Pass database URL from the VM's environment (e.g. from .env.production)
