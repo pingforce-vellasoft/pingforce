@@ -5,14 +5,10 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Install dependencies (only those needed for building)
-# We copy package files and use npm ci for deterministic installs
+# We copy the prisma folder early because package.json has a postinstall script that runs prisma generate
 COPY package*.json ./
-RUN npm install
-
-# Copy the prisma schema and generate the client
-# We do this before copying all source code to leverage Docker layer caching
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN npm install
 
 # Copy the rest of the workspace source code
 COPY . .
@@ -30,8 +26,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Copy package files and install only production dependencies
+# We use --ignore-scripts to prevent postinstall from trying to run prisma generate again
 COPY package*.json ./
-RUN npm install --only=production && npm cache clean --force
+RUN npm install --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy the generated Prisma client from the builder stage
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
