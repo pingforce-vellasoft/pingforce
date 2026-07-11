@@ -100,4 +100,20 @@ export class AuthController {
   getProfile(@Request() req: any) {
     return req.user;
   }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Complete tenant onboarding' })
+  @UseGuards(JwtAuthGuard)
+  @Post('onboarding/tenant')
+  async onboardTenant(@Request() req: any, @Body() dto: import('./dto/onboarding-tenant.dto').OnboardingTenantDto) {
+    return (this.authService as any).onboardTenant(req.user.userId, req.user.tenantId, dto);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Complete employee onboarding' })
+  @UseGuards(JwtAuthGuard)
+  @Post('onboarding/employee')
+  async onboardEmployee(@Request() req: any, @Body() dto: import('./dto/onboarding-employee.dto').OnboardingEmployeeDto) {
+    return (this.authService as any).onboardEmployee(req.user.userId, req.user.tenantId, dto);
+  }
 }

@@ -6,6 +6,7 @@ class User extends Equatable {
   final String name;
   final String role;
   final String tenantId;
+  final bool isOnboarded;
 
   const User({
     required this.id,
@@ -13,8 +14,9 @@ class User extends Equatable {
     required this.name,
     required this.role,
     required this.tenantId,
+    this.isOnboarded = false,
   });
 
   @override
-  List<Object?> get props => [id, email, name, role, tenantId];
+  List<Object?> get props => [id, email, name, role, tenantId, isOnboarded];
 }

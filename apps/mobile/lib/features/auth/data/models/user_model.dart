@@ -7,15 +7,17 @@ class UserModel extends User {
     required super.name,
     required super.role,
     required super.tenantId,
+    super.isOnboarded = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'],
+      id: json['id'] ?? json['userId'],
       email: json['email'],
-      name: '${json['firstName']} ${json['lastName']}',
-      role: json['role'],
+      name: json['firstName'] != null ? '${json['firstName']} ${json['lastName']}' : 'New User',
+      role: json['role'] ?? json['roleCode'],
       tenantId: json['tenantId'],
+      isOnboarded: json['isOnboarded'] ?? false,
     );
   }
 }

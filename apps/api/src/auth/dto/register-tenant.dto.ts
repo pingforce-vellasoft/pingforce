@@ -8,8 +8,8 @@ import {
 
 export class RegisterTenantDto {
   @IsString()
-  @IsNotEmpty()
-  tenantName!: string;
+  @IsOptional()
+  tenantName?: string;
 
   @IsString()
   @IsOptional()
@@ -24,12 +24,12 @@ export class RegisterTenantDto {
   adminPassword!: string;
 
   @IsString()
-  @IsNotEmpty()
-  adminFirstName!: string;
+  @IsOptional()
+  adminFirstName?: string;
 
   @IsString()
-  @IsNotEmpty()
-  adminLastName!: string;
+  @IsOptional()
+  adminLastName?: string;
 
   @IsString()
   @IsOptional()

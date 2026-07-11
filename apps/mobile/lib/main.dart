@@ -7,6 +7,7 @@ import 'features/auth/presentation/bloc/auth_state.dart';
 import 'features/auth/presentation/pages/login_screen.dart';
 import 'features/attendance/presentation/bloc/attendance_bloc.dart';
 import 'features/attendance/presentation/pages/punch_dashboard_screen.dart';
+import 'features/onboarding/presentation/pages/onboarding_screen.dart';
 import 'injection_container.dart' as di;
 
 void main() async {
@@ -52,6 +53,9 @@ class PingForceApp extends StatelessWidget {
         home: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
             if (state is Authenticated) {
+              if (!state.user.isOnboarded) {
+                return const OnboardingScreen();
+              }
               return const PunchDashboardScreen();
             } else if (state is Unauthenticated || state is AuthError) {
               return const LoginScreen();

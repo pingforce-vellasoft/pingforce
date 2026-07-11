@@ -60,7 +60,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        include: { tenant: true, role: true },
+        include: { tenant: true, role: true, profile: true },
       });
       if (user) {
         await this.cacheManager.set(cacheKey, user, 5000); // 5 sec TTL for faster revocation
@@ -84,6 +84,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       tenantId: payload.tenantId,
       email: user.email,
       roleCode: roleCode,
+      isOnboarded: !!user.profile,
     };
   }
 }

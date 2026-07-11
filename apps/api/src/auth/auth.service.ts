@@ -322,14 +322,18 @@ export class AuthService implements IAuthService {
   }
 
   async registerTenant(dto: RegisterTenantDto) {
-    const existingTenant = await this.prisma.tenant.findFirst({
-      where: { name: dto.tenantName },
-    });
-    if (existingTenant) {
-      throw new BadRequestException('A tenant with this name already exists.');
+    const fallbackTenantName = dto.tenantName || 'My Workspace';
+    
+    if (dto.tenantName) {
+      const existingTenant = await this.prisma.tenant.findFirst({
+        where: { name: dto.tenantName },
+      });
+      if (existingTenant) {
+        throw new BadRequestException('A tenant with this name already exists.');
+      }
     }
 
-    let tenantCode = this.generateTenantCode(dto.tenantName);
+    let tenantCode = this.generateTenantCode(fallbackTenantName);
     let isCodeUnique = false;
     while (!isCodeUnique) {
       const existingCode = await this.prisma.tenant.findUnique({
@@ -338,7 +342,7 @@ export class AuthService implements IAuthService {
       if (!existingCode) {
         isCodeUnique = true;
       } else {
-        tenantCode = this.generateTenantCode(dto.tenantName);
+        tenantCode = this.generateTenantCode(fallbackTenantName);
       }
     }
 
@@ -348,7 +352,7 @@ export class AuthService implements IAuthService {
     const result = await this.prisma.$transaction(async (prisma) => {
       const tenant = await prisma.tenant.create({
         data: {
-          name: dto.tenantName,
+          name: fallbackTenantName,
           code: tenantCode,
           domain: dto.domain,
           status: 'ACTIVE',
@@ -370,6 +374,13 @@ export class AuthService implements IAuthService {
           },
         });
       }
+      
+      const profileData = (dto.adminFirstName && dto.adminLastName) ? {
+        create: {
+          firstName: dto.adminFirstName,
+          lastName: dto.adminLastName,
+        }
+      } : undefined;
 
       const adminUser = await prisma.user.create({
         data: {
@@ -377,12 +388,7 @@ export class AuthService implements IAuthService {
           roleId: adminRole.id,
           email: dto.adminEmail,
           passwordHash: passwordHash,
-          profile: {
-            create: {
-              firstName: dto.adminFirstName,
-              lastName: dto.adminLastName,
-            },
-          },
+          profile: profileData,
           phone: dto.adminPhone,
           status: 'ACTIVE',
           clientCode: 'TENANT_ADMIN',
@@ -461,5 +467,69 @@ export class AuthService implements IAuthService {
       message: 'Employee registered successfully. You can now log in.',
       userId: employee.id,
     };
+  }
+
+  async onboardTenant(userId: string, tenantId: string, dto: import('./dto/onboarding-tenant.dto').OnboardingTenantDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId, tenantId },
+      include: { profile: true }
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+    if (user.profile) throw new BadRequestException('User is already onboarded');
+
+    await this.prisma.$transaction(async (prisma) => {
+      await prisma.tenant.update({
+        where: { id: tenantId },
+        data: {
+          name: dto.tenantName,
+          industry: dto.industry,
+        }
+      });
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          phone: dto.phone,
+          profile: {
+            create: {
+              firstName: dto.firstName,
+              lastName: dto.lastName,
+            }
+          }
+        }
+      });
+    });
+
+    return { message: 'Tenant onboarding completed successfully' };
+  }
+
+  async onboardEmployee(userId: string, tenantId: string, dto: import('./dto/onboarding-employee.dto').OnboardingEmployeeDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId, tenantId },
+      include: { profile: true }
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+    if (user.profile) throw new BadRequestException('User is already onboarded');
+
+    // Here we can validate if the dto.tenantCode matches the invite code or the tenant they belong to.
+    // If they were created in a temporary tenant (e.g. from generic signup), we would move them to the target tenant here.
+    // For now, assuming they signed up via invite link and just need to fill profile.
+    
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        phone: dto.phone,
+        profile: {
+          create: {
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+          }
+        }
+      }
+    });
+
+    return { message: 'Employee onboarding completed successfully' };
   }
 }

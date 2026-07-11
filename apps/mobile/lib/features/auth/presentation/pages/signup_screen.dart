@@ -13,15 +13,11 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -30,8 +26,6 @@ class _SignupScreenState extends State<SignupScreen> {
   void _onSignupButtonPressed() {
     context.read<AuthBloc>().add(
       SignupRequested(
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
         email: _emailController.text,
         password: _passwordController.text,
       ),
@@ -99,19 +93,12 @@ class _SignupScreenState extends State<SignupScreen> {
                                     color: Colors.white,
                                   ),
                                 ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Create a new business workspace',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
                                 const SizedBox(height: 32),
-                                _buildTextField(
-                                  controller: _firstNameController,
-                                  label: 'First Name',
-                                  icon: Icons.person,
-                                ),
-                                const SizedBox(height: 16),
-                                _buildTextField(
-                                  controller: _lastNameController,
-                                  label: 'Last Name',
-                                  icon: Icons.person_outline,
-                                ),
-                                const SizedBox(height: 16),
                                 _buildTextField(
                                   controller: _emailController,
                                   label: 'Email',
@@ -163,6 +150,26 @@ class _SignupScreenState extends State<SignupScreen> {
                                   child: const Text(
                                     'Already have an account? Login',
                                     style: TextStyle(color: Colors.white70),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                const Divider(color: Colors.white24),
+                                const SizedBox(height: 16),
+                                OutlinedButton.icon(
+                                  onPressed: () {
+                                    // TODO: Navigate to Employee Signup/Join Workspace Screen
+                                  },
+                                  icon: const Icon(Icons.business, color: Colors.white),
+                                  label: const Text(
+                                    'Have a Company Code? Join Workspace',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Colors.white54),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                                   ),
                                 ),
                               ],

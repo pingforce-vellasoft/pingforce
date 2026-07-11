@@ -3,7 +3,10 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "postinstall": "npx prisma generate"
+    "postinstall": "npx prisma generate",
+    "start:infra": "docker-compose up -d",
+    "start:apps": "nx run-many --target=serve --projects=api,admin --parallel=2",
+    "start:all": "npm run start:infra && npm run start:apps"
   },
   "private": true,
   "devDependencies": {
