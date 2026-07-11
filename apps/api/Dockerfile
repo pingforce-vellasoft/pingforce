@@ -1,5 +1,5 @@
 # Stage 1: Build the Nx workspace
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -7,7 +7,7 @@ WORKDIR /app
 # Install dependencies (only those needed for building)
 # We copy package files and use npm ci for deterministic installs
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy the prisma schema and generate the client
 # We do this before copying all source code to leverage Docker layer caching
@@ -22,7 +22,7 @@ COPY . .
 RUN npx nx build api --configuration=production
 
 # Stage 2: Create the production image
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
@@ -31,7 +31,7 @@ ENV NODE_ENV=production
 
 # Copy package files and install only production dependencies
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --only=production && npm cache clean --force
 
 # Copy the generated Prisma client from the builder stage
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
