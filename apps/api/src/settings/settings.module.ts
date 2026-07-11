@@ -6,6 +6,6 @@ import { SettingsController } from './settings.controller';
   imports: [],
   controllers: [SettingsController],
   providers: [SettingsService],
-  exports: [SettingsService]
+  exports: [SettingsService],
 })
 export class SettingsModule {}

@@ -7,6 +7,6 @@ import { RbacModule } from '../rbac/rbac.module';
   imports: [RbacModule],
   controllers: [TenantsController],
   providers: [TenantsService],
-  exports: [TenantsService]
+  exports: [TenantsService],
 })
 export class TenantsModule {}

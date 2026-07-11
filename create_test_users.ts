@@ -31,20 +31,20 @@ async function main() {
       email: 'manager@pingforce.in',
       roleCode: 'ADMIN_MANAGER',
       firstName: 'Test',
-      lastName: 'Manager'
+      lastName: 'Manager',
     },
     {
       email: 'employee@pingforce.in',
       roleCode: 'EMPLOYEE_FIELD_STAFF',
       firstName: 'Test',
-      lastName: 'Employee'
+      lastName: 'Employee',
     },
     {
       email: 'customer@pingforce.in',
       roleCode: 'CUSTOMER',
       firstName: 'Test',
-      lastName: 'Customer'
-    }
+      lastName: 'Customer',
+    },
   ];
 
   for (const tu of testUsers) {
@@ -57,7 +57,7 @@ async function main() {
       where: { tenantId_email: { tenantId: tenant.id, email: tu.email } },
       update: {
         passwordHash: passwordHash,
-        roleId: roleMap[tu.roleCode]
+        roleId: roleMap[tu.roleCode],
       },
       create: {
         tenantId: tenant.id,
@@ -69,17 +69,17 @@ async function main() {
         profile: {
           create: {
             firstName: tu.firstName,
-            lastName: tu.lastName
-          }
-        }
-      }
+            lastName: tu.lastName,
+          },
+        },
+      },
     });
     console.log(`Upserted test user: ${tu.email}`);
   }
 }
 
 main()
-  .catch(e => console.error(e))
+  .catch((e) => console.error(e))
   .finally(async () => {
     await prisma.$disconnect();
   });

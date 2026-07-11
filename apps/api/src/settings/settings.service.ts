@@ -3,21 +3,19 @@ import { IPrismaService } from '@pingforce-monorepo/shared';
 
 @Injectable()
 export class SettingsService {
-  constructor(
-    @Inject('IPrismaService') private prisma: IPrismaService
-  ) {}
+  constructor(@Inject('IPrismaService') private prisma: IPrismaService) {}
 
   async getSettings(tenantId: string) {
     let settings = await this.prisma.tenantSetting.findUnique({
-      where: { tenantId }
+      where: { tenantId },
     });
 
     if (!settings) {
       // Create default settings if they don't exist
       settings = await this.prisma.tenantSetting.create({
         data: {
-          tenantId
-        }
+          tenantId,
+        },
       });
     }
 
@@ -30,8 +28,8 @@ export class SettingsService {
       update: data,
       create: {
         tenantId,
-        ...data
-      }
+        ...data,
+      },
     });
   }
 }

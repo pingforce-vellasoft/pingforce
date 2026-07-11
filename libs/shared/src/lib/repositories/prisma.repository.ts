@@ -11,8 +11,9 @@ export abstract class PrismaRepository<
     findFirst: (args: any) => Promise<T | null>;
     update: (args: any) => Promise<T>;
     delete: (args: any) => Promise<T>;
-  }
-> implements BaseRepository<T, CreateDto, UpdateDto> {
+  },
+> implements BaseRepository<T, CreateDto, UpdateDto>
+{
   constructor(protected readonly delegate: Delegate) {}
 
   async create(tenantId: string, data: CreateDto): Promise<T> {

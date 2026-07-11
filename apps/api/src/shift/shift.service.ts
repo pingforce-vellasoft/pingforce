@@ -32,7 +32,7 @@ export class ShiftService {
   async findAll(tenantId: string) {
     const cacheKey = `shifts_${tenantId}`;
     const cached = await this.cacheManager.get(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -45,11 +45,21 @@ export class ShiftService {
     return shifts;
   }
 
-  async assignShift(tenantId: string, employeeId: string, shiftId: string, effectiveFrom: Date, effectiveTo?: Date) {
-    const shift = await this.prisma.shift.findUnique({ where: { id: shiftId, tenantId } });
+  async assignShift(
+    tenantId: string,
+    employeeId: string,
+    shiftId: string,
+    effectiveFrom: Date,
+    effectiveTo?: Date,
+  ) {
+    const shift = await this.prisma.shift.findUnique({
+      where: { id: shiftId, tenantId },
+    });
     if (!shift) throw new NotFoundException('Shift not found');
 
-    const employee = await this.prisma.employee.findUnique({ where: { id: employeeId, tenantId } });
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId, tenantId },
+    });
     if (!employee) throw new NotFoundException('Employee not found');
 
     return this.prisma.shiftAssignment.create({
@@ -58,12 +68,16 @@ export class ShiftService {
         employeeId,
         shiftId,
         effectiveFrom: new Date(effectiveFrom),
-        effectiveTo: effectiveTo ? new Date(effectiveTo) : null
-      }
+        effectiveTo: effectiveTo ? new Date(effectiveTo) : null,
+      },
     });
   }
 
-  async getAssignedShift(tenantId: string, employeeId: string, targetDate: Date) {
+  async getAssignedShift(
+    tenantId: string,
+    employeeId: string,
+    targetDate: Date,
+  ) {
     const date = new Date(targetDate);
     date.setUTCHours(0, 0, 0, 0);
 
@@ -72,12 +86,9 @@ export class ShiftService {
         tenantId,
         employeeId,
         effectiveFrom: { lte: date },
-        OR: [
-          { effectiveTo: null },
-          { effectiveTo: { gte: date } }
-        ]
+        OR: [{ effectiveTo: null }, { effectiveTo: { gte: date } }],
       },
-      include: { shift: true }
+      include: { shift: true },
     });
   }
 }

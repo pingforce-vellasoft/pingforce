@@ -6,6 +6,11 @@ async function main() {
   const tenant = await prisma.tenant.findUnique({ where: { code: 'DEFAULT' } });
   console.log(tenant);
   const allTenants = await prisma.tenant.findMany();
-  console.log('All tenants codes:', allTenants.map(t => t.code));
+  console.log(
+    'All tenants codes:',
+    allTenants.map((t) => t.code),
+  );
 }
-main().catch(console.error).finally(() => prisma.$disconnect());
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());

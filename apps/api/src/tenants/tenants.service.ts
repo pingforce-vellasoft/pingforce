@@ -1,10 +1,17 @@
-import { Injectable, Inject, OnModuleInit, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  OnModuleInit,
+  BadRequestException,
+} from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import * as argon2 from 'argon2';
 
 @Injectable()
 export class TenantsService implements OnModuleInit {
-  constructor(@Inject('IPrismaService') private readonly prisma: IPrismaService) {}
+  constructor(
+    @Inject('IPrismaService') private readonly prisma: IPrismaService,
+  ) {}
 
   async onModuleInit() {
     await this.prisma.tenant.updateMany({
@@ -19,29 +26,41 @@ export class TenantsService implements OnModuleInit {
         billingEmail: 'billing@pingforce.com',
         subscriptionPlan: 'ENTERPRISE',
         subscriptionStatus: 'ACTIVE',
-        themeColor: '#6366f1'
-      }
+        themeColor: '#6366f1',
+      },
     });
   }
 
   async create(data: any) {
     if (!data.adminEmail || !data.adminPassword) {
-      throw new BadRequestException('Admin email and password are required to provision a tenant.');
+      throw new BadRequestException(
+        'Admin email and password are required to provision a tenant.',
+      );
     }
 
     if (!data.code) {
-      const prefix = data.name.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase().padEnd(3, 'X');
+      const prefix = data.name
+        .replace(/[^a-zA-Z]/g, '')
+        .substring(0, 3)
+        .toUpperCase()
+        .padEnd(3, 'X');
       const randomNum = Math.floor(100 + Math.random() * 900);
       data.code = `${prefix}${randomNum}`;
     }
 
     let isCodeUnique = false;
     while (!isCodeUnique) {
-      const existingCode = await this.prisma.tenant.findUnique({ where: { code: data.code } });
+      const existingCode = await this.prisma.tenant.findUnique({
+        where: { code: data.code },
+      });
       if (!existingCode) {
         isCodeUnique = true;
       } else {
-        const prefix = data.name.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase().padEnd(3, 'X');
+        const prefix = data.name
+          .replace(/[^a-zA-Z]/g, '')
+          .substring(0, 3)
+          .toUpperCase()
+          .padEnd(3, 'X');
         const randomNum = Math.floor(100 + Math.random() * 900);
         data.code = `${prefix}${randomNum}`;
       }
@@ -64,11 +83,11 @@ export class TenantsService implements OnModuleInit {
           subscriptionStatus: 'TRIAL',
           themeColor: data.themeColor || '#6366f1',
           isAttendanceEnabled: data.isAttendanceEnabled || false,
-        }
+        },
       });
 
       let adminRole = await prisma.role.findFirst({
-        where: { tenantId: tenant.id, code: 'ADMIN_MANAGER' }
+        where: { tenantId: tenant.id, code: 'ADMIN_MANAGER' },
       });
 
       if (!adminRole) {
@@ -78,13 +97,13 @@ export class TenantsService implements OnModuleInit {
             name: 'Admin / Manager',
             code: 'ADMIN_MANAGER',
             description: 'Management access',
-            isSystem: true
-          }
+            isSystem: true,
+          },
         });
       }
 
       let employeeRole = await prisma.role.findFirst({
-        where: { tenantId: tenant.id, code: 'EMPLOYEE' }
+        where: { tenantId: tenant.id, code: 'EMPLOYEE' },
       });
 
       if (!employeeRole) {
@@ -94,29 +113,45 @@ export class TenantsService implements OnModuleInit {
             name: 'Employee',
             code: 'EMPLOYEE',
             description: 'Standard employee access',
-            isSystem: true
-          }
+            isSystem: true,
+          },
         });
       }
 
       const allPermissions = await prisma.permission.findMany();
-      
-      const adminModules = ['USERS', 'ROLES', 'GEOFENCES', 'ATTENDANCE', 'TRACKING'];
-      const adminPerms = allPermissions.filter(p => adminModules.includes(p.module));
-      const adminRolePerms = adminPerms.map(p => ({ roleId: adminRole.id, permissionId: p.id }));
-      
+
+      const adminModules = [
+        'USERS',
+        'ROLES',
+        'GEOFENCES',
+        'ATTENDANCE',
+        'TRACKING',
+      ];
+      const adminPerms = allPermissions.filter((p) =>
+        adminModules.includes(p.module),
+      );
+      const adminRolePerms = adminPerms.map((p) => ({
+        roleId: adminRole.id,
+        permissionId: p.id,
+      }));
+
       await prisma.rolePermission.createMany({
         data: adminRolePerms,
-        skipDuplicates: true
+        skipDuplicates: true,
       });
 
-      const employeePerms = allPermissions.filter(p => 
-        p.module === 'ATTENDANCE' && ['READ_OWN', 'CREATE'].includes(p.action)
+      const employeePerms = allPermissions.filter(
+        (p) =>
+          p.module === 'ATTENDANCE' &&
+          ['READ_OWN', 'CREATE'].includes(p.action),
       );
-      const employeeRolePerms = employeePerms.map(p => ({ roleId: employeeRole.id, permissionId: p.id }));
+      const employeeRolePerms = employeePerms.map((p) => ({
+        roleId: employeeRole.id,
+        permissionId: p.id,
+      }));
       await prisma.rolePermission.createMany({
         data: employeeRolePerms,
-        skipDuplicates: true
+        skipDuplicates: true,
       });
 
       await prisma.user.create({
@@ -128,12 +163,12 @@ export class TenantsService implements OnModuleInit {
           profile: {
             create: {
               firstName: 'Tenant',
-              lastName: 'Admin'
-            }
+              lastName: 'Admin',
+            },
           },
           status: 'ACTIVE',
-          clientCode: 'TENANT_ADMIN'
-        }
+          clientCode: 'TENANT_ADMIN',
+        },
       });
 
       return tenant;
@@ -143,37 +178,41 @@ export class TenantsService implements OnModuleInit {
   async findAll() {
     return this.prisma.tenant.findMany({
       where: { deletedAt: null },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string) {
     return this.prisma.tenant.findUnique({
-      where: { id }
+      where: { id },
     });
   }
 
-  async updateProvisioning(id: string, isAttendanceEnabled: boolean, maxFieldStaff: number | null) {
+  async updateProvisioning(
+    id: string,
+    isAttendanceEnabled: boolean,
+    maxFieldStaff: number | null,
+  ) {
     return this.prisma.tenant.update({
       where: { id },
       data: {
         isAttendanceEnabled,
-        maxFieldStaff
-      }
+        maxFieldStaff,
+      },
     });
   }
 
   async update(id: string, data: any) {
     return this.prisma.tenant.update({
       where: { id },
-      data
+      data,
     });
   }
 
   async delete(id: string) {
     return this.prisma.tenant.update({
       where: { id },
-      data: { deletedAt: new Date(), status: 'SUSPENDED' }
+      data: { deletedAt: new Date(), status: 'SUSPENDED' },
     });
   }
 }

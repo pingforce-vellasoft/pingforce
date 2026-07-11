@@ -7,16 +7,12 @@
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/libs/shared/dto",
         "main": "libs/shared/dto/src/index.ts",
         "tsConfig": "libs/shared/dto/tsconfig.lib.json",
-        "assets": [
-          "libs/shared/dto/*.md"
-        ]
+        "assets": ["libs/shared/dto/*.md"]
       }
     }
   }

@@ -31,8 +31,8 @@ async function main() {
         name: 'Admin / Manager',
         code: 'ADMIN_MANAGER',
         description: 'Management access',
-        isSystem: true
-      }
+        isSystem: true,
+      },
     });
 
     // Create Employee Role
@@ -44,40 +44,51 @@ async function main() {
         name: 'Employee',
         code: 'EMPLOYEE',
         description: 'Standard employee access',
-        isSystem: true
-      }
+        isSystem: true,
+      },
     });
 
     // Wipe existing permissions to ensure a clean slate (revoke unauthorized access)
     await prisma.rolePermission.deleteMany({
       where: {
-        roleId: { in: [adminRole.id, employeeRole.id] }
-      }
+        roleId: { in: [adminRole.id, employeeRole.id] },
+      },
     });
 
     // Assign scoped permissions to Admin
-    const adminModules = ['USERS', 'ROLES', 'GEOFENCES', 'ATTENDANCE', 'TRACKING'];
-    const adminPerms = allPermissions.filter((p: any) => adminModules.includes(p.module));
-    
+    const adminModules = [
+      'USERS',
+      'ROLES',
+      'GEOFENCES',
+      'ATTENDANCE',
+      'TRACKING',
+    ];
+    const adminPerms = allPermissions.filter((p: any) =>
+      adminModules.includes(p.module),
+    );
+
     for (const perm of adminPerms) {
       await prisma.rolePermission.create({
-        data: { roleId: adminRole.id, permissionId: perm.id }
+        data: { roleId: adminRole.id, permissionId: perm.id },
       });
     }
 
     // Assign specific permissions to Employee
-    const employeePerms = allPermissions.filter((p: any) => 
-      p.module === 'ATTENDANCE' && ['READ_OWN', 'CREATE'].includes(p.action)
+    const employeePerms = allPermissions.filter(
+      (p: any) =>
+        p.module === 'ATTENDANCE' && ['READ_OWN', 'CREATE'].includes(p.action),
     );
 
     for (const perm of employeePerms) {
       await prisma.rolePermission.create({
-        data: { roleId: employeeRole.id, permissionId: perm.id }
+        data: { roleId: employeeRole.id, permissionId: perm.id },
       });
     }
   }
-  
+
   console.log('Done!');
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());

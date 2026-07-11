@@ -10,10 +10,7 @@ export class ShiftController {
   constructor(private readonly shiftService: ShiftService) {}
 
   @Post()
-  async create(
-    @CurrentTenant() tenantId: string,
-    @Body() dto: CreateShiftDto,
-  ) {
+  async create(@CurrentTenant() tenantId: string, @Body() dto: CreateShiftDto) {
     return this.shiftService.create(tenantId, dto);
   }
 
@@ -25,17 +22,33 @@ export class ShiftController {
   @Post('assignments')
   async assignShift(
     @CurrentTenant() tenantId: string,
-    @Body() payload: { employeeId: string, shiftId: string, effectiveFrom: Date, effectiveTo?: Date }
+    @Body()
+    payload: {
+      employeeId: string;
+      shiftId: string;
+      effectiveFrom: Date;
+      effectiveTo?: Date;
+    },
   ) {
-    return this.shiftService.assignShift(tenantId, payload.employeeId, payload.shiftId, payload.effectiveFrom, payload.effectiveTo);
+    return this.shiftService.assignShift(
+      tenantId,
+      payload.employeeId,
+      payload.shiftId,
+      payload.effectiveFrom,
+      payload.effectiveTo,
+    );
   }
 
   @Get('assignments/:employeeId/:date')
   async getAssignedShift(
     @CurrentTenant() tenantId: string,
     @Param('employeeId') employeeId: string,
-    @Param('date') date: string
+    @Param('date') date: string,
   ) {
-    return this.shiftService.getAssignedShift(tenantId, employeeId, new Date(date));
+    return this.shiftService.getAssignedShift(
+      tenantId,
+      employeeId,
+      new Date(date),
+    );
   }
 }

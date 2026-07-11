@@ -31,8 +31,8 @@ export class EmployeeRepository extends PrismaRepository<
       include: {
         department: true,
         designation: true,
-        team: true
-      }
+        team: true,
+      },
     });
   }
 
@@ -45,8 +45,8 @@ export class EmployeeRepository extends PrismaRepository<
         designation: true,
         branch: true,
         team: true,
-        reportingManager: true
-      }
+        reportingManager: true,
+      },
     });
   }
 }

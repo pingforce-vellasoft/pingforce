@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Put, Param, UseGuards, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Put,
+  Param,
+  UseGuards,
+  Delete,
+} from '@nestjs/common';
 import { RbacService } from './rbac.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentTenant } from '@pingforce-monorepo/shared';
@@ -17,7 +26,13 @@ export class RbacController {
   @Post('roles')
   createRole(
     @CurrentTenant() tenantId: string,
-    @Body() body: { name: string; code: string; description?: string; permissionIds?: string[] }
+    @Body()
+    body: {
+      name: string;
+      code: string;
+      description?: string;
+      permissionIds?: string[];
+    },
   ) {
     return this.rbacService.createRole(tenantId, body);
   }
@@ -26,7 +41,7 @@ export class RbacController {
   updateRole(
     @CurrentTenant() tenantId: string,
     @Param('id') roleId: string,
-    @Body() body: { name: string; description?: string }
+    @Body() body: { name: string; description?: string },
   ) {
     return this.rbacService.updateRole(tenantId, roleId, body);
   }
@@ -40,16 +55,17 @@ export class RbacController {
   updateRolePermissions(
     @CurrentTenant() tenantId: string,
     @Param('id') roleId: string,
-    @Body('permissionIds') permissionIds: string[]
+    @Body('permissionIds') permissionIds: string[],
   ) {
-    return this.rbacService.updateRolePermissions(tenantId, roleId, permissionIds);
+    return this.rbacService.updateRolePermissions(
+      tenantId,
+      roleId,
+      permissionIds,
+    );
   }
 
   @Delete('roles/:id')
-  deleteRole(
-    @CurrentTenant() tenantId: string,
-    @Param('id') roleId: string
-  ) {
+  deleteRole(@CurrentTenant() tenantId: string, @Param('id') roleId: string) {
     return this.rbacService.deleteRole(tenantId, roleId);
   }
 }

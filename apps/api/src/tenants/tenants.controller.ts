@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
@@ -31,17 +40,19 @@ export class TenantsController {
   @RequirePermission('platform', 'manage')
   async updateProvisioning(
     @Param('id') id: string,
-    @Body() body: { isAttendanceEnabled: boolean; maxFieldStaff: number | null }
+    @Body()
+    body: { isAttendanceEnabled: boolean; maxFieldStaff: number | null },
   ) {
-    return this.tenantsService.updateProvisioning(id, body.isAttendanceEnabled, body.maxFieldStaff);
+    return this.tenantsService.updateProvisioning(
+      id,
+      body.isAttendanceEnabled,
+      body.maxFieldStaff,
+    );
   }
 
   @Patch(':id')
   @RequirePermission('platform', 'manage')
-  async update(
-    @Param('id') id: string,
-    @Body() body: any
-  ) {
+  async update(@Param('id') id: string, @Body() body: any) {
     // Basic implementation for Super Admin overriding tenant data
     return this.tenantsService.update(id, body);
   }
