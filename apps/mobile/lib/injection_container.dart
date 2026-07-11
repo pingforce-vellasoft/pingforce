@@ -29,7 +29,10 @@ Future<void> init() async {
   sl.registerLazySingleton<HardwareService>(() => HardwareServiceImpl());
   
   sl.registerLazySingleton(() {
-    final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000'));
+    // Note: If testing locally, use 'http://10.0.2.2:3000' for emulator
+    // Or run 'adb reverse tcp:3000 tcp:3000' and use 'http://localhost:3000'
+    // For Production / Staging, use the real OCI Server IP:
+    final dio = Dio(BaseOptions(baseUrl: 'http://140.245.248.107:3000'));
     dio.interceptors.add(TokenInterceptor(secureStorage: sl()));
     return dio;
   });
