@@ -1,0 +1,52 @@
+# Stage 1: Build the Nx workspace
+FROM node:20-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies (only those needed for building)
+# We copy package files and use npm ci for deterministic installs
+COPY package*.json ./
+RUN npm ci
+
+# Copy the prisma schema and generate the client
+# We do this before copying all source code to leverage Docker layer caching
+COPY prisma ./prisma
+RUN npx prisma generate
+
+# Copy the rest of the workspace source code
+COPY . .
+
+# Build the api application using Nx
+# This will output to dist/apps/api
+RUN npx nx build api --configuration=production
+
+# Stage 2: Create the production image
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Set NODE_ENV to production
+ENV NODE_ENV=production
+
+# Copy package files and install only production dependencies
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy the generated Prisma client from the builder stage
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Copy the built API application from the builder stage
+COPY --from=builder /app/dist/apps/api ./dist/apps/api
+
+# Create a non-root user and group for better security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN chown -R appuser:appgroup /app
+USER appuser
+
+# Expose the API port (defaults to 3000 in NestJS)
+EXPOSE 3000
+
+# Start the application using the compiled main.js file
+CMD ["node", "dist/apps/api/main.js"]
