@@ -326,13 +326,15 @@ export class AuthService implements IAuthService {
 
   async registerTenant(dto: RegisterTenantDto) {
     const fallbackTenantName = dto.tenantName || 'My Workspace';
-    
+
     if (dto.tenantName) {
       const existingTenant = await this.prisma.tenant.findFirst({
         where: { name: dto.tenantName },
       });
       if (existingTenant) {
-        throw new BadRequestException('A tenant with this name already exists.');
+        throw new BadRequestException(
+          'A tenant with this name already exists.',
+        );
       }
     }
 
@@ -377,13 +379,16 @@ export class AuthService implements IAuthService {
           },
         });
       }
-      
-      const profileData = (dto.adminFirstName && dto.adminLastName) ? {
-        create: {
-          firstName: dto.adminFirstName,
-          lastName: dto.adminLastName,
-        }
-      } : undefined;
+
+      const profileData =
+        dto.adminFirstName && dto.adminLastName
+          ? {
+              create: {
+                firstName: dto.adminFirstName,
+                lastName: dto.adminLastName,
+              },
+            }
+          : undefined;
 
       const adminUser = await prisma.user.create({
         data: {
@@ -472,14 +477,19 @@ export class AuthService implements IAuthService {
     };
   }
 
-  async onboardTenant(userId: string, tenantId: string, dto: OnboardingTenantDto) {
+  async onboardTenant(
+    userId: string,
+    tenantId: string,
+    dto: OnboardingTenantDto,
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId, tenantId },
-      include: { profile: true }
+      include: { profile: true },
     });
 
     if (!user) throw new NotFoundException('User not found');
-    if (user.profile) throw new BadRequestException('User is already onboarded');
+    if (user.profile)
+      throw new BadRequestException('User is already onboarded');
 
     await this.prisma.$transaction(async (prisma) => {
       await prisma.tenant.update({
@@ -487,7 +497,7 @@ export class AuthService implements IAuthService {
         data: {
           name: dto.tenantName,
           industry: dto.industry,
-        }
+        },
       });
 
       await prisma.user.update({
@@ -498,28 +508,33 @@ export class AuthService implements IAuthService {
             create: {
               firstName: dto.firstName,
               lastName: dto.lastName,
-            }
-          }
-        }
+            },
+          },
+        },
       });
     });
 
     return { message: 'Tenant onboarding completed successfully' };
   }
 
-  async onboardEmployee(userId: string, tenantId: string, dto: OnboardingEmployeeDto) {
+  async onboardEmployee(
+    userId: string,
+    tenantId: string,
+    dto: OnboardingEmployeeDto,
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId, tenantId },
-      include: { profile: true }
+      include: { profile: true },
     });
 
     if (!user) throw new NotFoundException('User not found');
-    if (user.profile) throw new BadRequestException('User is already onboarded');
+    if (user.profile)
+      throw new BadRequestException('User is already onboarded');
 
     // Here we can validate if the dto.tenantCode matches the invite code or the tenant they belong to.
     // If they were created in a temporary tenant (e.g. from generic signup), we would move them to the target tenant here.
     // For now, assuming they signed up via invite link and just need to fill profile.
-    
+
     await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -528,9 +543,9 @@ export class AuthService implements IAuthService {
           create: {
             firstName: dto.firstName,
             lastName: dto.lastName,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     return { message: 'Employee onboarding completed successfully' };

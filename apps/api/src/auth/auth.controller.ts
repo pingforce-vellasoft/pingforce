@@ -109,14 +109,25 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('onboarding/tenant')
   async onboardTenant(@Request() req: any, @Body() dto: OnboardingTenantDto) {
-    return (this.authService as any).onboardTenant(req.user.userId, req.user.tenantId, dto);
+    return (this.authService as any).onboardTenant(
+      req.user.userId,
+      req.user.tenantId,
+      dto,
+    );
   }
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Complete employee onboarding' })
   @UseGuards(JwtAuthGuard)
   @Post('onboarding/employee')
-  async onboardEmployee(@Request() req: any, @Body() dto: OnboardingEmployeeDto) {
-    return (this.authService as any).onboardEmployee(req.user.userId, req.user.tenantId, dto);
+  async onboardEmployee(
+    @Request() req: any,
+    @Body() dto: OnboardingEmployeeDto,
+  ) {
+    return (this.authService as any).onboardEmployee(
+      req.user.userId,
+      req.user.tenantId,
+      dto,
+    );
   }
 }
