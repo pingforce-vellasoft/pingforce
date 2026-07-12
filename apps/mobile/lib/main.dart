@@ -8,6 +8,8 @@ import 'features/auth/presentation/pages/login_screen.dart';
 import 'features/attendance/presentation/bloc/attendance_bloc.dart';
 import 'features/attendance/presentation/pages/punch_dashboard_screen.dart';
 import 'features/onboarding/presentation/pages/onboarding_screen.dart';
+import 'features/tenant_dashboard/presentation/pages/tenant_dashboard_screen.dart';
+import 'features/manager_dashboard/presentation/pages/manager_hybrid_screen.dart';
 import 'injection_container.dart' as di;
 
 void main() async {
@@ -56,7 +58,16 @@ class PingForceApp extends StatelessWidget {
               if (!state.user.isOnboarded) {
                 return const OnboardingScreen();
               }
-              return const PunchDashboardScreen();
+              
+              // Role-based routing
+              final role = state.user.role;
+              if (role == 'TENANT_ADMIN' || role == 'SUPER_ADMIN') {
+                return const TenantDashboardScreen();
+              } else if (role == 'MANAGER') {
+                return const ManagerHybridScreen();
+              } else {
+                return const PunchDashboardScreen();
+              }
             } else if (state is Unauthenticated || state is AuthError) {
               return const LoginScreen();
             }

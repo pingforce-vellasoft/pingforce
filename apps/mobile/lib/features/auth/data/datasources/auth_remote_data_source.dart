@@ -4,6 +4,7 @@ abstract class AuthRemoteDataSource {
   Future<Map<String, dynamic>> login(String email, String password);
   Future<Map<String, dynamic>> signup(String email, String password);
   Future<Map<String, dynamic>> googleAuth(String idToken);
+  Future<Map<String, dynamic>> onboardTenant(Map<String, dynamic> data);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -44,6 +45,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'idToken': idToken,
         'tenantCode': 'DEFAULT',
       },
+    );
+    return response.data;
+  }
+
+  @override
+  Future<Map<String, dynamic>> onboardTenant(Map<String, dynamic> data) async {
+    final response = await dio.post(
+      '/api/v1/auth/onboarding/tenant',
+      data: data,
     );
     return response.data;
   }

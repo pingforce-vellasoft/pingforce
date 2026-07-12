@@ -99,4 +99,22 @@ class AuthRepositoryImpl implements AuthRepository {
       return const Left(CacheFailure('Failed to logout cleanly'));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> onboardTenant(Map<String, dynamic> data) async {
+    try {
+      await remoteDataSource.onboardTenant(data);
+      
+      // Update cached user to isOnboarded = true
+      final userCache = await secureStorage.read(key: 'user_cache');
+      if (userCache != null) {
+        final userData = jsonDecode(userCache) as Map<String, dynamic>;
+        userData['isOnboarded'] = true;
+        await secureStorage.write(key: 'user_cache', value: jsonEncode(userData));
+      }
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

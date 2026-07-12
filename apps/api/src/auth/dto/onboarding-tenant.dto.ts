@@ -26,4 +26,29 @@ export class OnboardingTenantDto {
   @IsString()
   @IsOptional()
   industry?: string;
+
+  @ApiProperty({ description: 'Legal Company Name', required: false })
+  @IsString()
+  @IsOptional()
+  legalName?: string;
+
+  @ApiProperty({ description: 'Company Address', required: false })
+  @IsString()
+  @IsOptional()
+  address?: string;
+
+  @ApiProperty({ description: 'City', required: false })
+  @IsString()
+  @IsOptional()
+  city?: string;
+
+  @ApiProperty({ description: 'State', required: false })
+  @IsString()
+  @IsOptional()
+  state?: string;
+
+  @ApiProperty({ description: 'Theme Color hex code', required: false })
+  @IsString()
+  @IsOptional()
+  themeColor?: string;
 }

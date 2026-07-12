@@ -39,16 +39,39 @@ class OnboardTenantRequested extends AuthEvent {
   final String lastName;
   final String phone;
   final String companyName;
+  final String? industry;
+  final String? legalName;
+  final String? address;
+  final String? city;
+  final String? state;
+  final String? themeColor;
 
   const OnboardTenantRequested({
     required this.firstName,
     required this.lastName,
     required this.phone,
     required this.companyName,
+    this.industry,
+    this.legalName,
+    this.address,
+    this.city,
+    this.state,
+    this.themeColor,
   });
 
   @override
-  List<Object> get props => [firstName, lastName, phone, companyName];
+  List<Object> get props => [
+        firstName,
+        lastName,
+        phone,
+        companyName,
+        industry ?? '',
+        legalName ?? '',
+        address ?? '',
+        city ?? '',
+        state ?? '',
+        themeColor ?? '',
+      ];
 }
 
 class OnboardEmployeeRequested extends AuthEvent {

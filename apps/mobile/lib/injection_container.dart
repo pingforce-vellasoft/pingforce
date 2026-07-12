@@ -15,6 +15,7 @@ import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/domain/usecases/login_command.dart';
 import 'features/auth/domain/usecases/signup_command.dart';
 import 'features/auth/domain/usecases/google_auth_command.dart';
+import 'features/auth/domain/usecases/onboard_tenant_command.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'core/network/token_interceptor.dart';
 import 'core/hardware/hardware_service.dart';
@@ -42,11 +43,13 @@ Future<void> init() async {
     loginCommand: sl(),
     signupCommand: sl(),
     googleAuthCommand: sl(),
+    onboardTenantCommand: sl(),
     authRepository: sl(),
   ));
   sl.registerLazySingleton(() => LoginCommand(sl()));
   sl.registerLazySingleton(() => SignupCommand(sl()));
   sl.registerLazySingleton(() => GoogleAuthCommand(sl()));
+  sl.registerLazySingleton(() => OnboardTenantCommand(sl()));
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(remoteDataSource: sl(), secureStorage: sl()),
   );

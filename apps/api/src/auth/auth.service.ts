@@ -512,6 +512,11 @@ export class AuthService implements IAuthService {
         data: {
           name: dto.tenantName,
           industry: dto.industry,
+          legalName: dto.legalName,
+          address: dto.address,
+          city: dto.city,
+          state: dto.state,
+          themeColor: dto.themeColor,
         },
       });
 

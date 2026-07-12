@@ -15,6 +15,12 @@ class _TenantOnboardingScreenState extends State<TenantOnboardingScreen> {
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _companyNameController = TextEditingController();
+  final _industryController = TextEditingController();
+  final _legalNameController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _stateController = TextEditingController();
+  final _themeColorController = TextEditingController(text: '#6366F1');
 
   void _onCompleteProfile() {
     context.read<AuthBloc>().add(
@@ -23,6 +29,12 @@ class _TenantOnboardingScreenState extends State<TenantOnboardingScreen> {
         firstName: _firstNameController.text,
         lastName: _lastNameController.text,
         phone: _phoneController.text,
+        industry: _industryController.text,
+        legalName: _legalNameController.text,
+        address: _addressController.text,
+        city: _cityController.text,
+        state: _stateController.text,
+        themeColor: _themeColorController.text,
       ),
     );
   }
@@ -61,26 +73,78 @@ class _TenantOnboardingScreenState extends State<TenantOnboardingScreen> {
                   const SizedBox(height: 32),
                   _buildTextField(
                     controller: _companyNameController,
-                    label: 'Company Name',
+                    label: 'Display Company Name',
                     icon: Icons.business,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
-                    controller: _firstNameController,
-                    label: 'First Name',
-                    icon: Icons.person,
+                    controller: _legalNameController,
+                    label: 'Legal Company Name',
+                    icon: Icons.account_balance,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
-                    controller: _lastNameController,
-                    label: 'Last Name',
-                    icon: Icons.person_outline,
+                    controller: _industryController,
+                    label: 'Industry',
+                    icon: Icons.work,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTextField(
+                          controller: _firstNameController,
+                          label: 'First Name',
+                          icon: Icons.person,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildTextField(
+                          controller: _lastNameController,
+                          label: 'Last Name',
+                          icon: Icons.person_outline,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
                     controller: _phoneController,
                     label: 'Mobile Number',
                     icon: Icons.phone,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _addressController,
+                    label: 'Company Address',
+                    icon: Icons.location_on,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTextField(
+                          controller: _cityController,
+                          label: 'City',
+                          icon: Icons.location_city,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildTextField(
+                          controller: _stateController,
+                          label: 'State',
+                          icon: Icons.map,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _themeColorController,
+                    label: 'Theme Color (Hex)',
+                    icon: Icons.color_lens,
                   ),
                   const SizedBox(height: 32),
                   SizedBox(

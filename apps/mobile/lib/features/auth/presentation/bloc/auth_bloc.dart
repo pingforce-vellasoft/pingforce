@@ -5,12 +5,14 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_command.dart';
 import '../../domain/usecases/signup_command.dart';
 import '../../domain/usecases/google_auth_command.dart';
+import '../../domain/usecases/onboard_tenant_command.dart';
 import 'package:google_sign_in/google_sign_in.dart' as gsi;
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginCommand loginCommand;
   final SignupCommand signupCommand;
   final GoogleAuthCommand googleAuthCommand;
+  final OnboardTenantCommand onboardTenantCommand;
   final AuthRepository authRepository;
   
   // Provide the Web Client ID here so the generated token matches the backend's audience
@@ -22,6 +24,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.loginCommand,
     required this.signupCommand,
     required this.googleAuthCommand,
+    required this.onboardTenantCommand,
     required this.authRepository,
   }) : super(AuthInitial()) {
     
@@ -86,6 +89,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } catch (e) {
         emit(AuthError('Google Sign In failed: ${e.toString()}'));
       }
+    });
+
+    on<OnboardTenantRequested>((event, emit) async {
+      emit(AuthLoading());
+      final result = await onboardTenantCommand(OnboardTenantParams(
+        firstName: event.firstName,
+        lastName: event.lastName,
+        phone: event.phone,
+        companyName: event.companyName,
+        industry: event.industry,
+        legalName: event.legalName,
+        address: event.address,
+        city: event.city,
+        state: event.state,
+        themeColor: event.themeColor,
+      ));
+      
+      result.fold(
+        (failure) => emit(AuthError(failure.message)),
+        (_) {
+          // Fire CheckAuthStatus so it pulls the updated cached user and routes correctly
+          add(CheckAuthStatus());
+        },
+      );
     });
 
     on<LogoutRequested>((event, emit) async {
