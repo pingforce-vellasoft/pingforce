@@ -29,8 +29,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     final response = await dio.post(
       '/api/v1/auth/register-tenant',
       data: {
-        'email': email,
-        'password': password,
+        'adminEmail': email,
+        'adminPassword': password,
       },
     );
     return response.data;
