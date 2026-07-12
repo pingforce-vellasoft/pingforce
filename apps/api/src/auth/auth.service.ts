@@ -406,7 +406,7 @@ export class AuthService implements IAuthService {
       return { tenant, adminUser };
     });
 
-    const tokens = this.generateTokens(
+    const tokens = await this.generateTokens(
       result.adminUser.id,
       result.tenant.id,
       result.adminUser.tokenVersion,
@@ -416,8 +416,8 @@ export class AuthService implements IAuthService {
     return {
       message: 'Tenant registered successfully',
       tenantCode: result.tenant.code,
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
       user: {
         id: result.adminUser.id,
         email: result.adminUser.email,
