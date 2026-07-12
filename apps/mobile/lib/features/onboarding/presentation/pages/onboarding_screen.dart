@@ -13,7 +13,7 @@ class OnboardingScreen extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is Authenticated) {
-          final role = state.user.role;
+          final role = state.user!.role;
           
           if (role == 'TENANT_ADMIN' || role == 'ADMIN_MANAGER') {
             return const TenantOnboardingScreen();

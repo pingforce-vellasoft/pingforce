@@ -29,7 +29,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }) : super(AuthInitial()) {
     
     on<CheckAuthStatus>((event, emit) async {
-      emit(AuthLoading());
+      emit(AuthLoading(user: state.user));
       final result = await authRepository.getCachedUser();
       result.fold(
         (failure) => emit(Unauthenticated()),
@@ -44,32 +44,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
 
     on<LoginRequested>((event, emit) async {
-      emit(AuthLoading());
+      emit(AuthLoading(user: state.user));
       final result = await loginCommand(LoginParams(email: event.email, password: event.password));
       result.fold(
-        (failure) => emit(AuthError(failure.message)),
+        (failure) => emit(AuthError(failure.message, user: state.user)),
         (user) => emit(Authenticated(user)),
       );
     });
 
     on<SignupRequested>((event, emit) async {
-      emit(AuthLoading());
+      emit(AuthLoading(user: state.user));
       final result = await signupCommand(SignupParams(
         email: event.email,
         password: event.password,
       ));
       result.fold(
-        (failure) => emit(AuthError(failure.message)),
+        (failure) => emit(AuthError(failure.message, user: state.user)),
         (user) => emit(Authenticated(user)),
       );
     });
 
     on<GoogleSignInRequested>((event, emit) async {
-      emit(AuthLoading());
+      emit(AuthLoading(user: state.user));
       try {
         final gsi.GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
         if (googleUser == null) {
-          emit(const AuthError('Google Sign In was aborted.'));
+          emit(AuthError('Google Sign In was aborted.', user: state.user));
           return;
         }
 
@@ -77,22 +77,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final String? idToken = googleAuth.idToken;
 
         if (idToken == null) {
-          emit(const AuthError('Failed to get Google Identity Token.'));
+          emit(AuthError('Failed to get Google Identity Token.', user: state.user));
           return;
         }
 
         final result = await googleAuthCommand(idToken);
         result.fold(
-          (failure) => emit(AuthError(failure.message)),
+          (failure) => emit(AuthError(failure.message, user: state.user)),
           (user) => emit(Authenticated(user)),
         );
       } catch (e) {
-        emit(AuthError('Google Sign In failed: ${e.toString()}'));
+        emit(AuthError('Google Sign In failed: ${e.toString()}', user: state.user));
       }
     });
 
     on<OnboardTenantRequested>((event, emit) async {
-      emit(AuthLoading());
+      emit(AuthLoading(user: state.user));
       final result = await onboardTenantCommand(OnboardTenantParams(
         firstName: event.firstName,
         lastName: event.lastName,
@@ -111,7 +111,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ));
       
       result.fold(
-        (failure) => emit(AuthError(failure.message)),
+        (failure) => emit(AuthError(failure.message, user: state.user)),
         (_) {
           // Fire CheckAuthStatus so it pulls the updated cached user and routes correctly
           add(CheckAuthStatus());
@@ -120,7 +120,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
 
     on<LogoutRequested>((event, emit) async {
-      emit(AuthLoading());
+      emit(AuthLoading(user: state.user));
       await authRepository.logout();
       emit(Unauthenticated());
     });

@@ -54,13 +54,13 @@ class PingForceApp extends StatelessWidget {
         ),
         home: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
-            if (state is Authenticated) {
-              if (!state.user.isOnboarded) {
+            if (state.user != null) {
+              if (!state.user!.isOnboarded) {
                 return const OnboardingScreen();
               }
               
               // Role-based routing
-              final role = state.user.role;
+              final role = state.user!.role;
               if (role == 'TENANT_ADMIN' || role == 'SUPER_ADMIN') {
                 return const TenantDashboardScreen();
               } else if (role == 'MANAGER') {
@@ -68,7 +68,7 @@ class PingForceApp extends StatelessWidget {
               } else {
                 return const PunchDashboardScreen();
               }
-            } else if (state is Unauthenticated || state is AuthError) {
+            } else if (state is Unauthenticated || (state is AuthError && state.user == null)) {
               return const LoginScreen();
             }
             return const Scaffold(body: Center(child: CircularProgressIndicator()));
