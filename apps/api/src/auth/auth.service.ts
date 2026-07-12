@@ -512,16 +512,19 @@ export class AuthService implements IAuthService {
         const fs = require('fs');
         const path = require('path');
         const crypto = require('crypto');
-        
+
         const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
         }
-        
-        const base64Data = dto.logoBase64.replace(/^data:image\/\w+;base64,/, '');
+
+        const base64Data = dto.logoBase64.replace(
+          /^data:image\/\w+;base64,/,
+          '',
+        );
         const filename = `${tenantId}-${crypto.randomBytes(4).toString('hex')}.png`;
         const filepath = path.join(uploadsDir, filename);
-        
+
         fs.writeFileSync(filepath, base64Data, 'base64');
         logoUrl = `/api/v1/uploads/logos/${filename}`;
       } catch (err) {
