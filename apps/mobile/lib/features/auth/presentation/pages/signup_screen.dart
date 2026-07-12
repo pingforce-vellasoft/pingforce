@@ -54,6 +54,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     backgroundColor: Colors.redAccent,
                   ),
                 );
+              } else if (state is Authenticated) {
+                // Clear the navigation stack so main.dart can render the correct home screen
+                Navigator.of(context).popUntil((route) => route.isFirst);
               }
             },
             builder: (context, state) {
