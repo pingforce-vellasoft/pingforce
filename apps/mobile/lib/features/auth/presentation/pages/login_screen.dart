@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -16,6 +17,23 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _tenantCodeController = TextEditingController();
+  final _secureStorage = const FlutterSecureStorage();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCachedTenantCode();
+  }
+
+  Future<void> _loadCachedTenantCode() async {
+    final cachedCode = await _secureStorage.read(key: 'tenant_code');
+    if (cachedCode != null && mounted) {
+      setState(() {
+        _tenantCodeController.text = cachedCode;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -73,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // Glassmorphism Login Card
                     Container(
-                      padding: const EdgeInsets.all(32),
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(24),
@@ -83,6 +101,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Column(
                         children: [
+                          TextField(
+                            controller: _tenantCodeController,
+                            decoration: InputDecoration(
+                              labelText: 'Workspace Code',
+                              prefixIcon: const Icon(Icons.domain),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           TextField(
                             controller: _emailController,
                             decoration: InputDecoration(
@@ -114,10 +143,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: ElevatedButton(
                                 onPressed: () {
                                   context.read<AuthBloc>().add(
-                                    LoginRequested(
-                                      email: _emailController.text.trim(),
-                                      password: _passwordController.text.trim(),
-                                    ),
+                                      LoginRequested(
+                                        email: _emailController.text.trim(),
+                                        password: _passwordController.text.trim(),
+                                        tenantCode: _tenantCodeController.text.trim(),
+                                      ),
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(

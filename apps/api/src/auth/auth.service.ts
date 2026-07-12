@@ -158,9 +158,46 @@ export class AuthService implements IAuthService {
       });
     }
 
+    let userDetails = null;
+    if (tenantId === 'SYSTEM') {
+      const admin = await this.prisma.superAdmin.findUnique({
+        where: { id: userId },
+      });
+      if (admin) {
+        userDetails = {
+          id: admin.id,
+          email: admin.email,
+          name: admin.name || 'Super Admin',
+          role: 'SUPER_ADMIN',
+          tenantId: 'SYSTEM',
+          tenantCode: 'SYSTEM',
+          isOnboarded: true,
+        };
+      }
+    } else {
+      const u = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { tenant: true, role: true },
+      });
+      if (u) {
+        userDetails = {
+          id: u.id,
+          email: u.email,
+          name: u.firstName ? `${u.firstName} ${u.lastName}` : 'User',
+          role: u.role?.code || 'UNKNOWN',
+          tenantId: u.tenantId,
+          tenantCode: u.tenant.code,
+          isOnboarded: u.tenant.isOnboarded,
+        };
+      }
+    }
+
     return {
       accessToken,
+      access_token: accessToken, // for compatibility
       refreshToken,
+      refresh_token: refreshToken, // for compatibility
+      user: userDetails,
     };
   }
 

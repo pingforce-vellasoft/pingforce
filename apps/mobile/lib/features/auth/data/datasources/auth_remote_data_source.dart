@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 
 abstract class AuthRemoteDataSource {
-  Future<Map<String, dynamic>> login(String email, String password);
+  Future<Map<String, dynamic>> login(String email, String password, String tenantCode);
   Future<Map<String, dynamic>> signup(String email, String password);
   Future<Map<String, dynamic>> googleAuth(String idToken);
   Future<Map<String, dynamic>> onboardTenant(Map<String, dynamic> data);
@@ -13,12 +13,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   AuthRemoteDataSourceImpl({required this.dio});
 
   @override
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password, String tenantCode) async {
     final response = await dio.post(
       '/api/v1/auth/login',
       data: {
         'email': email,
         'password': password,
+        'tenantCode': tenantCode,
       },
     );
     

@@ -7,6 +7,7 @@ class UserModel extends User {
     required super.name,
     required super.role,
     required super.tenantId,
+    required super.tenantCode,
     super.isOnboarded = false,
   });
 
@@ -14,9 +15,10 @@ class UserModel extends User {
     return UserModel(
       id: json['id'] ?? json['userId'],
       email: json['email'],
-      name: json['firstName'] != null ? '${json['firstName']} ${json['lastName']}' : 'New User',
+      name: json['name'] ?? (json['firstName'] != null ? '${json['firstName']} ${json['lastName']}' : 'New User'),
       role: json['role'] ?? json['roleCode'],
       tenantId: json['tenantId'],
+      tenantCode: json['tenantCode'] ?? 'DEFAULT',
       isOnboarded: json['isOnboarded'] ?? false,
     );
   }

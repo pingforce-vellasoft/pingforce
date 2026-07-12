@@ -17,9 +17,9 @@ class AuthRepositoryImpl implements AuthRepository {
   });
 
   @override
-  Future<Either<Failure, User>> login(String email, String password) async {
+  Future<Either<Failure, User>> login(String email, String password, String tenantCode) async {
     try {
-      final responseData = await remoteDataSource.login(email, password);
+      final responseData = await remoteDataSource.login(email, password, tenantCode);
       return _processAuthResponse(responseData);
     } catch (e) {
       return const Left(ServerFailure('Invalid email or password.'));
@@ -50,20 +50,12 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   Future<Either<Failure, User>> _processAuthResponse(Map<String, dynamic> responseData) async {
-    final token = responseData['access_token'];
+    final token = responseData['access_token'] ?? responseData['accessToken'];
+    final userData = responseData['user'];
     
-    // Create a mock user model since our backend only returns the token for now
-    // In Sprint 4/5 we should modify the backend to return user details with the token
-    final userData = responseData['user'] ?? {
-      'id': 'temp_id',
-      'email': 'user@example.com',
-      'firstName': 'PingForce',
-      'lastName': 'User',
-      'role': 'EMPLOYEE_FIELD_STAFF',
-      'tenantId': 'temp_tenant'
-    };
-    
-    if (token == null) return const Left(ServerFailure('Invalid server response'));
+    if (token == null || userData == null) {
+      return const Left(ServerFailure('Invalid server response: Missing token or user data'));
+    }
 
     // Securely store token (Hardness)
     await secureStorage.write(key: 'jwt_token', value: token);
@@ -72,6 +64,11 @@ class AuthRepositoryImpl implements AuthRepository {
     
     // Cache user info securely
     await secureStorage.write(key: 'user_cache', value: jsonEncode(userData));
+    
+    // Save tenant code separately so it persists even if user logs out (for auto-filling)
+    if (user.tenantCode != 'SYSTEM') {
+      await secureStorage.write(key: 'tenant_code', value: user.tenantCode);
+    }
 
     return Right(user);
   }

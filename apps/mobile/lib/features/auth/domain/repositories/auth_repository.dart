@@ -4,7 +4,7 @@ import '../entities/user.dart';
 
 abstract class AuthRepository {
   /// Attempts to log the user in and securely caches the JWT
-  Future<Either<Failure, User>> login(String email, String password);
+  Future<Either<Failure, User>> login(String email, String password, String tenantCode);
 
   /// Registers a new user and securely caches the JWT
   Future<Either<Failure, User>> signup(

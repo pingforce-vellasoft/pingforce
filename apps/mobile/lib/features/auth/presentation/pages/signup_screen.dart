@@ -62,7 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
             builder: (context, state) {
               return Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(16.0),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -78,7 +78,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         child: BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                           child: Container(
-                            padding: const EdgeInsets.all(32),
+                            padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(24),
@@ -148,6 +148,39 @@ class _SignupScreenState extends State<SignupScreen> {
                                           ),
                                   ),
                                 ),
+                                const SizedBox(height: 16),
+                                if (state is! AuthLoading) ...[
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 50,
+                                    child: OutlinedButton.icon(
+                                      onPressed: () {
+                                        context.read<AuthBloc>().add(GoogleSignInRequested());
+                                      },
+                                      icon: Image.network(
+                                        'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+                                        height: 24,
+                                      ),
+                                      label: const Text(
+                                        'Sign in with Google',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        side: BorderSide(
+                                          color: Colors.white.withValues(alpha: 0.2),
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                                 const SizedBox(height: 16),
                                 TextButton(
                                   onPressed: () => Navigator.of(context).pop(),
