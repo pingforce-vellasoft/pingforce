@@ -183,7 +183,9 @@ export class AuthService implements IAuthService {
         userDetails = {
           id: u.id,
           email: u.email,
-          name: u.profile?.firstName ? `${u.profile.firstName} ${u.profile.lastName}` : 'User',
+          name: u.profile?.firstName
+            ? `${u.profile.firstName} ${u.profile.lastName}`
+            : 'User',
           role: u.role?.code || 'UNKNOWN',
           tenantId: u.tenantId,
           tenantCode: u.tenant.code,
