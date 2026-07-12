@@ -47,6 +47,8 @@ dependencies:
   path_provider: ^2.1.6
   dartz: ^0.10.1
   google_sign_in: ^6.2.1
+  image_picker: ^1.2.3
+  palette_generator: ^0.3.3+7
 
 dev_dependencies:
   flutter_test:

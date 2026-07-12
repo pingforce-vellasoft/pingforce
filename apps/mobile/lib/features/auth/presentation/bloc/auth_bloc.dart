@@ -104,6 +104,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         city: event.city,
         state: event.state,
         themeColor: event.themeColor,
+        logoBase64: event.logoBase64,
+        postalCode: event.postalCode,
+        country: event.country,
+        billingEmail: event.billingEmail,
       ));
       
       result.fold(

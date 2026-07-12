@@ -1,7 +1,15 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:palette_generator/palette_generator.dart';
+
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 
 class TenantOnboardingScreen extends StatefulWidget {
   const TenantOnboardingScreen({super.key});
@@ -20,7 +28,61 @@ class _TenantOnboardingScreenState extends State<TenantOnboardingScreen> {
   final _addressController = TextEditingController();
   final _cityController = TextEditingController();
   final _stateController = TextEditingController();
+  final _postalCodeController = TextEditingController();
+  final _countryController = TextEditingController();
+  final _billingEmailController = TextEditingController();
   final _themeColorController = TextEditingController(text: '#6366F1');
+
+  File? _logoFile;
+  String? _logoBase64;
+
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickLogo() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+      if (pickedFile != null) {
+        setState(() {
+          _logoFile = File(pickedFile.path);
+        });
+        
+        // Convert to base64
+        final bytes = await _logoFile!.readAsBytes();
+        _logoBase64 = 'data:image/png;base64,${base64Encode(bytes)}';
+
+        // Extract palette
+        _extractColorFromLogo(bytes);
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+    }
+  }
+
+  Future<void> _extractColorFromLogo(List<int> bytes) async {
+    try {
+      final imageProvider = MemoryImage(Uint8List.fromList(bytes));
+      final paletteGenerator = await PaletteGenerator.fromImageProvider(
+        imageProvider,
+        maximumColorCount: 20,
+      );
+
+      final dominantColor = paletteGenerator.dominantColor?.color;
+      if (dominantColor != null) {
+        // Convert Color to Hex String
+        final hexString = '#${dominantColor.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
+        setState(() {
+          _themeColorController.text = hexString;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Theme color auto-detected: $hexString')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error extracting color: $e');
+    }
+  }
 
   void _onCompleteProfile() {
     context.read<AuthBloc>().add(
@@ -35,6 +97,10 @@ class _TenantOnboardingScreenState extends State<TenantOnboardingScreen> {
         city: _cityController.text,
         state: _stateController.text,
         themeColor: _themeColorController.text,
+        logoBase64: _logoBase64,
+        postalCode: _postalCodeController.text,
+        country: _countryController.text,
+        billingEmail: _billingEmailController.text,
       ),
     );
   }
@@ -71,6 +137,23 @@ class _TenantOnboardingScreenState extends State<TenantOnboardingScreen> {
                     style: TextStyle(color: Colors.white70),
                   ),
                   const SizedBox(height: 32),
+                  
+                  // Logo Picker
+                  GestureDetector(
+                    onTap: _pickLogo,
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
+                      backgroundImage: _logoFile != null ? FileImage(_logoFile!) : null,
+                      child: _logoFile == null
+                          ? const Icon(Icons.add_a_photo, size: 40, color: Colors.white70)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('Upload Company Logo', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  const SizedBox(height: 24),
+                  
                   _buildTextField(
                     controller: _companyNameController,
                     label: 'Display Company Name',
@@ -109,10 +192,24 @@ class _TenantOnboardingScreenState extends State<TenantOnboardingScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _buildTextField(
-                    controller: _phoneController,
-                    label: 'Mobile Number',
-                    icon: Icons.phone,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTextField(
+                          controller: _phoneController,
+                          label: 'Mobile Number',
+                          icon: Icons.phone,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildTextField(
+                          controller: _billingEmailController,
+                          label: 'Billing Email',
+                          icon: Icons.email,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -141,6 +238,26 @@ class _TenantOnboardingScreenState extends State<TenantOnboardingScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTextField(
+                          controller: _postalCodeController,
+                          label: 'Postal/ZIP Code',
+                          icon: Icons.markunread_mailbox,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildTextField(
+                          controller: _countryController,
+                          label: 'Country',
+                          icon: Icons.public,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   _buildTextField(
                     controller: _themeColorController,
                     label: 'Theme Color (Hex)',
@@ -150,22 +267,36 @@ class _TenantOnboardingScreenState extends State<TenantOnboardingScreen> {
                   SizedBox(
                     width: double.infinity,
                     height: 50,
-                    child: ElevatedButton(
-                      onPressed: _onCompleteProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6366F1),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Complete Setup',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                    child: BlocConsumer<AuthBloc, AuthState>(
+                      listener: (context, state) {
+                        if (state is AuthError) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(state.message)),
+                          );
+                        }
+                      },
+                      builder: (context, state) {
+                        final isLoading = state is AuthLoading;
+                        return ElevatedButton(
+                          onPressed: isLoading ? null : _onCompleteProfile,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6366F1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: isLoading 
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
+                              'Complete Setup',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                        );
+                      }
                     ),
                   ),
                 ],

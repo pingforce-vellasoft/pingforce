@@ -35,42 +35,54 @@ class SignupRequested extends AuthEvent {
 class GoogleSignInRequested extends AuthEvent {}
 
 class OnboardTenantRequested extends AuthEvent {
+  final String companyName;
   final String firstName;
   final String lastName;
   final String phone;
-  final String companyName;
   final String? industry;
   final String? legalName;
   final String? address;
   final String? city;
   final String? state;
   final String? themeColor;
+  final String? logoBase64;
+  final String? postalCode;
+  final String? country;
+  final String? billingEmail;
 
   const OnboardTenantRequested({
+    required this.companyName,
     required this.firstName,
     required this.lastName,
     required this.phone,
-    required this.companyName,
     this.industry,
     this.legalName,
     this.address,
     this.city,
     this.state,
     this.themeColor,
+    this.logoBase64,
+    this.postalCode,
+    this.country,
+    this.billingEmail,
   });
 
   @override
   List<Object> get props => [
+        companyName,
         firstName,
         lastName,
         phone,
-        companyName,
         industry ?? '',
         legalName ?? '',
         address ?? '',
         city ?? '',
         state ?? '',
         themeColor ?? '',
+        logoBase64 ?? '',
+        postalCode ?? '',
+        country ?? '',
+        billingEmail ?? '',
       ];
 }
 

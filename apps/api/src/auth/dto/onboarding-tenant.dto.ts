@@ -51,4 +51,24 @@ export class OnboardingTenantDto {
   @IsString()
   @IsOptional()
   themeColor?: string;
+
+  @ApiProperty({ description: 'Logo in Base64 format', required: false })
+  @IsString()
+  @IsOptional()
+  logoBase64?: string;
+
+  @ApiProperty({ description: 'Postal/ZIP Code', required: false })
+  @IsString()
+  @IsOptional()
+  postalCode?: string;
+
+  @ApiProperty({ description: 'Country', required: false })
+  @IsString()
+  @IsOptional()
+  country?: string;
+
+  @ApiProperty({ description: 'Billing Email', required: false })
+  @IsString()
+  @IsOptional()
+  billingEmail?: string;
 }
