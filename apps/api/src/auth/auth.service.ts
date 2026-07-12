@@ -406,9 +406,24 @@ export class AuthService implements IAuthService {
       return { tenant, adminUser };
     });
 
+    const tokens = this.generateTokens(
+      result.adminUser.id,
+      result.tenant.id,
+      result.adminUser.tokenVersion,
+      'ADMIN_MANAGER',
+    );
+
     return {
       message: 'Tenant registered successfully',
       tenantCode: result.tenant.code,
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      user: {
+        id: result.adminUser.id,
+        email: result.adminUser.email,
+        role: 'ADMIN_MANAGER',
+        tenantId: result.tenant.id,
+      }
     };
   }
 
