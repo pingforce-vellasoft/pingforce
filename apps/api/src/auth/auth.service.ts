@@ -423,7 +423,7 @@ export class AuthService implements IAuthService {
         email: result.adminUser.email,
         role: 'ADMIN_MANAGER',
         tenantId: result.tenant.id,
-      }
+      },
     };
   }
 
