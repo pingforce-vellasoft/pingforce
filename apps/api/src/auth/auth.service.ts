@@ -177,17 +177,17 @@ export class AuthService implements IAuthService {
     } else {
       const u = await this.prisma.user.findUnique({
         where: { id: userId },
-        include: { tenant: true, role: true },
+        include: { tenant: true, role: true, profile: true },
       });
       if (u) {
         userDetails = {
           id: u.id,
           email: u.email,
-          name: u.firstName ? `${u.firstName} ${u.lastName}` : 'User',
+          name: u.profile?.firstName ? `${u.profile.firstName} ${u.profile.lastName}` : 'User',
           role: u.role?.code || 'UNKNOWN',
           tenantId: u.tenantId,
           tenantCode: u.tenant.code,
-          isOnboarded: u.tenant.isOnboarded,
+          isOnboarded: !!u.profile,
         };
       }
     }
