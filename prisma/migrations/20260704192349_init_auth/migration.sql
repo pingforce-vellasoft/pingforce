@@ -1,5 +1,6 @@
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
+CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- CreateEnum
 CREATE TYPE "AttendanceStatus" AS ENUM ('PRESENT', 'ABSENT', 'LATE', 'HALF_DAY');
