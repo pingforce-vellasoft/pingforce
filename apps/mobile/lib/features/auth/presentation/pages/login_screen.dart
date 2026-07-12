@@ -29,10 +29,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
-          } else if (state is Authenticated) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const PunchDashboardScreen()),
-            );
           }
         },
         builder: (context, state) {

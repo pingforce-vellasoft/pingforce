@@ -54,11 +54,6 @@ class _SignupScreenState extends State<SignupScreen> {
                     backgroundColor: Colors.redAccent,
                   ),
                 );
-              } else if (state is Authenticated) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const PunchDashboardScreen()),
-                  (route) => false,
-                );
               }
             },
             builder: (context, state) {
