@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import '../../../attendance/presentation/pages/punch_dashboard_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -52,6 +53,11 @@ class _SignupScreenState extends State<SignupScreen> {
                     content: Text(state.message),
                     backgroundColor: Colors.redAccent,
                   ),
+                );
+              } else if (state is Authenticated) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const PunchDashboardScreen()),
+                  (route) => false,
                 );
               }
             },
