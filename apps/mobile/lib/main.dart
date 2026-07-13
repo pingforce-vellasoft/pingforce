@@ -61,7 +61,7 @@ class PingForceApp extends StatelessWidget {
               
               // Role-based routing
               final role = state.user!.role;
-              if (role == 'TENANT_ADMIN' || role == 'SUPER_ADMIN') {
+              if (role == 'TENANT_ADMIN' || role == 'ADMIN_MANAGER' || role == 'SUPER_ADMIN') {
                 return const TenantDashboardScreen();
               } else if (role == 'MANAGER') {
                 return const ManagerHybridScreen();

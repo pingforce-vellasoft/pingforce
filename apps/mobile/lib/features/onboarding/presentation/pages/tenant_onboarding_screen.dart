@@ -126,11 +126,29 @@ class _TenantOnboardingScreenState extends State<TenantOnboardingScreen> {
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+              child: BlocListener<AuthBloc, AuthState>(
+                listener: (context, state) {
+                  if (state is AuthError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.redAccent,
+                      ),
+                    );
+                  } else if (state is Authenticated && state.user!.isOnboarded) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Workspace completed successfully!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                     const Text(
                       'Complete Your Workspace',
                       style: TextStyle(
@@ -328,6 +346,7 @@ class _TenantOnboardingScreenState extends State<TenantOnboardingScreen> {
                     ),
                   ],
                 ),
+              ),
               ),
             ),
           ),
