@@ -377,6 +377,15 @@ export class AuthService implements IAuthService {
       }
     }
 
+    const existingUser = await this.prisma.user.findFirst({
+      where: { email: dto.adminEmail },
+    });
+    if (existingUser) {
+      throw new BadRequestException(
+        'An account with this email already exists.',
+      );
+    }
+
     let tenantCode = this.generateTenantCode(fallbackTenantName);
     let isCodeUnique = false;
     while (!isCodeUnique) {
