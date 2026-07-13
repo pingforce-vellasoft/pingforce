@@ -54,6 +54,14 @@ class _SignupScreenState extends State<SignupScreen> {
                     backgroundColor: Colors.redAccent,
                   ),
                 );
+                
+                if (state.message.toLowerCase().contains('already exists')) {
+                  Future.delayed(const Duration(seconds: 1), () {
+                    if (context.mounted) {
+                      Navigator.of(context).pop(); // Go back to login screen
+                    }
+                  });
+                }
               } else if (state is Authenticated) {
                 // Clear the navigation stack so main.dart can render the correct home screen
                 Navigator.of(context).popUntil((route) => route.isFirst);
