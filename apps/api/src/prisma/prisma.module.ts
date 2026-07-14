@@ -39,37 +39,70 @@ function createPrismaClient() {
   const adapter = new PrismaPg(pool);
   const client = new PrismaClient({ adapter });
 
+  // Soft-delete enforcement (SOFT_DELETE.md §9): operational queries exclude
+  // deleted rows by default; passing an explicit `deletedAt` filter opts out
+  // (restore/admin flows). `delete`/`deleteMany` become logical deletes.
   return client.$extends({
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          if (softDeleteModels.includes(model)) {
-            if (operation === 'delete') {
+          if (!softDeleteModels.includes(model)) {
+            return query(args);
+          }
+
+          const anyArgs = (args ?? {}) as any;
+
+          switch (operation) {
+            // Logical delete. Note: runs on the base client — services doing
+            // transactional deletes must call update({deletedAt}) explicitly
+            // inside the transaction instead of delete().
+            case 'delete': {
               return (client as any)[model].update({
-                where: (args as any).where,
+                where: anyArgs.where,
                 data: { deletedAt: new Date() },
               });
             }
-            if (operation === 'deleteMany') {
+            case 'deleteMany': {
               return (client as any)[model].updateMany({
-                where: (args as any).where,
+                where: { ...(anyArgs.where ?? {}), deletedAt: null },
                 data: { deletedAt: new Date() },
               });
             }
-            if (operation === 'findUnique' || operation === 'findFirst') {
-              const result = await query(args);
-              if (result && (result as any).deletedAt) return null;
-              return result;
-            }
-            if (operation === 'findMany' || operation === 'count') {
-              const anyArgs = args as any;
+
+            // Reads: inject the filter into the query args (not post-filter),
+            // so explicit deletedAt filters (restore flows) keep working.
+            case 'findFirst':
+            case 'findMany':
+            case 'count':
+            case 'aggregate':
+            case 'groupBy': {
               anyArgs.where = anyArgs.where ? { ...anyArgs.where } : {};
               if (anyArgs.where.deletedAt === undefined) {
                 anyArgs.where.deletedAt = null;
               }
+              return query(anyArgs);
             }
+
+            // Unique lookups cannot take non-unique filters — post-check.
+            case 'findUnique':
+            case 'findUniqueOrThrow': {
+              const result = await query(args);
+              if (result && (result as any).deletedAt) return null;
+              return result;
+            }
+
+            // Guard mutations from silently resurrecting/affecting deleted rows.
+            case 'updateMany': {
+              anyArgs.where = anyArgs.where ? { ...anyArgs.where } : {};
+              if (anyArgs.where.deletedAt === undefined) {
+                anyArgs.where.deletedAt = null;
+              }
+              return query(anyArgs);
+            }
+
+            default:
+              return query(args);
           }
-          return query(args);
         },
       },
     },

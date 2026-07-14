@@ -85,11 +85,13 @@ export class PayrollProcessor {
       const specialAllowance = Number(structure.specialAllowance);
       const standardDeductions = Number(structure.standardDeductions);
 
-      const grossPay = basicPay + hra + specialAllowance;
+      const round2 = (n: number) => Math.round(n * 100) / 100;
+
+      const grossPay = round2(basicPay + hra + specialAllowance);
       const lwpDeduction = (basicPay / EXPECTED_DAYS) * lwp;
 
-      const totalDeductions = standardDeductions + lwpDeduction;
-      const netPay = Math.max(0, grossPay - totalDeductions);
+      const totalDeductions = round2(standardDeductions + lwpDeduction);
+      const netPay = round2(Math.max(0, grossPay - totalDeductions));
 
       // 5. Create Payslip
       await this.prisma.payslip.create({

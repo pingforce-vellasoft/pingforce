@@ -16,12 +16,30 @@ import * as crypto from 'crypto';
 export class AttendanceService {
   constructor(@Inject('IPrismaService') private prisma: ExtendedPrismaClient) {}
 
-  async getDevices(user: any) {
+  async getDevices(user: any, skip = 0, take = 50) {
     return this.prisma.employeeDevice.findMany({
-      where: { employee: { tenantId: user.tenantId } },
+      where: { tenantId: user.tenantId },
       include: {
-        employee: { include: { user: { include: { profile: true } } } },
+        employee: {
+          select: {
+            id: true,
+            employeeCode: true,
+            firstName: true,
+            lastName: true,
+            // Never include the full user record — it carries passwordHash
+            user: {
+              select: {
+                id: true,
+                email: true,
+                profile: { select: { firstName: true, lastName: true } },
+              },
+            },
+          },
+        },
       },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: Math.min(take, 200),
     });
   }
 
@@ -32,20 +50,26 @@ export class AttendanceService {
     });
     if (!employee) throw new UnauthorizedException('User is not an employee');
 
-    // Revoke any existing active device for this employee to enforce 1-device policy
-    await this.prisma.employeeDevice.updateMany({
-      where: { employeeId: employee.id, isTrusted: true },
-      data: { isTrusted: false },
-    });
+    // Revoke-then-register atomically so the 1-device policy can't be
+    // violated by concurrent registrations (PRISMA_GUIDELINES.md §10)
+    const [, device] = await this.prisma.$transaction([
+      this.prisma.employeeDevice.updateMany({
+        where: { employeeId: employee.id, isTrusted: true },
+        data: { isTrusted: false, revokedAt: new Date() },
+      }),
+      this.prisma.employeeDevice.create({
+        data: {
+          tenantId: employee.tenantId,
+          employeeId: employee.id,
+          deviceId: dto.deviceId,
+          publicKey: dto.publicKey,
+          isTrusted: true,
+          createdBy: user.userId,
+        },
+      }),
+    ]);
 
-    return this.prisma.employeeDevice.create({
-      data: {
-        employeeId: employee.id,
-        deviceId: dto.deviceId,
-        publicKey: dto.publicKey,
-        isTrusted: true,
-      },
-    });
+    return device;
   }
 
   async revokeDevice(admin: any, employeeId: string, deviceId: string) {
@@ -107,59 +131,62 @@ export class AttendanceService {
       );
     }
 
-    // 4. 15-Minute Debounce Check
-    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
-    const recentSession = await this.prisma.attendanceSession.findFirst({
-      where: {
-        employeeId: employee.id,
-        punchIn: { gte: fifteenMinsAgo },
-      },
-    });
-
-    if (recentSession) {
-      throw new BadRequestException(
-        'You have already punched recently. Please wait 15 minutes.',
-      );
-    }
-
-    // 5. Create or Update Attendance Record
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    let attendance = await this.prisma.attendance.findFirst({
-      where: { employeeId: employee.id, attendanceDate: today },
-    });
-
-    if (!attendance) {
-      attendance = await this.prisma.attendance.create({
-        data: {
-          tenantId: employee.tenantId,
+    // 4-5. Debounce check + attendance/session writes run in one interactive
+    // transaction so a double-tap can't create two open sessions
+    // (PRISMA_GUIDELINES.md §10).
+    return this.prisma.$transaction(async (tx) => {
+      const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+      const recentSession = await tx.attendanceSession.findFirst({
+        where: {
           employeeId: employee.id,
-          attendanceDate: today,
-          status: 'PRESENT',
+          punchIn: { gte: fifteenMinsAgo },
         },
       });
-    }
 
-    // Determine Punch In or Out based on existing open session
-    const openSession = await this.prisma.attendanceSession.findFirst({
-      where: { attendanceId: attendance.id, punchOut: null },
-    });
+      if (recentSession) {
+        throw new BadRequestException(
+          'You have already punched recently. Please wait 15 minutes.',
+        );
+      }
 
-    if (openSession) {
-      // Punch Out
-      return this.prisma.attendanceSession.update({
-        where: { id: openSession.id },
-        data: {
-          punchOut: new Date(),
-          checkOutLatitude: dto.latitude,
-          checkOutLongitude: dto.longitude,
-          punchOutDevice: dto.deviceId,
-        },
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      let attendance = await tx.attendance.findFirst({
+        where: { employeeId: employee.id, attendanceDate: today },
       });
-    } else {
+
+      if (!attendance) {
+        attendance = await tx.attendance.create({
+          data: {
+            tenantId: employee.tenantId,
+            employeeId: employee.id,
+            attendanceDate: today,
+            status: 'PRESENT',
+          },
+        });
+      }
+
+      // Determine Punch In or Out based on existing open session
+      const openSession = await tx.attendanceSession.findFirst({
+        where: { attendanceId: attendance.id, punchOut: null },
+      });
+
+      if (openSession) {
+        // Punch Out
+        return tx.attendanceSession.update({
+          where: { id: openSession.id },
+          data: {
+            punchOut: new Date(),
+            checkOutLatitude: dto.latitude,
+            checkOutLongitude: dto.longitude,
+            punchOutDevice: dto.deviceId,
+          },
+        });
+      }
+
       // Punch In
-      return this.prisma.attendanceSession.create({
+      return tx.attendanceSession.create({
         data: {
           tenantId: employee.tenantId,
           attendanceId: attendance.id,
@@ -172,7 +199,7 @@ export class AttendanceService {
           attendanceMethod: 'BIOMETRIC',
         },
       });
-    }
+    });
   }
 
   async manualCheckout(

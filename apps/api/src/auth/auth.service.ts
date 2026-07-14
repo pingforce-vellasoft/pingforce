@@ -9,7 +9,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { v4 as uuidv4 } from 'uuid';
-import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+import { createHash, randomBytes } from 'crypto';
 import { LoginDto } from '@pingforce-monorepo/dto';
 import { IAuthService, IPrismaService } from '@pingforce-monorepo/shared';
 import { RegisterTenantDto } from './dto/register-tenant.dto';
@@ -188,6 +188,10 @@ export class AuthService implements IAuthService {
     );
   }
 
+  private hashRefreshToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
   async generateTokens(
     userId: string,
     tenantId: string,
@@ -204,34 +208,24 @@ export class AuthService implements IAuthService {
     };
     const accessToken = this.jwtService.sign(payload);
 
-    const tokenId = uuidv4();
-    const refreshTokenPayload = {
-      sub: userId,
-      tenantId,
-      tokenVersion,
-      role: roleCode,
-      jti: tokenId,
-      sid: sessionId,
-    };
-    // Usually refresh tokens have longer expiry
-    const refreshToken = this.jwtService.sign(refreshTokenPayload, {
-      expiresIn: '7d',
-    });
+    // Opaque refresh token (RefreshToken.md §3): cryptographically random,
+    // never a JWT, stored only as a SHA-256 hash. Super-admin tokens are
+    // persisted too, so SYSTEM sessions are revocable.
+    const refreshToken = randomBytes(48).toString('base64url');
 
     const expiresIn = new Date();
     expiresIn.setDate(expiresIn.getDate() + 7);
 
-    if (tenantId !== 'SYSTEM') {
-      await this.prisma.refreshToken.create({
-        data: {
-          userId,
-          tenantId,
-          sessionId,
-          tokenHash: tokenId,
-          expiresAt: expiresIn,
-        },
-      });
-    }
+    await this.prisma.refreshToken.create({
+      data: {
+        ...(tenantId === 'SYSTEM'
+          ? { superAdminId: userId }
+          : { userId, sessionId }),
+        tenantId,
+        tokenHash: this.hashRefreshToken(refreshToken),
+        expiresAt: expiresIn,
+      },
+    });
 
     let userDetails = null;
     if (tenantId === 'SYSTEM') {
@@ -279,45 +273,19 @@ export class AuthService implements IAuthService {
   }
 
   async refreshToken(token: string) {
-    try {
-      const decoded = this.jwtService.verify(token);
-      const tokenId = decoded.jti;
-      const tenantId = decoded.tenantId;
+    // Opaque token lookup — no JWT parsing (RefreshToken.md §3)
+    const storedToken = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash: this.hashRefreshToken(token) },
+    });
 
-      if (tenantId === 'SYSTEM') {
-        const superAdmin = await this.prisma.superAdmin.findUnique({
-          where: { id: decoded.sub },
-        });
+    if (!storedToken) {
+      throw new UnauthorizedException('Refresh token is invalid or expired');
+    }
 
-        if (
-          !superAdmin ||
-          superAdmin.tokenVersion !== decoded.tokenVersion ||
-          superAdmin.status !== 'ACTIVE'
-        ) {
-          throw new UnauthorizedException(
-            'Token invalid or super admin suspended',
-          );
-        }
-
-        return this.generateTokens(
-          superAdmin.id,
-          'SYSTEM',
-          superAdmin.tokenVersion,
-          'SUPER_ADMIN',
-        );
-      }
-
-      const storedToken = await this.prisma.refreshToken.findUnique({
-        where: { tokenHash: tokenId },
-      });
-
-      if (!storedToken) {
-        throw new UnauthorizedException('Refresh token is invalid or expired');
-      }
-
-      // Replay detection (RefreshToken.md §8): a rotated/revoked token being
-      // presented again means it was stolen or replayed. Kill every session.
-      if (storedToken.revokedAt) {
+    // Replay detection (RefreshToken.md §8): a rotated/revoked token being
+    // presented again means it was stolen or replayed. Kill every session.
+    if (storedToken.revokedAt) {
+      if (storedToken.userId) {
         await this.prisma.user.update({
           where: { id: storedToken.userId },
           data: { tokenVersion: { increment: 1 } },
@@ -327,38 +295,26 @@ export class AuthService implements IAuthService {
           storedToken.userId,
           'TOKEN_REPLAY',
         );
-        throw new UnauthorizedException('Refresh token is invalid or expired');
+      } else if (storedToken.superAdminId) {
+        await this.prisma.superAdmin.update({
+          where: { id: storedToken.superAdminId },
+          data: { tokenVersion: { increment: 1 } },
+        });
+        await this.prisma.refreshToken.updateMany({
+          where: { superAdminId: storedToken.superAdminId, revokedAt: null },
+          data: { revokedAt: new Date(), revokeReason: 'TOKEN_REPLAY' },
+        });
       }
+      throw new UnauthorizedException('Refresh token is invalid or expired');
+    }
 
-      if (storedToken.expiresAt < new Date()) {
-        throw new UnauthorizedException('Refresh token is invalid or expired');
-      }
+    if (storedToken.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token is invalid or expired');
+    }
 
-      // Session must still be active for the token to rotate
-      if (
-        storedToken.sessionId &&
-        !(await this.sessionService.isActive(storedToken.sessionId))
-      ) {
-        throw new UnauthorizedException('Session has been revoked or expired');
-      }
-
-      const user = await this.prisma.user.findUnique({
-        where: { id: decoded.sub },
-        include: { role: true, tenant: true },
-      });
-
-      if (!user || user.tokenVersion !== decoded.tokenVersion) {
-        throw new UnauthorizedException(
-          'Token version mismatch or user not found',
-        );
-      }
-
-      if (user.status !== 'ACTIVE' || user.tenant.status !== 'ACTIVE') {
-        throw new UnauthorizedException('Account is inactive or suspended');
-      }
-
-      // Rotation: mark the old token revoked (kept for replay detection)
-      await this.prisma.refreshToken.update({
+    // Rotation: mark the old token revoked (kept for replay detection)
+    const rotate = () =>
+      this.prisma.refreshToken.update({
         where: { id: storedToken.id },
         data: {
           revokedAt: new Date(),
@@ -367,31 +323,73 @@ export class AuthService implements IAuthService {
         },
       });
 
-      if (storedToken.sessionId) {
-        await this.sessionService.touch(storedToken.sessionId);
+    // Super admin (SYSTEM) path
+    if (storedToken.superAdminId) {
+      const superAdmin = await this.prisma.superAdmin.findUnique({
+        where: { id: storedToken.superAdminId },
+      });
+      if (!superAdmin || superAdmin.status !== 'ACTIVE') {
+        throw new UnauthorizedException(
+          'Token invalid or super admin suspended',
+        );
       }
 
-      const roleCode = user.role?.code || 'UNKNOWN';
+      await rotate();
       return this.generateTokens(
-        user.id,
-        user.tenantId,
-        user.tokenVersion,
-        roleCode,
-        storedToken.sessionId ?? undefined,
+        superAdmin.id,
+        'SYSTEM',
+        superAdmin.tokenVersion,
+        'SUPER_ADMIN',
       );
-    } catch (e) {
-      if (e instanceof TokenExpiredError) {
-        throw new UnauthorizedException('Refresh token expired');
-      }
-      throw new UnauthorizedException('Invalid refresh token');
     }
+
+    // Tenant user path
+    if (
+      storedToken.sessionId &&
+      !(await this.sessionService.isActive(storedToken.sessionId))
+    ) {
+      throw new UnauthorizedException('Session has been revoked or expired');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: storedToken.userId ?? '' },
+      include: { role: true, tenant: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (user.status !== 'ACTIVE' || user.tenant.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Account is inactive or suspended');
+    }
+
+    await rotate();
+
+    if (storedToken.sessionId) {
+      await this.sessionService.touch(storedToken.sessionId);
+    }
+
+    const roleCode = user.role?.code || 'UNKNOWN';
+    return this.generateTokens(
+      user.id,
+      user.tenantId,
+      user.tokenVersion,
+      roleCode,
+      storedToken.sessionId ?? undefined,
+    );
   }
+
   /** Logout-all: invalidates every access token (tokenVersion) and revokes all sessions/refresh tokens. */
   async logoutAll(tenantId: string, userId: string): Promise<void> {
     if (tenantId === 'SYSTEM') {
       await this.prisma.superAdmin.update({
         where: { id: userId },
         data: { tokenVersion: { increment: 1 } },
+      });
+      await this.prisma.refreshToken.updateMany({
+        where: { superAdminId: userId, revokedAt: null },
+        data: { revokedAt: new Date(), revokeReason: 'LOGOUT_ALL' },
       });
       return;
     }

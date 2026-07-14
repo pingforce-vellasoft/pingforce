@@ -5,17 +5,37 @@ import {
   ForbiddenException,
   ConflictException,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { IPrismaService } from '@pingforce-monorepo/shared';
+
+interface CachedGrant {
+  readonly module: string;
+  readonly action: string;
+  readonly dataScope: string;
+}
+
+interface CachedUserGrants {
+  readonly roleCode: string | null;
+  readonly grants: CachedGrant[];
+}
+
+// Short TTL: permission changes propagate within seconds while the guard
+// stops hitting the database on every request.
+const GRANTS_CACHE_TTL_MS = 30_000;
 
 @Injectable()
 export class RbacService {
-  constructor(@Inject('IPrismaService') private prisma: IPrismaService) {}
+  constructor(
+    @Inject('IPrismaService') private prisma: IPrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
 
-  async hasPermission(
-    userId: string,
-    module: string,
-    action: string,
-  ): Promise<boolean> {
+  private async getUserGrants(userId: string): Promise<CachedUserGrants> {
+    const cacheKey = `rbac_grants_${userId}`;
+    const cached = await this.cacheManager.get<CachedUserGrants>(cacheKey);
+    if (cached) return cached;
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -31,22 +51,37 @@ export class RbacService {
       },
     });
 
-    if (!user || !user.role) {
+    const result: CachedUserGrants = {
+      roleCode: user?.role?.code ?? null,
+      grants:
+        user?.role?.permissions.map((rp) => ({
+          module: rp.permission.module,
+          action: rp.permission.action,
+          dataScope: rp.dataScope,
+        })) ?? [],
+    };
+
+    await this.cacheManager.set(cacheKey, result, GRANTS_CACHE_TTL_MS);
+    return result;
+  }
+
+  async hasPermission(
+    userId: string,
+    module: string,
+    action: string,
+  ): Promise<boolean> {
+    const { roleCode, grants } = await this.getUserGrants(userId);
+
+    if (!roleCode) {
       return false; // No role assigned
     }
 
     // Bypass permission check for SUPER_ADMIN
-    if (user.role.code === 'SUPER_ADMIN') {
+    if (roleCode === 'SUPER_ADMIN') {
       return true;
     }
 
-    // Check if any of the user's role permissions match the requested module and action
-    const hasPerm = user.role.permissions.some(
-      (rp) =>
-        rp.permission.module === module && rp.permission.action === action,
-    );
-
-    return hasPerm;
+    return grants.some((g) => g.module === module && g.action === action);
   }
 
   /**
@@ -58,23 +93,13 @@ export class RbacService {
     module: string,
     action: string,
   ): Promise<'OWN' | 'TEAM' | 'BRANCH' | 'ALL' | null> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        role: {
-          include: {
-            permissions: { include: { permission: true } },
-          },
-        },
-      },
-    });
+    const { roleCode, grants } = await this.getUserGrants(userId);
 
-    if (!user || !user.role) return null;
-    if (user.role.code === 'SUPER_ADMIN') return 'ALL';
+    if (!roleCode) return null;
+    if (roleCode === 'SUPER_ADMIN') return 'ALL';
 
-    const match = user.role.permissions.find(
-      (rp) =>
-        rp.permission.module === module && rp.permission.action === action,
+    const match = grants.find(
+      (g) => g.module === module && g.action === action,
     );
 
     return (match?.dataScope as 'OWN' | 'TEAM' | 'BRANCH' | 'ALL') ?? null;
@@ -212,21 +237,24 @@ export class RbacService {
       throw new NotFoundException('Role not found in this tenant');
     }
 
-    // Delete existing permissions for this role
-    await this.prisma.rolePermission.deleteMany({
-      where: { roleId },
-    });
-
-    // Insert new permissions
-    if (permissionIds && permissionIds.length > 0) {
-      await this.prisma.rolePermission.createMany({
-        data: permissionIds.map((permissionId) => ({
-          roleId,
-          permissionId,
-          dataScope: 'OWN', // Default scope
-        })),
-      });
-    }
+    // Replace the grant set atomically — a crash between delete and insert
+    // must never leave the role with no permissions (PRISMA_GUIDELINES.md §10)
+    await this.prisma.$transaction([
+      this.prisma.rolePermission.deleteMany({
+        where: { roleId },
+      }),
+      ...(permissionIds && permissionIds.length > 0
+        ? [
+            this.prisma.rolePermission.createMany({
+              data: permissionIds.map((permissionId) => ({
+                roleId,
+                permissionId,
+                dataScope: 'OWN', // Default scope
+              })),
+            }),
+          ]
+        : []),
+    ]);
 
     return this.prisma.role.findUnique({
       where: { id: roleId },
