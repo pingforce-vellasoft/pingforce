@@ -1,0 +1,3 @@
+# Folder Standards
+
+Foundation documentation.
