@@ -1,10 +1,5 @@
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MinLength,
-} from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsStrongPassword } from '../../common/validators/password-policy.decorator';
 
 export class RegisterEmployeeDto {
   @IsString()
@@ -16,7 +11,7 @@ export class RegisterEmployeeDto {
   email!: string;
 
   @IsString()
-  @MinLength(8)
+  @IsStrongPassword()
   password!: string;
 
   @IsString()

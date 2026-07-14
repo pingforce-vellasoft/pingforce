@@ -9,6 +9,17 @@ import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { Prisma } from '@prisma/client';
 
+// Safe projection for User relations — never expose passwordHash/tokenVersion
+const SAFE_USER_SELECT = {
+  select: {
+    id: true,
+    email: true,
+    phone: true,
+    status: true,
+    profile: { select: { firstName: true, lastName: true } },
+  },
+} as const;
+
 @Injectable()
 export class LeadRepository extends PrismaRepository<
   any,
@@ -34,7 +45,7 @@ export class LeadRepository extends PrismaRepository<
     return this.delegate.findMany({
       where: { tenantId },
       include: {
-        ownerUser: true,
+        ownerUser: SAFE_USER_SELECT,
       },
       take: limit,
       ...(cursorStr && { skip: 1, cursor: { id: cursorStr } }),
@@ -46,7 +57,7 @@ export class LeadRepository extends PrismaRepository<
     const lead = await this.delegate.findFirst({
       where: { id, tenantId },
       include: {
-        ownerUser: true,
+        ownerUser: SAFE_USER_SELECT,
       },
     });
 
@@ -69,7 +80,7 @@ export class LeadRepository extends PrismaRepository<
       where: { tenantId },
       include: {
         pipelineStage: true,
-        ownerUser: true,
+        ownerUser: SAFE_USER_SELECT,
       },
       take: limit,
       ...(cursor && { skip: 1, cursor: { id: cursor } }),

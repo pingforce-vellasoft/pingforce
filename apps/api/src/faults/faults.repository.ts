@@ -8,6 +8,17 @@ import { PrismaRepository, IPrismaService } from '@pingforce-monorepo/shared';
 import { FaultStatus } from './dto/update-fault-status.dto';
 import { Prisma } from '@prisma/client';
 
+// Safe projection for User relations — never expose passwordHash/tokenVersion
+const SAFE_USER_SELECT = {
+  select: {
+    id: true,
+    email: true,
+    phone: true,
+    status: true,
+    profile: { select: { firstName: true, lastName: true } },
+  },
+} as const;
+
 @Injectable()
 export class FaultsRepository extends PrismaRepository<
   any,
@@ -30,7 +41,7 @@ export class FaultsRepository extends PrismaRepository<
       where: { tenantId },
       include: {
         customer: true,
-        assignedToUser: true,
+        assignedToUser: SAFE_USER_SELECT,
       },
       skip,
       take,
@@ -61,7 +72,7 @@ export class FaultsRepository extends PrismaRepository<
       where: { id, tenantId },
       include: {
         customer: true,
-        assignedToUser: true,
+        assignedToUser: SAFE_USER_SELECT,
         faultTimelines: {
           orderBy: { createdAt: 'desc' },
         },
@@ -78,7 +89,7 @@ export class FaultsRepository extends PrismaRepository<
         status: { notIn: [FaultStatus.RESOLVED, FaultStatus.CLOSED] },
       },
       include: {
-        assignedToUser: true,
+        assignedToUser: SAFE_USER_SELECT,
       },
       orderBy: {
         slaDeadline: 'asc',

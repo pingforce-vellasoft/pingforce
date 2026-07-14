@@ -3,13 +3,10 @@ import {
   IsNotEmpty,
   IsDateString,
   IsOptional,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateLeaveRequestDto {
-  @IsNotEmpty()
-  @IsString()
-  employeeId!: string;
-
   @IsNotEmpty()
   @IsString()
   leaveTypeId!: string;
@@ -24,5 +21,6 @@ export class CreateLeaveRequestDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   reason?: string;
 }

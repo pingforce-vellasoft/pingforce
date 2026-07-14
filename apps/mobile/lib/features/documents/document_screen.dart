@@ -232,9 +232,9 @@ class _DocumentListScreenState extends ConsumerState<DocumentListScreen>
       ),
       body: _filtered.isEmpty
           ? const AppEmptyState(
-              icon: Icons.folder_open_rounded,
-              title: 'No documents found',
-              subtitle: 'Upload your first document using the button above.',
+              type: AppEmptyStateType.noData,
+              customTitle: 'No documents found',
+              customSubtitle: 'Upload your first document using the button above.',
             )
           : ListView.separated(
               padding: AppSpacing.screenPaddingAll,

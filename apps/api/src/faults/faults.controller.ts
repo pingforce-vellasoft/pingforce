@@ -14,6 +14,8 @@ import { CreateFaultDto } from './dto/create-fault.dto';
 import { UpdateFaultDto } from './dto/update-fault.dto';
 import { UpdateFaultStatusDto } from './dto/update-fault-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RbacGuard } from '../rbac/guards/rbac.guard';
+import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import {
   CurrentTenant,
   CurrentUserContext,
@@ -35,7 +37,7 @@ import {
   GetBreachedFaultsQuery,
 } from './queries/impl';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RbacGuard)
 @Controller('faults')
 export class FaultsController {
   constructor(
@@ -44,6 +46,7 @@ export class FaultsController {
   ) {}
 
   @Post()
+  @RequirePermission('FAULTS', 'CREATE')
   create(
     @CurrentTenant() tenantId: string,
     @CurrentUser() currentUser: CurrentUserContext,
@@ -55,6 +58,7 @@ export class FaultsController {
   }
 
   @Get()
+  @RequirePermission('FAULTS', 'READ')
   findAll(
     @CurrentTenant() tenantId: string,
     @Query('skip') skip?: string,
@@ -70,6 +74,7 @@ export class FaultsController {
   }
 
   @Get('breached')
+  @RequirePermission('FAULTS', 'READ')
   findBreached(
     @CurrentTenant() tenantId: string,
     @Query('skip') skip?: string,
@@ -85,6 +90,7 @@ export class FaultsController {
   }
 
   @Get('assigned')
+  @RequirePermission('FAULTS', 'READ_OWN')
   findAssignedToMe(
     @CurrentTenant() tenantId: string,
     @CurrentUser() currentUser: CurrentUserContext,
@@ -102,11 +108,13 @@ export class FaultsController {
   }
 
   @Get(':id')
+  @RequirePermission('FAULTS', 'READ_OWN')
   findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.queryBus.execute(new GetFaultByIdQuery(tenantId, id));
   }
 
   @Patch(':id')
+  @RequirePermission('FAULTS', 'UPDATE')
   update(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -119,6 +127,7 @@ export class FaultsController {
   }
 
   @Patch(':id/status')
+  @RequirePermission('FAULTS', 'UPDATE')
   updateStatus(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -136,6 +145,7 @@ export class FaultsController {
   }
 
   @Post(':id/escalate')
+  @RequirePermission('FAULTS', 'ESCALATE')
   escalate(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -147,6 +157,7 @@ export class FaultsController {
   }
 
   @Delete(':id')
+  @RequirePermission('FAULTS', 'DELETE')
   remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.commandBus.execute(new RemoveFaultCommand(tenantId, id));
   }

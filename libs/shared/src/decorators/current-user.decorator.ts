@@ -11,8 +11,14 @@ export const CurrentUser = createParamDecorator(
     if (!request.user) {
       throw new UnauthorizedException('User context not found in token');
     }
+    // JwtStrategy.validate() maps the JWT `sub` claim to `userId`;
+    // fall back to `sub` for any raw-payload contexts.
+    const userId = request.user.userId ?? request.user.sub;
+    if (!userId) {
+      throw new UnauthorizedException('User id missing from token context');
+    }
     return {
-      userId: request.user.sub,
+      userId,
       email: request.user.email,
       tenantId: request.user.tenantId,
     };

@@ -15,14 +15,17 @@ import { UpdateLeadDto } from './dto/update-lead.dto';
 import { UpdateLeadStageDto } from './dto/update-lead-stage.dto';
 import { UpdateLeadOwnerDto } from './dto/update-lead-owner.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RbacGuard } from '../rbac/guards/rbac.guard';
+import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import { CurrentTenant } from '@pingforce-monorepo/shared';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RbacGuard)
 @Controller('leads')
 export class LeadController {
   constructor(private readonly leadService: LeadService) {}
 
   @Post()
+  @RequirePermission('LEADS', 'CREATE')
   create(
     @CurrentTenant() tenantId: string,
     @Body() createLeadDto: CreateLeadDto,
@@ -31,6 +34,7 @@ export class LeadController {
   }
 
   @Get()
+  @RequirePermission('LEADS', 'READ')
   findAll(
     @CurrentTenant() tenantId: string,
     @Query('cursor') cursor?: string,
@@ -44,6 +48,7 @@ export class LeadController {
   }
 
   @Get('pipeline')
+  @RequirePermission('LEADS', 'READ')
   getPipeline(
     @CurrentTenant() tenantId: string,
     @Query('cursor') cursor?: string,
@@ -57,11 +62,13 @@ export class LeadController {
   }
 
   @Get(':id')
+  @RequirePermission('LEADS', 'READ')
   findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.leadService.findOne(tenantId, id);
   }
 
   @Patch(':id')
+  @RequirePermission('LEADS', 'UPDATE')
   update(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -71,6 +78,7 @@ export class LeadController {
   }
 
   @Patch(':id/assign')
+  @RequirePermission('LEADS', 'UPDATE')
   assignOwner(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -80,6 +88,7 @@ export class LeadController {
   }
 
   @Patch(':id/stage')
+  @RequirePermission('LEADS', 'UPDATE')
   updateStage(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -89,6 +98,7 @@ export class LeadController {
   }
 
   @Delete(':id')
+  @RequirePermission('LEADS', 'DELETE')
   remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.leadService.remove(tenantId, id);
   }

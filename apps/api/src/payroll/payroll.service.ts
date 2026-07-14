@@ -8,6 +8,8 @@ import {
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import { CreateSalaryStructureDto } from './dto/create-salary-structure.dto';
+import { CreatePayrollCycleDto } from './dto/create-payroll-cycle.dto';
 
 @Injectable()
 export class PayrollService {
@@ -19,20 +21,34 @@ export class PayrollService {
     @InjectQueue('payroll') private payrollQueue: Queue,
   ) {}
 
-  async createStructure(tenantId: string, data: any) {
+  async createStructure(tenantId: string, dto: CreateSalaryStructureDto) {
+    // Validate the employee belongs to this tenant before writing
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: dto.employeeId, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!employee) {
+      throw new NotFoundException('Employee not found in this tenant');
+    }
+
     return this.prisma.salaryStructure.create({
       data: {
-        ...data,
         tenantId,
+        employeeId: dto.employeeId,
+        basicPay: dto.basicPay,
+        hra: dto.hra,
+        specialAllowance: dto.specialAllowance,
+        standardDeductions: dto.standardDeductions,
       },
     });
   }
 
-  async createCycle(tenantId: string, data: any) {
+  async createCycle(tenantId: string, dto: CreatePayrollCycleDto) {
     return this.prisma.payrollCycle.create({
       data: {
-        ...data,
         tenantId,
+        month: dto.month,
+        year: dto.year,
         status: 'DRAFT',
       },
     });

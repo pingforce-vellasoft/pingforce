@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/theme.dart';
 import 'auth_state.dart';
 import 'auth_notifier.dart';
-import 'login_screen.dart' show _AuthErrorBanner, _LoadingButton;
+import 'widgets/auth_widgets.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FORGOT PASSWORD SCREEN  (AUDIT §3.2 — Forgot Password Flow)
@@ -230,7 +230,7 @@ class _IdentifierStep extends ConsumerWidget {
               child: _SimpleErrorBanner(message: state.authError.message),
             ),
 
-          _LoadingButton(
+          LoadingButton(
             isLoading: state.isLoading,
             label: 'Send Code',
             onPressed: state.canSendOtp ? notifier.sendOtp : null,
@@ -489,7 +489,7 @@ class _OtpStepState extends ConsumerState<_OtpStep> {
 
           const SizedBox(height: AppSpacing.space5),
 
-          _LoadingButton(
+          LoadingButton(
             isLoading: state.isLoading,
             label: 'Verify Code',
             onPressed: state.canVerifyOtp && !state.isLoading
@@ -621,7 +621,7 @@ class _NewPasswordStep extends ConsumerWidget {
 
           const SizedBox(height: AppSpacing.space6),
 
-          _LoadingButton(
+          LoadingButton(
             isLoading: state.isLoading,
             label: 'Reset Password',
             onPressed: state.canSubmitNewPassword && !state.isLoading

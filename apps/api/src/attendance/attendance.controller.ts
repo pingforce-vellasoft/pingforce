@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RbacGuard } from '../rbac/guards/rbac.guard';
+import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import {
   RegisterDeviceDto,
   PunchDto,
@@ -27,11 +29,12 @@ interface AuthRequest {
 }
 
 @Controller('attendance')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RbacGuard)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post('device/register')
+  @RequirePermission('ATTENDANCE', 'CREATE')
   async registerDevice(
     @Req() req: AuthRequest,
     @Body() dto: RegisterDeviceDto,
@@ -40,6 +43,7 @@ export class AttendanceController {
   }
 
   @Post('device/revoke')
+  @RequirePermission('ATTENDANCE', 'APPROVE')
   async revokeDevice(
     @Req() req: AuthRequest,
     @Body('employeeId') employeeId: string,
@@ -49,11 +53,13 @@ export class AttendanceController {
   }
 
   @Post('punch')
+  @RequirePermission('ATTENDANCE', 'CREATE')
   async punch(@Req() req: AuthRequest, @Body() dto: PunchDto) {
     return this.attendanceService.punch(req.user, dto);
   }
 
   @Post('manual-checkout')
+  @RequirePermission('ATTENDANCE', 'APPROVE')
   async manualCheckout(
     @Req() req: AuthRequest,
     @Body() dto: ManualCheckoutDto,
@@ -62,11 +68,13 @@ export class AttendanceController {
   }
 
   @Get('device')
+  @RequirePermission('ATTENDANCE', 'READ')
   async getDevices(@Req() req: AuthRequest) {
     return this.attendanceService.getDevices(req.user);
   }
 
   @Get('logs')
+  @RequirePermission('ATTENDANCE', 'READ_OWN')
   async getLogs(
     @Req() req: AuthRequest,
     @Query('page') page = 1,
@@ -86,6 +94,7 @@ export class AttendanceController {
   }
 
   @Post('geofence')
+  @RequirePermission('GEOFENCES', 'CREATE')
   async createGeofence(
     @Req() req: AuthRequest,
     @Body() dto: CreateGeofenceDto,
@@ -94,11 +103,13 @@ export class AttendanceController {
   }
 
   @Get('geofence')
+  @RequirePermission('GEOFENCES', 'READ')
   async getGeofences(@Req() req: AuthRequest) {
     return this.attendanceService.getGeofences(req.user);
   }
 
   @Delete('geofence/:id')
+  @RequirePermission('GEOFENCES', 'DELETE')
   async deleteGeofence(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.attendanceService.deleteGeofence(req.user, id);
   }

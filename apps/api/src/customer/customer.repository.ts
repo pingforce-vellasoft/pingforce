@@ -9,6 +9,17 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Prisma } from '@prisma/client';
 
+// Safe projection for User relations — never expose passwordHash/tokenVersion
+const SAFE_USER_SELECT = {
+  select: {
+    id: true,
+    email: true,
+    phone: true,
+    status: true,
+    profile: { select: { firstName: true, lastName: true } },
+  },
+} as const;
+
 @Injectable()
 export class CustomerRepository extends PrismaRepository<
   any,
@@ -43,7 +54,7 @@ export class CustomerRepository extends PrismaRepository<
       where: { tenantId },
       include: {
         parentCustomer: true,
-        accountManager: true,
+        accountManager: SAFE_USER_SELECT,
       },
       skip,
       take,
@@ -56,7 +67,7 @@ export class CustomerRepository extends PrismaRepository<
       include: {
         parentCustomer: true,
         childCustomers: true,
-        accountManager: true,
+        accountManager: SAFE_USER_SELECT,
       },
     });
 

@@ -4,13 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/theme.dart';
 import 'dashboard_state.dart';
 import 'dashboard_notifier.dart';
-import 'widgets/dashboard_header.dart';
 import 'widgets/attendance_hero_card.dart';
-import 'widgets/kpi_cards_row.dart';
-import 'widgets/quick_actions_grid.dart';
-import 'widgets/activity_feed_section.dart';
-import 'widgets/team_status_card.dart';
-import 'widgets/sync_status_bar.dart';
+import 'widgets/dashboard_widgets.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DASHBOARD SCREEN  (DASHBOARD_SPEC.md)

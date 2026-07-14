@@ -99,16 +99,14 @@ export class AuthService {
 
     this.profileFetch$ = this.http.get<UserProfile>('/api/v1/auth/me').pipe(
       tap((profile) => {
-        console.log('Fetched profile:', profile);
         if (profile) {
-          profile.roleCode = profile.roleCode || 'SUPER_ADMIN';
+          // A missing role must never grant elevated access — default to
+          // no role so hasRole() denies everything until the API says otherwise.
+          profile.roleCode = profile.roleCode || 'NONE';
         }
         this.currentUser.set(profile);
       }),
-      catchError((err) => {
-        console.error('Failed to fetch profile', err);
-        return of(null);
-      }),
+      catchError(() => of(null)),
       finalize(() => {
         this.profileFetch$ = null;
       }),

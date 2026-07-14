@@ -22,6 +22,7 @@ export class ClaimsRepository extends PrismaRepository<
 
   async listPendingClaims(
     tenantId: string,
+    scopeFilter: Record<string, unknown> = {},
     skip?: number,
     take?: number,
   ): Promise<any[]> {
@@ -29,6 +30,7 @@ export class ClaimsRepository extends PrismaRepository<
       where: {
         tenantId,
         status: 'PENDING',
+        ...scopeFilter,
       },
       include: {
         expenseCategory: true,

@@ -706,7 +706,6 @@ class _BackNavigationHandlerState extends State<BackNavigationHandler> {
         AppSnackBar.showInfo(
           context,
           'Press back again to exit',
-          duration: const Duration(seconds: 2),
         );
       },
       child: widget.child,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/theme.dart';
@@ -495,6 +497,7 @@ class _LiveTimer extends StatefulWidget {
 
 class _LiveTimerState extends State<_LiveTimer> {
   late Duration _elapsed;
+  Timer? _timer;
 
   @override
   void initState() {
@@ -502,19 +505,20 @@ class _LiveTimerState extends State<_LiveTimer> {
     _elapsed = widget.startTime != null
         ? DateTime.now().difference(widget.startTime!)
         : Duration.zero;
-    _tick();
-  }
-
-  void _tick() {
-    Future.delayed(const Duration(seconds: 1), () {
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() {
         _elapsed = widget.startTime != null
             ? DateTime.now().difference(widget.startTime!)
             : Duration.zero;
       });
-      _tick();
     });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override

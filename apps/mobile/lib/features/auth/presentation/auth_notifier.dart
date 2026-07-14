@@ -231,12 +231,9 @@ class ForgotPasswordNotifier extends AutoDisposeNotifier<ForgotPasswordState> {
   Timer? _countdownTimer;
 
   @override
-  ForgotPasswordState build() => const ForgotPasswordState();
-
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    super.dispose();
+  ForgotPasswordState build() {
+    ref.onDispose(() => _countdownTimer?.cancel());
+    return const ForgotPasswordState();
   }
 
   // ── Step 1: Identifier ────────────────────────────────────────────────

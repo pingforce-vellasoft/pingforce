@@ -12,17 +12,17 @@ import { MasterDataService } from './master-data.service';
 import { CreateMasterDataDto } from './dto/create-master-datum.dto';
 import { UpdateMasterDataDto } from './dto/update-master-datum.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RbacGuard } from '../rbac/guards/rbac.guard';
+import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import { CurrentTenant } from '@pingforce-monorepo/shared';
 
-// In a real app, this would be a custom decorator @CurrentUser() extracting from JWT.
-// For now, we will extract tenantId from headers for flexibility, or you can wire it to the AuthGuard.
-
-@UseGuards(JwtAuthGuard)
-@Controller('v1/master-data')
+@UseGuards(JwtAuthGuard, RbacGuard)
+@Controller('master-data')
 export class MasterDataController {
   constructor(private readonly masterDataService: MasterDataService) {}
 
   @Post(':type')
+  @RequirePermission('MASTER_DATA', 'CREATE')
   create(
     @CurrentTenant() tenantId: string,
     @Param('type') type: string,
@@ -32,11 +32,13 @@ export class MasterDataController {
   }
 
   @Get(':type')
+  @RequirePermission('MASTER_DATA', 'READ')
   findAll(@CurrentTenant() tenantId: string, @Param('type') type: string) {
     return this.masterDataService.findAll(tenantId, type);
   }
 
   @Get(':type/:id')
+  @RequirePermission('MASTER_DATA', 'READ')
   findOne(
     @CurrentTenant() tenantId: string,
     @Param('type') type: string,
@@ -46,6 +48,7 @@ export class MasterDataController {
   }
 
   @Patch(':type/:id')
+  @RequirePermission('MASTER_DATA', 'UPDATE')
   update(
     @CurrentTenant() tenantId: string,
     @Param('type') type: string,
@@ -61,6 +64,7 @@ export class MasterDataController {
   }
 
   @Delete(':type/:id')
+  @RequirePermission('MASTER_DATA', 'DELETE')
   remove(
     @CurrentTenant() tenantId: string,
     @Param('type') type: string,

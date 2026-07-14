@@ -189,14 +189,19 @@ model UserProfile {
 }
 
 model Session {
-  id        String   @id @default(uuid())
-  tenantId  String
-  userId    String
-  deviceId  String?
-  ip        String?
-  userAgent String?
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  id             String    @id @default(uuid())
+  tenantId       String
+  userId         String
+  deviceId       String?
+  platform       String? // WEB, MOBILE, API
+  ip             String?
+  userAgent      String?
+  lastActivityAt DateTime  @default(now())
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  revokeReason   String? // LOGOUT, LOGOUT_ALL, ADMIN_REVOKE, TOKEN_REPLAY, PASSWORD_RESET
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -205,17 +210,21 @@ model Session {
   @@unique([id, tenantId])
   @@index([tenantId])
   @@index([userId])
+  @@index([expiresAt])
   @@map("sessions")
 }
 
 model RefreshToken {
-  id        String    @id @default(uuid())
-  userId    String
-  tenantId  String
-  tokenHash String    @unique
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime  @default(now())
+  id           String    @id @default(uuid())
+  userId       String
+  tenantId     String
+  sessionId    String?
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  revokeReason String? // ROTATED, LOGOUT, LOGOUT_ALL, TOKEN_REPLAY, PASSWORD_RESET
+  lastUsedAt   DateTime?
+  createdAt    DateTime  @default(now())
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -223,21 +232,27 @@ model RefreshToken {
   @@unique([id, tenantId])
   @@index([userId])
   @@index([tenantId])
+  @@index([sessionId])
   @@map("refresh_tokens")
 }
 
 model OtpCode {
-  id        String    @id @default(uuid())
-  userId    String
-  otp       String
-  purpose   String // e.g., PASSWORD_RESET, LOGIN
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
+  id             String    @id @default(uuid())
+  tenantId       String?
+  userId         String
+  otp            String // SHA-256 hash of the OTP — never plaintext
+  purpose        String // e.g., PASSWORD_RESET, LOGIN
+  channel        String    @default("EMAIL") // EMAIL, SMS
+  failedAttempts Int       @default(0)
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, purpose])
+  @@index([tenantId])
   @@map("otp_codes")
 }
 
@@ -970,12 +985,17 @@ model AuditLog {
   id         String   @id @default(uuid())
   tenantId   String
   actorId    String?
+  module     String? // e.g. AUTH, RBAC, ATTENDANCE, PAYROLL
   entityName String
   entityId   String
   action     String
+  outcome    String   @default("SUCCESS") // SUCCESS, FAILURE
+  severity   String   @default("INFO") // INFO, LOW, MEDIUM, HIGH, CRITICAL
   oldValue   Json?
   newValue   Json?
+  requestId  String?
   ipAddress  String?
+  userAgent  String?
   deviceId   String?
   createdAt  DateTime @default(now())
 
@@ -984,6 +1004,10 @@ model AuditLog {
   @@unique([id, tenantId])
   @@index([tenantId])
   @@index([entityName])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, module])
+  @@index([tenantId, severity])
+  @@index([requestId])
   @@map("audit_logs")
 }
 

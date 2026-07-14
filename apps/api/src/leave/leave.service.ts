@@ -6,24 +6,44 @@ import {
 } from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
+import { RbacService } from '../rbac/rbac.service';
 
 @Injectable()
 export class LeaveService {
   constructor(
     @Inject('IPrismaService')
     private readonly prisma: IPrismaService,
+    private readonly rbacService: RbacService,
   ) {}
 
-  async requestLeave(tenantId: string, dto: CreateLeaveRequestDto) {
+  async requestLeave(
+    tenantId: string,
+    userId: string,
+    dto: CreateLeaveRequestDto,
+  ) {
     const startDate = new Date(dto.startDate);
     const endDate = new Date(dto.endDate);
+
+    // Resolve the caller's own employee record — leave is always filed as self
+    const employee = await this.prisma.employee.findFirst({
+      where: { tenantId, userId, deletedAt: null },
+      select: { id: true },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(
+        'No employee record is linked to this user account',
+      );
+    }
+
+    const employeeId = employee.id;
 
     return this.prisma.$transaction(async (tx) => {
       // Validate overlapping leaves
       const overlapping = await tx.leaveRequest.findFirst({
         where: {
           tenantId,
-          employeeId: dto.employeeId,
+          employeeId,
           status: { in: ['PENDING', 'APPROVED'] },
           OR: [{ startDate: { lte: endDate }, endDate: { gte: startDate } }],
         },
@@ -45,7 +65,7 @@ export class LeaveService {
         where: {
           tenantId_employeeId_leaveTypeId_year: {
             tenantId,
-            employeeId: dto.employeeId,
+            employeeId,
             leaveTypeId: dto.leaveTypeId,
             year,
           },
@@ -69,7 +89,7 @@ export class LeaveService {
       return tx.leaveRequest.create({
         data: {
           tenantId,
-          employeeId: dto.employeeId,
+          employeeId,
           leaveTypeId: dto.leaveTypeId,
           startDate,
           endDate,
@@ -93,16 +113,53 @@ export class LeaveService {
     });
   }
 
-  async getPendingLeaves(tenantId: string) {
+  async getPendingLeaves(
+    tenantId: string,
+    requesterUserId: string,
+    skip = 0,
+    take = 50,
+  ) {
+    // Data scope (DataScope.md): tenant admins see all, managers see their
+    // team, everyone else sees nothing they aren't scoped to.
+    const scope = await this.rbacService.getDataScope(
+      requesterUserId,
+      'LEAVES',
+      'READ',
+    );
+    const scopeFilter = await this.rbacService.buildEmployeeScopeFilter(
+      tenantId,
+      requesterUserId,
+      scope,
+    );
+    if (scopeFilter === null) return [];
+
     return this.prisma.leaveRequest.findMany({
-      where: { tenantId, status: 'PENDING' },
+      where: { tenantId, status: 'PENDING', ...scopeFilter },
       include: {
         employee: {
-          include: { user: true },
+          select: {
+            id: true,
+            employeeCode: true,
+            firstName: true,
+            lastName: true,
+            // Never include the full user record here — it carries
+            // passwordHash and tokenVersion.
+            user: {
+              select: {
+                id: true,
+                email: true,
+                profile: {
+                  select: { firstName: true, lastName: true },
+                },
+              },
+            },
+          },
         },
         leaveType: true,
       },
       orderBy: { createdAt: 'desc' },
+      skip,
+      take,
     });
   }
 

@@ -23,6 +23,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ignoreExpiration: false,
       secretOrKey: key,
       algorithms: [algorithm as Algorithm],
+      // Validate mandatory claims (JWT.md §4)
+      issuer: configService.get<string>('JWT_ISSUER', 'pingforce'),
+      audience: configService.get<string>('JWT_AUDIENCE', 'pingforce-api'),
     });
   }
 
@@ -52,6 +55,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         tenantId: 'SYSTEM',
         email: superAdmin.email,
         roleCode: 'SUPER_ADMIN',
+        sessionId: payload.sid,
       };
     }
 
@@ -85,6 +89,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: user.email,
       roleCode: roleCode,
       isOnboarded: !!user.profile,
+      sessionId: payload.sid,
     };
   }
 }

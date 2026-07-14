@@ -28,8 +28,8 @@ class PingForceApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'PingForce',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
       routerConfig: router,
     );

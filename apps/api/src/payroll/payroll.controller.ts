@@ -4,30 +4,43 @@ import {
   Post,
   Body,
   Param,
-  Request,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentTenant } from '@pingforce-monorepo/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RbacGuard } from '../rbac/guards/rbac.guard';
+import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import { PayrollService } from './payroll.service';
+import { CreateSalaryStructureDto } from './dto/create-salary-structure.dto';
+import { CreatePayrollCycleDto } from './dto/create-payroll-cycle.dto';
+import { GeneratePayslipDto } from './dto/generate-payslip.dto';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RbacGuard)
 @Controller('payroll')
 export class PayrollController {
   constructor(private readonly payrollService: PayrollService) {}
 
   @Post('structure')
-  createStructure(@CurrentTenant() tenantId: string, @Body() data: any) {
-    return this.payrollService.createStructure(tenantId, data);
+  @RequirePermission('PAYROLL', 'CREATE')
+  createStructure(
+    @CurrentTenant() tenantId: string,
+    @Body() dto: CreateSalaryStructureDto,
+  ) {
+    return this.payrollService.createStructure(tenantId, dto);
   }
 
   @Post('cycle')
-  createCycle(@CurrentTenant() tenantId: string, @Body() data: any) {
-    return this.payrollService.createCycle(tenantId, data);
+  @RequirePermission('PAYROLL', 'CREATE')
+  createCycle(
+    @CurrentTenant() tenantId: string,
+    @Body() dto: CreatePayrollCycleDto,
+  ) {
+    return this.payrollService.createCycle(tenantId, dto);
   }
 
   @Get('cycles')
+  @RequirePermission('PAYROLL', 'READ')
   getCycles(
     @CurrentTenant() tenantId: string,
     @Query('skip') skip?: string,
@@ -41,6 +54,7 @@ export class PayrollController {
   }
 
   @Get('cycle/:cycleId/payslips')
+  @RequirePermission('PAYROLL', 'READ')
   getPayslips(
     @CurrentTenant() tenantId: string,
     @Param('cycleId') cycleId: string,
@@ -56,14 +70,15 @@ export class PayrollController {
   }
 
   @Post('generate-payslip')
+  @RequirePermission('PAYROLL', 'CREATE')
   generatePayslip(
     @CurrentTenant() tenantId: string,
-    @Body() data: { employeeId: string; payrollCycleId: string },
+    @Body() dto: GeneratePayslipDto,
   ) {
     return this.payrollService.generatePayslip(
       tenantId,
-      data.employeeId,
-      data.payrollCycleId,
+      dto.employeeId,
+      dto.payrollCycleId,
     );
   }
 }

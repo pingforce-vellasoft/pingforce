@@ -1,4 +1,10 @@
-import { Injectable, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 
 @Injectable()
@@ -41,6 +47,70 @@ export class RbacService {
     );
 
     return hasPerm;
+  }
+
+  /**
+   * Resolves the data scope granted for a module/action (DataScope.md).
+   * SUPER_ADMIN → 'ALL'. No matching permission → null (deny).
+   */
+  async getDataScope(
+    userId: string,
+    module: string,
+    action: string,
+  ): Promise<'OWN' | 'TEAM' | 'BRANCH' | 'ALL' | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        role: {
+          include: {
+            permissions: { include: { permission: true } },
+          },
+        },
+      },
+    });
+
+    if (!user || !user.role) return null;
+    if (user.role.code === 'SUPER_ADMIN') return 'ALL';
+
+    const match = user.role.permissions.find(
+      (rp) =>
+        rp.permission.module === module && rp.permission.action === action,
+    );
+
+    return (match?.dataScope as 'OWN' | 'TEAM' | 'BRANCH' | 'ALL') ?? null;
+  }
+
+  /**
+   * Builds a Prisma `where` fragment restricting employee-linked records to
+   * the caller's data scope. Returns `null` when the caller has no visibility
+   * (deny by default — DataScope.md §6).
+   */
+  async buildEmployeeScopeFilter(
+    tenantId: string,
+    userId: string,
+    scope: 'OWN' | 'TEAM' | 'BRANCH' | 'ALL' | null,
+  ): Promise<Record<string, unknown> | null> {
+    if (scope === null) return null;
+    if (scope === 'ALL') return {};
+
+    const employee = await this.prisma.employee.findFirst({
+      where: { tenantId, userId, deletedAt: null },
+      select: { id: true, branchId: true },
+    });
+    if (!employee) return null;
+
+    switch (scope) {
+      case 'OWN':
+        return { employeeId: employee.id };
+      case 'TEAM':
+        return { employee: { reportingManagerId: employee.id } };
+      case 'BRANCH':
+        return employee.branchId
+          ? { employee: { branchId: employee.branchId } }
+          : null;
+      default:
+        return null;
+    }
   }
 
   async findAllRoles(tenantId: string) {
@@ -101,11 +171,11 @@ export class RbacService {
     });
 
     if (!role) {
-      throw new Error('Role not found in this tenant');
+      throw new NotFoundException('Role not found in this tenant');
     }
 
     if (role.isSystem) {
-      throw new Error('Cannot edit system roles');
+      throw new ForbiddenException('Cannot edit system roles');
     }
 
     return this.prisma.role.update({
@@ -119,15 +189,10 @@ export class RbacService {
 
   async findAllPermissions(tenantId?: string) {
     if (tenantId && tenantId !== 'SYSTEM') {
-      const allowedModules = [
-        'USERS',
-        'ROLES',
-        'GEOFENCES',
-        'ATTENDANCE',
-        'TRACKING',
-      ];
+      // Tenant users may see every module except platform-level ones
+      const platformModules = ['TENANTS', 'BILLING', 'SETTINGS'];
       return this.prisma.permission.findMany({
-        where: { module: { in: allowedModules } },
+        where: { module: { notIn: platformModules } },
       });
     }
     return this.prisma.permission.findMany();
@@ -144,7 +209,7 @@ export class RbacService {
     });
 
     if (!role) {
-      throw new Error('Role not found in this tenant');
+      throw new NotFoundException('Role not found in this tenant');
     }
 
     // Delete existing permissions for this role
@@ -182,15 +247,15 @@ export class RbacService {
     });
 
     if (!role) {
-      throw new Error('Role not found in this tenant');
+      throw new NotFoundException('Role not found in this tenant');
     }
 
     if (role.isSystem) {
-      throw new Error('Cannot delete system roles');
+      throw new ForbiddenException('Cannot delete system roles');
     }
 
     if (role._count.users > 0) {
-      throw new Error(
+      throw new ConflictException(
         'Cannot delete a role that is assigned to users. Reassign users first.',
       );
     }

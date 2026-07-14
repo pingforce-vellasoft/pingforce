@@ -1,0 +1,218 @@
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import 'check_in_state.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CHECK-IN NOTIFIER  (CHECKIN_FLOW_SPEC.md §6 state machine)
+//
+// Drives the attendance screen through S1..S14. GPS permission, position
+// acquisition and mock-location detection are real (geolocator); shift,
+// policy and the punch API call are stubbed until the data layer is bridged.
+// TODO(phase-2): call PunchCommand / attendance datasource via get_it.
+// ─────────────────────────────────────────────────────────────────────────────
+
+final checkInNotifierProvider =
+    NotifierProvider<CheckInNotifier, CheckInState>(CheckInNotifier.new);
+
+class CheckInNotifier extends Notifier<CheckInState> {
+  @override
+  CheckInState build() => const CheckInState();
+
+  // ── S1: initialise shift + policy + GPS ────────────────────────────────────
+
+  Future<void> initialise() async {
+    state = const CheckInState(status: CheckInScreenStatus.initializing);
+
+    // TODO(phase-2): load shift + policy from the attendance repository.
+    final policy = const TenantCheckInPolicy();
+    final shift = ShiftInfo(
+      shiftCode: 'GEN',
+      shiftName: 'General Shift',
+      startTime: '09:00',
+      endTime: '18:00',
+      gracePeriodMinutes: 15,
+      totalBreaksAllowed: 2,
+      requiredHours: 9,
+      isCurrentlyActive: true,
+    );
+
+    state = state.copyWith(
+      policy: policy,
+      shift: shift,
+      isOnline: true,
+    );
+
+    await _acquireGps();
+  }
+
+  Future<void> _acquireGps() async {
+    // Permission flow (S8)
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      state = state.copyWith(
+        status: CheckInScreenStatus.gpsPermissionRequired,
+        buttonMode: CheckInButtonMode.disabled,
+      );
+      return;
+    }
+
+    // S2: acquiring
+    state = state.copyWith(
+      status: CheckInScreenStatus.gpsAcquiring,
+      buttonMode: CheckInButtonMode.loading,
+    );
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 20),
+        ),
+      );
+
+      final location = GpsLocation(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        accuracyMeters: position.accuracy,
+        timestamp: position.timestamp,
+        isMockLocation: position.isMocked,
+        altitude: position.altitude,
+        speed: position.speed,
+      );
+
+      // S14: mock location hard block
+      if (location.isMockLocation &&
+          (state.policy?.mockLocationPolicy ?? 'BLOCK') == 'BLOCK') {
+        state = state.copyWith(
+          location: location,
+          isMockLocationDetected: true,
+          status: CheckInScreenStatus.mockLocationDetected,
+          buttonMode: CheckInButtonMode.disabled,
+        );
+        return;
+      }
+
+      final accuracyLevel = _classifyAccuracy(position.accuracy);
+      final threshold = state.policy?.accuracyThresholdMeters ?? 50.0;
+
+      // S3: poor accuracy
+      if (position.accuracy > threshold &&
+          !(state.policy?.allowLowAccuracy ?? false)) {
+        state = state.copyWith(
+          location: location,
+          gpsAccuracy: accuracyLevel,
+          status: CheckInScreenStatus.gpsPoor,
+          buttonMode: CheckInButtonMode.disabled,
+        );
+        return;
+      }
+
+      // TODO(phase-2): fetch tenant geofence + evaluate containment via the
+      // attendance repository. Until then geofence is reported unconfigured.
+      state = state.copyWith(
+        location: location,
+        gpsAccuracy: accuracyLevel,
+        geofence: GeofenceInfo(
+          id: 'unconfigured',
+          name: 'No geofence configured',
+          center: LatLng(position.latitude, position.longitude),
+          radiusMeters: 0,
+          status: GeofenceStatus.notConfigured,
+        ),
+        geofenceStatus: GeofenceStatus.notConfigured,
+        status: CheckInScreenStatus.readyToCheckIn,
+        buttonMode: CheckInButtonMode.enabledNormal,
+      );
+    } catch (_) {
+      state = state.copyWith(
+        status: CheckInScreenStatus.error,
+        buttonMode: CheckInButtonMode.error,
+        errorMessage: 'Could not determine your location. Try again.',
+        errorCode: 'GPS_TIMEOUT',
+      );
+    }
+  }
+
+  GpsAccuracyLevel _classifyAccuracy(double meters) {
+    if (meters < 10) return GpsAccuracyLevel.excellent;
+    if (meters < 25) return GpsAccuracyLevel.good;
+    if (meters < 50) return GpsAccuracyLevel.fair;
+    return GpsAccuracyLevel.poor;
+  }
+
+  // ── S11/S12: submit check-in ───────────────────────────────────────────────
+
+  Future<void> onCheckInTap(BuildContext context) async {
+    if (state.isCheckInBlocked ||
+        state.status == CheckInScreenStatus.submitting) {
+      return;
+    }
+
+    state = state.copyWith(
+      status: CheckInScreenStatus.submitting,
+      buttonMode: CheckInButtonMode.submitting,
+    );
+
+    // TODO(phase-2): execute PunchCommand with location + device signature.
+    await Future<void>.delayed(const Duration(milliseconds: 800));
+
+    final now = DateTime.now();
+    state = state.copyWith(
+      status: CheckInScreenStatus.success,
+      buttonMode: CheckInButtonMode.success,
+      showSuccessOverlay: true,
+      checkInResult: CheckInResult(
+        attendanceId: 'local-${now.millisecondsSinceEpoch}',
+        checkInTime: now,
+        shiftName: state.shift?.shiftName ?? 'Shift',
+        branchName: 'Main Branch',
+        isOffline: !state.isOnline,
+      ),
+      activeSession: ActiveSession(
+        sessionId: 'local-${now.millisecondsSinceEpoch}',
+        checkInTime: now,
+        shiftName: state.shift?.shiftName ?? 'Shift',
+      ),
+    );
+  }
+
+  void dismissSuccess() {
+    state = state.copyWith(
+      showSuccessOverlay: false,
+      status: CheckInScreenStatus.alreadyCheckedIn,
+      buttonMode: CheckInButtonMode.alreadyCheckedIn,
+    );
+  }
+
+  // ── S6: active session actions ─────────────────────────────────────────────
+
+  Future<void> startBreak() async {
+    final session = state.activeSession;
+    if (session == null) return;
+    // TODO(phase-2): call break API.
+    state = state.copyWith(
+      activeSession: session.copyWith(
+        isOnBreak: !session.isOnBreak,
+        lastBreakStart: session.isOnBreak ? session.lastBreakStart : DateTime.now(),
+        breaksTaken:
+            session.isOnBreak ? session.breaksTaken : (session.breaksTaken ?? 0) + 1,
+      ),
+    );
+  }
+
+  Future<void> initiateCheckOut() async {
+    // TODO(phase-2): execute check-out PunchCommand.
+    state = state.copyWith(
+      activeSession: null,
+      status: CheckInScreenStatus.readyToCheckIn,
+      buttonMode: CheckInButtonMode.enabledNormal,
+    );
+  }
+}

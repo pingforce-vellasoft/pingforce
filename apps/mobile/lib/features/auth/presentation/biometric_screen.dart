@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/theme.dart';
 import 'auth_state.dart';
 import 'auth_notifier.dart';
-import 'login_screen.dart' show _AuthErrorBanner;
+import 'widgets/auth_widgets.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BIOMETRIC UNLOCK SCREEN  (AUDIT §3.3 — Biometric Unlock)

@@ -6,27 +6,37 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
 } from '@nestjs/common';
 import { LeaveService } from './leave.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentTenant } from '@pingforce-monorepo/shared';
+import { RbacGuard } from '../rbac/guards/rbac.guard';
+import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
+import {
+  CurrentTenant,
+  CurrentUser,
+  CurrentUserContext,
+} from '@pingforce-monorepo/shared';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 
 @Controller('leaves')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RbacGuard)
 export class LeaveController {
   constructor(private readonly leaveService: LeaveService) {}
 
   @Post('request')
+  @RequirePermission('LEAVES', 'CREATE')
   async requestLeave(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() currentUser: CurrentUserContext,
     @Body() dto: CreateLeaveRequestDto,
   ) {
-    return this.leaveService.requestLeave(tenantId, dto);
+    // employeeId is always derived from the authenticated user — clients
+    // cannot file leave on behalf of someone else.
+    return this.leaveService.requestLeave(tenantId, currentUser.userId, dto);
   }
 
   @Get('balance/:employeeId')
+  @RequirePermission('LEAVES', 'READ_OWN')
   async getLeaveBalances(
     @CurrentTenant() tenantId: string,
     @Param('employeeId') employeeId: string,
@@ -44,35 +54,41 @@ export class LeaveController {
   }
 
   @Get('pending')
-  async getPendingLeaves(@CurrentTenant() tenantId: string) {
-    return this.leaveService.getPendingLeaves(tenantId);
+  @RequirePermission('LEAVES', 'READ')
+  async getPendingLeaves(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() currentUser: CurrentUserContext,
+  ) {
+    return this.leaveService.getPendingLeaves(tenantId, currentUser.userId);
   }
 
   @Post(':id/approve')
+  @RequirePermission('LEAVES', 'APPROVE')
   async approveLeave(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() currentUser: CurrentUserContext,
     @Param('id') leaveId: string,
-    @Request() req: any,
   ) {
     return this.leaveService.updateLeaveStatus(
       tenantId,
       leaveId,
       'APPROVED',
-      req.user.id,
+      currentUser.userId,
     );
   }
 
   @Post(':id/reject')
+  @RequirePermission('LEAVES', 'APPROVE')
   async rejectLeave(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() currentUser: CurrentUserContext,
     @Param('id') leaveId: string,
-    @Request() req: any,
   ) {
     return this.leaveService.updateLeaveStatus(
       tenantId,
       leaveId,
       'REJECTED',
-      req.user.id,
+      currentUser.userId,
     );
   }
 }

@@ -18,6 +18,9 @@ import { OnboardingTenantDto } from './dto/onboarding-tenant.dto';
 import { OnboardingEmployeeDto } from './dto/onboarding-employee.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { OAuth2Client } from 'google-auth-library';
+import { syncSystemRolePermissions } from '../rbac/permission-catalog';
+import { SessionService, SessionMeta } from './session.service';
+import { AuditService } from '../audit/audit.service';
 
 const googleClient = new OAuth2Client();
 
@@ -26,9 +29,11 @@ export class AuthService implements IAuthService {
   constructor(
     @Inject('IPrismaService') private readonly prisma: IPrismaService,
     private readonly jwtService: JwtService,
+    private readonly sessionService: SessionService,
+    private readonly auditService: AuditService,
   ) {}
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, meta: SessionMeta = {}) {
     if (!loginDto.tenantCode || loginDto.tenantCode.trim() === '') {
       // Super Admin Login
       const superAdmin = await this.prisma.superAdmin.findUnique({
@@ -84,6 +89,18 @@ export class AuthService implements IAuthService {
     });
 
     if (!user) {
+      void this.auditService.log({
+        tenantId: tenant.id,
+        module: 'AUTH',
+        entityName: 'user',
+        entityId: loginDto.email ?? loginDto.phone ?? '-',
+        action: 'LOGIN_FAILED',
+        outcome: 'FAILURE',
+        severity: 'MEDIUM',
+        newValue: { reason: 'UNKNOWN_ACCOUNT' },
+        ipAddress: meta.ip,
+        userAgent: meta.userAgent,
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -92,10 +109,35 @@ export class AuthService implements IAuthService {
       loginDto.password,
     );
     if (!isPasswordValid) {
+      void this.auditService.log({
+        tenantId: tenant.id,
+        actorId: user.id,
+        module: 'AUTH',
+        entityName: 'user',
+        entityId: user.id,
+        action: 'LOGIN_FAILED',
+        outcome: 'FAILURE',
+        severity: 'MEDIUM',
+        ipAddress: meta.ip,
+        userAgent: meta.userAgent,
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
     if (user.status !== 'ACTIVE' || tenant.status !== 'ACTIVE') {
+      void this.auditService.log({
+        tenantId: tenant.id,
+        actorId: user.id,
+        module: 'AUTH',
+        entityName: 'user',
+        entityId: user.id,
+        action: 'LOGIN_FAILED',
+        outcome: 'FAILURE',
+        severity: 'MEDIUM',
+        newValue: { reason: 'ACCOUNT_INACTIVE' },
+        ipAddress: meta.ip,
+        userAgent: meta.userAgent,
+      });
       throw new UnauthorizedException('Account is inactive or suspended');
     }
 
@@ -119,7 +161,31 @@ export class AuthService implements IAuthService {
       }
     }
 
-    return this.generateTokens(user.id, tenant.id, user.tokenVersion, roleCode);
+    // Persistent session — refresh tokens are bound to it (SessionManagement.md)
+    const sessionId = await this.sessionService.create(tenant.id, user.id, {
+      ...meta,
+      platform:
+        meta.platform ?? (portalType === 'MOBILE_APP' ? 'MOBILE' : 'WEB'),
+    });
+
+    void this.auditService.log({
+      tenantId: tenant.id,
+      actorId: user.id,
+      module: 'AUTH',
+      entityName: 'user',
+      entityId: user.id,
+      action: 'LOGIN',
+      ipAddress: meta.ip,
+      userAgent: meta.userAgent,
+    });
+
+    return this.generateTokens(
+      user.id,
+      tenant.id,
+      user.tokenVersion,
+      roleCode,
+      sessionId,
+    );
   }
 
   async generateTokens(
@@ -127,8 +193,15 @@ export class AuthService implements IAuthService {
     tenantId: string,
     tokenVersion: number,
     roleCode: string,
+    sessionId?: string,
   ) {
-    const payload = { sub: userId, tenantId, tokenVersion, role: roleCode };
+    const payload = {
+      sub: userId,
+      tenantId,
+      tokenVersion,
+      role: roleCode,
+      sid: sessionId,
+    };
     const accessToken = this.jwtService.sign(payload);
 
     const tokenId = uuidv4();
@@ -138,6 +211,7 @@ export class AuthService implements IAuthService {
       tokenVersion,
       role: roleCode,
       jti: tokenId,
+      sid: sessionId,
     };
     // Usually refresh tokens have longer expiry
     const refreshToken = this.jwtService.sign(refreshTokenPayload, {
@@ -152,6 +226,7 @@ export class AuthService implements IAuthService {
         data: {
           userId,
           tenantId,
+          sessionId,
           tokenHash: tokenId,
           expiresAt: expiresIn,
         },
@@ -236,12 +311,35 @@ export class AuthService implements IAuthService {
         where: { tokenHash: tokenId },
       });
 
-      if (
-        !storedToken ||
-        storedToken.revokedAt ||
-        storedToken.expiresAt < new Date()
-      ) {
+      if (!storedToken) {
         throw new UnauthorizedException('Refresh token is invalid or expired');
+      }
+
+      // Replay detection (RefreshToken.md §8): a rotated/revoked token being
+      // presented again means it was stolen or replayed. Kill every session.
+      if (storedToken.revokedAt) {
+        await this.prisma.user.update({
+          where: { id: storedToken.userId },
+          data: { tokenVersion: { increment: 1 } },
+        });
+        await this.sessionService.revokeAllForUser(
+          storedToken.tenantId,
+          storedToken.userId,
+          'TOKEN_REPLAY',
+        );
+        throw new UnauthorizedException('Refresh token is invalid or expired');
+      }
+
+      if (storedToken.expiresAt < new Date()) {
+        throw new UnauthorizedException('Refresh token is invalid or expired');
+      }
+
+      // Session must still be active for the token to rotate
+      if (
+        storedToken.sessionId &&
+        !(await this.sessionService.isActive(storedToken.sessionId))
+      ) {
+        throw new UnauthorizedException('Session has been revoked or expired');
       }
 
       const user = await this.prisma.user.findUnique({
@@ -259,10 +357,19 @@ export class AuthService implements IAuthService {
         throw new UnauthorizedException('Account is inactive or suspended');
       }
 
-      // Delete the old refresh token to implement rotation
-      await this.prisma.refreshToken.delete({
+      // Rotation: mark the old token revoked (kept for replay detection)
+      await this.prisma.refreshToken.update({
         where: { id: storedToken.id },
+        data: {
+          revokedAt: new Date(),
+          revokeReason: 'ROTATED',
+          lastUsedAt: new Date(),
+        },
       });
+
+      if (storedToken.sessionId) {
+        await this.sessionService.touch(storedToken.sessionId);
+      }
 
       const roleCode = user.role?.code || 'UNKNOWN';
       return this.generateTokens(
@@ -270,6 +377,7 @@ export class AuthService implements IAuthService {
         user.tenantId,
         user.tokenVersion,
         roleCode,
+        storedToken.sessionId ?? undefined,
       );
     } catch (e) {
       if (e instanceof TokenExpiredError) {
@@ -278,6 +386,23 @@ export class AuthService implements IAuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
+  /** Logout-all: invalidates every access token (tokenVersion) and revokes all sessions/refresh tokens. */
+  async logoutAll(tenantId: string, userId: string): Promise<void> {
+    if (tenantId === 'SYSTEM') {
+      await this.prisma.superAdmin.update({
+        where: { id: userId },
+        data: { tokenVersion: { increment: 1 } },
+      });
+      return;
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { tokenVersion: { increment: 1 } },
+    });
+    await this.sessionService.revokeAllForUser(tenantId, userId, 'LOGOUT_ALL');
+  }
+
   private generateTenantCode(tenantName: string): string {
     const prefix = tenantName
       .replace(/[^a-zA-Z]/g, '')
@@ -314,7 +439,7 @@ export class AuthService implements IAuthService {
       throw new NotFoundException('Tenant not found');
     }
 
-    let user = await this.prisma.user.findFirst({
+    const user = await this.prisma.user.findFirst({
       where: {
         tenantId: tenant.id,
         email: payload.email,
@@ -325,29 +450,13 @@ export class AuthService implements IAuthService {
     });
 
     if (!user) {
-      // Auto-register the user if they don't exist
-      const defaultRole = await this.prisma.role.findFirst({
-        where: { code: 'EMPLOYEE_FIELD_STAFF', tenantId: tenant.id },
-      });
-
-      if (!defaultRole) {
-        throw new BadRequestException('Default role not found for tenant');
-      }
-
-      user = (await this.prisma.user.create({
-        data: {
-          tenantId: tenant.id,
-          roleId: defaultRole.id,
-          email: payload.email,
-          phone: '',
-          // Generate a random password hash since they use Google auth
-          passwordHash: await argon2.hash(uuidv4()),
-          status: 'ACTIVE',
-        },
-        include: {
-          role: true,
-        },
-      })) as any;
+      // Google sign-in is authentication only — it must never provision
+      // accounts. A tenant code is guessable, so auto-registration would let
+      // anyone with a Google account join any tenant. Users must be invited
+      // or registered by their tenant admin first.
+      throw new UnauthorizedException(
+        'No account exists for this email in the selected workspace. Contact your administrator for an invitation.',
+      );
     }
 
     if (user!.status !== 'ACTIVE' || tenant.status !== 'ACTIVE') {
@@ -427,6 +536,8 @@ export class AuthService implements IAuthService {
           },
         });
       }
+
+      await syncSystemRolePermissions(prisma, adminRole.id, 'ADMIN_MANAGER');
 
       const profileData =
         dto.adminFirstName && dto.adminLastName
@@ -515,6 +626,12 @@ export class AuthService implements IAuthService {
         },
       });
     }
+
+    await syncSystemRolePermissions(
+      this.prisma,
+      employeeRole.id,
+      'EMPLOYEE_FIELD_STAFF',
+    );
 
     const employee = await this.prisma.user.create({
       data: {

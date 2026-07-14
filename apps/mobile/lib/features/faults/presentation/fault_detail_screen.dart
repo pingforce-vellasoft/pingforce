@@ -29,7 +29,7 @@ class FaultDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<FaultDetailScreen> createState() => _FaultDetailScreenState();
 }
 
-class _FaultDetailScreenState extends State<FaultDetailScreen>
+class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final List<String> _tabs = ['Overview', 'Attempts', 'Timeline', 'Attachments'];

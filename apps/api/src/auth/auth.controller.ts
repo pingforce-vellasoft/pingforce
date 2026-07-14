@@ -9,7 +9,9 @@ import {
   Get,
   Request,
   Inject,
+  Param,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -28,12 +30,22 @@ import { GoogleAuthDto } from './dto/google-auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { OnboardingTenantDto } from './dto/onboarding-tenant.dto';
 import { OnboardingEmployeeDto } from './dto/onboarding-employee.dto';
+import { ConfirmPasswordResetDto } from './dto/confirm-password-reset.dto';
+import { PasswordResetService } from './password-reset.service';
+import { SessionService } from './session.service';
+import { OtpService } from './otp.service';
+import { RequestOtpDto, VerifyOtpDto } from './dto/otp.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
     @Inject('IAuthService') private readonly authService: IAuthService,
+    private readonly passwordResetService: PasswordResetService,
+    private readonly sessionService: SessionService,
+    private readonly otpService: OtpService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   @ApiOperation({ summary: 'Login user' })
@@ -41,8 +53,12 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials.' })
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Request() req: any) {
+    return (this.authService as any).login(loginDto, {
+      ip: req.ip,
+      userAgent: req.headers?.['user-agent'],
+      deviceId: req.headers?.['x-device-id'],
+    });
   }
 
   @ApiOperation({ summary: 'Refresh JWT token' })
@@ -57,12 +73,141 @@ export class AuthController {
     return this.authService.refreshToken(refreshDto.refreshToken);
   }
 
-  @ApiOperation({ summary: 'Request password reset' })
-  @ApiResponse({ status: 200, description: 'OTP sent.' })
+  @ApiOperation({ summary: 'Request password reset (sends OTP by email)' })
+  @ApiResponse({ status: 200, description: 'Generic acknowledgement.' })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
-  async resetPassword(@Body() resetDto: ResetPasswordDto) {
-    return { message: 'OTP sent to your email.' };
+  async resetPassword(@Body() resetDto: ResetPasswordDto, @Request() req: any) {
+    return this.passwordResetService.requestReset(
+      resetDto.email,
+      resetDto.tenantCode,
+      { ip: req.ip, requestId: req.requestId },
+    );
+  }
+
+  @ApiOperation({ summary: 'Confirm password reset with OTP' })
+  @ApiResponse({ status: 200, description: 'Password reset.' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired code.' })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('reset-password/confirm')
+  @HttpCode(HttpStatus.OK)
+  async confirmResetPassword(
+    @Body() dto: ConfirmPasswordResetDto,
+    @Request() req: any,
+  ) {
+    return this.passwordResetService.confirmReset(
+      dto.email,
+      dto.tenantCode,
+      dto.otp,
+      dto.newPassword,
+      { ip: req.ip, requestId: req.requestId },
+    );
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Request an OTP for the authenticated user (OTP.md §11)' })
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard)
+  @Post('otp/request')
+  @HttpCode(HttpStatus.OK)
+  async requestOtp(@Request() req: any, @Body() dto: RequestOtpDto) {
+    if (req.user.tenantId === 'SYSTEM') {
+      // OTP records reference tenant users; super admins have no User row
+      return { message: 'OTP is not available for platform accounts' };
+    }
+
+    const otp = await this.otpService.issue(
+      req.user.tenantId,
+      req.user.userId,
+      dto.purpose,
+      { ip: req.ip, requestId: req.requestId },
+    );
+
+    if (req.user.email) {
+      await this.notifications.sendRawEmail(
+        req.user.email,
+        'Your PingForce verification code',
+        `<p>Your verification code is <b>${otp}</b>.</p>
+         <p>It expires in 10 minutes.</p>`,
+      );
+    }
+
+    return { message: 'Verification code sent' };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Verify an OTP for the authenticated user (OTP.md §11)' })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard)
+  @Post('otp/verify')
+  @HttpCode(HttpStatus.OK)
+  async verifyOtp(@Request() req: any, @Body() dto: VerifyOtpDto) {
+    if (req.user.tenantId === 'SYSTEM') {
+      return { message: 'OTP is not available for platform accounts' };
+    }
+
+    await this.otpService.verify(
+      req.user.tenantId,
+      req.user.userId,
+      dto.purpose,
+      dto.otp,
+      { ip: req.ip, requestId: req.requestId },
+    );
+    return { message: 'Verified' };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List own active sessions' })
+  @UseGuards(JwtAuthGuard)
+  @Get('sessions')
+  async listSessions(@Request() req: any) {
+    return this.sessionService.listForUser(req.user.tenantId, req.user.userId);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Revoke one of your sessions' })
+  @UseGuards(JwtAuthGuard)
+  @Post('sessions/:id/revoke')
+  @HttpCode(HttpStatus.OK)
+  async revokeSession(@Request() req: any, @Param('id') sessionId: string) {
+    await this.sessionService.revoke(
+      req.user.tenantId,
+      req.user.userId,
+      sessionId,
+      'ADMIN_REVOKE',
+    );
+    return { message: 'Session revoked' };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Logout current session' })
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Request() req: any) {
+    if (req.user.sessionId) {
+      await this.sessionService.revoke(
+        req.user.tenantId,
+        req.user.userId,
+        req.user.sessionId,
+        'LOGOUT',
+      );
+    }
+    return { message: 'Logged out' };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Logout everywhere (revokes all sessions/tokens)' })
+  @UseGuards(JwtAuthGuard)
+  @Post('logout-all')
+  @HttpCode(HttpStatus.OK)
+  async logoutAll(@Request() req: any) {
+    await (this.authService as any).logoutAll(
+      req.user.tenantId,
+      req.user.userId,
+    );
+    return { message: 'All sessions revoked' };
   }
 
   @ApiOperation({ summary: 'Sign in with Google' })

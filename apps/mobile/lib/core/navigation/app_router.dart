@@ -13,11 +13,11 @@ import '../../features/onboarding/permissions_flow_screen.dart';
 import '../../features/system/system_screens.dart';
 import '../../features/leave/leave_screen.dart';
 import '../../features/documents/document_screen.dart';
-// Feature screens — stub imports (replace with real imports as features are built)
-// import '../../features/dashboard/presentation/dashboard_screen.dart';
-// import '../../features/attendance/presentation/check_in/attendance_screen.dart';
-// import '../../features/faults/presentation/fault_list_screen.dart';
-// import '../../features/sync/sync_monitor_screen.dart';
+import '../../features/dashboard/presentation/dashboard_screen.dart';
+import '../../features/attendance/presentation/check_in/attendance_screen.dart';
+import '../../features/faults/presentation/fault_list_screen.dart';
+import '../../features/faults/presentation/fault_detail_screen.dart';
+import '../../features/sync/sync_monitor_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // APP ROUTER  (AUDIT §17 — GoRouter configuration)
@@ -148,8 +148,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/home',
                 name: 'home',
-                builder: (context, state) =>
-                    const _PlaceholderScreen(name: 'Dashboard'),
+                builder: (context, state) => const DashboardScreen(),
               ),
             ],
           ),
@@ -160,8 +159,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/attendance',
                 name: 'attendance',
-                builder: (context, state) =>
-                    const _PlaceholderScreen(name: 'Attendance'),
+                builder: (context, state) => const AttendanceScreen(),
                 routes: [
                   GoRoute(
                     path: 'history',
@@ -172,8 +170,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'check-in',
                     name: 'check-in',
-                    builder: (context, state) =>
-                        const _PlaceholderScreen(name: 'Check In'),
+                    builder: (context, state) => const AttendanceScreen(),
                   ),
                   GoRoute(
                     path: 'correction',
@@ -193,8 +190,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/faults',
                 name: 'faults',
-                builder: (context, state) =>
-                    const _PlaceholderScreen(name: 'Fault List'),
+                builder: (context, state) => const FaultListScreen(),
                 routes: [
                   GoRoute(
                     path: 'new',
@@ -207,7 +203,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     name: 'fault-detail',
                     builder: (context, state) {
                       final id = state.pathParameters['faultId']!;
-                      return _PlaceholderScreen(name: 'Fault $id');
+                      return FaultDetailScreen(faultId: id);
                     },
                     routes: [
                       GoRoute(
@@ -361,8 +357,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/sync',
         name: 'sync-monitor',
-        builder: (context, state) =>
-            const _PlaceholderScreen(name: 'Sync Monitor'),
+        builder: (context, state) => const SyncMonitorScreen(),
       ),
 
       GoRoute(

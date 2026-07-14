@@ -31,6 +31,7 @@ import { FilesModule } from '../files/files.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PlatformSettingsModule } from '../platform-settings/platform-settings.module';
 import { TenantsModule } from '../tenants/tenants.module';
+import { AuditModule } from '../audit/audit.module';
 
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -94,6 +95,7 @@ import { join } from 'path';
     NotificationsModule,
     PlatformSettingsModule,
     TenantsModule,
+    AuditModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

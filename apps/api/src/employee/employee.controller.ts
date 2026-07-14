@@ -15,14 +15,17 @@ import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RbacGuard } from '../rbac/guards/rbac.guard';
+import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import { CurrentTenant } from '@pingforce-monorepo/shared';
 
-@UseGuards(JwtAuthGuard)
-@Controller('v1/employees')
+@UseGuards(JwtAuthGuard, RbacGuard)
+@Controller('employees')
 export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}
 
   @Post()
+  @RequirePermission('EMPLOYEES', 'CREATE')
   create(
     @CurrentTenant() tenantId: string,
     @Body() createEmployeeDto: CreateEmployeeDto,
@@ -40,6 +43,7 @@ export class EmployeeController {
   }
 
   @Get()
+  @RequirePermission('EMPLOYEES', 'READ')
   findAll(
     @CurrentTenant() tenantId: string,
     @Query('cursor') cursor?: string,
@@ -50,11 +54,13 @@ export class EmployeeController {
   }
 
   @Get(':id')
+  @RequirePermission('EMPLOYEES', 'READ')
   findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.employeeService.findOne(tenantId, id);
   }
 
   @Patch(':id')
+  @RequirePermission('EMPLOYEES', 'UPDATE')
   update(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -64,6 +70,7 @@ export class EmployeeController {
   }
 
   @Delete(':id')
+  @RequirePermission('EMPLOYEES', 'DELETE')
   remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.employeeService.remove(tenantId, id);
   }

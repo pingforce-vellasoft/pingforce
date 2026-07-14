@@ -1,35 +1,13 @@
-import {
-  Injectable,
-  Inject,
-  OnModuleInit,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import * as argon2 from 'argon2';
+import { syncSystemRolePermissions } from '../rbac/permission-catalog';
 
 @Injectable()
-export class TenantsService implements OnModuleInit {
+export class TenantsService {
   constructor(
     @Inject('IPrismaService') private readonly prisma: IPrismaService,
   ) {}
-
-  async onModuleInit() {
-    await this.prisma.tenant.updateMany({
-      data: {
-        legalName: 'PingForce Solutions Pvt. Ltd.',
-        industry: 'Technology',
-        contactEmail: 'contact@pingforce.com',
-        contactPhone: '+91 9876543210',
-        currency: 'INR',
-        country: 'India',
-        taxId: 'GSTIN123456789',
-        billingEmail: 'billing@pingforce.com',
-        subscriptionPlan: 'ENTERPRISE',
-        subscriptionStatus: 'ACTIVE',
-        themeColor: '#6366f1',
-      },
-    });
-  }
 
   async create(data: any) {
     if (!data.adminEmail || !data.adminPassword) {
@@ -118,41 +96,9 @@ export class TenantsService implements OnModuleInit {
         });
       }
 
-      const allPermissions = await prisma.permission.findMany();
-
-      const adminModules = [
-        'USERS',
-        'ROLES',
-        'GEOFENCES',
-        'ATTENDANCE',
-        'TRACKING',
-      ];
-      const adminPerms = allPermissions.filter((p) =>
-        adminModules.includes(p.module),
-      );
-      const adminRolePerms = adminPerms.map((p) => ({
-        roleId: adminRole.id,
-        permissionId: p.id,
-      }));
-
-      await prisma.rolePermission.createMany({
-        data: adminRolePerms,
-        skipDuplicates: true,
-      });
-
-      const employeePerms = allPermissions.filter(
-        (p) =>
-          p.module === 'ATTENDANCE' &&
-          ['READ_OWN', 'CREATE'].includes(p.action),
-      );
-      const employeeRolePerms = employeePerms.map((p) => ({
-        roleId: employeeRole.id,
-        permissionId: p.id,
-      }));
-      await prisma.rolePermission.createMany({
-        data: employeeRolePerms,
-        skipDuplicates: true,
-      });
+      // Grant the standard permission sets from the shared catalog
+      await syncSystemRolePermissions(prisma, adminRole.id, 'ADMIN_MANAGER');
+      await syncSystemRolePermissions(prisma, employeeRole.id, 'EMPLOYEE');
 
       await prisma.user.create({
         data: {
