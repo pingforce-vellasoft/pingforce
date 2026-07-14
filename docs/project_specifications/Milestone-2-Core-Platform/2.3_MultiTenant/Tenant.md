@@ -1,7 +1,9 @@
 # Tenant.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Multi-Tenant Module
+
 ### Tenant Domain Specification
 
 **Module:** Core Platform → Multi-Tenant
@@ -137,23 +139,29 @@ Provisioning should be automated and idempotent.
 # 7. Tenant Status Rules
 
 Draft
+
 - Not usable
 
 Provisioning
+
 - Internal setup only
 
 Active
+
 - Full platform access
 
 Suspended
+
 - Login disabled
 - APIs disabled
 - Background jobs paused (configurable)
 
 Archived
+
 - Read-only administrative access
 
 Deleted
+
 - Hidden from operations
 - Retained according to retention policy
 
@@ -269,21 +277,21 @@ Recommended indexes:
 
 Core endpoints:
 
-GET    /api/v1/tenants
+GET /api/v1/tenants
 
-GET    /api/v1/tenants/{id}
+GET /api/v1/tenants/{id}
 
-POST   /api/v1/tenants
+POST /api/v1/tenants
 
-PUT    /api/v1/tenants/{id}
+PUT /api/v1/tenants/{id}
 
-PATCH  /api/v1/tenants/{id}/status
+PATCH /api/v1/tenants/{id}/status
 
-POST   /api/v1/tenants/{id}/activate
+POST /api/v1/tenants/{id}/activate
 
-POST   /api/v1/tenants/{id}/suspend
+POST /api/v1/tenants/{id}/suspend
 
-POST   /api/v1/tenants/{id}/archive
+POST /api/v1/tenants/{id}/archive
 
 ---
 
@@ -350,6 +358,7 @@ Tenant context resolution: <20 ms
 # 19. Testing Strategy
 
 Functional:
+
 - Tenant CRUD
 - Provisioning
 - Branding
@@ -357,12 +366,14 @@ Functional:
 - Suspension/resume
 
 Security:
+
 - Cross-tenant isolation
 - JWT manipulation
 - Unauthorized administration
 - Query filtering
 
 Performance:
+
 - 10,000+ tenants
 - Concurrent onboarding
 - High API throughput

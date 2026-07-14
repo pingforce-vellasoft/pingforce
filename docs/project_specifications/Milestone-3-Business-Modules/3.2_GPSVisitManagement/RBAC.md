@@ -30,6 +30,7 @@ The RBAC framework controls access to GPS Visit Management features based on use
 # 3. Supported Roles
 
 ## Super Admin
+
 - Manage all tenants
 - Configure platform settings
 - View global dashboards
@@ -37,34 +38,40 @@ The RBAC framework controls access to GPS Visit Management features based on use
 - Access audit logs
 
 ## Employer / Client Admin
+
 - Configure tenant settings
 - Manage users and roles
 - View tenant analytics
 - Configure policies
 
 ## Operations Manager
+
 - Create and assign visits
 - Manage routes
 - Monitor SLAs
 - View reports
 
 ## Regional / Branch Manager
+
 - Manage assigned region
 - Monitor team productivity
 - Review visit performance
 
 ## Dispatcher
+
 - Plan routes
 - Assign visits
 - Reassign work
 - Monitor schedules
 
 ## Field Supervisor
+
 - Monitor field employees
 - Approve visit changes
 - Review evidence
 
 ## Field Employee
+
 - View assigned visits
 - Execute visits
 - Capture evidence
@@ -72,6 +79,7 @@ The RBAC framework controls access to GPS Visit Management features based on use
 - View personal history
 
 ## Auditor
+
 - Read-only access
 - View reports
 - View audit logs
@@ -119,6 +127,7 @@ The RBAC framework controls access to GPS Visit Management features based on use
 # 6. Data Scope
 
 Scopes:
+
 - Self
 - Team
 - Department
@@ -144,11 +153,13 @@ Scopes:
 # 8. Approval Matrix
 
 Visit Approval
+
 - Employee -> Supervisor
 - Supervisor -> Manager
 - Manager -> Employer
 
 Configuration Approval
+
 - Admin -> Employer
 - Employer -> Super Admin (optional)
 
@@ -157,6 +168,7 @@ Configuration Approval
 # 9. Delegation
 
 Supported:
+
 - Temporary delegation
 - Vacation delegation
 - Emergency delegation
@@ -167,6 +179,7 @@ Supported:
 # 10. Audit Requirements
 
 Audit:
+
 - Login
 - Logout
 - Permission changes
@@ -180,16 +193,16 @@ Audit:
 
 # 11. APIs
 
-GET    /roles
-POST   /roles
-PUT    /roles/{id}
+GET /roles
+POST /roles
+PUT /roles/{id}
 DELETE /roles/{id}
 
-GET    /permissions
-POST   /permissions
+GET /permissions
+POST /permissions
 
-GET    /users/{id}/roles
-PUT    /users/{id}/roles
+GET /users/{id}/roles
+PUT /users/{id}/roles
 
 ---
 

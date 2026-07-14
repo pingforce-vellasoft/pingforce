@@ -1,17 +1,16 @@
-
 # UNIT_TESTING.md
 
 # Enterprise Unit Testing Strategy
 
 ## Document Information
 
-| Field | Value |
-|---|---|
-| Document | UNIT_TESTING.md |
-| Project | Enterprise Multi-Tenant AI Engineering Platform |
-| Purpose | Unit Testing Planning & Architecture |
-| Status | Planning Phase (Pre-Implementation) |
-| Version | 1.0 |
+| Field    | Value                                           |
+| -------- | ----------------------------------------------- |
+| Document | UNIT_TESTING.md                                 |
+| Project  | Enterprise Multi-Tenant AI Engineering Platform |
+| Purpose  | Unit Testing Planning & Architecture            |
+| Status   | Planning Phase (Pre-Implementation)             |
+| Version  | 1.0                                             |
 
 ---
 
@@ -141,26 +140,26 @@ CI/CD Pipeline
 Backend
 
 tests/
-    unit/
-        controllers/
-        services/
-        guards/
-        interceptors/
-        validators/
-        ai/
-        utils/
+unit/
+controllers/
+services/
+guards/
+interceptors/
+validators/
+ai/
+utils/
 
 Angular
 
 src/
-    app/
-        *.spec.ts
+app/
+\*.spec.ts
 
 Flutter
 
 test/
-    unit/
-    widget/
+unit/
+widget/
 
 ---
 
@@ -247,13 +246,13 @@ The project targets:
 
 Planned Targets
 
-| Component | Target |
-|-----------|--------|
-| Backend | 90%+ |
-| Angular | 85%+ |
-| Flutter | 85%+ |
-| AI Utilities | 90%+ |
-| Shared Libraries | 95%+ |
+| Component        | Target |
+| ---------------- | ------ |
+| Backend          | 90%+   |
+| Angular          | 85%+   |
+| Flutter          | 85%+   |
+| AI Utilities     | 90%+   |
+| Shared Libraries | 95%+   |
 
 Coverage metrics:
 

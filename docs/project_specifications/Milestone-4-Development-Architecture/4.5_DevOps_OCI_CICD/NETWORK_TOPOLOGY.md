@@ -215,6 +215,7 @@ The design shall accommodate:
 - Recovery validation
 
 Target Objectives:
+
 - RPO ≤ 15 minutes
 - RTO ≤ 1 hour
 

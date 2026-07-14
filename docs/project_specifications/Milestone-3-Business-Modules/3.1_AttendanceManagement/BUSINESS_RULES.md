@@ -36,16 +36,21 @@ This document defines the business rules governing the Attendance module. These 
 # 3. Attendance Lifecycle Rules
 
 ## BR-ATT-001
+
 An employee can have only one active attendance session at any given time.
 
 ## BR-ATT-002
+
 Check-Out is allowed only after a successful Check-In.
 
 ## BR-ATT-003
+
 Attendance sessions cannot overlap.
 
 ## BR-ATT-004
+
 Every attendance record shall contain:
+
 - Employee ID
 - Tenant ID
 - Date
@@ -56,9 +61,11 @@ Every attendance record shall contain:
 - Status
 
 ## BR-ATT-005
+
 Attendance status shall be automatically calculated based on policy.
 
 Possible statuses:
+
 - Present
 - Absent
 - Late
@@ -73,12 +80,15 @@ Possible statuses:
 # 4. Authentication Rules
 
 ## BR-AUTH-001
+
 Only authenticated users may perform attendance operations.
 
 ## BR-AUTH-002
+
 Role-Based Access Control (RBAC) shall determine available actions.
 
 ## BR-AUTH-003
+
 Tenant isolation must always be enforced.
 
 ---
@@ -86,18 +96,23 @@ Tenant isolation must always be enforced.
 # 5. GPS Rules
 
 ## BR-GPS-001
+
 GPS may be mandatory based on tenant policy.
 
 ## BR-GPS-002
+
 Attendance shall be rejected if GPS accuracy exceeds configured limits.
 
 ## BR-GPS-003
+
 Mock GPS detection shall trigger policy-defined actions.
 
 ## BR-GPS-004
+
 If geofencing is enabled, the employee must be within an approved location.
 
 ## BR-GPS-005
+
 GPS-disabled devices may be denied attendance when configured.
 
 ---
@@ -105,15 +120,19 @@ GPS-disabled devices may be denied attendance when configured.
 # 6. Biometric Rules
 
 ## BR-BIO-001
+
 Biometric verification is optional and configurable.
 
 ## BR-BIO-002
+
 Supported methods:
+
 - Fingerprint
 - Android Biometrics
 - Face Authentication (future)
 
 ## BR-BIO-003
+
 Failed biometric verification shall prevent attendance if mandatory.
 
 ---
@@ -121,10 +140,13 @@ Failed biometric verification shall prevent attendance if mandatory.
 # 7. Shift Rules
 
 ## BR-SHIFT-001
+
 Each employee must be assigned an active shift.
 
 ## BR-SHIFT-002
+
 Supported shift types:
+
 - Fixed
 - Flexible
 - Rotational
@@ -132,9 +154,11 @@ Supported shift types:
 - Split
 
 ## BR-SHIFT-003
+
 Grace periods shall be configurable per tenant.
 
 ## BR-SHIFT-004
+
 Overtime calculations begin after configured thresholds.
 
 ---
@@ -142,15 +166,19 @@ Overtime calculations begin after configured thresholds.
 # 8. Break Rules
 
 ## BR-BREAK-001
+
 Break policies are configurable.
 
 ## BR-BREAK-002
+
 Multiple breaks may be permitted.
 
 ## BR-BREAK-003
+
 Paid and unpaid breaks shall be supported.
 
 ## BR-BREAK-004
+
 Break duration contributes to working hours based on policy.
 
 ---
@@ -158,12 +186,15 @@ Break duration contributes to working hours based on policy.
 # 9. Leave Integration Rules
 
 ## BR-LEAVE-001
+
 Approved leave overrides attendance requirements.
 
 ## BR-LEAVE-002
+
 Attendance cannot be marked absent for approved leave.
 
 ## BR-LEAVE-003
+
 Holiday calendars are tenant-specific.
 
 ---
@@ -171,15 +202,19 @@ Holiday calendars are tenant-specific.
 # 10. Attendance Correction Rules
 
 ## BR-COR-001
+
 Employees may request corrections within configurable time limits.
 
 ## BR-COR-002
+
 Correction requests require a reason.
 
 ## BR-COR-003
+
 Supporting documents may be attached.
 
 ## BR-COR-004
+
 Correction approval workflow is configurable.
 
 ---
@@ -187,15 +222,19 @@ Correction approval workflow is configurable.
 # 11. Offline Rules
 
 ## BR-OFF-001
+
 Offline attendance shall be encrypted locally.
 
 ## BR-OFF-002
+
 Synchronization occurs automatically when connectivity returns.
 
 ## BR-OFF-003
+
 Conflict resolution follows tenant-configured merge policies.
 
 ## BR-OFF-004
+
 Synchronization failures shall be logged and retried.
 
 ---
@@ -203,6 +242,7 @@ Synchronization failures shall be logged and retried.
 # 12. Notification Rules
 
 Notifications may be triggered for:
+
 - Successful Check-In
 - Successful Check-Out
 - Missed Check-Out
@@ -212,6 +252,7 @@ Notifications may be triggered for:
 - Shift Reminder
 
 Supported Channels:
+
 - Push
 - Email
 - WhatsApp
@@ -223,6 +264,7 @@ Supported Channels:
 # 13. Reporting Rules
 
 Reports shall support:
+
 - Employee
 - Team
 - Department
@@ -231,6 +273,7 @@ Reports shall support:
 - Tenant
 
 Export Formats:
+
 - Excel
 - CSV
 - PDF
@@ -242,6 +285,7 @@ Export Formats:
 Every attendance-related action shall be audited.
 
 Audit Information:
+
 - User
 - Timestamp
 - Tenant
@@ -271,6 +315,7 @@ Audit logs are immutable.
 # 16. Multi-Tenant Rules
 
 Each tenant can independently configure:
+
 - Attendance methods
 - GPS requirements
 - Geofences
@@ -289,6 +334,7 @@ No tenant configuration shall impact another tenant.
 # 17. Compliance Rules
 
 The module shall support:
+
 - Complete audit trails
 - Historical attendance preservation
 - Regulatory reporting

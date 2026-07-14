@@ -1,4 +1,3 @@
-
 # ATTEMPT_MANAGEMENT.md
 
 # Fault Management Module – Attempt Management Specification

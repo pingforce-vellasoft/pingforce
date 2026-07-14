@@ -182,10 +182,10 @@ Recommended containers:
 
 - main
 - develop
-- release/*
-- hotfix/*
-- feature/*
-- bugfix/*
+- release/\*
+- hotfix/\*
+- feature/\*
+- bugfix/\*
 
 ---
 

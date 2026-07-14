@@ -432,12 +432,9 @@ abstract final class AppTheme {
       ),
 
       // ── PageTransitions ───────────────────────────────────────────────────
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-        },
-      ),
+      // Platform defaults: iOS gets Cupertino transitions natively; Android
+      // uses the Material zoom/predictive-back transition. (An explicit
+      // CupertinoPageTransitionsBuilder mapping broke on newer Flutter SDKs.)
 
       // ── Visual Density ────────────────────────────────────────────────────
       visualDensity: VisualDensity.standard,

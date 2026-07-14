@@ -1,6 +1,7 @@
 # JWT.md
 
 # Enterprise Workforce Platform
+
 ## Authentication Module – JWT Token Strategy & Specification
 
 **Module:** Core Platform → Authentication
@@ -57,6 +58,7 @@ The JWT implementation shall:
 ## Access Token
 
 Purpose:
+
 - Authenticate API requests.
 
 Characteristics:

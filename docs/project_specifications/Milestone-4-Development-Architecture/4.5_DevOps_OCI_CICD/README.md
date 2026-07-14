@@ -46,11 +46,11 @@ enterprise-platform/
 # Branching Strategy
 
 - main – Production
-- release/* – Release candidates
+- release/\* – Release candidates
 - develop – Integration
-- feature/* – Features
-- hotfix/* – Emergency fixes
-- bugfix/* – Non-critical fixes
+- feature/\* – Features
+- hotfix/\* – Emergency fixes
+- bugfix/\* – Non-critical fixes
 
 No direct commits to `main`.
 

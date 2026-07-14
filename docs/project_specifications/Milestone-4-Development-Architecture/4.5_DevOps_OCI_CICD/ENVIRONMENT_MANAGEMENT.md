@@ -75,6 +75,7 @@ Promotion between environments shall occur only after successful quality and sec
 ## Local
 
 Purpose:
+
 - Individual development
 - Unit testing
 - Debugging
@@ -82,6 +83,7 @@ Purpose:
 ## Shared Development
 
 Purpose:
+
 - Team integration
 - Feature validation
 - Initial API testing
@@ -89,6 +91,7 @@ Purpose:
 ## QA
 
 Purpose:
+
 - Functional testing
 - Integration testing
 - Regression testing
@@ -96,6 +99,7 @@ Purpose:
 ## UAT
 
 Purpose:
+
 - Business validation
 - Client demonstrations
 - Acceptance testing
@@ -103,6 +107,7 @@ Purpose:
 ## Staging
 
 Purpose:
+
 - Production rehearsal
 - Performance validation
 - Release verification
@@ -110,6 +115,7 @@ Purpose:
 ## Production
 
 Purpose:
+
 - Live enterprise workloads
 - Multi-tenant operations
 - Customer access
@@ -117,6 +123,7 @@ Purpose:
 ## Disaster Recovery
 
 Purpose:
+
 - Business continuity
 - Recovery validation
 - Failover testing

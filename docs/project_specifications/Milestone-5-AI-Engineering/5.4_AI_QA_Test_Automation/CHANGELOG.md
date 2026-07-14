@@ -4,13 +4,13 @@
 
 ## Document Information
 
-| Field | Value |
-|---|---|
-| Project | Enterprise Multi-Tenant AI Engineering Platform |
-| Module | AI_Engineering / QA |
-| Document | CHANGELOG.md |
-| Status | Planning Phase |
-| Version | 1.0.0 |
+| Field    | Value                                           |
+| -------- | ----------------------------------------------- |
+| Project  | Enterprise Multi-Tenant AI Engineering Platform |
+| Module   | AI_Engineering / QA                             |
+| Document | CHANGELOG.md                                    |
+| Status   | Planning Phase                                  |
+| Version  | 1.0.0                                           |
 
 ---
 

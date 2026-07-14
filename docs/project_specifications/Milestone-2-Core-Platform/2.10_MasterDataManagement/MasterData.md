@@ -1,7 +1,9 @@
 # MasterData.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Master Data Module
+
 ### Enterprise Master Data Management (MDM) Specification
 
 **Module:** Core Platform → Master Data
@@ -234,19 +236,19 @@ Indexes:
 
 # 13. REST APIs
 
-GET    /api/v1/master/categories
+GET /api/v1/master/categories
 
-GET    /api/v1/master/items
+GET /api/v1/master/items
 
-POST   /api/v1/master/items
+POST /api/v1/master/items
 
-PUT    /api/v1/master/items/{id}
+PUT /api/v1/master/items/{id}
 
 DELETE /api/v1/master/items/{id}
 
-POST   /api/v1/master/import
+POST /api/v1/master/import
 
-GET    /api/v1/master/export
+GET /api/v1/master/export
 
 ---
 

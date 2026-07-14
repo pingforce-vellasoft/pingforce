@@ -114,6 +114,7 @@ This document establishes enterprise UI standards for the AI-assisted Stitch wor
 # Cards
 
 Cards should include:
+
 - Title
 - Metadata
 - Primary action
@@ -126,6 +127,7 @@ Cards should include:
 # Buttons
 
 Types:
+
 - Primary
 - Secondary
 - Tertiary
@@ -134,6 +136,7 @@ Types:
 - Destructive
 
 States:
+
 - Default
 - Hover
 - Focus
@@ -156,12 +159,14 @@ States:
 # Notifications
 
 Channels:
+
 - In-app
 - Push
 - Email
 - WhatsApp
 
 Severity:
+
 - Info
 - Success
 - Warning
@@ -181,6 +186,7 @@ Severity:
 # Typography
 
 Hierarchy:
+
 - Display
 - H1-H6
 - Subtitle
@@ -194,6 +200,7 @@ Hierarchy:
 # Color Usage
 
 Semantic colors:
+
 - Primary
 - Secondary
 - Success
@@ -220,6 +227,7 @@ Never rely on color alone to communicate meaning.
 # White Label Support
 
 Configurable:
+
 - Logos
 - Brand colors
 - Fonts
@@ -233,6 +241,7 @@ Configurable:
 # Enterprise Module Standards
 
 Applicable to:
+
 - Authentication
 - RBAC
 - Attendance
@@ -251,6 +260,7 @@ Applicable to:
 # AI Generation Guidelines
 
 Generated interfaces must:
+
 - Follow design tokens
 - Respect accessibility
 - Be responsive
@@ -287,6 +297,7 @@ Before approval verify:
 # Governance
 
 All UI changes require:
+
 - UX review
 - Accessibility validation
 - Design review

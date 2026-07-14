@@ -37,14 +37,14 @@ This approach ensures tenant isolation and secure access.
 
 # Supported User Types
 
-| User Type | Client Code Required |
-|-----------|----------------------|
-| Super Admin | No |
-| Employer | Yes |
-| Manager | Yes |
-| Employee | Yes |
-| Customer (Future) | Yes |
-| Vendor (Future) | Yes |
+| User Type         | Client Code Required |
+| ----------------- | -------------------- |
+| Super Admin       | No                   |
+| Employer          | Yes                  |
+| Manager           | Yes                  |
+| Employee          | Yes                  |
+| Customer (Future) | Yes                  |
+| Vendor (Future)   | Yes                  |
 
 ---
 

@@ -1,4 +1,3 @@
-
 # EVENT_DRIVEN.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**

@@ -1,4 +1,3 @@
-
 # BUSINESS_RULES.md
 
 # Fault Management Module - Business Rules
@@ -20,15 +19,18 @@ This document defines the business rules governing the Fault Management module. 
 # 2. General Rules
 
 ## BR-001 Tenant Isolation
+
 - Every fault belongs to exactly one tenant.
 - Users may only access data belonging to their tenant unless they are Super Admins.
 - Cross-tenant access is prohibited.
 
 ## BR-002 Unique Fault Number
+
 - Fault numbers must be unique within a tenant.
 - Format is configurable by tenant (e.g., FT-2026-000001).
 
 ## BR-003 Ownership
+
 - Every fault must have one current owner.
 - Ownership changes are recorded in assignment history.
 
@@ -37,7 +39,9 @@ This document defines the business rules governing the Fault Management module. 
 # 3. Fault Creation Rules
 
 ## BR-004 Mandatory Fields
+
 Required fields:
+
 - Category
 - Priority
 - Description
@@ -46,10 +50,13 @@ Required fields:
 - Tenant
 
 ## BR-005 Duplicate Detection
+
 Duplicate detection may be enabled per tenant using configurable matching rules.
 
 ## BR-006 Auto Assignment
+
 If enabled, the Assignment Engine automatically allocates a technician based on:
+
 - Skills
 - Territory
 - Workload
@@ -60,7 +67,9 @@ If enabled, the Assignment Engine automatically allocates a technician based on:
 # 4. Workflow Rules
 
 ## BR-007 Configurable Workflow
+
 Each tenant can configure:
+
 - Statuses
 - Transitions
 - Entry validations
@@ -68,12 +77,15 @@ Each tenant can configure:
 - Approval steps
 
 ## BR-008 Valid State Transitions
+
 Only configured transitions are permitted.
 
 ## BR-009 Closed Tickets
+
 Closed faults cannot be edited unless reopened by an authorized role.
 
 ## BR-010 Reopen
+
 Only users with "Reopen Fault" permission may reopen closed faults.
 
 ---
@@ -81,14 +93,18 @@ Only users with "Reopen Fault" permission may reopen closed faults.
 # 5. Assignment Rules
 
 ## BR-011 Assignment Permissions
+
 Only authorized roles may assign or reassign faults.
 
 ## BR-012 Reassignment
+
 - Previous assignment history must never be deleted.
 - Reassignment reason may be mandatory based on tenant settings.
 
 ## BR-013 Technician Acceptance
+
 A technician may:
+
 - Accept
 - Reject (with reason)
 - Request reassignment
@@ -98,17 +114,22 @@ A technician may:
 # 6. SLA Rules
 
 ## BR-014 SLA Calculation
+
 SLA is determined by:
+
 - Priority
 - Customer type
 - Business hours
 - Tenant policy
 
 ## BR-015 SLA Pause
+
 SLA timers pause during configured workflow states (e.g., Waiting for Customer, Waiting for Parts).
 
 ## BR-016 SLA Breach
+
 On breach:
+
 - Notification generated
 - Escalation triggered
 - Dashboard updated
@@ -119,11 +140,14 @@ On breach:
 # 7. GPS Rules
 
 ## BR-017 GPS Validation
+
 If GPS is mandatory:
+
 - Check-in requires valid coordinates.
 - Geofence validation applies when configured.
 
 ## BR-018 Offline GPS
+
 Offline GPS data must synchronize when connectivity returns.
 
 ---
@@ -131,7 +155,9 @@ Offline GPS data must synchronize when connectivity returns.
 # 8. Attachment Rules
 
 ## BR-019 Supported Files
+
 Allowed:
+
 - Images
 - PDF
 - Documents
@@ -140,6 +166,7 @@ Allowed:
 Tenant configuration controls file size and permitted formats.
 
 ## BR-020 Secure Storage
+
 Attachments inherit tenant security and RBAC policies.
 
 ---
@@ -147,19 +174,24 @@ Attachments inherit tenant security and RBAC policies.
 # 9. Resolution Rules
 
 ## BR-021 Mandatory Resolution
+
 Resolution requires:
+
 - Resolution notes
 - Resolution code
 - Completion timestamp
 
 Optional (tenant configurable):
+
 - Signature
 - OTP
 - Photos
 - Customer confirmation
 
 ## BR-022 Closure
+
 A fault can be closed only after:
+
 - Required validations pass
 - Workflow permits closure
 - Mandatory approvals complete
@@ -169,6 +201,7 @@ A fault can be closed only after:
 # 10. Notification Rules
 
 Notifications are triggered for:
+
 - Fault creation
 - Assignment
 - Reassignment
@@ -180,6 +213,7 @@ Notifications are triggered for:
 - Reopen
 
 Channels:
+
 - Push
 - Email
 - WhatsApp
@@ -190,10 +224,13 @@ Channels:
 # 11. Security Rules
 
 ## BR-023 RBAC
+
 Every operation requires permission validation.
 
 ## BR-024 Row-Level Security
+
 Users may only access records allowed by data scope:
+
 - Self
 - Team
 - Branch
@@ -201,6 +238,7 @@ Users may only access records allowed by data scope:
 - Organization
 
 ## BR-025 Audit Trail
+
 Every create, update, assignment, workflow transition, and delete (logical) must generate an immutable audit record.
 
 ---
@@ -208,13 +246,17 @@ Every create, update, assignment, workflow transition, and delete (logical) must
 # 12. Mobile Offline Rules
 
 ## BR-026 Offline Queue
+
 Offline transactions are stored locally.
 
 ## BR-027 Synchronization
+
 Pending transactions synchronize automatically.
 
 ## BR-028 Conflict Resolution
+
 Conflicts follow platform sync policies:
+
 - Last valid update
 - Manager override
 - Manual merge (configurable)
@@ -224,6 +266,7 @@ Conflicts follow platform sync policies:
 # 13. Reporting Rules
 
 Reports must:
+
 - Respect tenant isolation
 - Respect RBAC permissions
 - Exclude logically deleted records unless authorized
@@ -244,6 +287,7 @@ Reports must:
 # 15. Integration Rules
 
 The module integrates with:
+
 - Authentication
 - RBAC Engine
 - Workflow Engine
@@ -274,6 +318,7 @@ The module integrates with:
 # 17. Exception Handling
 
 Examples:
+
 - Invalid workflow transition
 - Missing mandatory fields
 - Permission denied
@@ -283,6 +328,7 @@ Examples:
 - Attachment validation failure
 
 Each exception must:
+
 - Return standardized error codes
 - Log audit events where applicable
 - Display localized user-friendly messages
@@ -292,6 +338,7 @@ Each exception must:
 # 18. Future Rules
 
 Future configurable capabilities:
+
 - AI-assisted categorization
 - Predictive maintenance
 - IoT-triggered ticket creation

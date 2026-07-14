@@ -1,6 +1,7 @@
 # RBAC.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Role Based Access Control (RBAC) Specification
 
 **Module:** Core Platform → RBAC  
@@ -173,21 +174,21 @@ updated_by
 
 # 10. API Endpoints
 
-GET    /api/v1/rbac/roles
+GET /api/v1/rbac/roles
 
-POST   /api/v1/rbac/roles
+POST /api/v1/rbac/roles
 
-PUT    /api/v1/rbac/roles/{id}
+PUT /api/v1/rbac/roles/{id}
 
 DELETE /api/v1/rbac/roles/{id}
 
-GET    /api/v1/rbac/permissions
+GET /api/v1/rbac/permissions
 
-POST   /api/v1/rbac/users/{id}/roles
+POST /api/v1/rbac/users/{id}/roles
 
 DELETE /api/v1/rbac/users/{id}/roles/{roleId}
 
-POST   /api/v1/rbac/check
+POST /api/v1/rbac/check
 
 ---
 

@@ -1,7 +1,9 @@
 # ScreenPermissions.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – RBAC Module
+
 ### Screen Permissions & UI Authorization Specification
 
 **Module:** Core Platform → RBAC
@@ -67,10 +69,10 @@ Application
 Example:
 
 Attendance
- ├── Dashboard
- ├── Check-In
- ├── History
- └── Reports
+├── Dashboard
+├── Check-In
+├── History
+└── Reports
 
 ---
 
@@ -143,17 +145,17 @@ Navigation uses:
 
 # 8. Default Screen Matrix
 
-| Screen | Platform Admin | Tenant Admin | Manager | Employee | Field Staff | Client |
-|--------|:--------------:|:------------:|:-------:|:--------:|:-----------:|:------:|
-| Dashboard | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| User Management | ✓ | ✓ | Read | ✗ | ✗ | ✗ |
-| Role Management | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Attendance Dashboard | ✓ | ✓ | ✓ | Self | Self | ✗ |
-| GPS Tracking | ✓ | ✓ | ✓ | Self | Self | ✗ |
-| Fault Tickets | ✓ | ✓ | ✓ | Limited | ✓ | Self |
-| Lead Pipeline | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ |
-| Reports | ✓ | ✓ | ✓ | Self | Self | Limited |
-| Settings | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
+| Screen               | Platform Admin | Tenant Admin | Manager | Employee | Field Staff | Client  |
+| -------------------- | :------------: | :----------: | :-----: | :------: | :---------: | :-----: |
+| Dashboard            |       ✓        |      ✓       |    ✓    |    ✓     |      ✓      |    ✓    |
+| User Management      |       ✓        |      ✓       |  Read   |    ✗     |      ✗      |    ✗    |
+| Role Management      |       ✓        |      ✓       |    ✗    |    ✗     |      ✗      |    ✗    |
+| Attendance Dashboard |       ✓        |      ✓       |    ✓    |   Self   |    Self     |    ✗    |
+| GPS Tracking         |       ✓        |      ✓       |    ✓    |   Self   |    Self     |    ✗    |
+| Fault Tickets        |       ✓        |      ✓       |    ✓    | Limited  |      ✓      |  Self   |
+| Lead Pipeline        |       ✓        |      ✓       |    ✓    |    ✗     |      ✗      |    ✗    |
+| Reports              |       ✓        |      ✓       |    ✓    |   Self   |    Self     | Limited |
+| Settings             |       ✓        |      ✓       |    ✗    |    ✗     |      ✗      |    ✗    |
 
 ---
 

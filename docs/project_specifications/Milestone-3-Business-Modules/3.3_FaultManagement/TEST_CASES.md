@@ -1,4 +1,3 @@
-
 # TEST_CASES.md
 
 # Fault Management Module – Test Cases & Quality Assurance Specification
@@ -82,43 +81,54 @@ Out of Scope
 ## Fault Management
 
 TC-FLT-001
+
 - Create fault with valid data
 - Expected: Fault created and workflow starts.
 
 TC-FLT-002
+
 - Create duplicate fault
 - Expected: Duplicate validation according to tenant policy.
 
 TC-FLT-003
+
 - Edit fault
 - Expected: Changes saved and audited.
 
 TC-FLT-004
+
 - Close resolved fault
 - Expected: Workflow transitions to Closed.
 
 TC-FLT-005
+
 - Reopen closed fault
 - Expected: Reopen policy enforced.
 
 ## Assignment
 
 TC-ASG-001
+
 - Manual assignment
 
 TC-ASG-002
+
 - Auto assignment
 
 TC-ASG-003
+
 - Bulk assignment
 
 TC-ASG-004
+
 - Reassignment
 
 TC-ASG-005
+
 - Assignment rejection
 
 Expected:
+
 - Correct assignee
 - Notifications sent
 - Audit recorded
@@ -127,6 +137,7 @@ Expected:
 ## Workflow
 
 Verify:
+
 - Valid transitions
 - Invalid transitions rejected
 - Approval gates
@@ -136,6 +147,7 @@ Verify:
 ## SLA
 
 Verify:
+
 - Response timer
 - Resolution timer
 - Pause/resume
@@ -146,6 +158,7 @@ Verify:
 ## Attempts
 
 Verify:
+
 - Attempt creation
 - GPS capture
 - Offline attempt
@@ -156,6 +169,7 @@ Verify:
 ## Customer Feedback
 
 Verify:
+
 - Survey delivery
 - Rating submission
 - Low-rating workflow
@@ -164,6 +178,7 @@ Verify:
 ## RCA
 
 Verify:
+
 - RCA creation
 - CAPA tracking
 - Approval workflow
@@ -185,6 +200,7 @@ Verify:
 - Webhooks
 
 Expected:
+
 - REST compliance
 - JSON schema compliance
 - HTTP status validation
@@ -224,6 +240,7 @@ Expected:
 # 9. Performance Test Cases
 
 Targets:
+
 - Dashboard <3 sec
 - API <500 ms (average)
 - Bulk import scalability
@@ -236,6 +253,7 @@ Targets:
 # 10. Integration Test Cases
 
 Verify integrations with:
+
 - Workflow Engine
 - Assignment Engine
 - SLA Engine
@@ -253,6 +271,7 @@ Verify integrations with:
 # 11. Reporting Validation
 
 Verify:
+
 - Report accuracy
 - Filters
 - Exports (Excel/CSV/PDF)
@@ -296,6 +315,7 @@ Verify:
 - Duplicate submissions
 
 Expected:
+
 - Graceful error
 - No data corruption
 - Audit retained
@@ -313,6 +333,7 @@ Expected:
 - Multi-tenant validation
 
 Acceptance Criteria:
+
 - Business workflow completed
 - No critical defects
 - SLA calculations correct
@@ -323,6 +344,7 @@ Acceptance Criteria:
 # 16. Automation Strategy
 
 Recommended:
+
 - Unit: Jest
 - Angular: Karma/Jasmine or Jest
 - Flutter: flutter_test & integration_test
@@ -336,12 +358,14 @@ Recommended:
 # 17. Defect Management
 
 Severity:
+
 - Critical
 - High
 - Medium
 - Low
 
 Priority:
+
 - P1
 - P2
 - P3

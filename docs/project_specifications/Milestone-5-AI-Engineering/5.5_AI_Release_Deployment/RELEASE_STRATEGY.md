@@ -1,4 +1,3 @@
-
 # RELEASE_STRATEGY.md
 
 # Enterprise Release Strategy
@@ -40,30 +39,30 @@ The strategy is designed for a multi-tenant SaaS platform supporting RBAC, featu
 
 ## Release Roles
 
-| Role | Responsibility |
-|------|----------------|
-| Product Owner | Scope approval |
-| Engineering Manager | Release planning |
-| Tech Lead | Technical validation |
-| QA Lead | Test sign-off |
-| DevOps Engineer | Deployment execution |
-| Security Team | Security approval |
-| Release Manager | Final production approval |
-| Support Team | Hypercare & monitoring |
+| Role                | Responsibility            |
+| ------------------- | ------------------------- |
+| Product Owner       | Scope approval            |
+| Engineering Manager | Release planning          |
+| Tech Lead           | Technical validation      |
+| QA Lead             | Test sign-off             |
+| DevOps Engineer     | Deployment execution      |
+| Security Team       | Security approval         |
+| Release Manager     | Final production approval |
+| Support Team        | Hypercare & monitoring    |
 
 ---
 
 # Release Cadence
 
-| Release Type | Frequency |
-|--------------|-----------|
-| Patch | As required |
-| Minor | Every 2–4 weeks |
-| Major | Quarterly |
-| Security | Immediate |
-| Hotfix | Emergency |
-| AI Model | Continuous after validation |
-| Mobile App | Planned store releases |
+| Release Type | Frequency                   |
+| ------------ | --------------------------- |
+| Patch        | As required                 |
+| Minor        | Every 2–4 weeks             |
+| Major        | Quarterly                   |
+| Security     | Immediate                   |
+| Hotfix       | Emergency                   |
+| AI Model     | Continuous after validation |
+| Mobile App   | Planned store releases      |
 
 ---
 
@@ -71,12 +70,13 @@ The strategy is designed for a multi-tenant SaaS platform supporting RBAC, featu
 
 - main
 - develop
-- feature/*
-- bugfix/*
-- release/*
-- hotfix/*
+- feature/\*
+- bugfix/\*
+- release/\*
+- hotfix/\*
 
 Rules:
+
 1. Features merge into develop.
 2. Release branches are stabilized.
 3. Production releases originate from main.

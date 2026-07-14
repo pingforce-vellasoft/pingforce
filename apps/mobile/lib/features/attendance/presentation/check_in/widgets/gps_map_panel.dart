@@ -42,7 +42,6 @@ class _GpsMapPanelState extends State<GpsMapPanel>
 
   // Geofence color transition animation
   late final AnimationController _geofenceColorController;
-  late final Animation<Color?> _geofenceColorAnimation;
 
   Set<Circle> _circles = {};
   Set<Marker> _markers = {};
@@ -66,14 +65,6 @@ class _GpsMapPanelState extends State<GpsMapPanel>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    _geofenceColorAnimation = ColorTween(
-      begin: Colors.grey,
-      end: _geofenceColorForStatus(widget.geofenceStatus),
-    ).animate(CurvedAnimation(
-      parent: _geofenceColorController,
-      curve: AppEasing.standard,
-    ));
-
     _geofenceColorController.forward();
   }
 
@@ -401,11 +392,6 @@ class _GpsMapPanelState extends State<GpsMapPanel>
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
-
-  Color _geofenceColorForStatus(GeofenceStatus status) =>
-      status == GeofenceStatus.inside
-          ? PingForceColors.gpsGeofenceInsideBorder
-          : PingForceColors.gpsGeofenceOutsideBorder;
 
   Color _gpsRingColor(GpsAccuracyLevel level) => switch (level) {
         GpsAccuracyLevel.excellent => PingForceColors.gpsExcellent,

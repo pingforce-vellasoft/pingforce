@@ -1,7 +1,9 @@
 # LeaveTypes.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Master Data Module
+
 ### Leave Types Master Data Specification
 
 **Module:** Core Platform → Master Data
@@ -236,19 +238,19 @@ Indexes:
 
 # 14. REST APIs
 
-GET    /api/v1/master/leave-types
+GET /api/v1/master/leave-types
 
-GET    /api/v1/master/leave-types/{id}
+GET /api/v1/master/leave-types/{id}
 
-POST   /api/v1/master/leave-types
+POST /api/v1/master/leave-types
 
-PUT    /api/v1/master/leave-types/{id}
+PUT /api/v1/master/leave-types/{id}
 
 DELETE /api/v1/master/leave-types/{id}
 
-GET    /api/v1/master/leave-types/search
+GET /api/v1/master/leave-types/search
 
-POST   /api/v1/master/leave-types/import
+POST /api/v1/master/leave-types/import
 
 ---
 

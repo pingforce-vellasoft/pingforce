@@ -81,6 +81,7 @@ Row:
 ```
 
 **Avatar states:**
+
 - Has photo → network image with circular clip
 - No photo → initials (first letter of first + last name), primary container background
 - Loading → shimmer circle
@@ -94,6 +95,7 @@ Row:
 | 21:00 – 04:59 | Good Night 🌙 |
 
 **Notification Bell:**
+
 - No unread: outline bell icon, no badge
 - Unread > 0: filled bell, red badge with count (capped at "99+")
 - Tap → navigates to Notifications screen
@@ -107,6 +109,7 @@ Row:
 **States:**
 
 #### State A — Not Checked In (default start of day)
+
 ```
 ┌──────────────────────────────────────────┐
 │  ○ Not Checked In                        │  ← labelMedium, onSurfaceVariant
@@ -119,6 +122,7 @@ Row:
 ```
 
 #### State B — Checked In / Working
+
 ```
 ┌──────────────────────────────────────────┐
 │  ● Working                      On Time │  ← status + shift status chip
@@ -134,6 +138,7 @@ Row:
 ```
 
 #### State C — On Break
+
 ```
 │  ☕ On Break                   On Time  │
 │  Break started: 12:30 PM               │
@@ -142,6 +147,7 @@ Row:
 ```
 
 #### State D — Checked Out
+
 ```
 │  ✓ Checked Out             Completed   │
 │  09:05 AM → 18:02 PM                  │
@@ -151,6 +157,7 @@ Row:
 ```
 
 #### State E — Absent / Not Required
+
 ```
 │  ✗ No Attendance Today                 │
 │  (Leave / Holiday / Day Off)           │
@@ -158,6 +165,7 @@ Row:
 ```
 
 **Card design:**
+
 - Background: gradient from `primaryContainer` (left) to `surfaceContainerLowest` (right)
 - Border: none
 - Radius: `AppRadius.lg` (16dp)
@@ -166,6 +174,7 @@ Row:
 - Left accent: 4dp primary color bar
 
 **Progress bar spec:**
+
 - Height: 6dp
 - Radius: `AppRadius.pill`
 - Track: `primaryContainer`
@@ -184,6 +193,7 @@ Row:
 **Gap between cards:** `AppSpacing.cardMargin` (12dp)
 
 **Generic KPI Card structure:**
+
 ```
 ┌────────────────────┐
 │  [Icon 24dp]  [→] │  ← icon left, arrow right
@@ -197,25 +207,25 @@ Row:
 
 **Module KPI cards:**
 
-| Module | Card Title | Primary Metric | Secondary Metric | Icon | Trend Color |
-|--------|-----------|----------------|-----------------|------|------------|
-| Attendance (Employee) | Today's Attendance | Status badge (Present/Absent/Late) | Hours worked | `fingerprint` | N/A |
-| Attendance (Manager) | Team Attendance | `24/30` Present | `3 Late · 3 Absent` | `groups` | statusSuccess/Critical |
-| GPS/Visits | Visits Today | Count of visits | Next visit time | `location_on` | primary |
-| Faults | Open Faults | Count | Overdue count (red) | `build_circle` | statusCritical |
-| Leads | Active Leads | Count | Follow-ups due | `person_search` | primary |
-| Reports | Pending Reports | Count of drafts | Last generated | `bar_chart` | onSurfaceVariant |
-| Notifications | Unread | Count | Today's alerts | `notifications` | error |
+| Module                | Card Title         | Primary Metric                     | Secondary Metric    | Icon            | Trend Color            |
+| --------------------- | ------------------ | ---------------------------------- | ------------------- | --------------- | ---------------------- |
+| Attendance (Employee) | Today's Attendance | Status badge (Present/Absent/Late) | Hours worked        | `fingerprint`   | N/A                    |
+| Attendance (Manager)  | Team Attendance    | `24/30` Present                    | `3 Late · 3 Absent` | `groups`        | statusSuccess/Critical |
+| GPS/Visits            | Visits Today       | Count of visits                    | Next visit time     | `location_on`   | primary                |
+| Faults                | Open Faults        | Count                              | Overdue count (red) | `build_circle`  | statusCritical         |
+| Leads                 | Active Leads       | Count                              | Follow-ups due      | `person_search` | primary                |
+| Reports               | Pending Reports    | Count of drafts                    | Last generated      | `bar_chart`     | onSurfaceVariant       |
+| Notifications         | Unread             | Count                              | Today's alerts      | `notifications` | error                  |
 
 **KPI Card color states:**
 
-| Value condition | Background | Value color |
-|----------------|-----------|-------------|
-| Zero / All good | `surfaceContainerLowest` | `onSurface` |
-| Has items | `surfaceContainerLowest` | `primary` |
-| Warning (e.g. overdue > 0) | `statusWarningContainer` | `statusWarning` |
-| Critical | `statusCriticalContainer` | `statusCritical` |
-| Loading | Shimmer | — |
+| Value condition            | Background                | Value color      |
+| -------------------------- | ------------------------- | ---------------- |
+| Zero / All good            | `surfaceContainerLowest`  | `onSurface`      |
+| Has items                  | `surfaceContainerLowest`  | `primary`        |
+| Warning (e.g. overdue > 0) | `statusWarningContainer`  | `statusWarning`  |
+| Critical                   | `statusCriticalContainer` | `statusCritical` |
+| Loading                    | Shimmer                   | —                |
 
 **Tap action:** Each card navigates to the relevant module list screen.
 
@@ -229,20 +239,21 @@ Row:
 
 **Action definitions:**
 
-| Action | Icon | Label | Required Permission | Navigate to |
-|--------|------|-------|--------------------|-----------  |
-| Check In | `login` | Check In | `attendance.checkin` | `/attendance` |
-| Check Out | `logout` | Check Out | `attendance.checkout` (active session) | `/attendance` |
-| Start Break | `coffee` | Start Break | `attendance.break` (active session) | `/attendance` |
-| Report Fault | `report_problem` | Report Fault | `faults.create` | `/faults/new` |
-| New Lead | `person_add` | New Lead | `leads.create` | `/leads/new` |
-| View Team | `groups` | View Team | `team.view` | `/team` |
-| GPS Visit | `map` | Log Visit | `visits.create` | `/visits/new` |
-| Request Leave | `event_busy` | Request Leave | `leave.create` | `/leave/new` |
-| My Reports | `bar_chart` | Reports | `reports.view` | `/reports` |
-| Documents | `folder` | Documents | `documents.view` | `/documents` |
+| Action        | Icon             | Label         | Required Permission                    | Navigate to   |
+| ------------- | ---------------- | ------------- | -------------------------------------- | ------------- |
+| Check In      | `login`          | Check In      | `attendance.checkin`                   | `/attendance` |
+| Check Out     | `logout`         | Check Out     | `attendance.checkout` (active session) | `/attendance` |
+| Start Break   | `coffee`         | Start Break   | `attendance.break` (active session)    | `/attendance` |
+| Report Fault  | `report_problem` | Report Fault  | `faults.create`                        | `/faults/new` |
+| New Lead      | `person_add`     | New Lead      | `leads.create`                         | `/leads/new`  |
+| View Team     | `groups`         | View Team     | `team.view`                            | `/team`       |
+| GPS Visit     | `map`            | Log Visit     | `visits.create`                        | `/visits/new` |
+| Request Leave | `event_busy`     | Request Leave | `leave.create`                         | `/leave/new`  |
+| My Reports    | `bar_chart`      | Reports       | `reports.view`                         | `/reports`    |
+| Documents     | `folder`         | Documents     | `documents.view`                       | `/documents`  |
 
 **Action cell design:**
+
 ```
 Container: surfaceContainerLow bg, lgAll radius, 1px outlineVariant border
 Tap effect: Scale 0.96 → ripple → navigate
@@ -255,6 +266,7 @@ Tap effect: Scale 0.96 → ripple → navigate
 ```
 
 **Highlight states:**
+
 - If `Check In` is most urgent (not yet checked in, shift starting soon): primary container bg + bold label
 - If `Check Out` (active session, shift ending in < 30min): secondary container bg
 - Active session actions (Break/Out): available, prominent
@@ -269,24 +281,25 @@ Tap effect: Scale 0.96 → ripple → navigate
 
 **Feed item types:**
 
-| Type | Icon | Color | Format |
-|------|------|-------|--------|
-| Check-In | `login` | primary | "Checked in at 09:05 AM" |
-| Check-Out | `logout` | onSurfaceVariant | "Checked out at 06:02 PM" |
-| Break Start | `coffee` | statusWarning | "Break started at 12:30 PM" |
-| Break End | `coffee` | statusSuccess | "Break ended at 01:00 PM" |
-| Fault Created | `report_problem` | statusWarning | "Fault #1032 reported" |
-| Fault Assigned | `build_circle` | primary | "Fault #1032 assigned to you" |
-| Fault Resolved | `check_circle` | statusSuccess | "Fault #1029 resolved" |
-| Fault Overdue | `error` | statusCritical | "Fault #1028 is overdue" |
-| Lead Created | `person_add` | primary | "New lead: ACME Corp" |
-| Lead Updated | `person_search` | onSurfaceVariant | "Lead updated: ACME Corp" |
-| Lead Won | `emoji_events` | statusSuccess | "Lead won: ACME Corp" |
-| Visit Logged | `location_on` | tertiary | "Visit logged at Client HQ" |
-| Sync Completed | `cloud_done` | statusSuccess | "X records synced" |
-| Notification | `notifications` | primary | Notification title |
+| Type           | Icon             | Color            | Format                        |
+| -------------- | ---------------- | ---------------- | ----------------------------- |
+| Check-In       | `login`          | primary          | "Checked in at 09:05 AM"      |
+| Check-Out      | `logout`         | onSurfaceVariant | "Checked out at 06:02 PM"     |
+| Break Start    | `coffee`         | statusWarning    | "Break started at 12:30 PM"   |
+| Break End      | `coffee`         | statusSuccess    | "Break ended at 01:00 PM"     |
+| Fault Created  | `report_problem` | statusWarning    | "Fault #1032 reported"        |
+| Fault Assigned | `build_circle`   | primary          | "Fault #1032 assigned to you" |
+| Fault Resolved | `check_circle`   | statusSuccess    | "Fault #1029 resolved"        |
+| Fault Overdue  | `error`          | statusCritical   | "Fault #1028 is overdue"      |
+| Lead Created   | `person_add`     | primary          | "New lead: ACME Corp"         |
+| Lead Updated   | `person_search`  | onSurfaceVariant | "Lead updated: ACME Corp"     |
+| Lead Won       | `emoji_events`   | statusSuccess    | "Lead won: ACME Corp"         |
+| Visit Logged   | `location_on`    | tertiary         | "Visit logged at Client HQ"   |
+| Sync Completed | `cloud_done`     | statusSuccess    | "X records synced"            |
+| Notification   | `notifications`  | primary          | Notification title            |
 
 **Feed item layout:**
+
 ```
 Row:
   [Icon 20dp in colored circle 36dp] | [Column: title (bodyMedium) / timestamp (labelSmall, onSurfaceVariant)]
@@ -294,6 +307,7 @@ Row:
 ```
 
 **Empty state:**
+
 ```
 Center column:
   Icon: `inbox` (48dp, onSurfaceVariant)
@@ -324,6 +338,7 @@ Container (infoContainer bg, 8dp radius):
 **Spec:** Material 3 NavigationBar, RBAC + module driven
 
 **Default destination order:**
+
 1. Home (always visible)
 2. Attendance (if module enabled)
 3. GPS / Visits (if module enabled) OR Faults (if visits disabled)
@@ -333,6 +348,7 @@ Container (infoContainer bg, 8dp radius):
 **If user has ≤ 4 modules:** Show all icons, no "More"
 
 **"More" bottom sheet:**
+
 - Title: "More"
 - Grid of remaining module tiles (same style as quick actions)
 - My Profile, Settings, Help, Logout at bottom
@@ -341,15 +357,16 @@ Container (infoContainer bg, 8dp radius):
 
 ## 6. Loading States — Dashboard
 
-| Section | Loading Pattern | Duration |
-|---------|----------------|---------|
-| Header | Skeleton: 40dp circle + 2 lines | Until auth data loads |
-| Attendance Hero | Full-card shimmer skeleton | Until attendance API |
-| KPI Row | 3× shimmer cards | Until metrics API |
-| Quick Actions | 4× grey rectangle cells | Until permissions load |
-| Activity Feed | 5× row shimmer skeletons | Until feed API |
+| Section         | Loading Pattern                 | Duration               |
+| --------------- | ------------------------------- | ---------------------- |
+| Header          | Skeleton: 40dp circle + 2 lines | Until auth data loads  |
+| Attendance Hero | Full-card shimmer skeleton      | Until attendance API   |
+| KPI Row         | 3× shimmer cards                | Until metrics API      |
+| Quick Actions   | 4× grey rectangle cells         | Until permissions load |
+| Activity Feed   | 5× row shimmer skeletons        | Until feed API         |
 
 **Staggered loading strategy:**
+
 1. Header renders immediately (from cached auth)
 2. Attendance card renders (from cached session)
 3. KPI cards stream in L→R as data arrives
@@ -360,12 +377,12 @@ Container (infoContainer bg, 8dp radius):
 
 ## 7. Empty States
 
-| Section | Empty Condition | Message |
-|---------|----------------|---------|
-| KPI row | No modules enabled | "No modules configured. Contact your admin." |
-| Quick Actions | No permissions | "No actions available for your role." |
-| Activity Feed | No events today | "No activity today" |
-| Attendance (no shift) | No shift assigned | "No shift assigned. Contact your manager." |
+| Section               | Empty Condition    | Message                                      |
+| --------------------- | ------------------ | -------------------------------------------- |
+| KPI row               | No modules enabled | "No modules configured. Contact your admin." |
+| Quick Actions         | No permissions     | "No actions available for your role."        |
+| Activity Feed         | No events today    | "No activity today"                          |
+| Attendance (no shift) | No shift assigned  | "No shift assigned. Contact your manager."   |
 
 ---
 
@@ -380,12 +397,12 @@ Container (infoContainer bg, 8dp radius):
 
 ## 9. Notification Badge Rules
 
-| Badge | Source | Update |
-|-------|--------|--------|
-| Bell in header | Unread notification count | Real-time (SSE/WebSocket) or 5-min poll |
-| Attendance KPI | Late count | Per attendance sync |
-| Faults KPI | Overdue count | Per fault sync |
-| Bottom nav icons | Module-specific | From respective module sync |
+| Badge            | Source                    | Update                                  |
+| ---------------- | ------------------------- | --------------------------------------- |
+| Bell in header   | Unread notification count | Real-time (SSE/WebSocket) or 5-min poll |
+| Attendance KPI   | Late count                | Per attendance sync                     |
+| Faults KPI       | Overdue count             | Per fault sync                          |
+| Bottom nav icons | Module-specific           | From respective module sync             |
 
 ---
 
@@ -404,6 +421,7 @@ Container (infoContainer bg, 8dp radius):
 If role is Manager or above, add after Attendance Hero:
 
 **Team Status Summary Card:**
+
 ```
 ┌─────────────────────────────────────────┐
 │  Team (12 members)          View All →  │
@@ -422,48 +440,48 @@ If role is Manager or above, add after Attendance Hero:
 
 ## 12. Animations Reference
 
-| Element | Animation | Duration | Easing |
-|---------|-----------|----------|--------|
-| Screen entry | Fade + slide from bottom | 300ms | `emphasized` |
-| Header greeting | Fade in | 200ms | `decelerate` |
-| Attendance card | Slide in from top | 250ms | `decelerate` |
-| KPI cards | Staggered slide in L→R | 150ms each, 50ms delay | `decelerate` |
-| Quick action cells | Staggered fade in | 100ms each, 30ms delay | `decelerate` |
-| Activity items | Staggered slide from right | 80ms each, 20ms delay | `decelerate` |
-| Shift progress bar | Animate fill width on load | 800ms | `standard` |
-| Attendance timer | Tick update | 1s | immediate |
-| Pull-to-refresh | Native RefreshIndicator | — | — |
-| Notification badge | Scale pop on increment | 200ms | `spring` |
-| Action cell tap | Scale 1.0 → 0.95 → 1.0 | 180ms | combined |
-| Shimmer sweep | Continuous | 1200ms | `linear` |
+| Element            | Animation                  | Duration               | Easing       |
+| ------------------ | -------------------------- | ---------------------- | ------------ |
+| Screen entry       | Fade + slide from bottom   | 300ms                  | `emphasized` |
+| Header greeting    | Fade in                    | 200ms                  | `decelerate` |
+| Attendance card    | Slide in from top          | 250ms                  | `decelerate` |
+| KPI cards          | Staggered slide in L→R     | 150ms each, 50ms delay | `decelerate` |
+| Quick action cells | Staggered fade in          | 100ms each, 30ms delay | `decelerate` |
+| Activity items     | Staggered slide from right | 80ms each, 20ms delay  | `decelerate` |
+| Shift progress bar | Animate fill width on load | 800ms                  | `standard`   |
+| Attendance timer   | Tick update                | 1s                     | immediate    |
+| Pull-to-refresh    | Native RefreshIndicator    | —                      | —            |
+| Notification badge | Scale pop on increment     | 200ms                  | `spring`     |
+| Action cell tap    | Scale 1.0 → 0.95 → 1.0     | 180ms                  | combined     |
+| Shimmer sweep      | Continuous                 | 1200ms                 | `linear`     |
 
 ---
 
 ## 13. Accessibility
 
-| Requirement | Implementation |
-|------------|---------------|
-| Greeting | `Semantics(header: true, label: "Good morning Ahmed")` |
-| Attendance card | `liveRegion: true` for the timer text |
-| KPI cards | Semantic label includes trend: "42 open faults, 3 overdue today" |
-| Quick actions | `tooltip` + `semanticLabel` on every cell |
-| Activity feed | Each item has full descriptive label |
-| Notification bell | "Notifications, 3 unread" |
-| Bottom nav | Existing NavigationBar semantics |
+| Requirement       | Implementation                                                   |
+| ----------------- | ---------------------------------------------------------------- |
+| Greeting          | `Semantics(header: true, label: "Good morning Ahmed")`           |
+| Attendance card   | `liveRegion: true` for the timer text                            |
+| KPI cards         | Semantic label includes trend: "42 open faults, 3 overdue today" |
+| Quick actions     | `tooltip` + `semanticLabel` on every cell                        |
+| Activity feed     | Each item has full descriptive label                             |
+| Notification bell | "Notifications, 3 unread"                                        |
+| Bottom nav        | Existing NavigationBar semantics                                 |
 
 ---
 
 ## 14. Performance Targets
 
-| Target | Value |
-|--------|-------|
-| Screen interactive (from cache) | < 400ms |
-| Screen interactive (fresh load) | < 1200ms |
-| Scroll frame rate | 60fps (no jank) |
-| KPI card count that triggers pagination | 6+ |
-| Activity feed initial page size | 8 items |
-| Background refresh interval | 5 minutes |
+| Target                                  | Value           |
+| --------------------------------------- | --------------- |
+| Screen interactive (from cache)         | < 400ms         |
+| Screen interactive (fresh load)         | < 1200ms        |
+| Scroll frame rate                       | 60fps (no jank) |
+| KPI card count that triggers pagination | 6+              |
+| Activity feed initial page size         | 8 items         |
+| Background refresh interval             | 5 minutes       |
 
 ---
 
-*End of Dashboard Specification v1.0*
+_End of Dashboard Specification v1.0_

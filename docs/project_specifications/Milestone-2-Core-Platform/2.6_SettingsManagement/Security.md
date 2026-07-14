@@ -1,7 +1,9 @@
 # Security.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Settings Module
+
 ### Security Settings Specification
 
 **Module:** Core Platform → Settings  
@@ -256,19 +258,19 @@ Indexes:
 
 # 16. REST APIs
 
-GET    /api/v1/settings/security
+GET /api/v1/settings/security
 
-PUT    /api/v1/settings/security
+PUT /api/v1/settings/security
 
-GET    /api/v1/settings/security/history
+GET /api/v1/settings/security/history
 
-POST   /api/v1/settings/security/publish
+POST /api/v1/settings/security/publish
 
-POST   /api/v1/settings/security/rollback
+POST /api/v1/settings/security/rollback
 
-GET    /api/v1/security/incidents
+GET /api/v1/security/incidents
 
-POST   /api/v1/security/lock-user
+POST /api/v1/security/lock-user
 
 ---
 

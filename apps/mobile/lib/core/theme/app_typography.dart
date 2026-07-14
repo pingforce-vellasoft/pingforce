@@ -15,8 +15,6 @@ abstract final class AppTypography {
   // FONT FAMILIES
   // ─────────────────────────────────────────────────────────────────────────
 
-  static const String _primaryFamily = 'Inter';
-  static const String _monoFamily = 'JetBrains Mono';
 
   // ─────────────────────────────────────────────────────────────────────────
   // FONT WEIGHTS (named for semantic clarity)

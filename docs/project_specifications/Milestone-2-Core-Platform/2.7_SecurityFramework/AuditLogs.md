@@ -1,7 +1,9 @@
 # AuditLogs.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Security Module
+
 ### Audit Logs & Audit Trail Specification
 
 **Module:** Core Platform → Security  
@@ -246,17 +248,17 @@ Monthly partitioning recommended.
 
 # 13. REST APIs
 
-GET    /api/v1/audit
+GET /api/v1/audit
 
-GET    /api/v1/audit/{id}
+GET /api/v1/audit/{id}
 
-POST   /api/v1/audit/search
+POST /api/v1/audit/search
 
-GET    /api/v1/audit/export
+GET /api/v1/audit/export
 
-GET    /api/v1/audit/correlation/{id}
+GET /api/v1/audit/correlation/{id}
 
-GET    /api/v1/audit/modules
+GET /api/v1/audit/modules
 
 ---
 

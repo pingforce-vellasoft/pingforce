@@ -206,15 +206,15 @@ Channels:
 
 Business_Modules/
 └── Attendance/
-    ├── README.md
-    ├── PRD.md
-    ├── TRD.md
-    ├── API_SPEC.md
-    ├── DATABASE_SCHEMA.md
-    ├── WORKFLOWS.md
-    ├── RBAC.md
-    ├── REPORTS.md
-    └── CHANGELOG.md
+├── README.md
+├── PRD.md
+├── TRD.md
+├── API_SPEC.md
+├── DATABASE_SCHEMA.md
+├── WORKFLOWS.md
+├── RBAC.md
+├── REPORTS.md
+└── CHANGELOG.md
 
 ## Future Enhancements
 

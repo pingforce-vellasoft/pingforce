@@ -49,11 +49,13 @@ The solution shall follow:
 Backups shall cover:
 
 ## Databases
+
 - PostgreSQL
 - Configuration databases
 - Metadata
 
 ## Object Storage
+
 - Uploaded documents
 - Images
 - Digital signatures
@@ -62,6 +64,7 @@ Backups shall cover:
 - Export files
 
 ## Infrastructure
+
 - Terraform state
 - Kubernetes manifests
 - Helm charts
@@ -69,6 +72,7 @@ Backups shall cover:
 - Network configuration
 
 ## Application
+
 - Deployment manifests
 - Configuration
 - Feature flags
@@ -77,6 +81,7 @@ Backups shall cover:
 - Notification templates
 
 ## Security
+
 - Certificate metadata
 - Secret metadata (not plaintext)
 - IAM configuration
@@ -138,12 +143,12 @@ Actual schedules shall be configurable.
 
 Target objectives:
 
-| Component | Target RPO | Target RTO |
-|-----------|-----------:|-----------:|
-| Critical Database | ≤15 minutes | ≤1 hour |
-| Object Storage | ≤1 hour | ≤2 hours |
-| Application Services | ≤30 minutes | ≤1 hour |
-| Configuration | ≤30 minutes | ≤1 hour |
+| Component            |  Target RPO | Target RTO |
+| -------------------- | ----------: | ---------: |
+| Critical Database    | ≤15 minutes |    ≤1 hour |
+| Object Storage       |     ≤1 hour |   ≤2 hours |
+| Application Services | ≤30 minutes |    ≤1 hour |
+| Configuration        | ≤30 minutes |    ≤1 hour |
 
 Business-specific objectives may vary by subscription tier.
 

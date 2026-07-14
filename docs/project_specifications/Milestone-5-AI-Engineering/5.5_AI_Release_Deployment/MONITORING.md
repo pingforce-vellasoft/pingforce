@@ -1,4 +1,3 @@
-
 # MONITORING.md
 
 # Enterprise Monitoring & Observability Guide
@@ -191,12 +190,12 @@ Monitor:
 
 Severity Levels:
 
-| Severity | Response |
-|----------|----------|
+| Severity | Response                  |
+| -------- | ------------------------- |
 | Critical | Immediate page & incident |
-| High | Engineering alert |
-| Medium | Team notification |
-| Low | Backlog review |
+| High     | Engineering alert         |
+| Medium   | Team notification         |
+| Low      | Backlog review            |
 
 Alert Channels:
 
@@ -212,18 +211,21 @@ Alert Channels:
 # Dashboards
 
 Executive:
+
 - SLA
 - Availability
 - Incidents
 - Customer health
 
 Operations:
+
 - Infrastructure
 - Deployments
 - Alerts
 - Capacity
 
 Engineering:
+
 - APIs
 - Database
 - Queues
@@ -231,6 +233,7 @@ Engineering:
 - AI metrics
 
 Support:
+
 - Tenant health
 - User issues
 - Active incidents

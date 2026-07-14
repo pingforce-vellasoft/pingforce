@@ -26,6 +26,7 @@ It is intended for field workforce use cases such as telecom, ISP, facility mana
 ## Core Features
 
 ### Visit Planning
+
 - Planned visits
 - Ad-hoc visits
 - Recurring visits
@@ -33,6 +34,7 @@ It is intended for field workforce use cases such as telecom, ISP, facility mana
 - Territory allocation
 
 ### Visit Assignment
+
 - Employee assignment
 - Team assignment
 - Skill-based assignment
@@ -40,6 +42,7 @@ It is intended for field workforce use cases such as telecom, ISP, facility mana
 - Bulk assignment
 
 ### Visit Execution
+
 - Start Visit
 - Pause Visit
 - Resume Visit
@@ -48,6 +51,7 @@ It is intended for field workforce use cases such as telecom, ISP, facility mana
 - Reschedule Visit
 
 ### GPS Validation
+
 - GPS capture
 - Geofence validation
 - Accuracy validation
@@ -56,6 +60,7 @@ It is intended for field workforce use cases such as telecom, ISP, facility mana
 - Distance verification
 
 ### Evidence Collection
+
 - Photos
 - Documents
 - Customer signature
@@ -66,6 +71,7 @@ It is intended for field workforce use cases such as telecom, ISP, facility mana
 - Video (optional)
 
 ### Offline Support
+
 - Offline visits
 - Offline GPS
 - Offline evidence
@@ -73,6 +79,7 @@ It is intended for field workforce use cases such as telecom, ISP, facility mana
 - Conflict resolution
 
 ### Monitoring
+
 - Live map
 - Active visits
 - Missed visits
@@ -81,6 +88,7 @@ It is intended for field workforce use cases such as telecom, ISP, facility mana
 - Route playback
 
 ### Reporting
+
 - Daily visits
 - Productivity
 - Route efficiency

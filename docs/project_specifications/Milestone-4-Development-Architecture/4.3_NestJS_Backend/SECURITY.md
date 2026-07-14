@@ -1,4 +1,3 @@
-
 # SECURITY.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**

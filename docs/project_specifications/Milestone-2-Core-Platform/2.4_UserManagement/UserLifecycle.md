@@ -1,7 +1,9 @@
 # UserLifecycle.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – User Management Module
+
 ### User Lifecycle Specification
 
 **Module:** Core Platform → User Management
@@ -328,17 +330,17 @@ Indexes:
 
 # 13. REST APIs
 
-GET    /api/v1/users/{id}/lifecycle
+GET /api/v1/users/{id}/lifecycle
 
-POST   /api/v1/users/{id}/activate
+POST /api/v1/users/{id}/activate
 
-POST   /api/v1/users/{id}/suspend
+POST /api/v1/users/{id}/suspend
 
-POST   /api/v1/users/{id}/reactivate
+POST /api/v1/users/{id}/reactivate
 
-POST   /api/v1/users/{id}/archive
+POST /api/v1/users/{id}/archive
 
-POST   /api/v1/users/{id}/offboard
+POST /api/v1/users/{id}/offboard
 
 ---
 

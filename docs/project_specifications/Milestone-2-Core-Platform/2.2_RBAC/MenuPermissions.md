@@ -1,7 +1,9 @@
 # MenuPermissions.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – RBAC Module
+
 ### Menu Permissions & Navigation Authorization Specification
 
 **Module:** Core Platform → RBAC
@@ -56,16 +58,16 @@ Application
 Example:
 
 Administration
- ├── Users
- ├── Roles
- ├── Permissions
- └── Settings
+├── Users
+├── Roles
+├── Permissions
+└── Settings
 
 Operations
- ├── Attendance
- ├── GPS
- ├── Fault Tickets
- └── Leads
+├── Attendance
+├── GPS
+├── Fault Tickets
+└── Leads
 
 ---
 
@@ -153,18 +155,18 @@ Tenant
 
 # 9. Default Menu Matrix
 
-| Menu | Platform Admin | Tenant Admin | Manager | Employee | Field Staff | Client |
-|------|:--------------:|:------------:|:-------:|:--------:|:-----------:|:------:|
-| Dashboard | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Users | ✓ | ✓ | Read | ✗ | ✗ | ✗ |
-| Roles | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Permissions | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Attendance | ✓ | ✓ | ✓ | ✓ | ✓ | Self |
-| GPS | ✓ | ✓ | ✓ | Self | ✓ | ✗ |
-| Faults | ✓ | ✓ | ✓ | Limited | ✓ | ✓ |
-| Leads | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ |
-| Reports | ✓ | ✓ | ✓ | Self | Self | Limited |
-| Settings | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
+| Menu        | Platform Admin | Tenant Admin | Manager | Employee | Field Staff | Client  |
+| ----------- | :------------: | :----------: | :-----: | :------: | :---------: | :-----: |
+| Dashboard   |       ✓        |      ✓       |    ✓    |    ✓     |      ✓      |    ✓    |
+| Users       |       ✓        |      ✓       |  Read   |    ✗     |      ✗      |    ✗    |
+| Roles       |       ✓        |      ✓       |    ✗    |    ✗     |      ✗      |    ✗    |
+| Permissions |       ✓        |      ✓       |    ✗    |    ✗     |      ✗      |    ✗    |
+| Attendance  |       ✓        |      ✓       |    ✓    |    ✓     |      ✓      |  Self   |
+| GPS         |       ✓        |      ✓       |    ✓    |   Self   |      ✓      |    ✗    |
+| Faults      |       ✓        |      ✓       |    ✓    | Limited  |      ✓      |    ✓    |
+| Leads       |       ✓        |      ✓       |    ✓    |    ✗     |      ✗      |    ✗    |
+| Reports     |       ✓        |      ✓       |    ✓    |   Self   |    Self     | Limited |
+| Settings    |       ✓        |      ✓       |    ✗    |    ✗     |      ✗      |    ✗    |
 
 ---
 

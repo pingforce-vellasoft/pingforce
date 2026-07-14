@@ -1,4 +1,3 @@
-
 # WORKSPACE_SETUP.md
 
 # Stitch Workspace Setup
@@ -21,11 +20,13 @@ This document defines the recommended development workspace for the **Stitch** m
 ## Recommended Tools
 
 ### Operating Systems
+
 - Windows 11
 - Ubuntu 24.04 LTS
 - macOS (latest supported)
 
 ### Core Software
+
 - Git
 - Visual Studio Code
 - Node.js LTS
@@ -53,15 +54,15 @@ This document defines the recommended development workspace for the **Stitch** m
 
 AI_Engineering/
 └── Stitch/
-    ├── README.md
-    ├── WORKSPACE_SETUP.md
-    ├── CHANGELOG.md
-    ├── PROJECT_STATE.md
-    ├── prompts/
-    ├── templates/
-    ├── examples/
-    ├── assets/
-    └── scripts/
+├── README.md
+├── WORKSPACE_SETUP.md
+├── CHANGELOG.md
+├── PROJECT_STATE.md
+├── prompts/
+├── templates/
+├── examples/
+├── assets/
+└── scripts/
 
 ## Environment Variables
 
@@ -78,9 +79,9 @@ GITHUB_TOKEN=
 
 - main
 - develop
-- feature/*
-- release/*
-- hotfix/*
+- feature/\*
+- release/\*
+- hotfix/\*
 
 Use Pull Requests with mandatory review.
 
@@ -122,6 +123,7 @@ Use Pull Requests with mandatory review.
 ## Deliverables
 
 The workspace should enable:
+
 - Prompt engineering
 - UI generation
 - Component refinement

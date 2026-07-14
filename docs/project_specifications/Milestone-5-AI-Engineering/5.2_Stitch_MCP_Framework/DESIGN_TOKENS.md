@@ -1,6 +1,7 @@
 # DESIGN_TOKENS.md
 
 # Stitch Design Tokens
+
 **Module:** AI_Engineering/Stitch
 **Version:** 1.0.0
 **Status:** Draft
@@ -29,33 +30,39 @@ This document defines the design token specification for the Enterprise Multi-Te
 ## Color Tokens
 
 ### Brand Colors
+
 - color.brand.primary
 - color.brand.secondary
 - color.brand.accent
 
 ### Semantic Colors
+
 - color.success
 - color.warning
 - color.error
 - color.info
 
 ### Surface Colors
+
 - color.surface.default
 - color.surface.elevated
 - color.surface.overlay
 
 ### Background
+
 - color.background.primary
 - color.background.secondary
 - color.background.inverse
 
 ### Text
+
 - color.text.primary
 - color.text.secondary
 - color.text.disabled
 - color.text.inverse
 
 ### Border
+
 - color.border.default
 - color.border.focus
 - color.border.error
@@ -65,11 +72,13 @@ This document defines the design token specification for the Enterprise Multi-Te
 ## Typography Tokens
 
 Font Families
+
 - Primary
 - Secondary
 - Monospace
 
 Text Styles
+
 - Display
 - H1
 - H2
@@ -242,6 +251,7 @@ Theme Engine
 ## Governance
 
 Every token change should include:
+
 - Review
 - Version update
 - Design validation

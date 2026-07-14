@@ -28,24 +28,24 @@ The backend is designed as an enterprise-grade modular monolith (initially), wit
 
 # Technology Stack
 
-| Layer | Technology |
-|--------|------------|
-| Runtime | Node.js LTS |
-| Framework | NestJS |
-| Language | TypeScript |
-| ORM | Prisma |
-| Database | PostgreSQL |
-| Cache | Redis |
-| Queue | BullMQ |
-| Storage | S3 Compatible Storage |
-| Authentication | JWT + Refresh Tokens |
-| Authorization | Enterprise RBAC |
-| API | REST (OpenAPI) |
-| Validation | class-validator |
-| Logging | Winston / Pino |
-| Monitoring | OpenTelemetry + Prometheus |
-| Containerization | Docker |
-| CI/CD | GitHub Actions |
+| Layer            | Technology                 |
+| ---------------- | -------------------------- |
+| Runtime          | Node.js LTS                |
+| Framework        | NestJS                     |
+| Language         | TypeScript                 |
+| ORM              | Prisma                     |
+| Database         | PostgreSQL                 |
+| Cache            | Redis                      |
+| Queue            | BullMQ                     |
+| Storage          | S3 Compatible Storage      |
+| Authentication   | JWT + Refresh Tokens       |
+| Authorization    | Enterprise RBAC            |
+| API              | REST (OpenAPI)             |
+| Validation       | class-validator            |
+| Logging          | Winston / Pino             |
+| Monitoring       | OpenTelemetry + Prometheus |
+| Containerization | Docker                     |
+| CI/CD            | GitHub Actions             |
 
 ---
 
@@ -107,6 +107,7 @@ src/
 # Core Platform Capabilities
 
 ## Authentication
+
 - JWT Access Tokens
 - Refresh Tokens
 - MFA Ready
@@ -115,6 +116,7 @@ src/
 - Client Code Validation
 
 ## Authorization
+
 - RBAC
 - Permission Groups
 - Data Scope
@@ -123,6 +125,7 @@ src/
 - Row-Level Security
 
 ## Multi-Tenancy
+
 - Tenant Isolation
 - Dynamic Branding
 - Tenant Settings
@@ -133,6 +136,7 @@ src/
 ## Module Engine
 
 Supports dynamic enable/disable of:
+
 - Attendance
 - GPS
 - Leave
@@ -147,6 +151,7 @@ Supports dynamic enable/disable of:
 ## Feature Flag Engine
 
 Supports runtime configuration for features like:
+
 - Offline Attendance
 - Biometric
 - GPS Mandatory
@@ -159,6 +164,7 @@ Supports runtime configuration for features like:
 ## Workflow Engine
 
 Configurable workflows for:
+
 - Faults
 - Leave
 - Attendance
@@ -170,6 +176,7 @@ Configurable workflows for:
 ## Notification Engine
 
 Channels:
+
 - Push
 - Email
 - WhatsApp
@@ -260,6 +267,7 @@ Supports templates, retries, scheduling, priorities and variables.
 Designed for migration toward independently deployable services without changing public APIs.
 
 Potential services:
+
 - Auth
 - Notification
 - Reporting

@@ -34,6 +34,7 @@ The design is multi-tenant, RBAC-aware, auditable, scalable, and cloud-storage i
 # 3. Supported File Types
 
 ## Images
+
 - JPG
 - JPEG
 - PNG
@@ -41,6 +42,7 @@ The design is multi-tenant, RBAC-aware, auditable, scalable, and cloud-storage i
 - HEIC (optional)
 
 ## Documents
+
 - PDF
 - DOCX
 - XLSX
@@ -48,6 +50,7 @@ The design is multi-tenant, RBAC-aware, auditable, scalable, and cloud-storage i
 - TXT
 
 ## Evidence
+
 - GPS screenshots
 - Attendance screenshots
 - Device logs
@@ -208,6 +211,7 @@ Queued
 - Tenant Storage Summary
 
 Exports:
+
 - Excel
 - CSV
 - PDF
@@ -228,33 +232,38 @@ Exports:
 
 # 15. APIs
 
-POST   /files/upload
-GET    /files/{id}
-GET    /files/{id}/download
-PUT    /files/{id}
+POST /files/upload
+GET /files/{id}
+GET /files/{id}/download
+PUT /files/{id}
 DELETE /files/{id}
-GET    /files/search
-GET    /files/history/{id}
+GET /files/search
+GET /files/history/{id}
 
 ---
 
 # 16. RBAC
 
 Employee
+
 - Upload own evidence
 - View own files
 
 Manager
+
 - View team files
 - Review evidence
 
 HR
+
 - Manage attendance documents
 
 Employer
+
 - Tenant-level access
 
 Super Admin
+
 - Platform administration
 
 ---

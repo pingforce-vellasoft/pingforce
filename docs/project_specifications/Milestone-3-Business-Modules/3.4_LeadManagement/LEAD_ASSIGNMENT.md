@@ -4,15 +4,17 @@
 
 ## Document Information
 
-  Item       Value
-  ---------- --------------------------------------
-  Module     Lead Management
-  Document   Lead Assignment Specification
-  Platform   Enterprise Workforce Management SaaS
-  Version    1.0
-  Status     Production Ready
+Item Value
 
-------------------------------------------------------------------------
+---
+
+Module Lead Management
+Document Lead Assignment Specification
+Platform Enterprise Workforce Management SaaS
+Version 1.0
+Status Production Ready
+
+---
 
 # 1. Purpose
 
@@ -21,19 +23,19 @@ balancing, and escalation of leads across a multi-tenant enterprise
 platform. It supports configurable assignment strategies, RBAC, workflow
 automation, SLA monitoring, notifications, audit logging, and reporting.
 
-------------------------------------------------------------------------
+---
 
 # 2. Objectives
 
--   Ensure every lead has a valid owner
--   Reduce response time
--   Automate routing based on business rules
--   Balance workloads fairly
--   Support manual overrides
--   Maintain complete ownership history
--   Improve accountability and conversion rates
+- Ensure every lead has a valid owner
+- Reduce response time
+- Automate routing based on business rules
+- Balance workloads fairly
+- Support manual overrides
+- Maintain complete ownership history
+- Improve accountability and conversion rates
 
-------------------------------------------------------------------------
+---
 
 # 3. Assignment Workflow
 
@@ -48,40 +50,40 @@ automation, SLA monitoring, notifications, audit logging, and reporting.
 9.  Audit Log Creation
 10. Dashboard Update
 
-------------------------------------------------------------------------
+---
 
 # 4. Assignment Types
 
 ## Manual Assignment
 
--   Single lead assignment
--   Bulk assignment
--   Drag-and-drop from pipeline
--   Manager override
--   Super Admin override
+- Single lead assignment
+- Bulk assignment
+- Drag-and-drop from pipeline
+- Manager override
+- Super Admin override
 
 ## Automatic Assignment
 
--   Round Robin
--   Branch Based
--   Region Based
--   Zone Based
--   Department Based
--   Team Based
--   Product Based
--   Lead Source Based
--   Campaign Based
--   Skill Based
--   Certification Based
--   Language Based
--   Customer Type Based
--   Workload Based
--   Availability Based
--   Territory Based
--   Priority Based
--   Hybrid Rule Engine
+- Round Robin
+- Branch Based
+- Region Based
+- Zone Based
+- Department Based
+- Team Based
+- Product Based
+- Lead Source Based
+- Campaign Based
+- Skill Based
+- Certification Based
+- Language Based
+- Customer Type Based
+- Workload Based
+- Availability Based
+- Territory Based
+- Priority Based
+- Hybrid Rule Engine
 
-------------------------------------------------------------------------
+---
 
 # 5. Assignment Rules
 
@@ -90,7 +92,7 @@ Maximum active leads - Backup owner - Escalation timeout - Auto
 reassignment - Holiday handling - Leave handling - Skill matching -
 Geographic restrictions
 
-------------------------------------------------------------------------
+---
 
 # 6. Eligibility Validation
 
@@ -99,7 +101,7 @@ belongs to tenant - Required permissions exist - User is available -
 Branch/Region matches - Capacity limits not exceeded - License seat
 available
 
-------------------------------------------------------------------------
+---
 
 # 7. Ownership Model
 
@@ -109,7 +111,7 @@ Assignment Rule - Assignment Reason
 
 Ownership history is immutable.
 
-------------------------------------------------------------------------
+---
 
 # 8. Reassignment
 
@@ -120,14 +122,14 @@ balancing - Territory changes
 Requirements: - Permission check - Mandatory reason - Notifications -
 Audit trail
 
-------------------------------------------------------------------------
+---
 
 # 9. Lead Acceptance
 
 Optional tenant feature: - Accept assignment - Reject assignment -
 Provide rejection reason - Auto return to queue - Manager review
 
-------------------------------------------------------------------------
+---
 
 # 10. SLA Management
 
@@ -136,7 +138,7 @@ Conversion SLA
 
 Escalation Levels: 1. Executive 2. Manager 3. Employer 4. Super Admin
 
-------------------------------------------------------------------------
+---
 
 # 11. Notifications
 
@@ -145,29 +147,29 @@ Breach
 
 Channels: - Push - Email - WhatsApp - SMS - In-App
 
-------------------------------------------------------------------------
+---
 
 # 12. Security
 
--   JWT Authentication
--   RBAC
--   Row-Level Security
--   Tenant Isolation
--   Audit Logging
--   Secure APIs
+- JWT Authentication
+- RBAC
+- Row-Level Security
+- Tenant Isolation
+- Audit Logging
+- Secure APIs
 
-------------------------------------------------------------------------
+---
 
 # 13. Mobile Support
 
--   Receive assignments
--   Accept/Reject
--   Offline viewing
--   Background sync
--   Push alerts
--   GPS-based assignment visibility
+- Receive assignments
+- Accept/Reject
+- Offline viewing
+- Background sync
+- Push alerts
+- GPS-based assignment visibility
 
-------------------------------------------------------------------------
+---
 
 # 14. Reports
 
@@ -179,18 +181,18 @@ Distribution - Region Performance - Assignment Efficiency
 
 Exports: - Excel - CSV - PDF
 
-------------------------------------------------------------------------
+---
 
 # 15. APIs
 
--   POST /api/v1/leads/assign
--   POST /api/v1/leads/reassign
--   POST /api/v1/leads/accept
--   POST /api/v1/leads/reject
--   GET /api/v1/leads/unassigned
--   GET /api/v1/leads/assignment-history
+- POST /api/v1/leads/assign
+- POST /api/v1/leads/reassign
+- POST /api/v1/leads/accept
+- POST /api/v1/leads/reject
+- GET /api/v1/leads/unassigned
+- GET /api/v1/leads/assignment-history
 
-------------------------------------------------------------------------
+---
 
 # 16. Audit Requirements
 
@@ -198,37 +200,37 @@ Audit: - Assignment creation - Reassignment - Acceptance - Rejection -
 Rule executed - User performing action - Device/IP - Previous owner -
 New owner - Timestamp
 
-------------------------------------------------------------------------
+---
 
 # 17. Performance
 
--   Assignment execution \<2 seconds
--   Bulk assignment \>100,000 leads
--   Horizontal scaling
--   Queue-based processing
--   99.9% uptime
+- Assignment execution \<2 seconds
+- Bulk assignment \>100,000 leads
+- Horizontal scaling
+- Queue-based processing
+- 99.9% uptime
 
-------------------------------------------------------------------------
+---
 
 # 18. Future Enhancements
 
--   AI-based lead routing
--   Predictive workload balancing
--   Geo-intelligent assignment
--   Calendar-aware assignment
--   ML conversion optimization
--   Auto territory optimization
+- AI-based lead routing
+- Predictive workload balancing
+- Geo-intelligent assignment
+- Calendar-aware assignment
+- ML conversion optimization
+- Auto territory optimization
 
-------------------------------------------------------------------------
+---
 
 # 19. Acceptance Criteria
 
--   Manual assignment operational
--   Automatic rule engine operational
--   Reassignment supported
--   SLA monitoring active
--   Notifications delivered
--   RBAC enforced
--   Complete ownership history maintained
--   Audit trail available
--   Reporting functional
+- Manual assignment operational
+- Automatic rule engine operational
+- Reassignment supported
+- SLA monitoring active
+- Notifications delivered
+- RBAC enforced
+- Complete ownership history maintained
+- Audit trail available
+- Reporting functional

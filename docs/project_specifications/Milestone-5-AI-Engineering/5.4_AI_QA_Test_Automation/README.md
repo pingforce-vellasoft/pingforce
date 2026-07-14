@@ -1,10 +1,11 @@
-
 # QA Module
 
 ## Overview
+
 The QA (Quality Assurance) module defines the enterprise quality strategy for the AI_Engineering documentation suite. It establishes testing standards, automation, quality gates, release validation, and governance for all platform components.
 
 This repository targets an Enterprise Multi-Tenant AI Engineering Platform. QA covers every layer:
+
 - AI services
 - APIs
 - Web applications
@@ -163,13 +164,13 @@ Track:
 
 # Performance Targets
 
-| Component | Target |
-|-----------|--------|
-| API | <300 ms |
+| Component      | Target  |
+| -------------- | ------- |
+| API            | <300 ms |
 | Authentication | <500 ms |
-| Dashboard | <2 s |
-| AI Response | <5 s |
-| Mobile Sync | <10 s |
+| Dashboard      | <2 s    |
+| AI Response    | <5 s    |
+| Mobile Sync    | <10 s   |
 
 ---
 

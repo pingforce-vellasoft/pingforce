@@ -105,22 +105,26 @@ Post Release Review
 The platform shall support:
 
 ## Major Releases
+
 - Platform-wide enhancements
 - Architectural changes
 - Breaking changes
 - Major version increments
 
 ## Minor Releases
+
 - New features
 - Module enhancements
 - Backward-compatible improvements
 
 ## Patch Releases
+
 - Defect corrections
 - Security updates
 - Performance improvements
 
 ## Hotfix Releases
+
 - Critical production issues
 - Emergency security remediation
 - High-priority operational fixes
@@ -133,10 +137,10 @@ The release process shall align with:
 
 - main
 - develop
-- feature/*
-- release/*
-- hotfix/*
-- bugfix/*
+- feature/\*
+- release/\*
+- hotfix/\*
+- bugfix/\*
 
 Protected branch policies shall enforce approvals and quality gates.
 

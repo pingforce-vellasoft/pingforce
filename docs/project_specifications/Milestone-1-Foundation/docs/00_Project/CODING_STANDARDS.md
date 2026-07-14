@@ -1,4 +1,3 @@
-
 # CODING_STANDARDS.md
 
 # Enterprise Workforce Platform Coding Standards

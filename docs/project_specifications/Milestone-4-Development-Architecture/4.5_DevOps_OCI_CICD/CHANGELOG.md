@@ -68,6 +68,7 @@ This version establishes the enterprise-grade DevOps architecture for the platfo
 ### Architectural Improvements
 
 #### Cloud & Infrastructure
+
 - OCI reference architecture
 - Infrastructure as Code
 - Kubernetes orchestration
@@ -76,6 +77,7 @@ This version establishes the enterprise-grade DevOps architecture for the platfo
 - Disaster recovery planning
 
 #### DevSecOps
+
 - Shift-left security
 - SAST / DAST strategy
 - Dependency and container scanning
@@ -84,6 +86,7 @@ This version establishes the enterprise-grade DevOps architecture for the platfo
 - Release governance
 
 #### CI/CD
+
 - Pipeline-as-Code
 - Immutable artifacts
 - Automated testing
@@ -92,6 +95,7 @@ This version establishes the enterprise-grade DevOps architecture for the platfo
 - Rollback strategy
 
 #### Operations
+
 - Monitoring
 - Logging
 - Alerting
@@ -101,6 +105,7 @@ This version establishes the enterprise-grade DevOps architecture for the platfo
 - Scalability
 
 #### Enterprise Features
+
 - Multi-tenancy
 - White-label support
 - RBAC alignment

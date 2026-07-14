@@ -1,4 +1,3 @@
-
 # BACKGROUND_JOBS.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -41,14 +40,14 @@ The job processing architecture shall follow:
 
 The platform shall support:
 
-| Component | Planned Technology |
-|-----------|--------------------|
-| Queue Manager | BullMQ |
-| Queue Backend | Redis |
-| Scheduler | NestJS Scheduler |
-| Event Source | Domain Events |
-| Monitoring | OpenTelemetry / Prometheus |
-| Logging | Winston / Pino |
+| Component     | Planned Technology         |
+| ------------- | -------------------------- |
+| Queue Manager | BullMQ                     |
+| Queue Backend | Redis                      |
+| Scheduler     | NestJS Scheduler           |
+| Event Source  | Domain Events              |
+| Monitoring    | OpenTelemetry / Prometheus |
+| Logging       | Winston / Pino             |
 
 The architecture shall remain adaptable to future queue technologies.
 

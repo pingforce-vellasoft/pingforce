@@ -850,12 +850,4 @@ class _ModuleBadge extends StatelessWidget {
   }
 }
 
-// ── AppSpacing extension for this file ────────────────────────────────────
-extension _SpacingX on double {
-  SizedBox get toSizedBox => SizedBox(height: this);
-}
 
-extension _AppSpacingExt on AppSpacing {
-  static const SizedBox sectionGapBox =
-      SizedBox(height: AppSpacing.space5);
-}

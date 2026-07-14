@@ -26,6 +26,7 @@ Each story includes acceptance criteria.
 **As an Employee**, I want to securely log in so that I can access only my attendance information.
 
 ### Acceptance Criteria
+
 - JWT authentication required.
 - Tenant validation completed.
 - RBAC permissions applied.

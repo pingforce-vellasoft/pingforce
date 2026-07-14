@@ -1,16 +1,15 @@
-
 # RBAC_TESTING.md
 
 # Enterprise RBAC Testing Strategy
 
 ## Document Information
 
-| Field | Value |
-|---|---|
-| Project | Enterprise Multi-Tenant AI Engineering Platform |
-| Document | RBAC_TESTING.md |
-| Status | Planning Phase (Pre-Implementation) |
-| Version | 1.0 |
+| Field    | Value                                                                            |
+| -------- | -------------------------------------------------------------------------------- |
+| Project  | Enterprise Multi-Tenant AI Engineering Platform                                  |
+| Document | RBAC_TESTING.md                                                                  |
+| Status   | Planning Phase (Pre-Implementation)                                              |
+| Version  | 1.0                                                                              |
 | Audience | QA Engineers, Security Engineers, Backend Developers, Architects, Product Owners |
 
 ---

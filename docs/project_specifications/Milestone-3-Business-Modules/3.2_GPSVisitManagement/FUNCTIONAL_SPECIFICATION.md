@@ -31,6 +31,7 @@ Defines the functional behavior of the GPS Visit Management module for planning,
 # 3. Functional Modules
 
 ## Visit Planning
+
 - Create visit plans
 - Recurring visits
 - Route planning
@@ -38,6 +39,7 @@ Defines the functional behavior of the GPS Visit Management module for planning,
 - Visit templates
 
 ## Visit Assignment
+
 - Manual assignment
 - Auto assignment
 - Bulk assignment
@@ -46,6 +48,7 @@ Defines the functional behavior of the GPS Visit Management module for planning,
 - Reassignment
 
 ## Visit Execution
+
 - Accept visit
 - Reject visit
 - Navigate to customer
@@ -56,6 +59,7 @@ Defines the functional behavior of the GPS Visit Management module for planning,
 - Cancel visit
 
 ## GPS Validation
+
 - Live GPS capture
 - Accuracy validation
 - Geofence validation
@@ -64,6 +68,7 @@ Defines the functional behavior of the GPS Visit Management module for planning,
 - Mock GPS detection
 
 ## Evidence Collection
+
 - Photos
 - Documents
 - Digital Signature
@@ -74,6 +79,7 @@ Defines the functional behavior of the GPS Visit Management module for planning,
 - Audio/Video (optional)
 
 ## Offline Mode
+
 - Offline visit creation
 - Offline GPS storage
 - Offline evidence

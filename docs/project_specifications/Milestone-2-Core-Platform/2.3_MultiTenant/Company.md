@@ -1,7 +1,9 @@
 # Company.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Multi-Tenant Module
+
 ### Company Domain Specification
 
 **Module:** Core Platform → Multi-Tenant
@@ -40,12 +42,12 @@ The Company subsystem shall:
 
 Platform
 → Tenant
-   → Company
-      → Business Units
-         → Branches
-            → Departments
-               → Teams
-                  → Employees
+→ Company
+→ Business Units
+→ Branches
+→ Departments
+→ Teams
+→ Employees
 
 The Company is the root business entity inside a tenant.
 
@@ -263,17 +265,17 @@ Indexes:
 
 # 14. APIs
 
-GET    /api/v1/company
+GET /api/v1/company
 
-GET    /api/v1/company/profile
+GET /api/v1/company/profile
 
-PUT    /api/v1/company/profile
+PUT /api/v1/company/profile
 
-POST   /api/v1/company/logo
+POST /api/v1/company/logo
 
-GET    /api/v1/company/contacts
+GET /api/v1/company/contacts
 
-PUT    /api/v1/company/settings
+PUT /api/v1/company/settings
 
 ---
 

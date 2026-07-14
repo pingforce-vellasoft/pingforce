@@ -1,4 +1,3 @@
-
 # TEST_CASE_LIBRARY.md
 
 # Enterprise Test Case Library Design
@@ -86,21 +85,21 @@ Every module will have its own dedicated test suite.
 
 Every test case will contain:
 
-| Field | Description |
-|-------|-------------|
-| Test Case ID | Unique identifier |
-| Module | Functional module |
-| Requirement ID | Linked business requirement |
-| User Story | Traceability |
-| Priority | Critical / High / Medium / Low |
-| Severity | Business impact |
-| Preconditions | Required setup |
-| Test Data | Input data |
-| Test Steps | Execution steps |
-| Expected Result | Desired outcome |
-| Automation Status | Manual / Automated |
-| Environment | Dev / QA / UAT / Prod |
-| Tags | Smoke, Regression, Security, AI etc. |
+| Field             | Description                          |
+| ----------------- | ------------------------------------ |
+| Test Case ID      | Unique identifier                    |
+| Module            | Functional module                    |
+| Requirement ID    | Linked business requirement          |
+| User Story        | Traceability                         |
+| Priority          | Critical / High / Medium / Low       |
+| Severity          | Business impact                      |
+| Preconditions     | Required setup                       |
+| Test Data         | Input data                           |
+| Test Steps        | Execution steps                      |
+| Expected Result   | Desired outcome                      |
+| Automation Status | Manual / Automated                   |
+| Environment       | Dev / QA / UAT / Prod                |
+| Tags              | Smoke, Regression, Security, AI etc. |
 
 ---
 

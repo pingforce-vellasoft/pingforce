@@ -37,20 +37,21 @@ This document defines the logical database design for the Attendance module. It 
 
 Stores the finalized attendance record for a workday.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID (PK) | Attendance identifier |
-| tenant_id | UUID | Tenant |
-| employee_id | UUID | Employee |
-| attendance_date | DATE | Business date |
-| shift_id | UUID | Assigned shift |
-| status | VARCHAR(30) | Present/Late/Absent/etc. |
-| total_work_minutes | INTEGER | Total work |
-| overtime_minutes | INTEGER | OT |
-| created_at | TIMESTAMP | Created |
-| updated_at | TIMESTAMP | Updated |
+| Column             | Type        | Description              |
+| ------------------ | ----------- | ------------------------ |
+| id                 | UUID (PK)   | Attendance identifier    |
+| tenant_id          | UUID        | Tenant                   |
+| employee_id        | UUID        | Employee                 |
+| attendance_date    | DATE        | Business date            |
+| shift_id           | UUID        | Assigned shift           |
+| status             | VARCHAR(30) | Present/Late/Absent/etc. |
+| total_work_minutes | INTEGER     | Total work               |
+| overtime_minutes   | INTEGER     | OT                       |
+| created_at         | TIMESTAMP   | Created                  |
+| updated_at         | TIMESTAMP   | Updated                  |
 
 Indexes:
+
 - (tenant_id, attendance_date)
 - (employee_id, attendance_date)
 - (status)
@@ -258,18 +259,18 @@ Columns
 # 4. Relationships
 
 tenant
- ├── attendance_policy
- ├── shifts
- ├── geofences
- ├── attendance
- │     ├── attendance_sessions
- │     ├── attendance_breaks
- │     ├── attendance_corrections
- │     └── gps_validation_logs
- ├── employee_locations
- ├── offline_queue
- ├── sync_logs
- └── audit_logs
+├── attendance_policy
+├── shifts
+├── geofences
+├── attendance
+│ ├── attendance_sessions
+│ ├── attendance_breaks
+│ ├── attendance_corrections
+│ └── gps_validation_logs
+├── employee_locations
+├── offline_queue
+├── sync_logs
+└── audit_logs
 
 ---
 
@@ -286,21 +287,25 @@ tenant
 # 6. Recommended Indexes
 
 attendance:
+
 - tenant_id, attendance_date
 - employee_id
 - shift_id
 - status
 
 attendance_sessions:
+
 - employee_id
 - session_status
 - check_in_time
 
 employee_locations:
+
 - employee_id, captured_at
 - tenant_id
 
 audit_logs:
+
 - entity_name
 - created_at
 - tenant_id

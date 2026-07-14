@@ -1,7 +1,9 @@
 # Reports.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Settings Module
+
 ### Reports & Reporting Configuration Specification
 
 **Module:** Core Platform → Settings
@@ -37,19 +39,19 @@ The subsystem shall:
 # 3. Report Architecture
 
 Data Sources
-    ↓
+↓
 Query Engine
-    ↓
+↓
 Report Engine
-    ↓
+↓
 Template Engine
-    ↓
+↓
 Formatting
-    ↓
+↓
 Export Engine
-    ↓
+↓
 Delivery Engine
-    ↓
+↓
 Audit
 
 ---
@@ -248,19 +250,19 @@ created_at
 
 # 14. REST APIs
 
-GET    /api/v1/reports
+GET /api/v1/reports
 
-GET    /api/v1/reports/{id}
+GET /api/v1/reports/{id}
 
-POST   /api/v1/reports/run
+POST /api/v1/reports/run
 
-POST   /api/v1/reports/schedule
+POST /api/v1/reports/schedule
 
-GET    /api/v1/reports/history
+GET /api/v1/reports/history
 
-GET    /api/v1/reports/download/{id}
+GET /api/v1/reports/download/{id}
 
-POST   /api/v1/reports/favorite
+POST /api/v1/reports/favorite
 
 ---
 

@@ -69,6 +69,7 @@ Infrastructure   Applications   Security   Business KPIs
 The platform shall generate alerts from:
 
 ## Infrastructure
+
 - Compute utilization
 - Kubernetes cluster
 - Node failures
@@ -78,6 +79,7 @@ The platform shall generate alerts from:
 - Storage availability
 
 ## Platform Services
+
 - PostgreSQL
 - Redis
 - NGINX / Ingress
@@ -87,6 +89,7 @@ The platform shall generate alerts from:
 - Notification services
 
 ## Applications
+
 - Angular Admin
 - NestJS API
 - Mobile API
@@ -95,6 +98,7 @@ The platform shall generate alerts from:
 - Synchronization Engine
 
 ## Security
+
 - Failed authentication
 - MFA anomalies
 - RBAC violations
@@ -104,6 +108,7 @@ The platform shall generate alerts from:
 - Suspicious API activity
 
 ## Business
+
 - Attendance processing failures
 - GPS synchronization failures
 - Fault SLA breaches

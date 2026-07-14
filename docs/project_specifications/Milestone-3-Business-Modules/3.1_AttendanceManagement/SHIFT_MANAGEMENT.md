@@ -40,21 +40,27 @@ The Shift Management component manages employee work schedules across multiple t
 # 4. Supported Shift Types
 
 ## Fixed Shift
+
 Example: 09:00–18:00
 
 ## Flexible Shift
+
 Employee starts within an allowed window while maintaining required working hours.
 
 ## Rotational Shift
+
 Employees rotate based on configurable schedules.
 
 ## Split Shift
+
 Multiple working periods in a single day.
 
 ## Night Shift
+
 Supports cross-day attendance and overnight calculations.
 
 ## Custom Shift
+
 Tenant-defined schedules.
 
 ---
@@ -230,20 +236,25 @@ Export:
 # 15. RBAC
 
 Employee:
+
 - View Assigned Shift
 
 Manager:
+
 - Assign Team Shifts
 - View Team Calendar
 
 HR:
+
 - Create/Edit/Delete Shifts
 - Bulk Assignment
 
 Employer:
+
 - Configure Shift Policies
 
 Super Admin:
+
 - Tenant Defaults
 - Feature Flags
 - Global Monitoring

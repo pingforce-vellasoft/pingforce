@@ -1,4 +1,3 @@
-
 # COMPONENT_LIBRARY.md
 
 # Stitch Component Library
@@ -100,6 +99,7 @@ Objectives:
 - Dropdown Button
 
 States:
+
 - Default
 - Hover
 - Focus
@@ -131,6 +131,7 @@ States:
 - Master Detail Grid
 
 Features:
+
 - Sort
 - Filter
 - Search

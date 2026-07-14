@@ -267,14 +267,17 @@ Filters
 # 19. Flutter Architecture
 
 Presentation
+
 - Riverpod
 - GoRouter
 
 Domain
+
 - Use Cases
 - Repository Interfaces
 
 Data
+
 - REST APIs
 - Drift/SQLite
 - Hive
@@ -290,14 +293,14 @@ lib/
 ├── shared/
 ├── routes/
 ├── features/
-│   └── gps_visit_management/
-│       ├── data/
-│       ├── domain/
-│       ├── presentation/
-│       ├── widgets/
-│       ├── services/
-│       ├── sync/
-│       └── models/
+│ └── gps_visit_management/
+│ ├── data/
+│ ├── domain/
+│ ├── presentation/
+│ ├── widgets/
+│ ├── services/
+│ ├── sync/
+│ └── models/
 └── main.dart
 
 ---

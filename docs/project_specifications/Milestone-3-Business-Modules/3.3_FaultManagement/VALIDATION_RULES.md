@@ -1,4 +1,3 @@
-
 # VALIDATION_RULES.md
 
 # Fault Management Module – Validation Rules Specification

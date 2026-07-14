@@ -1,4 +1,3 @@
-
 # POST_RELEASE_CHECKLIST.md
 
 # Enterprise Post-Release Checklist
@@ -8,6 +7,7 @@
 This document defines the mandatory post-release verification activities for the AI_Engineering platform after every production deployment. It ensures the release is stable, secure, observable, compliant, and ready for normal business operations.
 
 Applicable to:
+
 - Multi-Tenant SaaS Platform
 - Angular Admin Portal
 - Flutter Android Application
@@ -21,15 +21,15 @@ Applicable to:
 
 # Release Information
 
-| Field | Value |
-|---|---|
-| Release Version | |
-| Release Type | Major / Minor / Patch / Hotfix |
-| Deployment Date | |
-| Environment | Production |
-| Release Manager | |
-| Deployment Window | |
-| Incident Reference | |
+| Field              | Value                          |
+| ------------------ | ------------------------------ |
+| Release Version    |                                |
+| Release Type       | Major / Minor / Patch / Hotfix |
+| Deployment Date    |                                |
+| Environment        | Production                     |
+| Release Manager    |                                |
+| Deployment Window  |                                |
+| Incident Reference |                                |
 
 ---
 
@@ -175,11 +175,13 @@ Verify dashboards:
 # 12. Hypercare
 
 Hypercare Window:
+
 - First 2 Hours
 - First 24 Hours
 - First 72 Hours
 
 Tasks:
+
 - [ ] Incident monitoring
 - [ ] Customer support readiness
 - [ ] Engineering on-call
@@ -204,6 +206,7 @@ If issues occurred:
 # 14. Metrics Review
 
 Record:
+
 - Deployment Duration
 - Downtime
 - MTTR
@@ -237,13 +240,13 @@ Record:
 
 # 17. Final Closure
 
-| Role | Name | Sign-off | Date |
-|---|---|---|---|
-| Product Owner | | | |
-| Engineering Lead | | | |
-| QA Lead | | | |
-| DevOps | | | |
-| Release Manager | | | |
+| Role             | Name | Sign-off | Date |
+| ---------------- | ---- | -------- | ---- |
+| Product Owner    |      |          |      |
+| Engineering Lead |      |          |      |
+| QA Lead          |      |          |      |
+| DevOps           |      |          |      |
+| Release Manager  |      |          |      |
 
 Release Status:
 
@@ -270,7 +273,7 @@ Release Status:
 ## Action Items
 
 | Item | Owner | Due Date | Status |
-|---|---|---|---|
+| ---- | ----- | -------- | ------ |
 
 ---
 

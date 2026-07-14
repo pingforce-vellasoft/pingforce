@@ -4,16 +4,18 @@
 
 ## Document Information
 
-  Item       Value
-  ---------- --------------------------------------
-  Module     Lead Management
-  Document   Follow-up Management Specification
-  Platform   Enterprise Workforce Management SaaS
-  Version    1.0
-  Status     Production Ready
-  Owner      Product Management
+Item Value
 
-------------------------------------------------------------------------
+---
+
+Module Lead Management
+Document Follow-up Management Specification
+Platform Enterprise Workforce Management SaaS
+Version 1.0
+Status Production Ready
+Owner Product Management
+
+---
 
 # 1. Purpose
 
@@ -23,19 +25,19 @@ supports automated reminders, SLA monitoring, multi-channel
 communication, offline mobile operation, audit logging, and enterprise
 reporting while maintaining complete tenant isolation.
 
-------------------------------------------------------------------------
+---
 
 # 2. Objectives
 
--   Ensure no lead is forgotten
--   Improve response and conversion rates
--   Standardize customer communication
--   Automate reminders and escalations
--   Track every customer interaction
--   Support configurable follow-up workflows
--   Provide complete visibility through dashboards and reports
+- Ensure no lead is forgotten
+- Improve response and conversion rates
+- Standardize customer communication
+- Automate reminders and escalations
+- Track every customer interaction
+- Support configurable follow-up workflows
+- Provide complete visibility through dashboards and reports
 
-------------------------------------------------------------------------
+---
 
 # 3. Business Scope
 
@@ -43,7 +45,7 @@ Supports follow-ups for: - New Leads - Qualified Leads - Opportunities -
 Existing Customers - Renewals - Upsell/Cross-sell Campaigns - Service
 Requests (optional integration)
 
-------------------------------------------------------------------------
+---
 
 # 4. Follow-up Lifecycle
 
@@ -56,7 +58,7 @@ Requests (optional integration)
 7.  Lead Progressed / Closed
 8.  Audit & Analytics Updated
 
-------------------------------------------------------------------------
+---
 
 # 5. Follow-up Types
 
@@ -66,7 +68,7 @@ Visit - Proposal Discussion - Contract Discussion - Internal Review
 
 Each tenant can enable or disable follow-up types.
 
-------------------------------------------------------------------------
+---
 
 # 6. Follow-up Scheduling
 
@@ -77,7 +79,7 @@ Auto scheduling after workflow transitions
 Supported fields: - Date - Time - Time Zone - Priority - Reminder
 Offset - Assigned User - Related Lead - Related Opportunity - Notes
 
-------------------------------------------------------------------------
+---
 
 # 7. Reminder Engine
 
@@ -89,7 +91,7 @@ SMS
 
 Reminder rules are configurable per tenant.
 
-------------------------------------------------------------------------
+---
 
 # 8. Follow-up Outcomes
 
@@ -100,7 +102,7 @@ Lead
 
 Each outcome may trigger workflow transitions.
 
-------------------------------------------------------------------------
+---
 
 # 9. Activity Recording
 
@@ -110,7 +112,7 @@ Location (optional) - Images - Documents - Voice Notes (future)
 
 All records are immutable and audited.
 
-------------------------------------------------------------------------
+---
 
 # 10. Escalation Management
 
@@ -120,7 +122,7 @@ Responses - High Priority Lead - VIP Customer - Manager Intervention
 Escalation levels: 1. Sales Executive 2. Manager 3. Employer / Client 4.
 Super Admin
 
-------------------------------------------------------------------------
+---
 
 # 11. SLA Rules
 
@@ -130,7 +132,7 @@ Missed Follow-ups - Stage Aging - Customer Response Time
 Automatic actions: - Reminder - Escalation - Dashboard Alert -
 Notification - Assignment Review
 
-------------------------------------------------------------------------
+---
 
 # 12. Calendar Integration
 
@@ -140,7 +142,7 @@ Outlook (future)
 Features: - Daily agenda - Weekly view - Monthly view - Team calendar -
 Conflict detection
 
-------------------------------------------------------------------------
+---
 
 # 13. Notifications
 
@@ -150,7 +152,7 @@ Breached
 
 Channels: - Push - Email - WhatsApp - SMS - In-App
 
-------------------------------------------------------------------------
+---
 
 # 14. Mobile Support
 
@@ -158,21 +160,21 @@ Offline capabilities: - View follow-up list - Update outcomes - Capture
 notes - Attach images - GPS capture - Background synchronization - Retry
 queue - Conflict resolution
 
-------------------------------------------------------------------------
+---
 
 # 15. Security
 
--   JWT Authentication
--   RBAC
--   Row-Level Security
--   Tenant Isolation
--   Secure Attachments
--   Audit Logging
+- JWT Authentication
+- RBAC
+- Row-Level Security
+- Tenant Isolation
+- Secure Attachments
+- Audit Logging
 
 Permissions: - View Own Follow-ups - View Team Follow-ups - Create -
 Update - Complete - Reassign - Export - Configure Rules
 
-------------------------------------------------------------------------
+---
 
 # 16. Reports
 
@@ -185,20 +187,20 @@ Customer Response Trends
 
 Exports: - Excel - CSV - PDF
 
-------------------------------------------------------------------------
+---
 
 # 17. APIs
 
--   POST /api/v1/followups
--   GET /api/v1/followups
--   GET /api/v1/followups/{id}
--   PUT /api/v1/followups/{id}
--   DELETE /api/v1/followups/{id}
--   POST /api/v1/followups/complete
--   POST /api/v1/followups/escalate
--   GET /api/v1/followups/calendar
+- POST /api/v1/followups
+- GET /api/v1/followups
+- GET /api/v1/followups/{id}
+- PUT /api/v1/followups/{id}
+- DELETE /api/v1/followups/{id}
+- POST /api/v1/followups/complete
+- POST /api/v1/followups/escalate
+- GET /api/v1/followups/calendar
 
-------------------------------------------------------------------------
+---
 
 # 18. Audit Requirements
 
@@ -209,38 +211,38 @@ Notification delivery
 Captured fields: - User - Timestamp - Device - Browser - IP Address -
 Previous Value - New Value
 
-------------------------------------------------------------------------
+---
 
 # 19. Performance Requirements
 
--   Schedule creation \<2 seconds
--   Reminder generation in near real-time
--   Calendar load \<3 seconds
--   Support millions of follow-up records
--   Queue-based notification processing
--   99.9% availability
+- Schedule creation \<2 seconds
+- Reminder generation in near real-time
+- Calendar load \<3 seconds
+- Support millions of follow-up records
+- Queue-based notification processing
+- 99.9% availability
 
-------------------------------------------------------------------------
+---
 
 # 20. Future Enhancements
 
--   AI follow-up recommendations
--   Predictive customer engagement
--   Voice-to-text meeting notes
--   Sentiment analysis
--   AI next-best-action suggestions
--   Conversational assistant
--   Auto-generated follow-up summaries
+- AI follow-up recommendations
+- Predictive customer engagement
+- Voice-to-text meeting notes
+- Sentiment analysis
+- AI next-best-action suggestions
+- Conversational assistant
+- Auto-generated follow-up summaries
 
-------------------------------------------------------------------------
+---
 
 # 21. Acceptance Criteria
 
--   Follow-ups can be scheduled and completed.
--   Reminder engine functions correctly.
--   Escalations occur according to SLA.
--   Notifications are delivered through configured channels.
--   Mobile offline synchronization works.
--   RBAC and tenant isolation are enforced.
--   Reports and dashboards display accurate metrics.
--   Complete audit history is maintained.
+- Follow-ups can be scheduled and completed.
+- Reminder engine functions correctly.
+- Escalations occur according to SLA.
+- Notifications are delivered through configured channels.
+- Mobile offline synchronization works.
+- RBAC and tenant isolation are enforced.
+- Reports and dashboards display accurate metrics.
+- Complete audit history is maintained.

@@ -1,4 +1,3 @@
-
 # MASTER_DATA.md
 
 # Fault Management Module – Master Data Specification
@@ -61,6 +60,7 @@ The module integrates with:
 ## 4.1 Fault Categories
 
 Examples:
+
 - Network
 - Fiber
 - Router
@@ -75,6 +75,7 @@ Supports hierarchy:
 Category → Subcategory
 
 Fields:
+
 - Name
 - Code
 - Description
@@ -88,12 +89,14 @@ Fields:
 ## 4.2 Priorities
 
 Examples:
+
 - Critical
 - High
 - Medium
 - Low
 
 Attributes:
+
 - Severity
 - Color
 - Response SLA
@@ -123,6 +126,7 @@ Configurable workflow states:
 - Reopened
 
 Each status supports:
+
 - Initial flag
 - Final flag
 - Pause SLA

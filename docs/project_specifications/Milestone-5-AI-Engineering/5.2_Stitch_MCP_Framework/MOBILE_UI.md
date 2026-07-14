@@ -1,4 +1,3 @@
-
 # MOBILE_UI.md
 
 # Stitch Mobile UI Standards
@@ -47,12 +46,14 @@ Each persona receives role-based navigation, dashboards, widgets, and actions us
 # 4. Navigation Standards
 
 ## Primary Navigation
+
 - Bottom Navigation Bar (3–5 items)
 - Navigation Drawer for extended modules
 - Context-aware Floating Action Button
 - Deep Linking support
 
 ## Secondary Navigation
+
 - Tabs
 - Segmented Controls
 - Breadcrumb-equivalent page titles
@@ -92,6 +93,7 @@ Each persona receives role-based navigation, dashboards, widgets, and actions us
 # 7. Component Standards
 
 ## Inputs
+
 - Text Field
 - Password
 - OTP
@@ -106,6 +108,7 @@ Each persona receives role-based navigation, dashboards, widgets, and actions us
 - File Upload
 
 ## Actions
+
 - Primary Button
 - Secondary Button
 - Icon Button
@@ -113,6 +116,7 @@ Each persona receives role-based navigation, dashboards, widgets, and actions us
 - Swipe Actions
 
 ## Data Display
+
 - Cards
 - Lists
 - KPI Tiles

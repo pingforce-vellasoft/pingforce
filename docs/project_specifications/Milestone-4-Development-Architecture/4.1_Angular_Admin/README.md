@@ -24,21 +24,21 @@ Unlike a traditional admin panel, this portal is fully metadata-driven. Navigati
 
 # Technology Stack
 
-| Layer | Technology |
-|--------|------------|
-| Framework | Angular 21+ |
-| Language | TypeScript |
-| UI | Angular Material + CDK |
-| State | NgRx Signal Store / Signals |
-| Routing | Standalone Lazy Routes |
-| Forms | Reactive Forms |
-| Charts | ApexCharts / ECharts |
-| Authentication | JWT + Refresh Token |
-| Authorization | Dynamic RBAC |
-| Realtime | SignalR / WebSocket |
-| Internationalization | ngx-translate |
-| Build | Vite/Angular CLI |
-| Testing | Jest + Cypress |
+| Layer                | Technology                  |
+| -------------------- | --------------------------- |
+| Framework            | Angular 21+                 |
+| Language             | TypeScript                  |
+| UI                   | Angular Material + CDK      |
+| State                | NgRx Signal Store / Signals |
+| Routing              | Standalone Lazy Routes      |
+| Forms                | Reactive Forms              |
+| Charts               | ApexCharts / ECharts        |
+| Authentication       | JWT + Refresh Token         |
+| Authorization        | Dynamic RBAC                |
+| Realtime             | SignalR / WebSocket         |
+| Internationalization | ngx-translate               |
+| Build                | Vite/Angular CLI            |
+| Testing              | Jest + Cypress              |
 
 ---
 

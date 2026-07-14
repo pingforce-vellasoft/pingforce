@@ -91,13 +91,12 @@ class _UserAvatar extends StatelessWidget {
     required this.initials,
     this.avatarUrl,
     this.isLoading = false,
-    this.radius = 22,
   });
 
   final String initials;
   final String? avatarUrl;
   final bool isLoading;
-  final double radius;
+  static const double radius = 22;
 
   @override
   Widget build(BuildContext context) {

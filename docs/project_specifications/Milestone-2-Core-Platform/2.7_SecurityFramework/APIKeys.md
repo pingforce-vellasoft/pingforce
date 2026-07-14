@@ -1,7 +1,9 @@
 # APIKeys.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Security Module
+
 ### API Keys & Service Credentials Specification
 
 **Module:** Core Platform → Security  
@@ -250,19 +252,19 @@ Indexes:
 
 # 16. REST APIs
 
-GET    /api/v1/security/api-keys
+GET /api/v1/security/api-keys
 
-GET    /api/v1/security/api-keys/{id}
+GET /api/v1/security/api-keys/{id}
 
-POST   /api/v1/security/api-keys
+POST /api/v1/security/api-keys
 
-PUT    /api/v1/security/api-keys/{id}
+PUT /api/v1/security/api-keys/{id}
 
-POST   /api/v1/security/api-keys/{id}/rotate
+POST /api/v1/security/api-keys/{id}/rotate
 
-POST   /api/v1/security/api-keys/{id}/revoke
+POST /api/v1/security/api-keys/{id}/revoke
 
-GET    /api/v1/security/api-keys/{id}/usage
+GET /api/v1/security/api-keys/{id}/usage
 
 ---
 

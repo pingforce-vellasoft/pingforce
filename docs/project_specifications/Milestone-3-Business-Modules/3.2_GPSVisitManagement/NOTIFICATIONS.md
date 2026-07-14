@@ -44,6 +44,7 @@ The Notification Engine manages all real-time and scheduled communications for G
 # 4. Notification Categories
 
 ## Visit Events
+
 - Visit Assigned
 - Visit Accepted
 - Visit Rejected
@@ -56,6 +57,7 @@ The Notification Engine manages all real-time and scheduled communications for G
 - Visit Rescheduled
 
 ## GPS Events
+
 - GPS Enabled
 - GPS Disabled
 - Low GPS Accuracy
@@ -64,12 +66,14 @@ The Notification Engine manages all real-time and scheduled communications for G
 - GPS Validation Failed
 
 ## Geofence Events
+
 - Enter Geofence
 - Exit Geofence
 - Outside Allowed Area
 - Geofence Violation
 
 ## Route Events
+
 - Route Assigned
 - Route Started
 - Route Completed
@@ -78,12 +82,14 @@ The Notification Engine manages all real-time and scheduled communications for G
 - ETA Delay
 
 ## SLA Events
+
 - SLA Warning
 - SLA Breach
 - Escalation Triggered
 - Escalation Resolved
 
 ## Offline Sync Events
+
 - Sync Started
 - Sync Completed
 - Sync Failed
@@ -92,6 +98,7 @@ The Notification Engine manages all real-time and scheduled communications for G
 - Retry Successful
 
 ## Administrative Events
+
 - Approval Required
 - Approval Granted
 - Approval Rejected
@@ -116,6 +123,7 @@ The Notification Engine manages all real-time and scheduled communications for G
 # 6. Notification Templates
 
 Each template supports:
+
 - Subject
 - Title
 - Body
@@ -125,6 +133,7 @@ Each template supports:
 - Deep Links
 
 Variables:
+
 - Employee Name
 - Visit ID
 - Customer Name
@@ -158,6 +167,7 @@ Variables:
 # 9. User Preferences
 
 Users may configure:
+
 - Channel preferences
 - Quiet hours
 - Language
@@ -169,6 +179,7 @@ Users may configure:
 # 10. Audit
 
 Audit:
+
 - Notification created
 - Delivered
 - Opened
@@ -192,13 +203,13 @@ Audit:
 
 # 12. APIs
 
-GET    /notifications
-GET    /notifications/{id}
-PUT    /notifications/{id}/read
-POST   /notifications/send
-POST   /notifications/retry
-GET    /notifications/preferences
-PUT    /notifications/preferences
+GET /notifications
+GET /notifications/{id}
+PUT /notifications/{id}/read
+POST /notifications/send
+POST /notifications/retry
+GET /notifications/preferences
+PUT /notifications/preferences
 
 ---
 

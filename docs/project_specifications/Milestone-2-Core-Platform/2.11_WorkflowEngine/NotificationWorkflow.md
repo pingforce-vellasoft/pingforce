@@ -1,7 +1,9 @@
 # NotificationWorkflow.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Workflows Module
+
 ### Notification Workflow Specification
 
 **Module:** Core Platform → Workflows
@@ -16,7 +18,7 @@
 
 The Notification Workflow module provides a centralized event-driven orchestration engine responsible for delivering the right notification to the right audience through the appropriate communication channel at the correct time.
 
-Unlike the Notifications module (which manages channels, templates and delivery), this workflow coordinates *when*, *why* and *to whom* notifications are generated during business processes.
+Unlike the Notifications module (which manages channels, templates and delivery), this workflow coordinates _when_, _why_ and _to whom_ notifications are generated during business processes.
 
 It integrates with every platform module including Authentication, Attendance, GPS, Leave, Workflow, Fault Ticket Management, CRM, Reports, File Management and future services.
 
@@ -260,19 +262,19 @@ Indexes:
 
 # 16. REST APIs
 
-GET    /api/v1/notification-workflows
+GET /api/v1/notification-workflows
 
-GET    /api/v1/notification-workflows/{id}
+GET /api/v1/notification-workflows/{id}
 
-POST   /api/v1/notification-workflows
+POST /api/v1/notification-workflows
 
-PUT    /api/v1/notification-workflows/{id}
+PUT /api/v1/notification-workflows/{id}
 
-POST   /api/v1/notification-workflows/{id}/publish
+POST /api/v1/notification-workflows/{id}/publish
 
-POST   /api/v1/notification-workflows/test
+POST /api/v1/notification-workflows/test
 
-GET    /api/v1/notification-workflows/history
+GET /api/v1/notification-workflows/history
 
 ---
 

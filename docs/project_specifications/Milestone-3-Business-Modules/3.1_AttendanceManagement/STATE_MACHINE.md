@@ -46,12 +46,15 @@ INITIAL
 # 4. State Definitions
 
 ## INITIAL
+
 User has not started attendance.
 
 Allowed Events
+
 - Login
 
 Next State
+
 - AUTHENTICATED
 
 ---
@@ -59,15 +62,18 @@ Next State
 ## AUTHENTICATED
 
 Preconditions
+
 - Valid JWT
 - Tenant resolved
 - Device validated
 
 Allowed Events
+
 - Open Attendance Screen
 - Logout
 
 Next States
+
 - READY_FOR_CHECKIN
 - INITIAL
 

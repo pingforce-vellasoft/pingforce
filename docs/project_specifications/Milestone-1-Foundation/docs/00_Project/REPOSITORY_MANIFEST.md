@@ -76,6 +76,7 @@ docs/
 └── ai-engineering/
 
 Every document must have:
+
 - Title
 - Version
 - Status
@@ -90,6 +91,7 @@ Every document must have:
 # 5. Module Catalog
 
 Foundation
+
 - Vision
 - PRD
 - Repository Standards
@@ -98,6 +100,7 @@ Foundation
 - ADRs
 
 Core Platform
+
 - Authentication
 - RBAC
 - Multi-Tenant
@@ -110,6 +113,7 @@ Core Platform
 - Workflow Engine
 
 Business
+
 - Attendance
 - GPS & Visits
 - Fault Management
@@ -118,6 +122,7 @@ Business
 - Business Notifications
 
 Development
+
 - Angular
 - Flutter
 - NestJS
@@ -125,6 +130,7 @@ Development
 - DevOps
 
 AI Engineering
+
 - Antigravity
 - Stitch MCP
 - AI Review
@@ -196,25 +202,31 @@ Business modules may depend on Core Platform only.
 # 10. Ownership
 
 Architecture Team:
+
 - ADRs
 - Standards
 - Repository governance
 
 Frontend Team:
+
 - Angular
 
 Mobile Team:
+
 - Flutter
 
 Backend Team:
+
 - NestJS
 
 Platform Team:
+
 - Infrastructure
 - CI/CD
 - Security
 
 Documentation Team:
+
 - Technical documentation
 - Changelog
 - Repository standards
@@ -237,6 +249,7 @@ Before merge:
 # 12. Versioning
 
 Semantic Versioning applies to:
+
 - Repository
 - APIs
 - Documentation
@@ -249,6 +262,7 @@ Major architectural changes require a new ADR.
 # 13. Repository Governance
 
 Changes affecting:
+
 - Folder structure
 - Technology stack
 - Standards

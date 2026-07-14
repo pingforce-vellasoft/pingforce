@@ -1,4 +1,3 @@
-
 # TABLE_LIBRARY.md
 
 # Stitch Table Library
@@ -33,11 +32,13 @@ The goal is to ensure consistent presentation, interaction, accessibility, secur
 # 3. Table Categories
 
 ## Standard Tables
+
 - CRUD listings
 - Reference data
 - Master data
 
 ## Transaction Tables
+
 - Attendance
 - GPS logs
 - Leave requests
@@ -47,17 +48,20 @@ The goal is to ensure consistent presentation, interaction, accessibility, secur
 - Audit logs
 
 ## Analytics Tables
+
 - KPI summaries
 - Trend reports
 - Aggregated metrics
 
 ## Hierarchical Tables
+
 - Organization hierarchy
 - Teams
 - Departments
 - Permission trees
 
 ## Editable Tables
+
 - Inline editing
 - Bulk editing
 - Spreadsheet-style grids
@@ -123,15 +127,18 @@ Supported operations:
 # 7. Responsive Standards
 
 Desktop
+
 - Full data grid
 - Advanced filtering
 - Frozen columns
 
 Tablet
+
 - Reduced columns
 - Adaptive filters
 
 Mobile
+
 - Card transformation
 - Horizontal scrolling when necessary
 - Bottom sheet actions

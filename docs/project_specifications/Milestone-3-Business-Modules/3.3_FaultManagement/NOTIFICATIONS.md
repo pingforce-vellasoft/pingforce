@@ -1,4 +1,3 @@
-
 # NOTIFICATIONS.md
 
 # Fault Management Module – Notification Management Specification

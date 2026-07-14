@@ -42,6 +42,7 @@ The Master Data module centralizes all configurable reference data used by the G
 # 4. Visit Masters
 
 ## Visit Types
+
 - Planned
 - Ad-hoc
 - Emergency
@@ -55,12 +56,14 @@ The Master Data module centralizes all configurable reference data used by the G
 - Verification
 
 ## Visit Priorities
+
 - Critical
 - High
 - Medium
 - Low
 
 ## Visit Statuses
+
 - Draft
 - Planned
 - Assigned
@@ -137,6 +140,7 @@ The Master Data module centralizes all configurable reference data used by the G
 # 10. Notification Masters
 
 Channels
+
 - Push
 - Email
 - SMS
@@ -144,6 +148,7 @@ Channels
 - In-App
 
 Templates
+
 - Assignment
 - Reminder
 - Completion
@@ -195,6 +200,7 @@ Templates
 # 15. Common Attributes
 
 Every master record contains:
+
 - UUID
 - Tenant ID
 - Code
@@ -214,12 +220,12 @@ Every master record contains:
 
 # 16. APIs
 
-GET    /master-data
-GET    /master-data/{type}
-POST   /master-data
-PUT    /master-data/{id}
+GET /master-data
+GET /master-data/{type}
+POST /master-data
+PUT /master-data/{id}
 DELETE /master-data/{id}
-GET    /master-data/search
+GET /master-data/search
 
 ---
 

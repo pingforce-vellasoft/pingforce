@@ -1,4 +1,3 @@
-
 # MAPS.md
 
 # Stitch Maps & Geospatial Standards
@@ -62,27 +61,32 @@ Selection depends on licensing, customer requirements, and deployment model.
 # 5. Enterprise Use Cases
 
 ## Attendance
+
 - GPS check-in/check-out
 - Geofence validation
 - Location verification
 
 ## Workforce Tracking
+
 - Live employee location
 - Route playback
 - Travel history
 - Visit timeline
 
 ## Fault Management
+
 - Fault location
 - Technician dispatch
 - Route optimization
 
 ## Lead Management
+
 - Lead distribution
 - Territory visualization
 - Sales coverage
 
 ## Assets
+
 - Asset locations
 - Vehicle tracking
 - Equipment mapping
@@ -92,6 +96,7 @@ Selection depends on licensing, customer requirements, and deployment model.
 # 6. Geofencing
 
 Support:
+
 - Circular geofences
 - Polygon geofences
 - Radius validation
@@ -104,6 +109,7 @@ Support:
 # 7. Marker Standards
 
 Marker types:
+
 - Employee
 - Customer
 - Lead
@@ -114,6 +120,7 @@ Marker types:
 - Asset
 
 States:
+
 - Active
 - Offline
 - Busy
@@ -163,12 +170,15 @@ States:
 # 11. Responsive Standards
 
 Desktop:
+
 - Full-screen map with side panels
 
 Tablet:
+
 - Split view
 
 Mobile:
+
 - Full-screen map
 - Bottom sheets
 - Floating actions
@@ -202,6 +212,7 @@ Mobile:
 # 14. White-Label Support
 
 Configurable:
+
 - Branding
 - Map themes
 - Marker icons
@@ -215,6 +226,7 @@ Configurable:
 # 15. AI Map Generation
 
 AI-generated map interfaces must:
+
 - Use approved components
 - Respect RBAC
 - Apply design tokens
@@ -237,6 +249,7 @@ AI-generated map interfaces must:
 # 17. Testing
 
 Validate:
+
 - GPS accuracy
 - Geofence behavior
 - Route rendering
@@ -250,6 +263,7 @@ Validate:
 # 18. Governance
 
 Changes require:
+
 - Product review
 - UX review
 - Engineering approval

@@ -1,6 +1,7 @@
 # PROJECT_VISION.md
 
 # Enterprise Workforce Platform
+
 ## Product Vision
 
 **Version:** 1.0.0
@@ -165,25 +166,32 @@ Technical:
 # Technology Direction
 
 Frontend:
+
 - Angular 21
 
 Mobile:
+
 - Flutter
 
 Backend:
+
 - NestJS
 
 Database:
+
 - PostgreSQL
 
 Cache:
+
 - Redis
 
 Infrastructure:
+
 - Docker
 - Oracle Cloud Infrastructure
 
 AI Engineering:
+
 - ChatGPT
 - Antigravity
 - Stitch MCP
@@ -193,18 +201,23 @@ AI Engineering:
 # Long-Term Roadmap
 
 Phase 1:
+
 - Architecture & documentation
 
 Phase 2:
+
 - Core platform implementation
 
 Phase 3:
+
 - Business modules
 
 Phase 4:
+
 - AI-native enhancements
 
 Phase 5:
+
 - Marketplace, integrations and analytics expansion
 
 ---
@@ -212,6 +225,7 @@ Phase 5:
 # Non-Goals
 
 The platform will not:
+
 - Be tied to a single industry
 - Depend on proprietary vendor lock-in
 - Require separate deployments per customer

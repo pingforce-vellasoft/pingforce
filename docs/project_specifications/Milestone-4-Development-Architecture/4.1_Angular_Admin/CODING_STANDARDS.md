@@ -33,16 +33,16 @@ This document defines the coding standards and development guidelines for the An
 
 # Technology Standards
 
-| Area | Standard |
-|------|----------|
-| Framework | Angular 21+ |
-| Language | TypeScript |
-| Styling | SCSS |
-| Architecture | Standalone Components |
-| State | Angular Signals |
-| Forms | Reactive Forms |
-| API | REST |
-| Package Manager | npm |
+| Area            | Standard              |
+| --------------- | --------------------- |
+| Framework       | Angular 21+           |
+| Language        | TypeScript            |
+| Styling         | SCSS                  |
+| Architecture    | Standalone Components |
+| State           | Angular Signals       |
+| Forms           | Reactive Forms        |
+| API             | REST                  |
+| Package Manager | npm                   |
 
 ---
 

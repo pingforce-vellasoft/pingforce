@@ -1,4 +1,3 @@
-
 # ESCALATION.md
 
 # Fault Management Module - Escalation Management Specification
@@ -46,38 +45,45 @@ It is fully configurable per tenant.
 # 3. Escalation Types
 
 ## SLA Escalation
+
 Triggered when response or resolution SLA approaches or exceeds configured thresholds.
 
 ## Manual Escalation
+
 Initiated by authorized users.
 
 ## Priority Escalation
+
 Automatically increases priority based on business rules.
 
 ## Hierarchy Escalation
+
 Routes tickets through organizational levels.
 
 ## Customer Escalation
+
 Triggered by repeated customer follow-ups or dissatisfaction.
 
 ## Approval Escalation
+
 Raised when approval remains pending beyond configured limits.
 
 ## Vendor Escalation
+
 Triggered when third-party vendors exceed agreed timelines.
 
 ---
 
 # 4. Escalation Levels
 
-| Level | Owner | Typical Responsibility |
-|------|------|-------------------------|
-| L1 | Technician | Initial handling |
-| L2 | Team Lead | Operational supervision |
-| L3 | Manager | Resource allocation |
-| L4 | Regional Manager | Regional intervention |
-| L5 | Employer / Client Admin | Executive oversight |
-| L6 | Super Admin (Optional) | Platform governance |
+| Level | Owner                   | Typical Responsibility  |
+| ----- | ----------------------- | ----------------------- |
+| L1    | Technician              | Initial handling        |
+| L2    | Team Lead               | Operational supervision |
+| L3    | Manager                 | Resource allocation     |
+| L4    | Regional Manager        | Regional intervention   |
+| L5    | Employer / Client Admin | Executive oversight     |
+| L6    | Super Admin (Optional)  | Platform governance     |
 
 Each tenant may configure its own hierarchy.
 

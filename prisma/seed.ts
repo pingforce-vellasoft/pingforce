@@ -24,7 +24,11 @@ async function main() {
     await prisma.permission.upsert({
       where: { module_action: { module: p.module, action: p.action } },
       update: { description: p.description },
-      create: { module: p.module, action: p.action, description: p.description },
+      create: {
+        module: p.module,
+        action: p.action,
+        description: p.description,
+      },
     });
   }
   console.log(`Upserted ${PERMISSION_CATALOG.length} catalog permissions`);

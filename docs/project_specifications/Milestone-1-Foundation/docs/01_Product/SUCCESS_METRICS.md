@@ -1,6 +1,7 @@
 # SUCCESS_METRICS.md
 
 # Enterprise Workforce Platform
+
 ## Success Metrics & KPI Framework
 
 **Version:** 1.0.0  
@@ -50,21 +51,21 @@ Every KPI must have:
 
 ## Customer Growth
 
-| KPI | Target |
-|-----|-------:|
-| Active Tenants | Continuous growth |
-| Monthly New Tenants | Increasing trend |
-| Customer Retention | ≥95% annually |
-| Customer Churn | <5% annually |
+| KPI                 |            Target |
+| ------------------- | ----------------: |
+| Active Tenants      | Continuous growth |
+| Monthly New Tenants |  Increasing trend |
+| Customer Retention  |     ≥95% annually |
+| Customer Churn      |      <5% annually |
 
 ## Financial
 
-| KPI | Target |
-|-----|-------:|
+| KPI                      |              Target |
+| ------------------------ | ------------------: |
 | Annual Recurring Revenue | Growth each quarter |
-| Revenue per Tenant | Increasing trend |
-| Gross Margin | ≥60% |
-| Cost per Tenant | Decreasing trend |
+| Revenue per Tenant       |    Increasing trend |
+| Gross Margin             |                ≥60% |
+| Cost per Tenant          |    Decreasing trend |
 
 ---
 
@@ -79,6 +80,7 @@ Every KPI must have:
 - Feature enablement by tenant
 
 Targets:
+
 - Growing DAU
 - High user retention
 - Increased module adoption
@@ -248,20 +250,21 @@ A release is successful only if:
 
 # 16. Reporting Cadence
 
-| Metric Category | Frequency |
-|----------------|-----------|
-| Engineering | Daily |
-| Operations | Daily |
-| Business | Weekly / Monthly |
-| Customer Success | Monthly |
-| Security | Continuous |
-| Executive Dashboard | Monthly |
+| Metric Category     | Frequency        |
+| ------------------- | ---------------- |
+| Engineering         | Daily            |
+| Operations          | Daily            |
+| Business            | Weekly / Monthly |
+| Customer Success    | Monthly          |
+| Security            | Continuous       |
+| Executive Dashboard | Monthly          |
 
 ---
 
 # 17. Dashboard Strategy
 
 Executive Dashboard:
+
 - Revenue
 - Active tenants
 - Adoption
@@ -269,6 +272,7 @@ Executive Dashboard:
 - Customer satisfaction
 
 Engineering Dashboard:
+
 - Deployments
 - Coverage
 - Build health
@@ -276,6 +280,7 @@ Engineering Dashboard:
 - Performance
 
 Operations Dashboard:
+
 - Attendance
 - GPS
 - Faults
@@ -291,6 +296,7 @@ Each KPI must have an assigned owner.
 Metric definitions are version controlled.
 
 Changes to KPI formulas require:
+
 1. Product approval
 2. Architecture review
 3. CHANGELOG update

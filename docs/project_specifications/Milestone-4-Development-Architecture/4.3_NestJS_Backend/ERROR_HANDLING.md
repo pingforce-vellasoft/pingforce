@@ -1,4 +1,3 @@
-
 # ERROR_HANDLING.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -135,14 +134,17 @@ Each bounded context shall define domain-specific exceptions.
 Examples:
 
 Attendance:
+
 - InvalidAttendanceState
 - AttendanceAlreadyCheckedIn
 
 Faults:
+
 - InvalidFaultTransition
 - SLAExpired
 
 Leads:
+
 - LeadAlreadyConverted
 - InvalidLeadAssignment
 

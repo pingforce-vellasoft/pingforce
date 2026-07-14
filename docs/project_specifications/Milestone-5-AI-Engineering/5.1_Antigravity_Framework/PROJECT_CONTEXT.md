@@ -264,16 +264,19 @@ Mitigation strategies are mandatory before production rollout.
 # 15. Future Roadmap
 
 Phase 1
+
 - AI infrastructure
 - Prompt registry
 - Tool execution
 
 Phase 2
+
 - Enterprise RAG
 - Memory services
 - Multi-agent orchestration
 
 Phase 3
+
 - Autonomous workflow execution
 - Predictive analytics
 - Executive copilots

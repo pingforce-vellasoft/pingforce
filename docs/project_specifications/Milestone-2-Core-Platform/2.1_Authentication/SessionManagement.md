@@ -1,6 +1,7 @@
 # SessionManagement.md
 
 # Enterprise Workforce Platform
+
 ## Authentication Module – Session Management Specification
 
 **Module:** Core Platform → Authentication
@@ -69,14 +70,14 @@ The session subsystem shall:
 
 # 5. Session States
 
-| State | Description |
-|--------|-------------|
-| Pending | Authentication in progress |
-| Active | Valid authenticated session |
-| Idle | Inactivity threshold reached |
-| Expired | Lifetime exceeded |
-| Revoked | Administrator or security revocation |
-| Logged Out | User initiated logout |
+| State      | Description                          |
+| ---------- | ------------------------------------ |
+| Pending    | Authentication in progress           |
+| Active     | Valid authenticated session          |
+| Idle       | Inactivity threshold reached         |
+| Expired    | Lifetime exceeded                    |
+| Revoked    | Administrator or security revocation |
+| Logged Out | User initiated logout                |
 
 Only **Active** sessions may access protected resources.
 

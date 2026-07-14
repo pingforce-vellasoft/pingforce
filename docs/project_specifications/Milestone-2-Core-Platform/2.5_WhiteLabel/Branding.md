@@ -1,7 +1,9 @@
 # Branding.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – White Label Module
+
 ### Branding Management Specification
 
 **Module:** Core Platform → White Label  
@@ -40,13 +42,13 @@ The Branding subsystem shall:
 # 3. Branding Architecture
 
 Platform Default Branding
-        ↓
+↓
 Tenant Branding
-        ↓
+↓
 Company Branding (future)
-        ↓
+↓
 Module Branding (future)
-        ↓
+↓
 User Experience
 
 Priority:
@@ -198,13 +200,13 @@ Brand assets stored in object storage.
 Recommended structure:
 
 branding/
-  tenant_id/
-    logos/
-    icons/
-    backgrounds/
-    reports/
-    email/
-    mobile/
+tenant_id/
+logos/
+icons/
+backgrounds/
+reports/
+email/
+mobile/
 
 Requirements:
 
@@ -278,19 +280,19 @@ Indexes:
 
 # 15. REST APIs
 
-GET    /api/v1/branding
+GET /api/v1/branding
 
-PUT    /api/v1/branding
+PUT /api/v1/branding
 
-GET    /api/v1/branding/assets
+GET /api/v1/branding/assets
 
-POST   /api/v1/branding/assets
+POST /api/v1/branding/assets
 
-PUT    /api/v1/branding/assets/{id}
+PUT /api/v1/branding/assets/{id}
 
-POST   /api/v1/branding/publish
+POST /api/v1/branding/publish
 
-POST   /api/v1/branding/rollback
+POST /api/v1/branding/rollback
 
 ---
 

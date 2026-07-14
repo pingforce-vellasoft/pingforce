@@ -1,7 +1,9 @@
 # Permissions.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – RBAC Module
+
 ### Permission Management Specification
 
 **Module:** Core Platform → RBAC
@@ -263,21 +265,21 @@ This prevents access to disabled modules even if a permission exists.
 
 # 12. APIs
 
-GET    /api/v1/rbac/permissions
+GET /api/v1/rbac/permissions
 
-GET    /api/v1/rbac/permissions/{id}
+GET /api/v1/rbac/permissions/{id}
 
-POST   /api/v1/rbac/permissions
+POST /api/v1/rbac/permissions
 
-PUT    /api/v1/rbac/permissions/{id}
+PUT /api/v1/rbac/permissions/{id}
 
-PATCH  /api/v1/rbac/permissions/{id}/status
+PATCH /api/v1/rbac/permissions/{id}/status
 
-GET    /api/v1/rbac/permission-groups
+GET /api/v1/rbac/permission-groups
 
-POST   /api/v1/rbac/permission-groups
+POST /api/v1/rbac/permission-groups
 
-POST   /api/v1/rbac/check
+POST /api/v1/rbac/check
 
 ---
 

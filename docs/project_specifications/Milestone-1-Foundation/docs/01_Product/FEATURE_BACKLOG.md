@@ -1,6 +1,7 @@
 # FEATURE_BACKLOG.md
 
 # Enterprise Workforce Platform
+
 ## Master Feature Backlog
 
 **Version:** 1.0.0
@@ -41,18 +42,18 @@ Status Legend:
 
 # 2. Foundation Backlog (Milestone 1)
 
-| ID | Feature | Priority | Status |
-|----|---------|----------|--------|
-| FND-001 | Repository Standards | P0 | Approved |
-| FND-002 | Project Vision | P0 | Approved |
-| FND-003 | PRD | P0 | Planned |
-| FND-004 | Technology Stack | P0 | Approved |
-| FND-005 | Coding Standards | P0 | Approved |
-| FND-006 | Definition of Done | P0 | Approved |
-| FND-007 | ADR Repository | P0 | In Progress |
-| FND-008 | Repository Manifest | P1 | Approved |
-| FND-009 | Roadmap | P1 | Approved |
-| FND-010 | Business Rules | P1 | Approved |
+| ID      | Feature              | Priority | Status      |
+| ------- | -------------------- | -------- | ----------- |
+| FND-001 | Repository Standards | P0       | Approved    |
+| FND-002 | Project Vision       | P0       | Approved    |
+| FND-003 | PRD                  | P0       | Planned     |
+| FND-004 | Technology Stack     | P0       | Approved    |
+| FND-005 | Coding Standards     | P0       | Approved    |
+| FND-006 | Definition of Done   | P0       | Approved    |
+| FND-007 | ADR Repository       | P0       | In Progress |
+| FND-008 | Repository Manifest  | P1       | Approved    |
+| FND-009 | Roadmap              | P1       | Approved    |
+| FND-010 | Business Rules       | P1       | Approved    |
 
 ---
 
@@ -274,6 +275,7 @@ The Product Owner owns backlog prioritization.
 Architecture Team approves technical changes.
 
 Every backlog modification must be reflected in:
+
 - ROADMAP.md
 - PROJECT_STATE.md
 - CHANGELOG.md (when applicable)

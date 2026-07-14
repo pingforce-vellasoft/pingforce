@@ -1,7 +1,9 @@
 # Employee.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – User Management Module
+
 ### Employee Domain Specification
 
 **Module:** Core Platform → User Management
@@ -245,21 +247,21 @@ Indexes:
 
 # 14. REST APIs
 
-GET    /api/v1/employees
+GET /api/v1/employees
 
-GET    /api/v1/employees/{id}
+GET /api/v1/employees/{id}
 
-POST   /api/v1/employees
+POST /api/v1/employees
 
-PUT    /api/v1/employees/{id}
+PUT /api/v1/employees/{id}
 
-PATCH  /api/v1/employees/{id}/status
+PATCH /api/v1/employees/{id}/status
 
-POST   /api/v1/employees/{id}/transfer
+POST /api/v1/employees/{id}/transfer
 
-POST   /api/v1/employees/{id}/promote
+POST /api/v1/employees/{id}/promote
 
-POST   /api/v1/employees/{id}/terminate
+POST /api/v1/employees/{id}/terminate
 
 ---
 

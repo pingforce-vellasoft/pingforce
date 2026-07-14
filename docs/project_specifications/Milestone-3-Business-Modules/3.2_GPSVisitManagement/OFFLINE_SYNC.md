@@ -59,19 +59,19 @@ Supported offline operations:
 # 4. Offline Data Architecture
 
 Mobile Application
-        ↓
+↓
 Local Database (SQLite / Drift)
-        ↓
+↓
 Encrypted Queue
-        ↓
+↓
 Sync Engine
-        ↓
+↓
 Conflict Resolver
-        ↓
+↓
 REST API
-        ↓
+↓
 Backend Services
-        ↓
+↓
 Audit Logs
 
 ---
@@ -275,13 +275,13 @@ Exports:
 
 # 17. APIs
 
-POST   /sync/start
-POST   /sync/manual
-GET    /sync/status
-GET    /sync/history
-GET    /sync/conflicts
-POST   /sync/retry
-POST   /sync/resolve
+POST /sync/start
+POST /sync/manual
+GET /sync/status
+GET /sync/history
+GET /sync/conflicts
+POST /sync/retry
+POST /sync/resolve
 
 ---
 

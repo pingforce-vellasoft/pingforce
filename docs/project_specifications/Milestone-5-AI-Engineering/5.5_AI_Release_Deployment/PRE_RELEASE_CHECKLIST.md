@@ -1,4 +1,3 @@
-
 # PRE_RELEASE_CHECKLIST.md
 
 # Enterprise Pre-Release Checklist
@@ -22,17 +21,17 @@ Applicable to:
 
 # Release Information
 
-| Field | Value |
-|------|------|
-| Release Version | |
-| Release Type | Major / Minor / Patch / Hotfix |
-| Target Environment | |
-| Planned Release Date | |
-| Release Manager | |
-| Product Owner | |
-| Engineering Lead | |
-| QA Lead | |
-| Security Reviewer | |
+| Field                | Value                          |
+| -------------------- | ------------------------------ |
+| Release Version      |                                |
+| Release Type         | Major / Minor / Patch / Hotfix |
+| Target Environment   |                                |
+| Planned Release Date |                                |
+| Release Manager      |                                |
+| Product Owner        |                                |
+| Engineering Lead     |                                |
+| QA Lead              |                                |
+| Security Reviewer    |                                |
 
 ---
 
@@ -248,19 +247,19 @@ Decision:
 
 Reason:
 
-______________________________
+---
 
 ---
 
 # Release Approval
 
-| Role | Name | Signature | Date |
-|------|------|-----------|------|
-| Product Owner | | | |
-| Engineering Lead | | | |
-| QA Lead | | | |
-| Security | | | |
-| Release Manager | | | |
+| Role             | Name | Signature | Date |
+| ---------------- | ---- | --------- | ---- |
+| Product Owner    |      |           |      |
+| Engineering Lead |      |           |      |
+| QA Lead          |      |           |      |
+| Security         |      |           |      |
+| Release Manager  |      |           |      |
 
 ---
 

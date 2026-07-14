@@ -50,6 +50,7 @@ The prompt architecture shall follow:
 The platform shall maintain prompt libraries for:
 
 ## Architecture
+
 - HLD generation
 - LLD generation
 - System design

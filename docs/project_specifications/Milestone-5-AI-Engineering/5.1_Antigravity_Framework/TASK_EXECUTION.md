@@ -66,24 +66,28 @@ Completion
 # 4. Task Types
 
 ## Interactive Tasks
+
 - Chat responses
 - Knowledge search
 - Policy assistance
 - Executive insights
 
 ## Operational Tasks
+
 - Attendance validation
 - Lead assignment
 - Fault triage
 - Notification generation
 
 ## Background Tasks
+
 - Scheduled reports
 - AI indexing
 - Vector embedding
 - Analytics aggregation
 
 ## Long Running Tasks
+
 - Bulk imports
 - Document processing
 - OCR
@@ -303,15 +307,19 @@ Task execution integrates with:
 # 16. Performance Targets
 
 Interactive Tasks
+
 - < 3 seconds preferred
 
 Operational Tasks
+
 - < 10 seconds
 
 Background Tasks
+
 - Queue based
 
 Long Running Tasks
+
 - Progress tracking required
 
 ---

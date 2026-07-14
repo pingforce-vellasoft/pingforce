@@ -1,16 +1,15 @@
-
 # E2E_TESTING.md
 
 # Enterprise End-to-End (E2E) Testing Strategy
 
 ## Document Information
 
-| Field | Value |
-|---|---|
-| Project | Enterprise Multi-Tenant AI Engineering Platform |
-| Document | E2E_TESTING.md |
-| Status | Planning Phase (Pre-Implementation) |
-| Version | 1.0 |
+| Field    | Value                                                        |
+| -------- | ------------------------------------------------------------ |
+| Project  | Enterprise Multi-Tenant AI Engineering Platform              |
+| Document | E2E_TESTING.md                                               |
+| Status   | Planning Phase (Pre-Implementation)                          |
+| Version  | 1.0                                                          |
 | Audience | QA Engineers, Developers, Architects, DevOps, Product Owners |
 
 ---
@@ -61,6 +60,7 @@ E2E testing will cover:
 Planned E2E scenarios include:
 
 ## Authentication
+
 - Login
 - Logout
 - Password reset
@@ -68,18 +68,21 @@ Planned E2E scenarios include:
 - MFA (future)
 
 ## Tenant Lifecycle
+
 - Tenant provisioning
 - Branding
 - Module configuration
 - Feature enablement
 
 ## User Lifecycle
+
 - User creation
 - Role assignment
 - Permission updates
 - Profile management
 
 ## Attendance
+
 - Check-in
 - GPS validation
 - Geofencing
@@ -87,12 +90,14 @@ Planned E2E scenarios include:
 - Reports
 
 ## Lead Management
+
 - Lead creation
 - Assignment
 - Follow-up
 - Conversion
 
 ## Fault Management
+
 - Ticket creation
 - Assignment
 - Workflow
@@ -100,12 +105,14 @@ Planned E2E scenarios include:
 - Closure
 
 ## Notifications
+
 - Push
 - Email
 - WhatsApp
 - In-app
 
 ## AI Workflows
+
 - Prompt submission
 - Context retrieval
 - Response generation

@@ -1,16 +1,15 @@
-
 # ACCESSIBILITY_TESTING.md
 
 # Enterprise Accessibility Testing Strategy
 
 ## Document Information
 
-| Field | Value |
-|---|---|
-| Project | Enterprise Multi-Tenant AI Engineering Platform |
-| Document | ACCESSIBILITY_TESTING.md |
-| Status | Planning Phase (Pre-Implementation) |
-| Version | 1.0 |
+| Field    | Value                                                                              |
+| -------- | ---------------------------------------------------------------------------------- |
+| Project  | Enterprise Multi-Tenant AI Engineering Platform                                    |
+| Document | ACCESSIBILITY_TESTING.md                                                           |
+| Status   | Planning Phase (Pre-Implementation)                                                |
+| Version  | 1.0                                                                                |
 | Audience | QA Engineers, UI/UX Designers, Frontend Developers, Flutter Developers, Architects |
 
 ---

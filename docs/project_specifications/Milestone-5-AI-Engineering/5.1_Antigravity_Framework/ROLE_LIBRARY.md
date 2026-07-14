@@ -46,12 +46,15 @@ Platform AI
 # 4. Core Enterprise AI Roles
 
 ## Executive Copilot
+
 Audience:
+
 - Super Admin
 - CXO
 - Business Owners
 
 Capabilities:
+
 - KPI summaries
 - Executive dashboards
 - Business insights
@@ -59,6 +62,7 @@ Capabilities:
 - Risk analysis
 
 Restrictions:
+
 - Read-only by default
 - No direct data modification
 
@@ -67,6 +71,7 @@ Restrictions:
 ## Super Admin Assistant
 
 Responsibilities:
+
 - Tenant management
 - Licensing overview
 - Feature configuration
@@ -74,6 +79,7 @@ Responsibilities:
 - Global analytics
 
 Accessible Modules:
+
 - Tenant Engine
 - Module Engine
 - White Label
@@ -86,6 +92,7 @@ Accessible Modules:
 ## Client Administrator Assistant
 
 Responsibilities:
+
 - Company configuration
 - User provisioning
 - Department management
@@ -93,6 +100,7 @@ Responsibilities:
 - Reports
 
 Scope:
+
 - Assigned tenant only
 
 ---
@@ -100,6 +108,7 @@ Scope:
 ## Employer Assistant
 
 Responsibilities:
+
 - Workforce overview
 - Attendance summaries
 - Productivity
@@ -111,6 +120,7 @@ Responsibilities:
 ## Manager Assistant
 
 Responsibilities:
+
 - Team management
 - Attendance review
 - Leave recommendations
@@ -123,6 +133,7 @@ Responsibilities:
 ## Employee Assistant
 
 Capabilities:
+
 - Attendance help
 - Leave guidance
 - Shift information
@@ -131,6 +142,7 @@ Capabilities:
 - Policy assistance
 
 Cannot:
+
 - Access other employees' confidential data
 
 ---
@@ -138,6 +150,7 @@ Cannot:
 ## HR Assistant
 
 Modules:
+
 - Employee records
 - Leave
 - Attendance
@@ -145,6 +158,7 @@ Modules:
 - Documents
 
 Functions:
+
 - HR Q&A
 - Policy explanation
 - Leave recommendations
@@ -155,6 +169,7 @@ Functions:
 ## Attendance Intelligence Agent
 
 Responsibilities:
+
 - Attendance anomalies
 - Missing check-ins
 - Geofence validation
@@ -166,6 +181,7 @@ Responsibilities:
 ## GPS Intelligence Agent
 
 Responsibilities:
+
 - Route analysis
 - Visit optimization
 - GPS anomaly detection
@@ -176,6 +192,7 @@ Responsibilities:
 ## Lead Intelligence Agent
 
 Responsibilities:
+
 - Lead qualification
 - Assignment suggestions
 - Follow-up recommendations
@@ -186,6 +203,7 @@ Responsibilities:
 ## Fault Resolution Agent
 
 Responsibilities:
+
 - Ticket prioritization
 - SLA monitoring
 - Resolution suggestions
@@ -196,6 +214,7 @@ Responsibilities:
 ## Reporting Agent
 
 Responsibilities:
+
 - Generate reports
 - Scheduled reports
 - Data exports
@@ -206,6 +225,7 @@ Responsibilities:
 ## Analytics Agent
 
 Responsibilities:
+
 - Predictive analytics
 - Trend detection
 - Business intelligence
@@ -216,6 +236,7 @@ Responsibilities:
 ## Compliance Agent
 
 Responsibilities:
+
 - Audit review
 - Policy validation
 - Security recommendations
@@ -226,6 +247,7 @@ Responsibilities:
 ## Customer Support Agent
 
 Responsibilities:
+
 - FAQ assistance
 - Ticket guidance
 - Knowledge retrieval
@@ -236,6 +258,7 @@ Responsibilities:
 ## Knowledge Assistant
 
 Sources:
+
 - SOPs
 - Policies
 - Technical documentation

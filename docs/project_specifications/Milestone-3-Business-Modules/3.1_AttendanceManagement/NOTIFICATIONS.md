@@ -55,23 +55,23 @@ Future Channels
 # 4. Notification Architecture
 
 Attendance Event
-        ↓
+↓
 Event Bus
-        ↓
+↓
 Notification Engine
-        ↓
+↓
 Template Engine
-        ↓
+↓
 Recipient Resolver
-        ↓
+↓
 Channel Selection
-        ↓
+↓
 Delivery Queue
-        ↓
+↓
 Notification Provider
-        ↓
+↓
 Delivery Status
-        ↓
+↓
 Audit Log
 
 ---
@@ -249,20 +249,25 @@ Features
 # 12. RBAC
 
 Employee
+
 - Receive personal notifications
 
 Manager
+
 - Team alerts
 - Approval requests
 
 HR
+
 - Attendance operations
 - Compliance alerts
 
 Employer
+
 - Executive notifications
 
 Super Admin
+
 - Platform alerts
 - Tenant alerts
 

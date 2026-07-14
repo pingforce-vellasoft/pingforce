@@ -1,4 +1,3 @@
-
 # MOBILE_APP.md
 
 # Fault Management Module – Mobile Application Specification

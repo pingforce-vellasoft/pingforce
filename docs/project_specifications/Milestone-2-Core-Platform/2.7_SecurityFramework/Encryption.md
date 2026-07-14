@@ -1,7 +1,9 @@
 # Encryption.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Security Module
+
 ### Encryption Standards & Key Management Specification
 
 **Module:** Core Platform → Security  
@@ -261,15 +263,15 @@ Indexes:
 
 # 17. REST APIs
 
-GET    /api/v1/security/keys
+GET /api/v1/security/keys
 
-POST   /api/v1/security/keys/rotate
+POST /api/v1/security/keys/rotate
 
-GET    /api/v1/security/certificates
+GET /api/v1/security/certificates
 
-POST   /api/v1/security/certificates
+POST /api/v1/security/certificates
 
-GET    /api/v1/security/secrets/status
+GET /api/v1/security/secrets/status
 
 ---
 

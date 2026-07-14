@@ -74,25 +74,30 @@ Employee Opens Attendance
 # 6. Functional Requirements
 
 ## GPS Availability
+
 - GPS mandatory or optional by tenant.
 - Prompt user to enable GPS when required.
 - Reject attendance if GPS is mandatory and unavailable.
 
 ## GPS Accuracy
+
 - Configurable acceptable accuracy threshold.
 - Reject or warn based on tenant policy.
 
 ## Geofence
+
 - Single or multiple geofences.
 - Polygon or radius-based fences.
 - Branch, customer site, project site support.
 
 ## Device Validation
+
 - Device binding support.
 - Registered device enforcement.
 - Device fingerprint comparison.
 
 ## Mock Location
+
 - Detect developer mock providers.
 - Detect abnormal coordinate changes.
 - Trigger configurable actions.
@@ -112,14 +117,17 @@ Employee Opens Attendance
 # 8. Validation Results
 
 Success
+
 - VALID
 
 Warning
+
 - LOW_ACCURACY
 - GPS_DELAY
 - OFFLINE_ALLOWED
 
 Failure
+
 - GPS_DISABLED
 - OUTSIDE_GEOFENCE
 - MOCK_LOCATION
@@ -132,6 +140,7 @@ Failure
 # 9. Offline Behaviour
 
 When offline:
+
 - Capture encrypted GPS payload.
 - Queue validation.
 - Synchronize automatically.
@@ -142,6 +151,7 @@ When offline:
 # 10. Notifications
 
 Events:
+
 - GPS Disabled
 - Outside Geofence
 - Mock Location Detected
@@ -149,6 +159,7 @@ Events:
 - Attendance Rejected
 
 Channels:
+
 - Push
 - Email
 - WhatsApp
@@ -168,6 +179,7 @@ Channels:
 - Field Visit Summary
 
 Exports:
+
 - Excel
 - CSV
 - PDF
@@ -189,18 +201,22 @@ Exports:
 # 13. RBAC
 
 Employee:
+
 - Submit GPS attendance
 - View own GPS history
 
 Manager:
+
 - View team locations
 - View violations
 
 Employer:
+
 - Configure GPS policies
 - Configure geofences
 
 Super Admin:
+
 - Global configuration
 - Tenant monitoring
 

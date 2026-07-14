@@ -1,4 +1,3 @@
-
 # TICKET_LIFECYCLE.md
 
 # Fault Management - Ticket Lifecycle Specification
@@ -77,21 +76,26 @@ Closed
 # 4. Lifecycle States
 
 ## Draft
+
 Purpose:
+
 - Ticket being prepared.
 
 Allowed Roles:
+
 - Manager
 - Employer
 - Customer (optional)
 
 Actions:
+
 - Save
 - Edit
 - Delete
 - Submit
 
 Exit:
+
 - Submit
 
 ---
@@ -101,12 +105,14 @@ Exit:
 Ticket officially created.
 
 System Actions:
+
 - Generate ticket number
 - Start response SLA
 - Create audit record
 - Trigger notifications
 
 Allowed Actions:
+
 - Assign
 - Cancel
 
@@ -115,13 +121,16 @@ Allowed Actions:
 ## Assigned
 
 Purpose:
+
 - Allocate responsible technician/team.
 
 Entry:
+
 - Manual assignment
 - Auto assignment
 
 System:
+
 - Notify assignee
 - Record assignment history
 
@@ -130,15 +139,18 @@ System:
 ## Accepted
 
 Purpose:
+
 - Technician accepts responsibility.
 
 Actions:
+
 - Navigate
 - Check-in
 - Start work
 - Reject (if permitted)
 
 Business Rules:
+
 - Acceptance timestamp stored
 - SLA updated
 
@@ -147,9 +159,11 @@ Business Rules:
 ## In Progress
 
 Purpose:
+
 - Active execution.
 
 Supported Operations:
+
 - Work logs
 - Images
 - Videos
@@ -163,6 +177,7 @@ Supported Operations:
 ## On Hold
 
 Reasons:
+
 - Awaiting approval
 - Site inaccessible
 - Customer unavailable
@@ -170,6 +185,7 @@ Reasons:
 - Safety issue
 
 Business Rules:
+
 - Pause SLA (configurable)
 - Mandatory reason
 
@@ -178,6 +194,7 @@ Business Rules:
 ## Waiting for Customer
 
 Examples:
+
 - Customer response pending
 - Appointment confirmation
 - Access pending
@@ -189,9 +206,11 @@ Optional SLA pause.
 ## Waiting for Parts
 
 Purpose:
+
 - Await inventory/vendor.
 
 Business Rules:
+
 - Pause SLA if configured
 - Procurement reference optional
 
@@ -200,9 +219,11 @@ Business Rules:
 ## Vendor Support
 
 Purpose:
+
 - External vendor engagement.
 
 Actions:
+
 - Vendor assignment
 - Progress tracking
 - Attachment sharing
@@ -212,15 +233,18 @@ Actions:
 ## Testing / Verification
 
 Purpose:
+
 - Validate completed work.
 
 Performed By:
+
 - Technician
 - QA
 - Manager
 - Customer (optional)
 
 Checks:
+
 - Photos
 - Measurements
 - Sign-off
@@ -231,11 +255,13 @@ Checks:
 ## Resolved
 
 Mandatory:
+
 - Resolution notes
 - Resolution code
 - Completion time
 
 Optional:
+
 - Customer signature
 - OTP
 - Feedback request
@@ -245,6 +271,7 @@ Optional:
 ## Customer Confirmation
 
 Customer may:
+
 - Accept
 - Reject
 - Request reopen
@@ -256,11 +283,13 @@ Configurable timeout can auto-close tickets.
 ## Reopened
 
 Reasons:
+
 - Issue persists
 - Incorrect resolution
 - Failed verification
 
 Effects:
+
 - Restart workflow
 - Preserve history
 - Update KPIs
@@ -272,6 +301,7 @@ Effects:
 Final State.
 
 Business Rules:
+
 - Read-only by default
 - Immutable history
 - Final SLA calculation
@@ -281,39 +311,43 @@ Business Rules:
 
 # 5. State Transition Matrix
 
-| From | To |
-|------|----|
-| Draft | New |
-| New | Assigned / Cancelled |
-| Assigned | Accepted / Reassigned |
-| Accepted | In Progress |
-| In Progress | On Hold / Waiting for Customer / Waiting for Parts / Vendor Support / Testing |
-| On Hold | In Progress |
-| Waiting for Customer | In Progress |
-| Waiting for Parts | In Progress |
-| Vendor Support | In Progress |
-| Testing | Resolved |
-| Resolved | Customer Confirmation |
-| Customer Confirmation | Closed / Reopened |
-| Reopened | Assigned / In Progress |
+| From                  | To                                                                            |
+| --------------------- | ----------------------------------------------------------------------------- |
+| Draft                 | New                                                                           |
+| New                   | Assigned / Cancelled                                                          |
+| Assigned              | Accepted / Reassigned                                                         |
+| Accepted              | In Progress                                                                   |
+| In Progress           | On Hold / Waiting for Customer / Waiting for Parts / Vendor Support / Testing |
+| On Hold               | In Progress                                                                   |
+| Waiting for Customer  | In Progress                                                                   |
+| Waiting for Parts     | In Progress                                                                   |
+| Vendor Support        | In Progress                                                                   |
+| Testing               | Resolved                                                                      |
+| Resolved              | Customer Confirmation                                                         |
+| Customer Confirmation | Closed / Reopened                                                             |
+| Reopened              | Assigned / In Progress                                                        |
 
 ---
 
 # 6. SLA Behavior
 
 Response SLA:
+
 - Starts at New.
 
 Resolution SLA:
+
 - Starts after assignment (configurable).
 
 Pause States:
+
 - On Hold
 - Waiting for Customer
 - Waiting for Parts
 - Vendor Support
 
 Breach Actions:
+
 - Notifications
 - Escalation
 - Dashboard alerts
@@ -324,6 +358,7 @@ Breach Actions:
 # 7. Notifications
 
 Triggered on:
+
 - Creation
 - Assignment
 - Acceptance
@@ -336,6 +371,7 @@ Triggered on:
 - Reopen
 
 Channels:
+
 - Push
 - Email
 - WhatsApp
@@ -346,6 +382,7 @@ Channels:
 # 8. Audit Events
 
 Every transition records:
+
 - Ticket ID
 - Previous state
 - New state
@@ -360,6 +397,7 @@ Every transition records:
 # 9. RBAC Rules
 
 Permissions include:
+
 - Create
 - View
 - Edit
@@ -379,6 +417,7 @@ Row-level security applies.
 # 10. Mobile Offline
 
 Supported offline:
+
 - Create ticket
 - Update status
 - Capture media
@@ -387,6 +426,7 @@ Supported offline:
 - Signatures
 
 Sync:
+
 - Retry queue
 - Conflict resolution
 - Audit preservation

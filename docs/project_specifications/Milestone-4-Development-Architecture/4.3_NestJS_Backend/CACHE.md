@@ -1,4 +1,3 @@
-
 # CACHE.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -23,14 +22,14 @@ The caching layer shall:
 
 # 2. Technology Direction
 
-| Component | Planned Technology |
-|-----------|--------------------|
-| Distributed Cache | Redis |
-| NestJS Integration | Cache Manager |
-| Session Store | Redis |
-| Queue Backend | Redis (BullMQ) |
-| Rate Limiting | Redis |
-| Distributed Locks | Redis |
+| Component          | Planned Technology |
+| ------------------ | ------------------ |
+| Distributed Cache  | Redis              |
+| NestJS Integration | Cache Manager      |
+| Session Store      | Redis              |
+| Queue Backend      | Redis (BullMQ)     |
+| Rate Limiting      | Redis              |
+| Distributed Locks  | Redis              |
 
 The architecture shall abstract the cache provider to allow future replacement if required.
 

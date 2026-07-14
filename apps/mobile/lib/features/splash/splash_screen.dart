@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/theme.dart';
 import '../../../core/tenant/tenant_provider.dart';
-import '../../../core/tenant/tenant_state.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPLASH SCREEN  (AUDIT §2 — Splash Screen & App Launch)
@@ -56,9 +55,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final List<Animation<double>> _dotAnimations;
 
   bool _navigated = false;
-
-  static const Duration _splashDuration = Duration(milliseconds: 1800);
-  static const Duration _firstLaunchExtra = Duration(milliseconds: 400);
 
   @override
   void initState() {
@@ -392,6 +388,4 @@ class _MeshPainter extends CustomPainter {
 // TYPED EXTENSIONS for convenient spacing usage
 // ─────────────────────────────────────────────────────────────────────────────
 
-extension _IntSpacing on int {
-  Widget get vSpace => SizedBox(height: toDouble());
-}
+

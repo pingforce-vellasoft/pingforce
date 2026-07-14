@@ -1,4 +1,3 @@
-
 # WORKFLOW.md
 
 # Fault Management Module - Workflow Specification
@@ -61,22 +60,22 @@ Customer Confirmation
 
 # 4. Workflow States
 
-| State | Description | Typical Owner |
-|--------|-------------|---------------|
-| Draft | Ticket preparation | Manager |
-| New | Registered | System |
-| Assigned | Technician allocated | Manager |
-| Accepted | Technician accepted | Technician |
-| In Progress | Active work | Technician |
-| On Hold | Temporarily paused | Technician/Manager |
-| Waiting for Customer | Awaiting customer | Customer |
-| Waiting for Parts | Inventory/vendor delay | Technician |
-| Vendor Support | External work | Vendor |
-| Testing | Verification | QA/Manager |
-| Resolved | Technical completion | Technician |
-| Customer Confirmation | Customer validation | Customer |
-| Reopened | Returned for work | Manager |
-| Closed | Final state | Manager |
+| State                 | Description            | Typical Owner      |
+| --------------------- | ---------------------- | ------------------ |
+| Draft                 | Ticket preparation     | Manager            |
+| New                   | Registered             | System             |
+| Assigned              | Technician allocated   | Manager            |
+| Accepted              | Technician accepted    | Technician         |
+| In Progress           | Active work            | Technician         |
+| On Hold               | Temporarily paused     | Technician/Manager |
+| Waiting for Customer  | Awaiting customer      | Customer           |
+| Waiting for Parts     | Inventory/vendor delay | Technician         |
+| Vendor Support        | External work          | Vendor             |
+| Testing               | Verification           | QA/Manager         |
+| Resolved              | Technical completion   | Technician         |
+| Customer Confirmation | Customer validation    | Customer           |
+| Reopened              | Returned for work      | Manager            |
+| Closed                | Final state            | Manager            |
 
 ---
 
@@ -99,11 +98,13 @@ Example:
 Assigned → Accepted
 
 Validation:
+
 - Assigned technician only
 - Assignment active
 - User authenticated
 
 Actions:
+
 - Acceptance timestamp
 - Audit record
 - Notification
@@ -168,21 +169,26 @@ Typical validations:
 Workflow states control SLA.
 
 Start:
+
 - New
 - Assigned (configurable)
 
 Pause:
+
 - On Hold
 - Waiting for Customer
 - Waiting for Parts
 
 Resume:
+
 - In Progress
 
 Stop:
+
 - Closed
 
 Escalation:
+
 - Warning
 - Breach
 - Auto assignment
@@ -252,6 +258,7 @@ Examples:
 - fault.reopen
 
 Data scope:
+
 - Self
 - Team
 - Branch

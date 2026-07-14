@@ -1,7 +1,9 @@
 # Templates.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Notifications Module
+
 ### Notification Template Management Specification
 
 **Module:** Core Platform → Notifications  
@@ -240,21 +242,21 @@ Indexes:
 
 # 15. REST APIs
 
-GET    /api/v1/templates
+GET /api/v1/templates
 
-GET    /api/v1/templates/{id}
+GET /api/v1/templates/{id}
 
-POST   /api/v1/templates
+POST /api/v1/templates
 
-PUT    /api/v1/templates/{id}
+PUT /api/v1/templates/{id}
 
-POST   /api/v1/templates/{id}/publish
+POST /api/v1/templates/{id}/publish
 
-POST   /api/v1/templates/{id}/approve
+POST /api/v1/templates/{id}/approve
 
-POST   /api/v1/templates/{id}/rollback
+POST /api/v1/templates/{id}/rollback
 
-POST   /api/v1/templates/preview
+POST /api/v1/templates/preview
 
 ---
 

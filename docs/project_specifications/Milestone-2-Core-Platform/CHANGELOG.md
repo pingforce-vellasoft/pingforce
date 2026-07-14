@@ -1,7 +1,7 @@
-
 # CHANGELOG.md
 
 # Enterprise Workforce Platform
+
 ## Project Changelog
 
 **Project:** Enterprise Workforce Platform (Multi-Tenant Workforce, Attendance, CRM & Field Operations)  

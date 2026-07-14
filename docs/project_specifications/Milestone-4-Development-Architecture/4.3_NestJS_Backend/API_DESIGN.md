@@ -1,4 +1,3 @@
-
 # API_DESIGN.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -90,12 +89,12 @@ Examples:
 
 # 6. HTTP Methods
 
-| Method | Purpose |
-|--------|---------|
-| GET | Retrieve resources |
-| POST | Create resources |
-| PUT | Full update |
-| PATCH | Partial update |
+| Method | Purpose                      |
+| ------ | ---------------------------- |
+| GET    | Retrieve resources           |
+| POST   | Create resources             |
+| PUT    | Full update                  |
+| PATCH  | Partial update               |
 | DELETE | Soft delete where applicable |
 
 ---

@@ -1,7 +1,9 @@
 # DataScope.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – RBAC Module
+
 ### Data Scope & Record-Level Authorization Specification
 
 **Module:** Core Platform → RBAC
@@ -53,32 +55,32 @@ A request is permitted only when every layer succeeds.
 
 # 4. Data Scope Levels
 
-| Scope | Description |
-|--------|-------------|
-| SELF | User's own records only |
-| TEAM | Records owned by direct reports |
-| DEPARTMENT | Department records |
-| REGION | Geographic region |
-| BUSINESS_UNIT | Business unit |
-| TENANT | Entire tenant |
-| PLATFORM | Cross-tenant platform operations (restricted) |
-| CUSTOM | Rule-driven scope |
+| Scope         | Description                                   |
+| ------------- | --------------------------------------------- |
+| SELF          | User's own records only                       |
+| TEAM          | Records owned by direct reports               |
+| DEPARTMENT    | Department records                            |
+| REGION        | Geographic region                             |
+| BUSINESS_UNIT | Business unit                                 |
+| TENANT        | Entire tenant                                 |
+| PLATFORM      | Cross-tenant platform operations (restricted) |
+| CUSTOM        | Rule-driven scope                             |
 
 ---
 
 # 5. Default Scope by Role
 
-| Role | Default Scope |
-|------|---------------|
-| Platform Super Admin | PLATFORM |
-| Platform Support | PLATFORM (limited by policy) |
-| Tenant Administrator | TENANT |
-| Manager | TEAM |
-| Supervisor | TEAM |
-| Employee | SELF |
-| Field Staff | SELF |
-| Sales Executive | SELF / TEAM (configurable) |
-| Client User | SELF |
+| Role                 | Default Scope                |
+| -------------------- | ---------------------------- |
+| Platform Super Admin | PLATFORM                     |
+| Platform Support     | PLATFORM (limited by policy) |
+| Tenant Administrator | TENANT                       |
+| Manager              | TEAM                         |
+| Supervisor           | TEAM                         |
+| Employee             | SELF                         |
+| Field Staff          | SELF                         |
+| Sales Executive      | SELF / TEAM (configurable)   |
+| Client User          | SELF                         |
 
 Tenant administrators may tighten defaults but cannot expand beyond platform governance.
 
@@ -162,28 +164,33 @@ Combination of multiple rules.
 # 9. Entity Scope Examples
 
 Users
+
 - Employee → Self
 - Manager → Team
 - Tenant Admin → Tenant
 
 Attendance
+
 - Employee → Own attendance
 - Manager → Team attendance
 - HR/Tenant Admin → Tenant attendance
 
 Fault Tickets
+
 - Creator
 - Assignee
 - Manager
 - Tenant Administrator
 
 Leads
+
 - Lead owner
 - Assigned salesperson
 - Sales manager
 - Tenant Administrator
 
 Reports
+
 - Generated using the caller's effective scope.
 
 ---

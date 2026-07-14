@@ -43,6 +43,7 @@ Provides real-time operational dashboards and executive analytics for monitoring
 # 4. Employee Dashboard
 
 Widgets
+
 - Today's Visits
 - Upcoming Visits
 - Active Visit
@@ -53,6 +54,7 @@ Widgets
 - Notifications
 
 Charts
+
 - Daily Visits
 - Weekly Trend
 - Travel Time
@@ -63,6 +65,7 @@ Charts
 # 5. Supervisor Dashboard
 
 Widgets
+
 - Active Employees
 - Active Visits
 - Delayed Visits
@@ -73,6 +76,7 @@ Widgets
 - Pending Reviews
 
 Charts
+
 - Team Productivity
 - Visit Status
 - SLA Compliance
@@ -83,6 +87,7 @@ Charts
 # 6. Operations Dashboard
 
 Widgets
+
 - Planned Visits
 - Completed Visits
 - Cancelled Visits
@@ -93,6 +98,7 @@ Widgets
 - GPS Compliance
 
 Charts
+
 - Hourly Activity
 - Region Comparison
 - Branch Comparison
@@ -103,6 +109,7 @@ Charts
 # 7. Employer Dashboard
 
 KPIs
+
 - Visit Completion %
 - SLA Compliance %
 - GPS Compliance %
@@ -112,6 +119,7 @@ KPIs
 - Average Visit Duration
 
 Widgets
+
 - Executive Summary
 - Regional Performance
 - Branch Performance
@@ -135,6 +143,7 @@ Widgets
 # 9. Super Admin Dashboard
 
 Widgets
+
 - Active Tenants
 - Licensed Users
 - API Usage
@@ -157,6 +166,7 @@ Widgets
 - SLA Breaches
 
 Refresh
+
 - WebSocket
 - SSE
 - Polling fallback
@@ -198,6 +208,7 @@ Refresh
 # 13. Reports Access
 
 Quick access to:
+
 - Daily Visits
 - Productivity
 - GPS Compliance
@@ -210,6 +221,7 @@ Quick access to:
 # 14. Notifications Panel
 
 Events
+
 - Visit Assigned
 - Visit Started
 - SLA Breach

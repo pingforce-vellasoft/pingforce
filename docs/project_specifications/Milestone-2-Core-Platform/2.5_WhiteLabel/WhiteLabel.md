@@ -1,7 +1,9 @@
 # WhiteLabel.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – White Label Module
+
 ### White Label & Branding Specification
 
 **Module:** Core Platform → White Label
@@ -257,19 +259,19 @@ Indexes:
 
 # 15. REST APIs
 
-GET    /api/v1/branding
+GET /api/v1/branding
 
-PUT    /api/v1/branding
+PUT /api/v1/branding
 
-POST   /api/v1/branding/logo
+POST /api/v1/branding/logo
 
-POST   /api/v1/branding/theme
+POST /api/v1/branding/theme
 
-GET    /api/v1/branding/domain
+GET /api/v1/branding/domain
 
-POST   /api/v1/branding/domain
+POST /api/v1/branding/domain
 
-GET    /api/v1/branding/templates
+GET /api/v1/branding/templates
 
 ---
 

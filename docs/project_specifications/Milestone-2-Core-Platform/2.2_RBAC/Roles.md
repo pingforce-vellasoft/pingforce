@@ -1,7 +1,9 @@
 # Roles.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – RBAC Module
+
 ### Role Management Specification
 
 **Module:** Core Platform → RBAC
@@ -193,27 +195,27 @@ Deleting a role assigned to users is prohibited. Roles must first be unassigned 
 
 # 8. Default Platform Roles
 
-| Role | Purpose |
-|------|---------|
-| Platform Super Admin | Full platform control |
-| Platform Support | Customer support operations |
-| Platform Auditor | Read-only platform audit |
-| Platform DevOps | Infrastructure operations |
+| Role                 | Purpose                     |
+| -------------------- | --------------------------- |
+| Platform Super Admin | Full platform control       |
+| Platform Support     | Customer support operations |
+| Platform Auditor     | Read-only platform audit    |
+| Platform DevOps      | Infrastructure operations   |
 
 ---
 
 # 9. Recommended Default Tenant Roles
 
-| Role | Responsibilities |
-|------|------------------|
+| Role                 | Responsibilities            |
+| -------------------- | --------------------------- |
 | Tenant Administrator | Organization administration |
-| Manager | Team supervision |
-| Supervisor | Daily operational oversight |
-| Employee | Standard application usage |
-| Field Staff | Field operations |
-| Sales Executive | Lead management |
-| Customer Support | Ticket handling |
-| Client User | Customer portal access |
+| Manager              | Team supervision            |
+| Supervisor           | Daily operational oversight |
+| Employee             | Standard application usage  |
+| Field Staff          | Field operations            |
+| Sales Executive      | Lead management             |
+| Customer Support     | Ticket handling             |
+| Client User          | Customer portal access      |
 
 ---
 
@@ -258,21 +260,21 @@ Archived roles remain for historical auditing.
 
 # 12. APIs
 
-GET    /api/v1/rbac/roles
+GET /api/v1/rbac/roles
 
-GET    /api/v1/rbac/roles/{id}
+GET /api/v1/rbac/roles/{id}
 
-POST   /api/v1/rbac/roles
+POST /api/v1/rbac/roles
 
-PUT    /api/v1/rbac/roles/{id}
+PUT /api/v1/rbac/roles/{id}
 
-PATCH  /api/v1/rbac/roles/{id}/status
+PATCH /api/v1/rbac/roles/{id}/status
 
 DELETE /api/v1/rbac/roles/{id}
 
-POST   /api/v1/rbac/roles/{id}/clone
+POST /api/v1/rbac/roles/{id}/clone
 
-GET    /api/v1/rbac/roles/{id}/users
+GET /api/v1/rbac/roles/{id}/users
 
 ---
 

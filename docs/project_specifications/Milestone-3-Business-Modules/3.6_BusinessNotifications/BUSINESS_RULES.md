@@ -7,7 +7,7 @@
 **Version:** 2.0 Enterprise **Document Type:** Business Rules
 **Status:** Production Ready
 
-------------------------------------------------------------------------
+---
 
 # 1. Purpose
 
@@ -17,7 +17,7 @@ behavior across all tenants, modules, workflows, approval processes, and
 communication channels while enforcing security, RBAC, tenant isolation,
 and regulatory compliance.
 
-------------------------------------------------------------------------
+---
 
 # 2. General Rules
 
@@ -42,7 +42,7 @@ Every notification shall use an approved notification template.
 
 Every notification lifecycle event shall be logged.
 
-------------------------------------------------------------------------
+---
 
 # 3. Multi-Tenant Rules
 
@@ -63,7 +63,7 @@ configurable per tenant.
 
 Scheduled notifications shall execute according to tenant timezone.
 
-------------------------------------------------------------------------
+---
 
 # 4. RBAC Rules
 
@@ -84,7 +84,7 @@ Only authorized users may send broadcast notifications.
 
 Only administrators may configure notification providers.
 
-------------------------------------------------------------------------
+---
 
 # 5. Notification Rules
 
@@ -97,10 +97,10 @@ business rules and availability.
 
 Priority levels:
 
--   Critical
--   High
--   Normal
--   Low
+- Critical
+- High
+- Normal
+- Low
 
 Critical notifications override quiet hours when configured.
 
@@ -121,7 +121,7 @@ Tenant configuration may override this sequence.
 Duplicate notifications for the same business event shall not be
 delivered unless explicitly configured.
 
-------------------------------------------------------------------------
+---
 
 # 6. Template Rules
 
@@ -141,7 +141,7 @@ Undefined variables shall prevent template publication.
 
 Templates shall support multiple languages.
 
-------------------------------------------------------------------------
+---
 
 # 7. Scheduling Rules
 
@@ -157,7 +157,7 @@ Future notifications shall respect timezone and business hours.
 
 Reminder frequency shall be configurable per event type.
 
-------------------------------------------------------------------------
+---
 
 # 8. Retry Rules
 
@@ -173,7 +173,7 @@ Retry limits shall be tenant configurable.
 
 Permanent failures shall move to the dead-letter queue.
 
-------------------------------------------------------------------------
+---
 
 # 9. User Preference Rules
 
@@ -190,7 +190,7 @@ Quiet hours shall suppress non-critical notifications.
 
 Notifications shall use the user's preferred language when available.
 
-------------------------------------------------------------------------
+---
 
 # 10. Workflow Rules
 
@@ -206,7 +206,7 @@ Approval actions shall notify submitters and approvers.
 
 Approaching SLA breaches shall trigger escalation notifications.
 
-------------------------------------------------------------------------
+---
 
 # 11. Broadcast Rules
 
@@ -222,7 +222,7 @@ Broadcasts shall use queue-based throttling.
 
 Every broadcast shall generate a complete audit trail.
 
-------------------------------------------------------------------------
+---
 
 # 12. Security Rules
 
@@ -246,96 +246,100 @@ Outgoing webhooks shall be signed.
 
 Every configuration change shall be auditable.
 
-------------------------------------------------------------------------
+---
 
 # 13. Reporting Rules
 
 Reports shall include:
 
--   Delivery success
--   Failure rate
--   Retry statistics
--   Read rate
--   Click rate
--   Channel utilization
--   Tenant analytics
--   Queue health
+- Delivery success
+- Failure rate
+- Retry statistics
+- Read rate
+- Click rate
+- Channel utilization
+- Tenant analytics
+- Queue health
 
-------------------------------------------------------------------------
+---
 
 # 14. Integration Rules
 
 External providers shall support:
 
--   Authentication
--   Health checks
--   Retry handling
--   Timeout management
--   Error logging
+- Authentication
+- Health checks
+- Retry handling
+- Timeout management
+- Error logging
 
-------------------------------------------------------------------------
+---
 
 # 15. Mobile Rules
 
 Mobile applications shall support:
 
--   Offline notification storage
--   Read synchronization
--   Badge counts
--   Deep linking
--   Action buttons
+- Offline notification storage
+- Read synchronization
+- Badge counts
+- Deep linking
+- Action buttons
 
-------------------------------------------------------------------------
+---
 
 # 16. Compliance Rules
 
 The system shall support:
 
--   Data retention policies
--   Audit retention
--   Privacy controls
--   Tenant data segregation
--   Export controls
+- Data retention policies
+- Audit retention
+- Privacy controls
+- Tenant data segregation
+- Export controls
 
-------------------------------------------------------------------------
+---
 
 # 17. Future Rules
 
 Future capabilities may include:
 
--   AI-based prioritization
--   Intelligent delivery optimization
--   Adaptive channel routing
--   Predictive reminders
--   Voice notifications
+- AI-based prioritization
+- Intelligent delivery optimization
+- Adaptive channel routing
+- Predictive reminders
+- Voice notifications
 
-------------------------------------------------------------------------
+---
 
 # Business Rule Summary
 
-  Category             Rule Count
-  ------------------ ------------
-  General                       5
-  Multi-Tenant                  4
-  RBAC                          4
-  Notification                  4
-  Templates                     4
-  Scheduling                    3
-  Retry                         3
-  User Preferences              3
-  Workflow                      3
-  Broadcast                     3
-  Security                      5
-  Reporting                     1
-  Integration                   1
-  Mobile                        1
-  Compliance                    1
+Category Rule Count
 
-------------------------------------------------------------------------
+---
+
+General 5
+Multi-Tenant 4
+RBAC 4
+Notification 4
+Templates 4
+Scheduling 3
+Retry 3
+User Preferences 3
+Workflow 3
+Broadcast 3
+Security 5
+Reporting 1
+Integration 1
+Mobile 1
+Compliance 1
+
+---
 
 # Version History
 
-  Version   Description
-  --------- -------------------------------------------
-  1.0       Initial Enterprise Business Rules
-  2.0       Enhanced Multi-Tenant SaaS Business Rules
+Version Description
+
+---
+
+1.0 Initial Enterprise Business Rules
+2.0 Enhanced Multi-Tenant SaaS Business Rules

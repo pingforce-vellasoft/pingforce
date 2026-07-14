@@ -246,17 +246,17 @@ GET /audit
 Success
 
 {
-  "success": true,
-  "message": "Operation completed",
-  "data": {}
+"success": true,
+"message": "Operation completed",
+"data": {}
 }
 
 Failure
 
 {
-  "success": false,
-  "errorCode": "GPS_VALIDATION_FAILED",
-  "message": "Attendance rejected."
+"success": false,
+"errorCode": "GPS_VALIDATION_FAILED",
+"message": "Attendance rejected."
 }
 
 ---

@@ -1,4 +1,3 @@
-
 # PROJECT_STATE.md
 
 # Stitch Project State
@@ -67,23 +66,28 @@ The Stitch module aligns with the broader platform architecture:
 # 4. Supported Technologies
 
 Frontend
+
 - Angular
 - Flutter
 
 Backend
+
 - NestJS
 - REST APIs
 
 Database
+
 - PostgreSQL
 - Redis
 
 Infrastructure
+
 - Docker
 - CI/CD
 - GitHub
 
 AI
+
 - Prompt engineering
 - AI-assisted UI generation
 - Documentation generation
@@ -155,6 +159,7 @@ Future versions should include:
 - Cross-platform divergence
 
 Mitigation:
+
 - Governance
 - Versioning
 - Review workflows

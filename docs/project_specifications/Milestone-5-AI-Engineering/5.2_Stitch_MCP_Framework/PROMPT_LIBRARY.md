@@ -1,4 +1,3 @@
-
 # PROMPT_LIBRARY.md
 
 # Stitch Prompt Library
@@ -32,6 +31,7 @@ The prompt library standardizes AI-assisted design generation across Angular, Fl
 # 3. Prompt Categories
 
 ## Product Discovery
+
 - Product vision
 - User personas
 - User journeys
@@ -40,6 +40,7 @@ The prompt library standardizes AI-assisted design generation across Angular, Fl
 - Non-functional requirements
 
 ## UX Design
+
 - Information architecture
 - Navigation
 - Wireframes
@@ -48,6 +49,7 @@ The prompt library standardizes AI-assisted design generation across Angular, Fl
 - Interaction design
 
 ## UI Generation
+
 - Dashboard layouts
 - Authentication screens
 - Forms
@@ -58,6 +60,7 @@ The prompt library standardizes AI-assisted design generation across Angular, Fl
 - White-label themes
 
 ## Component Design
+
 - Buttons
 - Inputs
 - Cards
@@ -69,6 +72,7 @@ The prompt library standardizes AI-assisted design generation across Angular, Fl
 - Data grids
 
 ## Development
+
 - Angular components
 - Flutter widgets
 - NestJS APIs
@@ -77,6 +81,7 @@ The prompt library standardizes AI-assisted design generation across Angular, Fl
 - REST API specifications
 
 ## Documentation
+
 - README generation
 - Architecture documents
 - API documentation

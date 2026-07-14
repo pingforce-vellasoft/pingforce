@@ -1,4 +1,3 @@
-
 # SETTINGS.md
 
 # Fault Management Module – Settings & Configuration Specification
@@ -37,6 +36,7 @@ The module integrates with the Platform Settings Engine, Module Engine, Feature 
 # 3. Configuration Categories
 
 ## General Settings
+
 - Module enable/disable
 - Default language
 - Time zone
@@ -48,6 +48,7 @@ The module integrates with the Platform Settings Engine, Module Engine, Feature 
 - Auto-save interval
 
 ## Fault Settings
+
 - Fault number format
 - Duplicate detection
 - Default priority
@@ -59,6 +60,7 @@ The module integrates with the Platform Settings Engine, Module Engine, Feature 
 - Maximum open faults per user (optional)
 
 ## Workflow Settings
+
 - Default workflow
 - Status definitions
 - Transition rules
@@ -69,6 +71,7 @@ The module integrates with the Platform Settings Engine, Module Engine, Feature 
 - Reassignment rules
 
 ## Assignment Settings
+
 - Auto assignment
 - Round robin
 - Skill-based routing
@@ -79,6 +82,7 @@ The module integrates with the Platform Settings Engine, Module Engine, Feature 
 - Assignment timeout
 
 ## SLA Settings
+
 - Response SLA
 - Resolution SLA
 - Verification SLA
@@ -89,6 +93,7 @@ The module integrates with the Platform Settings Engine, Module Engine, Feature 
 - Holiday exclusions
 
 ## Attempt Settings
+
 - Attempt types
 - Mandatory GPS
 - Signature requirement
@@ -98,6 +103,7 @@ The module integrates with the Platform Settings Engine, Module Engine, Feature 
 - Maximum attachment size
 
 ## Escalation Settings
+
 - Escalation levels
 - Auto escalation
 - Escalation hierarchy
@@ -106,6 +112,7 @@ The module integrates with the Platform Settings Engine, Module Engine, Feature 
 - Executive notification
 
 ## Customer Feedback Settings
+
 - Survey template
 - Rating model
 - NPS enable
@@ -115,6 +122,7 @@ The module integrates with the Platform Settings Engine, Module Engine, Feature 
 - Auto follow-up
 
 ## RCA Settings
+
 - Mandatory RCA triggers
 - RCA methodologies
 - CAPA workflow
@@ -122,6 +130,7 @@ The module integrates with the Platform Settings Engine, Module Engine, Feature 
 - Knowledge publishing
 
 ## Notification Settings
+
 - Push notifications
 - Email
 - WhatsApp
@@ -132,6 +141,7 @@ The module integrates with the Platform Settings Engine, Module Engine, Feature 
 - Branding
 
 ## Security Settings
+
 - MFA
 - Session timeout
 - Device binding
@@ -141,6 +151,7 @@ The module integrates with the Platform Settings Engine, Module Engine, Feature 
 - Audit retention
 
 ## Mobile Settings
+
 - Offline storage limit
 - Sync interval
 - Background sync
@@ -190,6 +201,7 @@ Each feature flag is configurable per tenant.
 Settings access is controlled through RBAC.
 
 Permissions include:
+
 - settings.view
 - settings.update
 - settings.workflow
@@ -215,6 +227,7 @@ Permissions include:
 # 8. Audit & Versioning
 
 Every configuration change records:
+
 - Tenant
 - Setting category
 - Key
@@ -232,11 +245,13 @@ Configuration history supports rollback.
 # 9. Import / Export
 
 Supported formats:
+
 - JSON
 - YAML
 - Excel (selected masters)
 
 Capabilities:
+
 - Export tenant settings
 - Import settings
 - Clone tenant configuration
@@ -260,6 +275,7 @@ Capabilities:
 # 11. Database Objects
 
 Suggested tables:
+
 - tenant_settings
 - setting_categories
 - feature_flags

@@ -1,7 +1,9 @@
 # TicketCategories.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Master Data Module
+
 ### Ticket Categories Master Data Specification
 
 **Module:** Core Platform → Master Data  
@@ -242,19 +244,19 @@ Indexes:
 
 # 13. REST APIs
 
-GET    /api/v1/master/ticket-categories
+GET /api/v1/master/ticket-categories
 
-GET    /api/v1/master/ticket-categories/{id}
+GET /api/v1/master/ticket-categories/{id}
 
-POST   /api/v1/master/ticket-categories
+POST /api/v1/master/ticket-categories
 
-PUT    /api/v1/master/ticket-categories/{id}
+PUT /api/v1/master/ticket-categories/{id}
 
 DELETE /api/v1/master/ticket-categories/{id}
 
-GET    /api/v1/master/ticket-categories/tree
+GET /api/v1/master/ticket-categories/tree
 
-POST   /api/v1/master/ticket-categories/import
+POST /api/v1/master/ticket-categories/import
 
 ---
 

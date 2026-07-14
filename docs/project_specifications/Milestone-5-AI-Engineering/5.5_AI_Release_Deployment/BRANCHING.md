@@ -1,4 +1,3 @@
-
 # BRANCHING.md
 
 # Enterprise Git Branching Strategy
@@ -55,6 +54,7 @@ main
 Production-ready code only.
 
 Rules:
+
 - Protected branch
 - Pull Requests only
 - Required approvals
@@ -69,6 +69,7 @@ Rules:
 Integration branch for the next release.
 
 Rules:
+
 - Accepts completed features
 - Automated CI validation
 - Daily integration
@@ -78,7 +79,7 @@ Rules:
 
 # Supporting Branches
 
-## feature/*
+## feature/\*
 
 Naming:
 
@@ -103,7 +104,7 @@ Rules:
 
 ---
 
-## bugfix/*
+## bugfix/\*
 
 Naming:
 
@@ -117,14 +118,16 @@ Examples:
 - bugfix/mobile-gps-crash
 
 Created from:
+
 - develop
 
 Merged into:
+
 - develop
 
 ---
 
-## hotfix/*
+## hotfix/\*
 
 Purpose:
 
@@ -147,7 +150,7 @@ main → hotfix → main → develop
 
 ---
 
-## release/*
+## release/\*
 
 Purpose:
 
@@ -175,7 +178,7 @@ No new features.
 
 ---
 
-## spike/*
+## spike/\*
 
 Used for research and proof-of-concepts.
 
@@ -248,7 +251,7 @@ Protected:
 
 - main
 - develop
-- release/*
+- release/\*
 
 Policies:
 
@@ -264,12 +267,12 @@ Policies:
 
 # Merge Strategy
 
-| Branch | Merge Method |
-|---------|--------------|
-| feature/* | Squash |
-| bugfix/* | Squash |
-| release/* | Merge Commit |
-| hotfix/* | Merge Commit |
+| Branch     | Merge Method |
+| ---------- | ------------ |
+| feature/\* | Squash       |
+| bugfix/\*  | Squash       |
+| release/\* | Merge Commit |
+| hotfix/\*  | Merge Commit |
 
 ---
 
@@ -278,21 +281,25 @@ Policies:
 Every branch triggers appropriate pipelines:
 
 Feature:
+
 - Build
 - Lint
 - Unit Tests
 
 Develop:
+
 - Integration Tests
 - Security Scan
 - Package Validation
 
 Release:
+
 - Full Regression
 - Performance Tests
 - UAT Deployment
 
 Main:
+
 - Signed Build
 - Production Deployment
 - Git Tag

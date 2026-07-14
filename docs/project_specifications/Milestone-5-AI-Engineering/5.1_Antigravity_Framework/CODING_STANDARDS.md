@@ -77,27 +77,35 @@ Rules:
 # 5. Naming Conventions
 
 Classes:
+
 - PascalCase
 
 Interfaces:
+
 - Prefix with I only if project-wide convention requires it
 
 Enums:
+
 - PascalCase
 
 Variables:
+
 - camelCase
 
 Constants:
+
 - UPPER_SNAKE_CASE
 
 Files:
+
 - kebab-case
 
 Folders:
+
 - kebab-case
 
 Environment Variables:
+
 - UPPER_SNAKE_CASE
 
 ---

@@ -73,6 +73,7 @@ Higher-level defaults may be overridden where permitted.
 - Attendance Tags
 
 Supported Statuses:
+
 - Present
 - Absent
 - Late
@@ -222,18 +223,23 @@ Validation
 # 10. RBAC
 
 Employee
+
 - View applicable masters
 
 Manager
+
 - View operational masters
 
 HR
+
 - Manage attendance-related masters
 
 Employer
+
 - Manage tenant masters
 
 Super Admin
+
 - Manage platform defaults
 - Publish master templates
 

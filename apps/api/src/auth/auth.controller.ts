@@ -106,7 +106,9 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Request an OTP for the authenticated user (OTP.md §11)' })
+  @ApiOperation({
+    summary: 'Request an OTP for the authenticated user (OTP.md §11)',
+  })
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @UseGuards(JwtAuthGuard)
   @Post('otp/request')
@@ -137,7 +139,9 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Verify an OTP for the authenticated user (OTP.md §11)' })
+  @ApiOperation({
+    summary: 'Verify an OTP for the authenticated user (OTP.md §11)',
+  })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(JwtAuthGuard)
   @Post('otp/verify')

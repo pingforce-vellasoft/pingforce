@@ -1,4 +1,3 @@
-
 # FUNCTIONAL_SPECIFICATION.md
 
 # Fault Management Module - Functional Specification
@@ -17,21 +16,23 @@ The Fault Management module provides a configurable, workflow-driven system for 
 
 # 2. Actors
 
-| Actor | Responsibilities |
-|-------|------------------|
-| Super Admin | Configure platform, workflows, feature flags |
+| Actor                   | Responsibilities                                 |
+| ----------------------- | ------------------------------------------------ |
+| Super Admin             | Configure platform, workflows, feature flags     |
 | Employer / Client Admin | Configure fault categories, monitor organization |
-| Manager | Create, assign, monitor, approve, close faults |
-| Technician | Accept, execute, update, resolve faults |
-| Customer (Optional) | Create and track own faults |
-| Vendor (Optional) | Execute outsourced work |
+| Manager                 | Create, assign, monitor, approve, close faults   |
+| Technician              | Accept, execute, update, resolve faults          |
+| Customer (Optional)     | Create and track own faults                      |
+| Vendor (Optional)       | Execute outsourced work                          |
 
 ---
 
 # 3. Functional Modules
 
 ## 3.1 Fault Registration
+
 Supports creation from:
+
 - Web Portal
 - Mobile App
 - Customer Portal
@@ -40,6 +41,7 @@ Supports creation from:
 - Bulk Import
 
 Captured fields:
+
 - Fault Number (Auto)
 - Tenant
 - Customer
@@ -53,6 +55,7 @@ Captured fields:
 - Preferred Visit Time
 
 Validation:
+
 - Mandatory category
 - Mandatory location
 - Tenant isolation
@@ -63,6 +66,7 @@ Validation:
 ## 3.2 Assignment
 
 Features:
+
 - Manual assignment
 - Auto assignment
 - Territory routing
@@ -82,6 +86,7 @@ Default lifecycle:
 Draft → New → Assigned → Accepted → In Progress → On Hold → Waiting Parts → Testing → Resolved → Customer Confirmation → Closed
 
 Capabilities:
+
 - Tenant configurable states
 - Custom transitions
 - Entry/exit validations
@@ -93,11 +98,13 @@ Capabilities:
 ## 3.4 SLA Management
 
 Track:
+
 - Response SLA
 - Resolution SLA
 - Escalation SLA
 
 Actions:
+
 - Warning notifications
 - Auto escalation
 - Dashboard indicators
@@ -108,6 +115,7 @@ Actions:
 ## 3.5 Technician Operations
 
 Technician can:
+
 - View assigned jobs
 - Accept/Reject assignment
 - Navigate using GPS
@@ -123,11 +131,13 @@ Technician can:
 ## 3.6 Resolution
 
 Mandatory:
+
 - Resolution summary
 - Resolution code
 - Work duration
 
 Optional (tenant configurable):
+
 - Signature
 - Images
 - Customer OTP
@@ -138,12 +148,14 @@ Optional (tenant configurable):
 ## 3.7 Attachments
 
 Supported:
+
 - Images
 - PDF
 - Documents
 - Video
 
 Capabilities:
+
 - Preview
 - Versioning
 - Secure storage
@@ -155,6 +167,7 @@ Capabilities:
 ## 3.8 Comments & Activity
 
 Supports:
+
 - Internal comments
 - Customer visible comments
 - Mention users
@@ -166,12 +179,14 @@ Supports:
 ## 3.9 Notifications
 
 Channels:
+
 - Push
 - Email
 - WhatsApp
 - In-App
 
 Events:
+
 - Created
 - Assigned
 - Accepted
@@ -188,6 +203,7 @@ Templates use platform Notification Engine.
 ## 3.10 Reports
 
 Operational:
+
 - Open Faults
 - Pending Faults
 - Closed Faults
@@ -195,6 +211,7 @@ Operational:
 - Technician Load
 
 Analytics:
+
 - MTTR
 - First Time Fix Rate
 - Reopen Rate
@@ -203,6 +220,7 @@ Analytics:
 - Regional Performance
 
 Exports:
+
 - Excel
 - CSV
 - PDF
@@ -212,6 +230,7 @@ Exports:
 # 4. Permissions
 
 Granular RBAC permissions include:
+
 - View
 - Create
 - Edit
@@ -266,6 +285,7 @@ Row-level security enforced.
 # 7. Data Model (Logical)
 
 Core entities:
+
 - Fault
 - FaultCategory
 - FaultPriority

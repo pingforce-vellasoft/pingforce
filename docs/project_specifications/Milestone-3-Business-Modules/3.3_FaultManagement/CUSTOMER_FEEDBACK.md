@@ -1,4 +1,3 @@
-
 # CUSTOMER_FEEDBACK.md
 
 # Fault Management Module – Customer Feedback Specification

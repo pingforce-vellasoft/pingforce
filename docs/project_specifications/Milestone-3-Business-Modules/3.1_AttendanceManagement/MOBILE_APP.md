@@ -305,14 +305,14 @@ lib/
 ├── core/
 ├── shared/
 ├── features/
-│   └── attendance/
-│       ├── data/
-│       ├── domain/
-│       ├── presentation/
-│       ├── widgets/
-│       ├── services/
-│       ├── sync/
-│       └── models/
+│ └── attendance/
+│ ├── data/
+│ ├── domain/
+│ ├── presentation/
+│ ├── widgets/
+│ ├── services/
+│ ├── sync/
+│ └── models/
 ├── routes/
 └── main.dart
 

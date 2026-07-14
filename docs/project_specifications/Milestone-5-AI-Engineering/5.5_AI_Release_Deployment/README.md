@@ -1,12 +1,13 @@
-
 # AI_Engineering / Release
 
 # Release Engineering
 
 ## Overview
+
 The **Release** subsystem defines the enterprise-grade release lifecycle for the AI_Engineering platform. It standardizes how code moves from development to production while ensuring quality, traceability, security, rollback capability, and compliance.
 
 The release process supports:
+
 - Multi-tenant SaaS deployments
 - White-label customer releases
 - Android application releases
@@ -49,17 +50,17 @@ The release process supports:
 
 # Release Types
 
-| Type | Description |
-|-------|-------------|
-| Patch | Bug fixes |
-| Minor | Backward compatible features |
-| Major | Breaking changes |
-| Emergency Hotfix | Production fixes |
-| Security | Vulnerability remediation |
-| Infrastructure | Platform/OCI/Kubernetes |
-| Mobile | Android release |
-| AI Model | Prompt/model updates |
-| White-label | Tenant-specific branding |
+| Type             | Description                  |
+| ---------------- | ---------------------------- |
+| Patch            | Bug fixes                    |
+| Minor            | Backward compatible features |
+| Major            | Breaking changes             |
+| Emergency Hotfix | Production fixes             |
+| Security         | Vulnerability remediation    |
+| Infrastructure   | Platform/OCI/Kubernetes      |
+| Mobile           | Android release              |
+| AI Model         | Prompt/model updates         |
+| White-label      | Tenant-specific branding     |
 
 ---
 
@@ -67,12 +68,13 @@ The release process supports:
 
 - main
 - develop
-- release/*
-- feature/*
-- hotfix/*
-- bugfix/*
+- release/\*
+- feature/\*
+- hotfix/\*
+- bugfix/\*
 
 Merge Rules:
+
 - Feature → Develop
 - Release → Main
 - Main → Tagged Release
@@ -139,6 +141,7 @@ Commit
 # Quality Gates
 
 Mandatory:
+
 - Build Success
 - No Critical Sonar Issues
 - Dependency Scan Passed
@@ -190,6 +193,7 @@ Disaster Recovery
 # Feature Flag Strategy
 
 Support:
+
 - Tenant rollout
 - Percentage rollout
 - Region rollout
@@ -266,6 +270,7 @@ Support:
 # Rollback Strategy
 
 Rollback triggers:
+
 - Critical defects
 - SLA breach
 - Security issue
@@ -273,6 +278,7 @@ Rollback triggers:
 - High crash rate
 
 Rollback assets:
+
 - Previous containers
 - Previous APK
 - Previous migrations
@@ -284,6 +290,7 @@ Rollback assets:
 # Security
 
 Every release includes:
+
 - SAST
 - DAST
 - Dependency Scan
@@ -298,6 +305,7 @@ Every release includes:
 # Monitoring
 
 Monitor:
+
 - Availability
 - API latency
 - Error rates

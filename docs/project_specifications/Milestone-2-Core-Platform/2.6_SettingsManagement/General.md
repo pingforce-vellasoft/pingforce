@@ -1,7 +1,9 @@
 # General.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Settings Module
+
 ### General Settings Specification
 
 **Module:** Core Platform → Settings
@@ -274,15 +276,15 @@ Indexes:
 
 # 17. REST APIs
 
-GET    /api/v1/settings/general
+GET /api/v1/settings/general
 
-PUT    /api/v1/settings/general
+PUT /api/v1/settings/general
 
-GET    /api/v1/settings/general/history
+GET /api/v1/settings/general/history
 
-POST   /api/v1/settings/general/publish
+POST /api/v1/settings/general/publish
 
-POST   /api/v1/settings/general/rollback
+POST /api/v1/settings/general/rollback
 
 ---
 

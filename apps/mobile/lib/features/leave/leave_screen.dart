@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/theme.dart';
 import '../../../core/widgets/offline_aware_scaffold.dart';
-import '../../../core/widgets/app_states.dart';
-import '../../../core/sync/sync_state.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LEAVE SCREENS  (AUDIT §20 — Missing Screens)

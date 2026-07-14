@@ -46,6 +46,7 @@ TC-AUTH-001
 Title: Valid Login
 
 Expected:
+
 - Login successful
 - JWT issued
 - Tenant validated
@@ -55,6 +56,7 @@ TC-AUTH-002
 Title: Invalid Credentials
 
 Expected:
+
 - Login rejected
 - Error displayed
 - Audit log created
@@ -304,6 +306,7 @@ Global access.
 # 4. API Test Cases
 
 Validate:
+
 - Authentication
 - CRUD APIs
 - GPS APIs
@@ -313,6 +316,7 @@ Validate:
 - Sync APIs
 
 Verify:
+
 - Status codes
 - Schema
 - Pagination
@@ -347,6 +351,7 @@ Verify:
 # 7. Performance Tests
 
 Targets:
+
 - Login <2 sec
 - Dashboard <3 sec
 - GPS validation <2 sec
@@ -369,6 +374,7 @@ Targets:
 # 9. Regression Suite
 
 Execute before every release:
+
 - Authentication
 - Visits
 - Routes

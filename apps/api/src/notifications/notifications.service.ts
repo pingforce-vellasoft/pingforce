@@ -182,7 +182,9 @@ export class NotificationsService {
 
     try {
       // TODO(phase-2b): integrate SMS gateway (Twilio/SNS). Log-only for now.
-      this.logger.log(`[SMS:simulated] To: ${recipientId}, Body: ${compiledBody}`);
+      this.logger.log(
+        `[SMS:simulated] To: ${recipientId}, Body: ${compiledBody}`,
+      );
 
       await this.prisma.notificationLog.update({
         where: { id: log.id },

@@ -1,4 +1,3 @@
-
 # SMOKE_TESTS.md
 
 # Enterprise Smoke Testing Strategy
@@ -8,6 +7,7 @@
 This document defines the smoke testing process for the AI_Engineering platform. Smoke tests provide a rapid validation that a deployment is stable and that critical business functionality is operational before deeper testing or full production traffic.
 
 Applicable Components:
+
 - Angular Admin Portal
 - Flutter Android Application
 - NestJS Backend APIs
@@ -234,13 +234,13 @@ Capture:
 
 # Roles
 
-| Role | Responsibility |
-|------|----------------|
-| QA | Execute/maintain smoke suite |
-| DevOps | Trigger automation |
-| Engineering | Resolve failures |
-| Release Manager | Go/No-Go decision |
-| Product Owner | Business validation |
+| Role            | Responsibility               |
+| --------------- | ---------------------------- |
+| QA              | Execute/maintain smoke suite |
+| DevOps          | Trigger automation           |
+| Engineering     | Resolve failures             |
+| Release Manager | Go/No-Go decision            |
+| Product Owner   | Business validation          |
 
 ---
 

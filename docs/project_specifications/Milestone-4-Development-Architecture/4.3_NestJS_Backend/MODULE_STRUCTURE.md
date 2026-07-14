@@ -1,4 +1,3 @@
-
 # MODULE_STRUCTURE.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -206,6 +205,7 @@ Presentation
 Infrastructure implements contracts owned by the domain/application.
 
 Business modules should communicate through:
+
 - Public application services
 - Interfaces
 - Domain events

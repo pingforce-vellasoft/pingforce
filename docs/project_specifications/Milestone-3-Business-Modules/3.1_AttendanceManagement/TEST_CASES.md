@@ -60,14 +60,17 @@ TC-AUTH-001
 Title: Valid Login
 
 Preconditions:
+
 - Active tenant
 - Active employee
 
 Steps:
+
 1. Enter tenant code.
 2. Login with valid credentials.
 
 Expected:
+
 - Login succeeds.
 - JWT issued.
 - Dashboard displayed.
@@ -79,6 +82,7 @@ TC-AUTH-002
 Invalid Password
 
 Expected:
+
 - Login rejected.
 - Error displayed.
 - Audit recorded.
@@ -92,6 +96,7 @@ TC-ATT-001
 Valid Check-In
 
 Expected:
+
 - Attendance created.
 - Session active.
 - Notification generated.
@@ -104,6 +109,7 @@ TC-ATT-002
 Duplicate Check-In
 
 Expected:
+
 - Request rejected.
 - ACTIVE_SESSION_EXISTS returned.
 
@@ -114,6 +120,7 @@ TC-ATT-003
 Valid Check-Out
 
 Expected:
+
 - Session closed.
 - Working hours calculated.
 - Overtime evaluated.
@@ -125,6 +132,7 @@ TC-ATT-004
 Checkout Without Check-In
 
 Expected:
+
 - Validation error.
 
 ---
@@ -329,6 +337,7 @@ Global visibility.
 - Offline Sync
 
 Verify:
+
 - Status codes
 - Response schema
 - Authorization

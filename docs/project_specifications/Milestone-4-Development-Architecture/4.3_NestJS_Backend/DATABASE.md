@@ -1,4 +1,3 @@
-
 # DATABASE.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -23,15 +22,15 @@ The database architecture shall:
 
 # 2. Technology Direction
 
-| Component | Planned Technology |
-|-----------|--------------------|
-| Primary Database | PostgreSQL |
-| ORM | Prisma ORM |
-| Cache | Redis |
-| Search (Future) | OpenSearch / Elasticsearch |
-| Object Storage | OCI Object Storage / S3 Compatible |
-| Migrations | Prisma Migrate |
-| Backup | Automated Incremental & Full Backups |
+| Component        | Planned Technology                   |
+| ---------------- | ------------------------------------ |
+| Primary Database | PostgreSQL                           |
+| ORM              | Prisma ORM                           |
+| Cache            | Redis                                |
+| Search (Future)  | OpenSearch / Elasticsearch           |
+| Object Storage   | OCI Object Storage / S3 Compatible   |
+| Migrations       | Prisma Migrate                       |
+| Backup           | Automated Incremental & Full Backups |
 
 ---
 
@@ -151,33 +150,39 @@ Platform entities should include:
 # 8. Business Domain Tables (Conceptual)
 
 Attendance:
+
 - attendance_records
 - attendance_sessions
 - attendance_adjustments
 
 GPS:
+
 - gps_locations
 - visit_history
 - geofences
 
 Fault:
+
 - faults
 - fault_assignments
 - fault_attempts
 - fault_attachments
 
 Lead:
+
 - leads
 - lead_sources
 - lead_activities
 - lead_followups
 
 Documents:
+
 - documents
 - document_versions
 - document_tags
 
 Assets:
+
 - assets
 - asset_assignments
 - asset_categories
@@ -202,18 +207,23 @@ Cascade delete should be used cautiously; soft delete is preferred for business 
 # 10. Naming Standards
 
 Tables:
+
 - snake_case plural
 
 Columns:
+
 - snake_case
 
 Primary Keys:
+
 - id
 
 Foreign Keys:
-- <entity>_id
+
+- <entity>\_id
 
 Timestamps:
+
 - created_at
 - updated_at
 - deleted_at

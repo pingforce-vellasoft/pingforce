@@ -1,7 +1,9 @@
 # Notifications.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Settings Module
+
 ### Notification Settings & Communication Specification
 
 **Module:** Core Platform → Settings  
@@ -199,19 +201,23 @@ Configurable:
 # 12. Provider Integration
 
 Email:
+
 - SMTP
 - Microsoft 365
 - Google Workspace
 - SES (future)
 
 SMS:
+
 - Regional gateways
 - Global gateways
 
 Push:
+
 - Firebase Cloud Messaging (FCM)
 
 Future:
+
 - APNs
 - WhatsApp Business
 - Teams
@@ -272,21 +278,21 @@ Indexes:
 
 # 16. REST APIs
 
-GET    /api/v1/notifications
+GET /api/v1/notifications
 
-GET    /api/v1/notifications/{id}
+GET /api/v1/notifications/{id}
 
-PUT    /api/v1/notifications/preferences
+PUT /api/v1/notifications/preferences
 
-GET    /api/v1/notifications/templates
+GET /api/v1/notifications/templates
 
-POST   /api/v1/notifications/templates
+POST /api/v1/notifications/templates
 
-PUT    /api/v1/notifications/templates/{id}
+PUT /api/v1/notifications/templates/{id}
 
-POST   /api/v1/notifications/test
+POST /api/v1/notifications/test
 
-GET    /api/v1/notifications/history
+GET /api/v1/notifications/history
 
 ---
 

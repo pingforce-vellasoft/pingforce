@@ -213,18 +213,23 @@ Examples:
 Role-based configuration:
 
 Employee
+
 - View personal settings only
 
 Manager
+
 - Team-level operational settings
 
 HR
+
 - Attendance configuration
 
 Employer
+
 - Tenant configuration
 
 Super Admin
+
 - Platform defaults
 - Tenant templates
 - Feature management

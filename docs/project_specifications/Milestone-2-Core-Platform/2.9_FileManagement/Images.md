@@ -1,7 +1,9 @@
 # Images.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – File Management Module
+
 ### Image Management, Processing & Delivery Specification
 
 **Module:** Core Platform → File Management
@@ -225,21 +227,21 @@ Indexes:
 
 # 14. REST APIs
 
-POST   /api/v1/images/upload
+POST /api/v1/images/upload
 
-GET    /api/v1/images/{id}
+GET /api/v1/images/{id}
 
-GET    /api/v1/images/{id}/thumbnail
+GET /api/v1/images/{id}/thumbnail
 
-GET    /api/v1/images/{id}/download
+GET /api/v1/images/{id}/download
 
-PUT    /api/v1/images/{id}
+PUT /api/v1/images/{id}
 
 DELETE /api/v1/images/{id}
 
-POST   /api/v1/images/{id}/watermark
+POST /api/v1/images/{id}/watermark
 
-POST   /api/v1/images/{id}/transform
+POST /api/v1/images/{id}/transform
 
 ---
 

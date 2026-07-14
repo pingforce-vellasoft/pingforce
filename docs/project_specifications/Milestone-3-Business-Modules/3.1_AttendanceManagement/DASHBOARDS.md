@@ -333,18 +333,23 @@ Events
 # 16. RBAC
 
 Employee
+
 - Personal dashboard only
 
 Manager
+
 - Team dashboards
 
 HR
+
 - Organization dashboards
 
 Employer
+
 - Executive dashboards
 
 Super Admin
+
 - Global dashboards
 
 ---

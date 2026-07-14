@@ -1,7 +1,9 @@
 # Storage.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – File Management Module
+
 ### Storage Architecture & File Storage Specification
 
 **Module:** Core Platform → File Management  
@@ -239,21 +241,21 @@ Indexes:
 
 # 15. REST APIs
 
-GET    /api/v1/storage
+GET /api/v1/storage
 
-GET    /api/v1/storage/{id}
+GET /api/v1/storage/{id}
 
-POST   /api/v1/storage/upload-url
+POST /api/v1/storage/upload-url
 
-POST   /api/v1/storage/download-url
+POST /api/v1/storage/download-url
 
-POST   /api/v1/storage/move
+POST /api/v1/storage/move
 
-POST   /api/v1/storage/copy
+POST /api/v1/storage/copy
 
 DELETE /api/v1/storage/{id}
 
-GET    /api/v1/storage/quota
+GET /api/v1/storage/quota
 
 ---
 

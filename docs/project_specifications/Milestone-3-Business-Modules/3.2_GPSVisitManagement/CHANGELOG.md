@@ -87,15 +87,15 @@ Examples
 
 # Release Timeline
 
-| Version | Status | Description |
-|----------|---------|-------------|
-|0.1.0|Concept|Business Requirements|
-|0.2.0|Architecture|High Level Design|
-|0.3.0|Prototype|UI Prototype|
-|0.5.0|MVP|Basic GPS Visits|
-|0.8.0|Beta|Enterprise Features|
-|0.9.0|Release Candidate|Performance & Security|
-|1.0.0|Production|Enterprise Ready|
+| Version | Status            | Description            |
+| ------- | ----------------- | ---------------------- |
+| 0.1.0   | Concept           | Business Requirements  |
+| 0.2.0   | Architecture      | High Level Design      |
+| 0.3.0   | Prototype         | UI Prototype           |
+| 0.5.0   | MVP               | Basic GPS Visits       |
+| 0.8.0   | Beta              | Enterprise Features    |
+| 0.9.0   | Release Candidate | Performance & Security |
+| 1.0.0   | Production        | Enterprise Ready       |
 
 ---
 
@@ -813,9 +813,9 @@ Verification Steps
 
 # Documentation History
 
-| Version | Author | Description |
-|----------|---------|-------------|
-|1.0.0|Product Engineering|Initial Enterprise Changelog|
+| Version | Author              | Description                  |
+| ------- | ------------------- | ---------------------------- |
+| 1.0.0   | Product Engineering | Initial Enterprise Changelog |
 
 ---
 

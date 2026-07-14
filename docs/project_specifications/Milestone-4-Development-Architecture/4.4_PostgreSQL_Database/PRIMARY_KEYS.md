@@ -6,22 +6,22 @@
 > This document specifies what shall be implemented to ensure
 > consistency, scalability, security, and interoperability.
 
-------------------------------------------------------------------------
+---
 
 # 1. Objectives
 
 Primary key standards shall ensure:
 
--   Globally unique identifiers
--   Consistent data relationships
--   Horizontal scalability
--   ORM compatibility
--   API consistency
--   Secure identifier exposure
--   Reliable replication and synchronization
--   Future-proof architecture
+- Globally unique identifiers
+- Consistent data relationships
+- Horizontal scalability
+- ORM compatibility
+- API consistency
+- Secure identifier exposure
+- Reliable replication and synchronization
+- Future-proof architecture
 
-------------------------------------------------------------------------
+---
 
 # 2. Primary Key Principles
 
@@ -29,13 +29,13 @@ Every persistent business entity shall have exactly one primary key.
 
 The primary key shall:
 
--   Be immutable
--   Be unique
--   Never contain business meaning
--   Never be reused
--   Remain stable throughout the entity lifecycle
+- Be immutable
+- Be unique
+- Never contain business meaning
+- Never be reused
+- Remain stable throughout the entity lifecycle
 
-------------------------------------------------------------------------
+---
 
 # 3. UUID Strategy
 
@@ -43,27 +43,27 @@ The platform shall standardize on UUIDs.
 
 Preferred implementation:
 
--   UUID Version 7 (recommended)
--   UUID Version 4 (acceptable where v7 is unavailable)
+- UUID Version 7 (recommended)
+- UUID Version 4 (acceptable where v7 is unavailable)
 
 Sequential integer identifiers shall not be used for business entities
 exposed outside the database.
 
 Benefits include:
 
--   Global uniqueness
--   Better support for distributed systems
--   Reduced enumeration risk
--   Easier offline synchronization
--   Safer data imports and migrations
+- Global uniqueness
+- Better support for distributed systems
+- Reduced enumeration risk
+- Easier offline synchronization
+- Safer data imports and migrations
 
-------------------------------------------------------------------------
+---
 
 # 4. Standard Primary Key Column
 
 Every table shall define:
 
-``` text
+```text
 id UUID PRIMARY KEY
 ```
 
@@ -72,23 +72,23 @@ The column name shall always be `id`.
 No alternative naming such as `user_pk`, `employee_key`, or
 `lead_identifier` shall be introduced.
 
-------------------------------------------------------------------------
+---
 
 # 5. Foreign Key Convention
 
 Relationships shall reference the parent primary key using:
 
--   user_id
--   tenant_id
--   organization_id
--   employee_id
--   manager_id
--   workflow_id
--   notification_id
+- user_id
+- tenant_id
+- organization_id
+- employee_id
+- manager_id
+- workflow_id
+- notification_id
 
 All foreign keys shall end with `_id`.
 
-------------------------------------------------------------------------
+---
 
 # 6. Composite Keys
 
@@ -96,33 +96,33 @@ Composite primary keys shall generally be avoided.
 
 They may be considered only for:
 
--   Junction tables
--   Pure mapping tables
--   Standards-driven reference structures
+- Junction tables
+- Pure mapping tables
+- Standards-driven reference structures
 
 Even in those cases, a surrogate UUID primary key is preferred when
 auditability or future extensibility is expected.
 
-------------------------------------------------------------------------
+---
 
 # 7. Junction Tables
 
 Relationship tables such as:
 
--   user_roles
--   role_permissions
--   tenant_modules
--   module_features
+- user_roles
+- role_permissions
+- tenant_modules
+- module_features
 
 shall normally contain:
 
--   id (UUID primary key)
--   foreign key references
--   audit columns
+- id (UUID primary key)
+- foreign key references
+- audit columns
 
 Unique constraints shall enforce relationship uniqueness.
 
-------------------------------------------------------------------------
+---
 
 # 8. Primary Key Generation
 
@@ -131,13 +131,13 @@ layer mechanism.
 
 Requirements:
 
--   Collision resistant
--   Cryptographically safe where applicable
--   Independent of client device clocks (except supported UUID v7
-    implementations)
--   Consistent across services
+- Collision resistant
+- Cryptographically safe where applicable
+- Independent of client device clocks (except supported UUID v7
+  implementations)
+- Consistent across services
 
-------------------------------------------------------------------------
+---
 
 # 9. Business Codes vs Primary Keys
 
@@ -145,15 +145,15 @@ Business identifiers shall never replace primary keys.
 
 Examples:
 
--   employee_code
--   tenant_code
--   client_code
--   invoice_number
+- employee_code
+- tenant_code
+- client_code
+- invoice_number
 
 These shall be alternate identifiers protected through unique
 constraints.
 
-------------------------------------------------------------------------
+---
 
 # 10. Security Requirements
 
@@ -161,29 +161,29 @@ Primary keys shall not expose business information.
 
 Identifiers shall never encode:
 
--   Company names
--   Customer names
--   Dates
--   Geographic regions
--   User counts
+- Company names
+- Customer names
+- Dates
+- Geographic regions
+- User counts
 
 Opaque identifiers improve security and privacy.
 
-------------------------------------------------------------------------
+---
 
 # 11. Offline Synchronization
 
 The key strategy shall support:
 
--   Mobile offline creation
--   Merge operations
--   Conflict detection
--   Cross-device synchronization
--   Import/export
+- Mobile offline creation
+- Merge operations
+- Conflict detection
+- Cross-device synchronization
+- Import/export
 
 UUIDs eliminate central ID allocation requirements.
 
-------------------------------------------------------------------------
+---
 
 # 12. Multi-Tenant Considerations
 
@@ -191,26 +191,26 @@ Primary keys remain globally unique.
 
 Tenant isolation shall be enforced through:
 
--   tenant_id
--   authorization
--   row-level security
--   application filtering
+- tenant_id
+- authorization
+- row-level security
+- application filtering
 
 Tenant ownership shall not be inferred from the primary key.
 
-------------------------------------------------------------------------
+---
 
 # 13. Partitioning Compatibility
 
 Primary keys shall remain compatible with:
 
--   Table partitioning
--   Read replicas
--   Logical replication
--   Sharding preparation
--   Archival strategies
+- Table partitioning
+- Read replicas
+- Logical replication
+- Sharding preparation
+- Archival strategies
 
-------------------------------------------------------------------------
+---
 
 # 14. Audit Compatibility
 
@@ -221,7 +221,7 @@ changes.
 
 Primary keys shall never be updated.
 
-------------------------------------------------------------------------
+---
 
 # 15. Migration Standards
 
@@ -230,26 +230,26 @@ plans.
 
 Migration shall preserve:
 
--   Existing relationships
--   Referential integrity
--   External integrations
--   Historical audit data
+- Existing relationships
+- Referential integrity
+- External integrations
+- Historical audit data
 
-------------------------------------------------------------------------
+---
 
 # 16. Performance Considerations
 
 Implementation shall consider:
 
--   UUID v7 locality advantages
--   Appropriate indexing
--   Efficient joins
--   Foreign key indexing
--   Connection pool efficiency
+- UUID v7 locality advantages
+- Appropriate indexing
+- Efficient joins
+- Foreign key indexing
+- Connection pool efficiency
 
 Performance validation shall accompany large-scale deployments.
 
-------------------------------------------------------------------------
+---
 
 # 17. API Standards
 
@@ -257,38 +257,38 @@ REST and GraphQL APIs shall expose stable UUID identifiers.
 
 Primary keys shall be:
 
--   Read-only
--   Immutable
--   Consistent across services
+- Read-only
+- Immutable
+- Consistent across services
 
-------------------------------------------------------------------------
+---
 
 # 18. Validation Checklist
 
 Every new table shall satisfy:
 
--   UUID primary key
--   Column named `id`
--   Immutable identifier
--   Indexed foreign keys
--   Business identifiers separated from PK
--   Audit compatibility
--   Multi-tenant compatibility
+- UUID primary key
+- Column named `id`
+- Immutable identifier
+- Indexed foreign keys
+- Business identifiers separated from PK
+- Audit compatibility
+- Multi-tenant compatibility
 
-------------------------------------------------------------------------
+---
 
 # 19. Future Readiness
 
 The primary key strategy shall remain compatible with:
 
--   Event sourcing
--   CQRS
--   Distributed services
--   AI pipelines
--   Data warehouse synchronization
--   Cross-region deployments
+- Event sourcing
+- CQRS
+- Distributed services
+- AI pipelines
+- Data warehouse synchronization
+- Cross-region deployments
 
-------------------------------------------------------------------------
+---
 
 # 20. Summary
 

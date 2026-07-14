@@ -1,4 +1,3 @@
-
 # ROOT_CAUSE_ANALYSIS.md
 
 # Fault Management Module – Root Cause Analysis (RCA) Specification
@@ -152,6 +151,7 @@ Each RCA record stores:
 # 9. Corrective & Preventive Actions (CAPA)
 
 Corrective Actions:
+
 - Immediate repair
 - Configuration changes
 - Staff retraining
@@ -159,6 +159,7 @@ Corrective Actions:
 - Process updates
 
 Preventive Actions:
+
 - SOP improvements
 - Product redesign
 - Additional monitoring
@@ -183,6 +184,7 @@ RCA can be triggered by:
 - Manager decision
 
 Workflow outcomes can include:
+
 - Reopen ticket
 - Escalate
 - Create improvement task
@@ -224,6 +226,7 @@ Separate SLAs may be configured for RCA completion.
 Low ratings may automatically trigger RCA.
 
 Feedback trends can identify:
+
 - Technician issues
 - Process gaps
 - Communication failures

@@ -1,7 +1,9 @@
 # Users.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – User Management Module
+
 ### User Domain Specification
 
 **Module:** Core Platform → User Management
@@ -219,23 +221,23 @@ Indexes:
 
 # 13. REST APIs
 
-GET    /api/v1/users
+GET /api/v1/users
 
-GET    /api/v1/users/{id}
+GET /api/v1/users/{id}
 
-POST   /api/v1/users
+POST /api/v1/users
 
-PUT    /api/v1/users/{id}
+PUT /api/v1/users/{id}
 
-PATCH  /api/v1/users/{id}/status
+PATCH /api/v1/users/{id}/status
 
-POST   /api/v1/users/{id}/roles
+POST /api/v1/users/{id}/roles
 
-POST   /api/v1/users/{id}/manager
+POST /api/v1/users/{id}/manager
 
-GET    /api/v1/users/{id}/sessions
+GET /api/v1/users/{id}/sessions
 
-GET    /api/v1/users/{id}/devices
+GET /api/v1/users/{id}/devices
 
 ---
 

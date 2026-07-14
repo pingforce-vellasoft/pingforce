@@ -1,4 +1,3 @@
-
 # LOGGING.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -38,14 +37,14 @@ The logging solution shall follow:
 
 # 3. Technology Direction
 
-| Component | Planned Technology |
-|-----------|--------------------|
-| Application Logger | Winston or Pino |
-| Framework Integration | NestJS Logger Abstraction |
-| Log Transport | Console, File, Remote Collector |
-| Aggregation | ELK/OpenSearch or Loki (future) |
-| Metrics | Prometheus |
-| Tracing | OpenTelemetry |
+| Component             | Planned Technology              |
+| --------------------- | ------------------------------- |
+| Application Logger    | Winston or Pino                 |
+| Framework Integration | NestJS Logger Abstraction       |
+| Log Transport         | Console, File, Remote Collector |
+| Aggregation           | ELK/OpenSearch or Loki (future) |
+| Metrics               | Prometheus                      |
+| Tracing               | OpenTelemetry                   |
 
 ---
 

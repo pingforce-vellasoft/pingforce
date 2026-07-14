@@ -1,6 +1,7 @@
 # DEFINITION_OF_DONE.md
 
 # Enterprise Workforce Platform
+
 ## Definition of Done (DoD)
 
 **Version:** 1.0.0  

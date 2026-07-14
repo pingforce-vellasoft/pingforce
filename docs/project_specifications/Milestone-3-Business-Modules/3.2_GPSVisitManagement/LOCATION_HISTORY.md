@@ -32,6 +32,7 @@ The Location History component records, stores, retrieves, and visualizes histor
 # 3. Scope
 
 Includes:
+
 - Historical GPS points
 - Route history
 - Visit timelines
@@ -81,18 +82,21 @@ Each location record contains:
 # 6. Functional Requirements
 
 ## Capture
+
 - Periodic location capture
 - Configurable intervals
 - High accuracy mode
 - Battery optimization
 
 ## Playback
+
 - Replay employee route
 - Timeline visualization
 - Speed indicators
 - Stop markers
 
 ## Search
+
 - By employee
 - By visit
 - By route
@@ -100,6 +104,7 @@ Each location record contains:
 - By date range
 
 ## Export
+
 - Excel
 - CSV
 - PDF
@@ -146,6 +151,7 @@ Each location record contains:
 # 10. Route Playback
 
 Features:
+
 - Map replay
 - Timeline controls
 - Speed visualization
@@ -193,13 +199,13 @@ Features:
 
 # 14. APIs
 
-POST   /locations
-GET    /locations
-GET    /locations/history
-GET    /locations/playback
-GET    /locations/employee/{id}
-GET    /locations/visit/{id}
-GET    /locations/route/{id}
+POST /locations
+GET /locations
+GET /locations/history
+GET /locations/playback
+GET /locations/employee/{id}
+GET /locations/visit/{id}
+GET /locations/route/{id}
 
 ---
 

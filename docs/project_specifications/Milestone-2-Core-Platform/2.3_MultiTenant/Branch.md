@@ -1,7 +1,9 @@
 # Branch.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Multi-Tenant Module
+
 ### Branch Domain Specification
 
 **Module:** Core Platform → Multi-Tenant  
@@ -252,19 +254,19 @@ Composite indexes:
 
 # 14. APIs
 
-GET    /api/v1/branches
+GET /api/v1/branches
 
-GET    /api/v1/branches/{id}
+GET /api/v1/branches/{id}
 
-POST   /api/v1/branches
+POST /api/v1/branches
 
-PUT    /api/v1/branches/{id}
+PUT /api/v1/branches/{id}
 
-PATCH  /api/v1/branches/{id}/status
+PATCH /api/v1/branches/{id}/status
 
-GET    /api/v1/branches/{id}/employees
+GET /api/v1/branches/{id}/employees
 
-GET    /api/v1/branches/{id}/departments
+GET /api/v1/branches/{id}/departments
 
 ---
 

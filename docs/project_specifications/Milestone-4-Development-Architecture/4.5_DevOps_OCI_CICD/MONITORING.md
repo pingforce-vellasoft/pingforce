@@ -68,6 +68,7 @@ Prometheus  Loki   OpenTelemetry
 The platform shall monitor:
 
 ## Infrastructure
+
 - Compute resources
 - Kubernetes cluster
 - Nodes
@@ -77,6 +78,7 @@ The platform shall monitor:
 - Load balancers
 
 ## Platform Services
+
 - NGINX / Ingress
 - API Gateway
 - PostgreSQL
@@ -86,6 +88,7 @@ The platform shall monitor:
 - Notification services
 
 ## Applications
+
 - Angular Admin
 - Flutter API interactions
 - NestJS Backend
@@ -94,6 +97,7 @@ The platform shall monitor:
 - Notification Engine
 
 ## Business Services
+
 - Attendance processing
 - GPS tracking
 - Lead Management
@@ -109,6 +113,7 @@ The platform shall monitor:
 Metrics shall include:
 
 ### Infrastructure
+
 - CPU utilization
 - Memory utilization
 - Disk usage
@@ -117,6 +122,7 @@ Metrics shall include:
 - Pod health
 
 ### Application
+
 - Request rate
 - Response time
 - Error rate
@@ -125,6 +131,7 @@ Metrics shall include:
 - Cache hit ratio
 
 ### Database
+
 - Query latency
 - Connection pool usage
 - Lock contention
@@ -132,6 +139,7 @@ Metrics shall include:
 - Slow queries
 
 ### Business
+
 - Active tenants
 - Active users
 - Attendance submissions
@@ -261,12 +269,14 @@ Historical data shall support forecasting.
 The platform shall define:
 
 SLIs
+
 - Availability
 - Latency
 - Error rate
 - Throughput
 
 SLOs
+
 - API availability target
 - Response time target
 - Notification delivery target

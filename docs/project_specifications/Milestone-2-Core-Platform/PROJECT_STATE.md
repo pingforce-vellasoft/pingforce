@@ -1,7 +1,7 @@
-
 # PROJECT_STATE.md
 
 # Enterprise Workforce Platform
+
 ## Current Project State
 
 **Project:** Enterprise Workforce Platform  
@@ -40,30 +40,37 @@ Create a reusable enterprise platform that supports:
 # 3. Technology Stack
 
 Frontend
+
 - Angular (Web)
 - Flutter (Android / iOS)
 
 Backend
+
 - NestJS
 - Node.js
 
 Database
+
 - PostgreSQL
 - Redis
 
 Infrastructure
+
 - Oracle Cloud Infrastructure (OCI)
 
 Storage
+
 - OCI Object Storage
 
 Notifications
+
 - Push
 - Email
 - WhatsApp
 - In-App
 
 Authentication
+
 - JWT
 - Refresh Tokens
 - OTP
@@ -108,6 +115,7 @@ Documentation completed includes:
 # 5. Core Platform Progress
 
 Authentication
+
 - Login
 - JWT
 - Refresh Tokens
@@ -116,6 +124,7 @@ Authentication
 - Device Management
 
 RBAC
+
 - Roles
 - Permissions
 - Menu Permissions
@@ -124,6 +133,7 @@ RBAC
 - Data Scope
 
 Multi-Tenant
+
 - Tenant
 - Company
 - Branch
@@ -132,6 +142,7 @@ Multi-Tenant
 - Designation
 
 User Management
+
 - Users
 - Employees
 - Managers
@@ -139,6 +150,7 @@ User Management
 - Customers
 
 Notifications
+
 - Email
 - Push
 - WhatsApp
@@ -146,6 +158,7 @@ Notifications
 - Templates
 
 File Management
+
 - Upload
 - Storage
 - Images
@@ -153,6 +166,7 @@ File Management
 - Digital Signature
 
 Master Data
+
 - Countries
 - States
 - Cities
@@ -161,6 +175,7 @@ Master Data
 - Lead Sources
 
 Workflow
+
 - Approval Workflow
 - Assignment Workflow
 - Notification Workflow
@@ -223,6 +238,7 @@ Workflow
 - Large documentation footprint
 
 Mitigation:
+
 - Modular delivery
 - ADR-driven decisions
 - Incremental releases
@@ -235,6 +251,7 @@ Mitigation:
 Repository documentation is being developed module-by-module.
 
 Each specification contains:
+
 - Business requirements
 - Architecture
 - Database design
@@ -250,16 +267,19 @@ Each specification contains:
 # 11. Next Milestones
 
 Phase 1
+
 - Attendance Engine
 - GPS Engine
 - Leave Engine
 
 Phase 2
+
 - Fault Ticket Management
 - CRM
 - Reports
 
 Phase 3
+
 - Analytics
 - AI Services
 - Integrations

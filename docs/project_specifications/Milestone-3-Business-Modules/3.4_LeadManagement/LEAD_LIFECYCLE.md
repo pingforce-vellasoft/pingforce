@@ -4,15 +4,17 @@
 
 ## Document Information
 
-  Item       Value
-  ---------- --------------------------------------
-  Module     Lead Management
-  Document   Lead Lifecycle Specification
-  Platform   Enterprise Workforce Management SaaS
-  Version    1.0
-  Status     Production Ready
+Item Value
 
-------------------------------------------------------------------------
+---
+
+Module Lead Management
+Document Lead Lifecycle Specification
+Platform Enterprise Workforce Management SaaS
+Version 1.0
+Status Production Ready
+
+---
 
 # 1. Purpose
 
@@ -22,19 +24,19 @@ lifecycle is configurable per tenant through the Workflow Engine while
 preserving enterprise governance, RBAC, SLA enforcement, audit history,
 and reporting.
 
-------------------------------------------------------------------------
+---
 
 # 2. Objectives
 
--   Standardize lead progression
--   Support configurable workflows
--   Track ownership and accountability
--   Improve conversion rates
--   Enable SLA monitoring
--   Capture complete customer interaction history
--   Provide analytics for every lifecycle stage
+- Standardize lead progression
+- Support configurable workflows
+- Track ownership and accountability
+- Improve conversion rates
+- Enable SLA monitoring
+- Capture complete customer interaction history
+- Provide analytics for every lifecycle stage
 
-------------------------------------------------------------------------
+---
 
 # 3. Default Lead Lifecycle
 
@@ -73,7 +75,7 @@ and reporting.
 
 Tenants may add, remove, or rename intermediate stages.
 
-------------------------------------------------------------------------
+---
 
 # 4. Stage Definitions
 
@@ -88,7 +90,7 @@ resolution - Audit log creation
 
 Outputs: - Lead ID - Initial owner (optional) - Source metadata
 
-------------------------------------------------------------------------
+---
 
 ## Stage 2 - New
 
@@ -100,7 +102,7 @@ Exit Criteria: - Assigned to owner
 
 KPIs: - Time to Assignment
 
-------------------------------------------------------------------------
+---
 
 ## Stage 3 - Assigned
 
@@ -113,7 +115,7 @@ Notifications: - Push - Email - WhatsApp - In-App
 
 KPIs: - First response time
 
-------------------------------------------------------------------------
+---
 
 ## Stage 4 - Contacted
 
@@ -123,7 +125,7 @@ Activities: - Call - Visit - Email - Meeting - WhatsApp - SMS
 
 Mandatory: - Interaction notes - Next follow-up date
 
-------------------------------------------------------------------------
+---
 
 ## Stage 5 - Qualified
 
@@ -134,7 +136,7 @@ maker identified - Timeline confirmed
 
 Actions: - Create quotation - Prepare proposal - Escalate if required
 
-------------------------------------------------------------------------
+---
 
 ## Stage 6 - Proposal Sent
 
@@ -145,7 +147,7 @@ Schedule negotiation
 
 Metrics: - Proposal acceptance rate
 
-------------------------------------------------------------------------
+---
 
 ## Stage 7 - Negotiation
 
@@ -156,7 +158,7 @@ approval - Win - Loss
 
 SLA tracking continues throughout this stage.
 
-------------------------------------------------------------------------
+---
 
 ## Stage 8A - Won
 
@@ -168,7 +170,7 @@ Notifications: - Sales Manager - Employer - Finance (optional)
 
 KPIs: - Conversion rate - Revenue
 
-------------------------------------------------------------------------
+---
 
 ## Stage 8B - Lost
 
@@ -180,7 +182,7 @@ Duplicate - Other
 
 Lost leads remain available for reporting.
 
-------------------------------------------------------------------------
+---
 
 ## Stage 9 - Archived
 
@@ -189,25 +191,25 @@ reached
 
 Archived records remain searchable according to permissions.
 
-------------------------------------------------------------------------
+---
 
 # 5. State Transition Rules
 
 Allowed transitions are configurable but typically:
 
--   New → Assigned
--   Assigned → Contacted
--   Contacted → Qualified
--   Qualified → Proposal Sent
--   Proposal Sent → Negotiation
--   Negotiation → Won
--   Negotiation → Lost
--   Won → Archived
--   Lost → Archived
+- New → Assigned
+- Assigned → Contacted
+- Contacted → Qualified
+- Qualified → Proposal Sent
+- Proposal Sent → Negotiation
+- Negotiation → Won
+- Negotiation → Lost
+- Won → Archived
+- Lost → Archived
 
 Backward transitions require tenant-configured permissions.
 
-------------------------------------------------------------------------
+---
 
 # 6. SLA Rules
 
@@ -217,7 +219,7 @@ breach
 
 Breaches trigger: - Notifications - Dashboards - Audit entries
 
-------------------------------------------------------------------------
+---
 
 # 7. Ownership Lifecycle
 
@@ -225,7 +227,7 @@ Owner states: - Unassigned - Assigned - Reassigned - Closed
 
 Ownership history is immutable and fully audited.
 
-------------------------------------------------------------------------
+---
 
 # 8. Activity Lifecycle
 
@@ -234,7 +236,7 @@ WhatsApp - SMS - Notes - Attachments - Quotations
 
 Activities are timestamped and never silently deleted.
 
-------------------------------------------------------------------------
+---
 
 # 9. Automation
 
@@ -242,7 +244,7 @@ Automatic capabilities: - Assignment rules - Reminder scheduling -
 Escalations - SLA monitoring - Notification dispatch - Duplicate
 detection - Pipeline validation
 
-------------------------------------------------------------------------
+---
 
 # 10. Mobile Lifecycle
 
@@ -252,14 +254,14 @@ Photo upload - GPS capture - Follow-up scheduling
 Sync Engine: - Retry queue - Conflict resolution - Background
 synchronization
 
-------------------------------------------------------------------------
+---
 
 # 11. Security
 
 Lifecycle operations enforce: - Authentication - RBAC - Row-level
 security - Tenant isolation - Audit logging - Secure attachments
 
-------------------------------------------------------------------------
+---
 
 # 12. Reporting
 
@@ -269,26 +271,26 @@ Compliance - Pipeline Velocity
 
 Exports: - Excel - CSV - PDF
 
-------------------------------------------------------------------------
+---
 
 # 13. Future Enhancements
 
--   AI Lead Scoring
--   Predictive Conversion
--   Next Best Action
--   AI Follow-up Recommendations
--   Geo-intelligent Assignment
--   Marketing Automation
--   Customer 360 Timeline
+- AI Lead Scoring
+- Predictive Conversion
+- Next Best Action
+- AI Follow-up Recommendations
+- Geo-intelligent Assignment
+- Marketing Automation
+- Customer 360 Timeline
 
-------------------------------------------------------------------------
+---
 
 # 14. Acceptance Criteria
 
--   Configurable lifecycle
--   Complete audit trail
--   RBAC enforced
--   Tenant isolation maintained
--   Offline synchronization supported
--   SLA monitoring operational
--   Reporting available across all lifecycle stages
+- Configurable lifecycle
+- Complete audit trail
+- RBAC enforced
+- Tenant isolation maintained
+- Offline synchronization supported
+- SLA monitoring operational
+- Reporting available across all lifecycle stages

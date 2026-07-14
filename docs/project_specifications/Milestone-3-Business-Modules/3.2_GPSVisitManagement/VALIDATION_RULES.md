@@ -232,6 +232,7 @@ Defines all business, technical, security and workflow validation rules used thr
 # 21. Audit Requirements
 
 Log every:
+
 - Validation failure
 - Approval rejection
 - GPS failure

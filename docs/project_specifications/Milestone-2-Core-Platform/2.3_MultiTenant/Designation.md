@@ -1,7 +1,9 @@
 # Designation.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Multi-Tenant Module
+
 ### Designation Domain Specification
 
 **Module:** Core Platform → Multi-Tenant  
@@ -92,12 +94,14 @@ Designation codes are immutable.
 Examples:
 
 Executive Leadership
+
 - CEO
 - COO
 - CTO
 - CFO
 
 Management
+
 - General Manager
 - Regional Manager
 - Branch Manager
@@ -105,6 +109,7 @@ Management
 - Team Lead
 
 Technical
+
 - Senior Software Engineer
 - Network Engineer
 - Fiber Engineer
@@ -112,21 +117,25 @@ Technical
 - QA Engineer
 
 Field Operations
+
 - Field Executive
 - Installation Technician
 - Service Engineer
 - Maintenance Engineer
 
 Sales
+
 - Sales Executive
 - Area Sales Manager
 - Business Development Executive
 
 Support
+
 - Customer Support Executive
 - Helpdesk Analyst
 
 Administration
+
 - HR Executive
 - Accountant
 - Office Administrator
@@ -173,9 +182,11 @@ Designation does NOT determine permissions.
 Example:
 
 Designation:
+
 - Network Engineer
 
 Possible Roles:
+
 - Employee
 - Field Staff
 - Fault Technician
@@ -183,9 +194,11 @@ Possible Roles:
 Another example:
 
 Designation:
+
 - Branch Manager
 
 Possible Roles:
+
 - Manager
 - Approver
 - Report Viewer
@@ -269,19 +282,19 @@ Indexes:
 
 # 13. REST APIs
 
-GET    /api/v1/designations
+GET /api/v1/designations
 
-GET    /api/v1/designations/{id}
+GET /api/v1/designations/{id}
 
-POST   /api/v1/designations
+POST /api/v1/designations
 
-PUT    /api/v1/designations/{id}
+PUT /api/v1/designations/{id}
 
-PATCH  /api/v1/designations/{id}/status
+PATCH /api/v1/designations/{id}/status
 
-POST   /api/v1/employees/{id}/designation
+POST /api/v1/employees/{id}/designation
 
-GET    /api/v1/designations/hierarchy
+GET /api/v1/designations/hierarchy
 
 ---
 

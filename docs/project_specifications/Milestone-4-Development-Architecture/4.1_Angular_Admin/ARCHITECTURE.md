@@ -22,17 +22,17 @@ This document defines the implementation architecture for the Angular Admin Port
 
 # Technology Stack
 
-| Area | Technology |
-|------|------------|
-| Framework | Angular 21+ |
-| Language | TypeScript |
-| UI | Angular Material |
-| Styling | SCSS |
-| State | Angular Signals / Signal Store |
-| Authentication | JWT + Refresh Token |
-| API | REST |
-| Charts | ApexCharts |
-| Build | Angular CLI |
+| Area           | Technology                     |
+| -------------- | ------------------------------ |
+| Framework      | Angular 21+                    |
+| Language       | TypeScript                     |
+| UI             | Angular Material               |
+| Styling        | SCSS                           |
+| State          | Angular Signals / Signal Store |
+| Authentication | JWT + Refresh Token            |
+| API            | REST                           |
+| Charts         | ApexCharts                     |
+| Build          | Angular CLI                    |
 
 ---
 

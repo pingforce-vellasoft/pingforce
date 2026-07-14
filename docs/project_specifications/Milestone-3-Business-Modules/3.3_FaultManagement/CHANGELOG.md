@@ -1,4 +1,3 @@
-
 # CHANGELOG.md
 
 # Fault Management Module – Change Log
@@ -45,11 +44,13 @@ Example:
 ## Version 1.0.0 (Initial Enterprise Design)
 
 Release Type:
+
 - Initial Production Blueprint
 
 Highlights:
 
 ### Core Foundation
+
 - Enterprise multi-tenant architecture
 - White-label support
 - API-first design
@@ -58,6 +59,7 @@ Highlights:
 - Audit framework integration
 
 ### Business Documentation
+
 Completed specifications:
 
 - README
@@ -130,17 +132,21 @@ Integrated with:
 ### Technology Stack
 
 Frontend
+
 - Angular (Admin Portal)
 - Flutter (Mobile)
 
 Backend
+
 - NestJS
 - REST APIs
 
 Database
+
 - PostgreSQL
 
 Infrastructure
+
 - Redis
 - Object Storage
 - FCM

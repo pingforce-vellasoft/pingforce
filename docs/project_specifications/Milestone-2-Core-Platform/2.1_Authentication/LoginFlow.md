@@ -1,6 +1,7 @@
 # LoginFlow.md
 
 # Enterprise Workforce Platform
+
 ## Authentication Module – Login Flow Specification
 
 **Module:** Core Platform → Authentication  
@@ -297,15 +298,15 @@ Passwords or permission internals are never returned.
 
 # 7. Login Failure Scenarios
 
-| Error | Description |
-|-------|-------------|
+| Error    | Description         |
+| -------- | ------------------- |
 | AUTH-001 | Invalid credentials |
-| AUTH-002 | Account locked |
-| AUTH-003 | Account disabled |
-| AUTH-004 | Password expired |
-| AUTH-005 | Tenant unavailable |
-| AUTH-006 | Invalid token |
-| AUTH-008 | Too many attempts |
+| AUTH-002 | Account locked      |
+| AUTH-003 | Account disabled    |
+| AUTH-004 | Password expired    |
+| AUTH-005 | Tenant unavailable  |
+| AUTH-006 | Invalid token       |
+| AUTH-008 | Too many attempts   |
 
 Responses must not disclose whether the username exists.
 

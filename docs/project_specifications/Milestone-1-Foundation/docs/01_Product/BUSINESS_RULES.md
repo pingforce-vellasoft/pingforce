@@ -1,6 +1,7 @@
 # BUSINESS_RULES.md
 
 # Enterprise Workforce Platform
+
 ## Business Rules Specification
 
 **Document Version:** 1.0.0  
@@ -38,6 +39,7 @@ Higher-level rules always take precedence over lower-level rules.
 Every business transaction shall belong to exactly one tenant.
 
 Requirements:
+
 - Every business record contains `tenant_id`.
 - Cross-tenant data access is prohibited.
 - Reports are tenant-scoped.
@@ -68,6 +70,7 @@ Changes affect only the owning tenant.
 Modules can be enabled or disabled per tenant.
 
 Disabled modules:
+
 - cannot appear in navigation
 - cannot expose APIs
 - cannot generate notifications
@@ -88,6 +91,7 @@ Supported mechanisms:
 - Refresh Token
 
 Future:
+
 - SSO
 - MFA
 
@@ -111,12 +115,10 @@ Every request requires permission evaluation.
 Permission =
 
 Role
-+
-Tenant
-+
-Module
-+
-Action
+
+- Tenant
+- Module
+- Action
 
 Actions:
 

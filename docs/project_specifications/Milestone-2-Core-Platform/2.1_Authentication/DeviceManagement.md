@@ -1,7 +1,9 @@
 # DeviceManagement.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Authentication Module
+
 ### Device Management Specification
 
 **Document Version:** 1.0.0  
@@ -233,17 +235,17 @@ Future enhancements:
 
 # 13. Device Management APIs
 
-GET    /api/v1/auth/devices
+GET /api/v1/auth/devices
 
-GET    /api/v1/auth/devices/{id}
+GET /api/v1/auth/devices/{id}
 
 DELETE /api/v1/auth/devices/{id}
 
-POST   /api/v1/auth/devices/{id}/trust
+POST /api/v1/auth/devices/{id}/trust
 
-POST   /api/v1/auth/devices/{id}/revoke
+POST /api/v1/auth/devices/{id}/revoke
 
-POST   /api/v1/auth/devices/revoke-all
+POST /api/v1/auth/devices/revoke-all
 
 ---
 

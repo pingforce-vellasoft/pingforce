@@ -1,4 +1,3 @@
-
 # API.md
 
 # Fault Management Module – REST API Specification

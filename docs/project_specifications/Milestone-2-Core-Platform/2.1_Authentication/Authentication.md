@@ -1,6 +1,7 @@
 # Authentication.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Authentication Module Specification
 
 **Module:** 2.1 Authentication

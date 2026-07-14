@@ -1,4 +1,3 @@
-
 # RESPONSIVE_DESIGN.md
 
 # Stitch Responsive Design Standards
@@ -33,22 +32,26 @@ The objective is to provide a consistent user experience regardless of screen si
 # 3. Supported Devices
 
 ## Mobile
+
 - Android phones
 - iOS phones
 - Entry-level devices
 - Rugged field devices
 
 ## Tablet
+
 - Android tablets
 - iPad
 - Landscape and portrait
 
 ## Desktop
+
 - Laptop
 - Desktop
 - Ultra-wide displays
 
 ## Emerging
+
 - Foldables
 - Kiosk displays
 - External monitors
@@ -87,16 +90,19 @@ Breakpoints should be configurable and shared through design tokens.
 # 6. Navigation
 
 ### Mobile
+
 - Bottom navigation
 - Navigation drawer
 - Floating action button
 - Swipe gestures
 
 ### Tablet
+
 - Collapsible side navigation
 - Context actions
 
 ### Desktop
+
 - Persistent sidebar
 - Breadcrumbs
 - Global search
@@ -133,11 +139,13 @@ Components must adapt automatically:
 # 9. Forms
 
 Mobile:
+
 - Single-column
 - Large touch targets
 - Sticky primary action
 
 Desktop:
+
 - Multi-column
 - Context panels
 - Inline help
@@ -147,15 +155,18 @@ Desktop:
 # 10. Tables
 
 Desktop:
+
 - Full data grid
 - Sticky headers
 - Column controls
 
 Tablet:
+
 - Reduced columns
 - Expandable rows
 
 Mobile:
+
 - Card transformation
 - Horizontal scrolling only when necessary
 
@@ -255,6 +266,7 @@ Validate across:
 - Large monitors
 
 Include:
+
 - Orientation changes
 - Network throttling
 - Low-memory devices

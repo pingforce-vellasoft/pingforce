@@ -1,7 +1,9 @@
 # Countries.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Master Data Module
+
 ### Countries Master Data Specification
 
 **Module:** Core Platform → Master Data  
@@ -158,17 +160,17 @@ Indexes:
 
 # 11. REST APIs
 
-GET    /api/v1/master/countries
+GET /api/v1/master/countries
 
-GET    /api/v1/master/countries/{id}
+GET /api/v1/master/countries/{id}
 
-POST   /api/v1/master/countries
+POST /api/v1/master/countries
 
-PUT    /api/v1/master/countries/{id}
+PUT /api/v1/master/countries/{id}
 
 DELETE /api/v1/master/countries/{id}
 
-GET    /api/v1/master/countries/search
+GET /api/v1/master/countries/search
 
 ---
 

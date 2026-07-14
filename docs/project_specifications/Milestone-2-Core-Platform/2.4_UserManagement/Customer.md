@@ -1,7 +1,9 @@
 # Customer.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – User Management Module
+
 ### Customer Domain Specification
 
 **Module:** Core Platform → User Management  
@@ -42,13 +44,13 @@ Platform
 → Tenant
 → Company
 → Customer
-    ├── Customer Contacts
-    ├── Customer Locations
-    ├── Customer Users
-    ├── Fault Tickets
-    ├── Leads
-    ├── Assets
-    └── Contracts (future)
+├── Customer Contacts
+├── Customer Locations
+├── Customer Users
+├── Fault Tickets
+├── Leads
+├── Assets
+└── Contracts (future)
 
 ---
 
@@ -232,21 +234,21 @@ Indexes:
 
 # 13. REST APIs
 
-GET    /api/v1/customers
+GET /api/v1/customers
 
-GET    /api/v1/customers/{id}
+GET /api/v1/customers/{id}
 
-POST   /api/v1/customers
+POST /api/v1/customers
 
-PUT    /api/v1/customers/{id}
+PUT /api/v1/customers/{id}
 
-PATCH  /api/v1/customers/{id}/status
+PATCH /api/v1/customers/{id}/status
 
-GET    /api/v1/customers/{id}/contacts
+GET /api/v1/customers/{id}/contacts
 
-GET    /api/v1/customers/{id}/locations
+GET /api/v1/customers/{id}/locations
 
-GET    /api/v1/customers/{id}/tickets
+GET /api/v1/customers/{id}/tickets
 
 ---
 

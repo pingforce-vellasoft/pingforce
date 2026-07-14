@@ -1,4 +1,3 @@
-
 # CHANGELOG.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -25,6 +24,7 @@ MAJOR.MINOR.PATCH
 ---
 
 # Version 1.0.0
+
 **Status:** Enterprise Architecture Baseline
 
 ## Overview
@@ -185,12 +185,15 @@ Updates shall be recorded whenever:
 # Release Classification
 
 ## Major Releases
+
 Architecture redesigns, breaking changes, platform capabilities.
 
 ## Minor Releases
+
 New modules, backward-compatible enhancements.
 
 ## Patch Releases
+
 Documentation corrections, bug fixes, non-breaking improvements.
 
 ---

@@ -62,18 +62,21 @@ Employee Login
 # 5. Functional Requirements
 
 ## Live Tracking
+
 - Display current employee location
 - Show movement on map
 - Display travel status
 - Display GPS accuracy
 
 ## Route Tracking
+
 - Planned route
 - Actual route
 - Route deviation detection
 - Route playback
 
 ## Visit Tracking
+
 - Travel start
 - Arrival
 - Visit start
@@ -81,6 +84,7 @@ Employee Login
 - Departure
 
 ## Location Capture
+
 - Latitude
 - Longitude
 - Altitude (optional)
@@ -179,6 +183,7 @@ Displays
 - GPS Accuracy Report
 
 Export:
+
 - Excel
 - CSV
 - PDF
@@ -199,12 +204,12 @@ Export:
 
 # 14. APIs
 
-GET    /gps/live
-POST   /gps/location
-GET    /gps/history
-GET    /gps/routes
-GET    /gps/playback
-GET    /gps/events
+GET /gps/live
+POST /gps/location
+GET /gps/history
+GET /gps/routes
+GET /gps/playback
+GET /gps/events
 
 ---
 

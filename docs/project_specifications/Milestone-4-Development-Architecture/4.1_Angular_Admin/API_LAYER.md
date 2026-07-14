@@ -72,15 +72,18 @@ services/
 # Service Responsibilities
 
 ## API Service
+
 - Base HTTP methods
 - Request configuration
 - Common headers
 - Query parameters
 
 ## Feature Services
+
 Each module exposes only its business operations.
 
 Examples:
+
 - User Service
 - Attendance Service
 - GPS Service
@@ -93,13 +96,13 @@ Examples:
 
 # HTTP Methods
 
-| Method | Purpose |
-|---------|---------|
-| GET | Read data |
-| POST | Create records |
-| PUT | Update records |
-| PATCH | Partial updates |
-| DELETE | Remove records |
+| Method | Purpose         |
+| ------ | --------------- |
+| GET    | Read data       |
+| POST   | Create records  |
+| PUT    | Update records  |
+| PATCH  | Partial updates |
+| DELETE | Remove records  |
 
 ---
 

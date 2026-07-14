@@ -4,15 +4,17 @@
 
 ## Document Information
 
-  Field       Value
-  ----------- ---------------------------------------------------
-  Module      Reports & Analytics
-  Component   RBAC
-  Platform    Enterprise Multi-Tenant Workforce Management SaaS
-  Version     2.0
-  Status      Production Ready
+Field Value
 
-------------------------------------------------------------------------
+---
+
+Module Reports & Analytics
+Component RBAC
+Platform Enterprise Multi-Tenant Workforce Management SaaS
+Version 2.0
+Status Production Ready
+
+---
 
 # 1. Purpose
 
@@ -22,7 +24,7 @@ KPIs, exports, scheduled reports, widgets, templates, analytics, APIs,
 and administrative functions while enforcing tenant isolation, row-level
 security (RLS), feature licensing, and audit logging.
 
-------------------------------------------------------------------------
+---
 
 # 2. RBAC Architecture
 
@@ -41,79 +43,79 @@ Authorization is evaluated in the following order:
 11. Field-Level Security
 12. Audit Logging
 
-------------------------------------------------------------------------
+---
 
 # 3. Standard Roles
 
 ## Super Admin
 
--   Cross-tenant visibility
--   Platform-wide administration
--   Global dashboards
--   KPI management
--   Global templates
--   API administration
+- Cross-tenant visibility
+- Platform-wide administration
+- Global dashboards
+- KPI management
+- Global templates
+- API administration
 
 ## Employer Admin
 
--   Tenant-wide reporting
--   Dashboard administration
--   Export administration
--   Scheduled reports
--   Template management
+- Tenant-wide reporting
+- Dashboard administration
+- Export administration
+- Scheduled reports
+- Template management
 
 ## Reporting Administrator
 
--   Create/edit reports
--   Manage dashboards
--   Configure widgets
--   Manage KPIs
--   Publish templates
+- Create/edit reports
+- Manage dashboards
+- Configure widgets
+- Manage KPIs
+- Publish templates
 
 ## Manager
 
--   Team dashboards
--   Team analytics
--   Scheduled reports
--   Export team data
+- Team dashboards
+- Team analytics
+- Scheduled reports
+- Export team data
 
 ## Supervisor
 
--   Operational reports
--   Team KPIs
--   Drill-down reports
+- Operational reports
+- Team KPIs
+- Drill-down reports
 
 ## Employee
 
--   Personal dashboard
--   Personal reports
--   Personal KPIs
--   Personal exports
+- Personal dashboard
+- Personal reports
+- Personal KPIs
+- Personal exports
 
 ## Auditor / Compliance
 
--   Read-only reports
--   Audit logs
--   Compliance dashboards
--   Export audit evidence
+- Read-only reports
+- Audit logs
+- Compliance dashboards
+- Export audit evidence
 
-------------------------------------------------------------------------
+---
 
 # 4. Permission Groups
 
--   Dashboard Management
--   Report Management
--   Widget Management
--   KPI Management
--   Template Management
--   Export Management
--   Scheduled Report Management
--   Analytics Administration
--   Dataset Administration
--   API Access
--   Audit Access
+- Dashboard Management
+- Report Management
+- Widget Management
+- KPI Management
+- Template Management
+- Export Management
+- Scheduled Report Management
+- Analytics Administration
+- Dataset Administration
+- API Access
+- Audit Access
 
-------------------------------------------------------------------------
+---
 
 # 5. Permission Matrix
 
@@ -134,143 +136,143 @@ Templates - View - Create - Clone - Publish - Archive - Delete
 
 APIs - Read - Execute - Admin
 
-------------------------------------------------------------------------
+---
 
 # 6. Data Scope
 
 Every permission is constrained by one of:
 
--   Self
--   Team
--   Department
--   Branch
--   Region
--   Company
--   Tenant
--   Global
+- Self
+- Team
+- Department
+- Branch
+- Region
+- Company
+- Tenant
+- Global
 
-------------------------------------------------------------------------
+---
 
 # 7. Field-Level Security
 
 Sensitive fields may be masked:
 
--   Salary
--   Personal Email
--   Mobile Number
--   GPS Coordinates
--   Customer PII
--   API Keys
--   Security Events
+- Salary
+- Personal Email
+- Mobile Number
+- GPS Coordinates
+- Customer PII
+- API Keys
+- Security Events
 
 Masking rules are configurable per tenant.
 
-------------------------------------------------------------------------
+---
 
 # 8. Row-Level Security
 
 Rows are filtered by:
 
--   Tenant
--   Company
--   Region
--   Branch
--   Department
--   Team
--   Reporting Hierarchy
--   Ownership
--   Assigned User
+- Tenant
+- Company
+- Region
+- Branch
+- Department
+- Team
+- Reporting Hierarchy
+- Ownership
+- Assigned User
 
-------------------------------------------------------------------------
+---
 
 # 9. API Authorization
 
 Every API validates:
 
--   JWT
--   Tenant
--   Module License
--   Feature Flag
--   Role
--   Permission
--   Data Scope
+- JWT
+- Tenant
+- Module License
+- Feature Flag
+- Role
+- Permission
+- Data Scope
 
-------------------------------------------------------------------------
+---
 
 # 10. Report Sharing
 
 Supports:
 
--   User sharing
--   Role sharing
--   Department sharing
--   Tenant-wide sharing
--   Expiring access
--   Read-only links
+- User sharing
+- Role sharing
+- Department sharing
+- Tenant-wide sharing
+- Expiring access
+- Read-only links
 
-------------------------------------------------------------------------
+---
 
 # 11. Audit
 
 All privileged actions capture:
 
--   User
--   Role
--   Permission
--   Tenant
--   Resource
--   Timestamp
--   Device
--   IP Address
--   Before/After Values
+- User
+- Role
+- Permission
+- Tenant
+- Resource
+- Timestamp
+- Device
+- IP Address
+- Before/After Values
 
-------------------------------------------------------------------------
+---
 
 # 12. Security Controls
 
--   Least privilege
--   Deny by default
--   Session validation
--   MFA compatibility
--   Secure exports
--   Download expiry
--   Immutable audit trail
+- Least privilege
+- Deny by default
+- Session validation
+- MFA compatibility
+- Secure exports
+- Download expiry
+- Immutable audit trail
 
-------------------------------------------------------------------------
+---
 
 # 13. Performance
 
--   Permission caching
--   Redis authorization cache
--   Token claims optimization
--   Background permission refresh
+- Permission caching
+- Redis authorization cache
+- Token claims optimization
+- Background permission refresh
 
-------------------------------------------------------------------------
+---
 
 # 14. Integration Points
 
--   Authentication Service
--   Core RBAC Engine
--   Module Engine
--   Feature Flag Engine
--   Reporting Engine
--   Dashboard Engine
--   Export Framework
--   Notification Engine
--   Audit Engine
+- Authentication Service
+- Core RBAC Engine
+- Module Engine
+- Feature Flag Engine
+- Reporting Engine
+- Dashboard Engine
+- Export Framework
+- Notification Engine
+- Audit Engine
 
-------------------------------------------------------------------------
+---
 
 # 15. Future Roadmap
 
--   Attribute-Based Access Control (ABAC)
--   Policy engine integration
--   Context-aware permissions
--   Risk-based authorization
--   AI permission recommendations
--   Fine-grained field policies
+- Attribute-Based Access Control (ABAC)
+- Policy engine integration
+- Context-aware permissions
+- Risk-based authorization
+- AI permission recommendations
+- Fine-grained field policies
 
-------------------------------------------------------------------------
+---
 
 ## Technology Stack
 
@@ -280,7 +282,7 @@ Backend - NestJS - Prisma ORM
 
 Infrastructure - PostgreSQL - Redis
 
-------------------------------------------------------------------------
+---
 
 ## Status
 

@@ -29,13 +29,13 @@ The Attendance Admin Portal provides a centralized web interface for configuring
 
 # 3. Supported Roles
 
-| Role | Primary Responsibilities |
-|------|---------------------------|
-| Super Admin | Global platform configuration, tenant oversight |
-| Employer / Client Admin | Tenant attendance configuration |
-| HR Administrator | Attendance operations, shifts, approvals |
-| Manager | Team attendance monitoring and approvals |
-| Auditor | Read-only audit and compliance review |
+| Role                    | Primary Responsibilities                        |
+| ----------------------- | ----------------------------------------------- |
+| Super Admin             | Global platform configuration, tenant oversight |
+| Employer / Client Admin | Tenant attendance configuration                 |
+| HR Administrator        | Attendance operations, shifts, approvals        |
+| Manager                 | Team attendance monitoring and approvals        |
+| Auditor                 | Read-only audit and compliance review           |
 
 ---
 
@@ -290,24 +290,29 @@ Templates
 # 18. RBAC Matrix
 
 Employee
+
 - No admin access
 
 Manager
+
 - Team attendance
 - Team reports
 - Team approvals
 
 HR
+
 - Attendance administration
 - Shift management
 - Reports
 
 Employer
+
 - Tenant configuration
 - Policies
 - Analytics
 
 Super Admin
+
 - Multi-tenant administration
 - Feature flags
 - Module enable/disable

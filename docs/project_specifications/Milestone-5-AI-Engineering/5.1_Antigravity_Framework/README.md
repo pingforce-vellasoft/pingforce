@@ -273,17 +273,20 @@ AI_Engineering/
 # 13. Roadmap
 
 ## Phase 1
+
 - AI infrastructure
 - Prompt registry
 - Agent registry
 - Tool execution
 
 ## Phase 2
+
 - Multi-agent orchestration
 - Enterprise RAG
 - Memory layer
 
 ## Phase 3
+
 - Autonomous workflow execution
 - Predictive analytics
 - Executive copilots

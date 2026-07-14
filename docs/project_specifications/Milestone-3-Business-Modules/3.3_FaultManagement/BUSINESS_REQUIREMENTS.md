@@ -1,4 +1,3 @@
-
 # BUSINESS_REQUIREMENTS.md
 
 # Fault Management Module - Business Requirements Specification (BRS)

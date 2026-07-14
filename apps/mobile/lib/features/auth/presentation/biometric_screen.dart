@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:local_auth/local_auth.dart';
 
 import '../../../core/theme/theme.dart';
-import 'auth_state.dart';
-import 'auth_notifier.dart';
-import 'widgets/auth_widgets.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BIOMETRIC UNLOCK SCREEN  (AUDIT §3.3 — Biometric Unlock)
@@ -94,13 +92,36 @@ class _BiometricScreenState extends ConsumerState<BiometricScreen>
       _failureMessage = null;
     });
 
-    await Future<void>.delayed(const Duration(milliseconds: 1000));
+    try {
+      final localAuth = LocalAuthentication();
+      final canCheck =
+          await localAuth.canCheckBiometrics ||
+          await localAuth.isDeviceSupported();
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    // TODO: local_auth.authenticate(localizedReason: 'Sign in to PingForce')
-    // Simulated: always fails for demonstration purposes
-    _onBiometricFailure('Fingerprint not recognized. Try again.');
+      if (!canCheck) {
+        _onBiometricFailure(
+          'Biometrics unavailable on this device. Use your password.',
+        );
+        return;
+      }
+
+      final didAuthenticate = await localAuth.authenticate(
+        localizedReason: 'Sign in to PingForce',
+      );
+
+      if (!mounted) return;
+
+      if (didAuthenticate) {
+        _onBiometricSuccess();
+      } else {
+        _onBiometricFailure('Fingerprint not recognized. Try again.');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _onBiometricFailure('Biometric authentication failed. Try again.');
+    }
   }
 
   void _onBiometricFailure(String message) {

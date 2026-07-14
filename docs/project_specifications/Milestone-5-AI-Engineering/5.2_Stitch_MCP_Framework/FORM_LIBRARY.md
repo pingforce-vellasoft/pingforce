@@ -1,4 +1,3 @@
-
 # FORM_LIBRARY.md
 
 # Stitch Form Library
@@ -45,6 +44,7 @@ It serves as the single reference for Angular Admin Portal, Flutter Mobile App, 
 # 4. Form Categories
 
 ## Authentication
+
 - Login
 - Forgot Password
 - Reset Password
@@ -52,6 +52,7 @@ It serves as the single reference for Angular Admin Portal, Flutter Mobile App, 
 - Change Password
 
 ## User Management
+
 - User Registration
 - Employee Profile
 - Manager Profile
@@ -59,6 +60,7 @@ It serves as the single reference for Angular Admin Portal, Flutter Mobile App, 
 - Role Assignment
 
 ## Attendance
+
 - Check-In
 - Check-Out
 - Manual Attendance
@@ -66,12 +68,14 @@ It serves as the single reference for Angular Admin Portal, Flutter Mobile App, 
 - Shift Assignment
 
 ## Lead Management
+
 - Lead Capture
 - Lead Qualification
 - Follow-up
 - Conversion
 
 ## Fault Management
+
 - Create Ticket
 - Assign Ticket
 - Status Update
@@ -79,6 +83,7 @@ It serves as the single reference for Angular Admin Portal, Flutter Mobile App, 
 - Customer Feedback
 
 ## Administration
+
 - Tenant Configuration
 - White-label Branding
 - Module Settings
@@ -120,6 +125,7 @@ It serves as the single reference for Angular Admin Portal, Flutter Mobile App, 
 # 6. Validation Standards
 
 Client-side:
+
 - Required
 - Length
 - Pattern
@@ -127,6 +133,7 @@ Client-side:
 - Format
 
 Server-side:
+
 - Business rules
 - Duplicate detection
 - Permission validation
@@ -138,11 +145,13 @@ Server-side:
 # 7. Layout Standards
 
 Mobile
+
 - Single column
 - Large touch targets
 - Sticky primary action
 
 Desktop
+
 - One or two columns
 - Logical grouping
 - Section headers
@@ -185,6 +194,7 @@ Desktop
 # 11. White-Label Support
 
 Configurable:
+
 - Theme
 - Logo
 - Typography
@@ -197,6 +207,7 @@ Configurable:
 # 12. AI Generation Guidelines
 
 AI-generated forms must:
+
 - Use approved components
 - Follow design tokens
 - Apply validation automatically
@@ -209,6 +220,7 @@ AI-generated forms must:
 # 13. Quality Checklist
 
 Before release:
+
 - Validation complete
 - Responsive verified
 - Accessibility tested
@@ -222,6 +234,7 @@ Before release:
 # 14. Governance
 
 All form changes require:
+
 - UX review
 - Engineering approval
 - Accessibility validation

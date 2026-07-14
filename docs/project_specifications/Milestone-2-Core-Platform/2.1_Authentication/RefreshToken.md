@@ -1,6 +1,7 @@
 # RefreshToken.md
 
 # Enterprise Workforce Platform
+
 ## Authentication Module – Refresh Token Strategy Specification
 
 **Module:** Core Platform → Authentication  

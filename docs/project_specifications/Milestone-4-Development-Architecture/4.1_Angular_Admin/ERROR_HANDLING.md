@@ -81,17 +81,17 @@ Examples:
 
 Common HTTP responses:
 
-| Code | Description |
-|------|-------------|
-| 400 | Bad Request |
-| 401 | Unauthorized |
-| 403 | Forbidden |
-| 404 | Resource Not Found |
-| 409 | Conflict |
-| 422 | Validation Failed |
-| 429 | Too Many Requests |
-| 500 | Internal Server Error |
-| 503 | Service Unavailable |
+| Code | Description           |
+| ---- | --------------------- |
+| 400  | Bad Request           |
+| 401  | Unauthorized          |
+| 403  | Forbidden             |
+| 404  | Resource Not Found    |
+| 409  | Conflict              |
+| 422  | Validation Failed     |
+| 429  | Too Many Requests     |
+| 500  | Internal Server Error |
+| 503  | Service Unavailable   |
 
 ---
 

@@ -1,7 +1,9 @@
 # Email.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Notifications Module
+
 ### Email Notification & Communication Specification
 
 **Module:** Core Platform → Notifications
@@ -277,21 +279,21 @@ Indexes:
 
 # 16. REST APIs
 
-GET    /api/v1/email/templates
+GET /api/v1/email/templates
 
-POST   /api/v1/email/templates
+POST /api/v1/email/templates
 
-PUT    /api/v1/email/templates/{id}
+PUT /api/v1/email/templates/{id}
 
-POST   /api/v1/email/send
+POST /api/v1/email/send
 
-POST   /api/v1/email/test
+POST /api/v1/email/test
 
-GET    /api/v1/email/history
+GET /api/v1/email/history
 
-PUT    /api/v1/email/preferences
+PUT /api/v1/email/preferences
 
-POST   /api/v1/email/provider/test
+POST /api/v1/email/provider/test
 
 ---
 

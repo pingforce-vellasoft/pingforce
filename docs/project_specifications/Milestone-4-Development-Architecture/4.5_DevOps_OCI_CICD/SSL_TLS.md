@@ -71,16 +71,16 @@ PostgreSQL • Redis • Object Storage
 
 The platform shall enforce encrypted communication for:
 
-| Communication | Requirement |
-|--------------|-------------|
-| Browser → Admin Portal | HTTPS |
-| Mobile App → API | HTTPS |
-| API → Internal Services | TLS where applicable |
-| API → Database | Encrypted connection |
-| API → Redis | TLS when supported |
-| Services → Object Storage | HTTPS |
-| External APIs | HTTPS only |
-| CI/CD → Cluster | Secure authenticated channel |
+| Communication             | Requirement                  |
+| ------------------------- | ---------------------------- |
+| Browser → Admin Portal    | HTTPS                        |
+| Mobile App → API          | HTTPS                        |
+| API → Internal Services   | TLS where applicable         |
+| API → Database            | Encrypted connection         |
+| API → Redis               | TLS when supported           |
+| Services → Object Storage | HTTPS                        |
+| External APIs             | HTTPS only                   |
+| CI/CD → Cluster           | Secure authenticated channel |
 
 ---
 

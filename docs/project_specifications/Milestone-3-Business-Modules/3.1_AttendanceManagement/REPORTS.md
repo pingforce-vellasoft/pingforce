@@ -46,6 +46,7 @@ RBAC determines report visibility and data scope.
 # 4. Report Categories
 
 ## Operational
+
 - Daily Attendance
 - Live Attendance
 - Check-In/Check-Out
@@ -53,6 +54,7 @@ RBAC determines report visibility and data scope.
 - Shift Attendance
 
 ## Employee
+
 - Attendance History
 - Attendance Calendar
 - Monthly Summary
@@ -60,6 +62,7 @@ RBAC determines report visibility and data scope.
 - Correction History
 
 ## Team & Department
+
 - Team Attendance
 - Department Attendance
 - Branch Attendance
@@ -67,6 +70,7 @@ RBAC determines report visibility and data scope.
 - Productivity Summary
 
 ## GPS & Field Workforce
+
 - GPS Compliance
 - Geofence Violations
 - Route History
@@ -75,6 +79,7 @@ RBAC determines report visibility and data scope.
 - Device Compliance
 
 ## Compliance
+
 - Late Arrivals
 - Early Check-Outs
 - Missed Check-Outs
@@ -84,6 +89,7 @@ RBAC determines report visibility and data scope.
 - Audit Summary
 
 ## Executive
+
 - Attendance KPI Dashboard
 - Workforce Availability
 - Attendance Trends
@@ -96,10 +102,12 @@ RBAC determines report visibility and data scope.
 # 5. Report Definitions
 
 ## Daily Attendance
+
 Purpose:
 Daily attendance by employee, team, branch or tenant.
 
 Columns:
+
 - Employee
 - Employee Code
 - Department
@@ -111,9 +119,11 @@ Columns:
 - GPS Status
 
 ## Monthly Attendance
+
 Summarizes attendance for an entire month.
 
 Metrics:
+
 - Present Days
 - Leave Days
 - Holidays
@@ -123,21 +133,27 @@ Metrics:
 - Attendance %
 
 ## Overtime Report
+
 Includes:
+
 - Approved OT
 - Pending OT
 - OT Cost
 - OT Hours
 
 ## GPS Compliance
+
 Includes:
+
 - GPS Accuracy
 - Geofence Status
 - Mock Location
 - Validation Result
 
 ## Attendance Corrections
+
 Includes:
+
 - Requested By
 - Request Date
 - Reason
@@ -169,6 +185,7 @@ Includes:
 # 7. Grouping
 
 Reports support grouping by:
+
 - Tenant
 - Company
 - Branch
@@ -199,6 +216,7 @@ Reports support grouping by:
 - PDF
 
 Optional:
+
 - JSON
 - API Response
 - Scheduled Email Attachment
@@ -208,6 +226,7 @@ Optional:
 # 10. Scheduled Reports
 
 Frequency:
+
 - Daily
 - Weekly
 - Monthly
@@ -216,6 +235,7 @@ Frequency:
 - Custom Cron
 
 Delivery:
+
 - Email
 - In-App
 - Download Center
@@ -240,6 +260,7 @@ Request
 # 12. Performance
 
 Target:
+
 - Small report < 5 sec
 - Large report < 30 sec
 - Export < 60 sec
@@ -275,6 +296,7 @@ Target:
 # 15. Database Sources
 
 Primary tables:
+
 - attendance
 - attendance_sessions
 - attendance_breaks

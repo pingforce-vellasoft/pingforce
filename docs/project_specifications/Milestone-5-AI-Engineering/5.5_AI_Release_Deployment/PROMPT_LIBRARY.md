@@ -1,4 +1,3 @@
-
 # PROMPT_LIBRARY.md
 
 # Enterprise AI Prompt Library
@@ -8,6 +7,7 @@
 This document defines the standardized prompt library used throughout the AI_Engineering platform. It provides reusable, versioned, secure prompts for engineering, release management, DevOps, QA, documentation, architecture, code review, incident response, and enterprise SaaS operations.
 
 The library supports:
+
 - Multi-Tenant SaaS Platform
 - Angular Admin Portal
 - Flutter Android App
@@ -81,6 +81,7 @@ Example:
 Release Prompt v2.1.0
 
 Track:
+
 - Prompt Version
 - Model Version
 - Evaluation Version
@@ -134,6 +135,7 @@ Purpose:
 Generate enterprise release notes from merged work items.
 
 Output:
+
 - Summary
 - Features
 - Bug Fixes
@@ -146,6 +148,7 @@ Output:
 ## Deployment Validation Prompt
 
 Generates:
+
 - Production validation checklist
 - Smoke test summary
 - Deployment observations
@@ -339,15 +342,15 @@ Draft
 Maintain prompts in Git:
 
 prompts/
-  release/
-  qa/
-  devops/
-  security/
-  architecture/
-  backend/
-  frontend/
-  mobile/
-  ai/
+release/
+qa/
+devops/
+security/
+architecture/
+backend/
+frontend/
+mobile/
+ai/
 
 Each prompt includes metadata and changelog.
 

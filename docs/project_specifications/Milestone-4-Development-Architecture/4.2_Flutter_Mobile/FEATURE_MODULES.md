@@ -10,29 +10,29 @@ expectations for each module.
 
 This document is a design specification and implementation blueprint.
 
-------------------------------------------------------------------------
+---
 
 # Module Design Principles
 
 Every module shall:
 
--   Follow Clean Architecture
--   Be independently testable
--   Be independently deployable within the application
--   Use shared platform services
--   Respect RBAC permissions
--   Support offline synchronization where applicable
--   Be configurable through Feature Flags
--   Be tenant-aware
--   Support white-label deployments
+- Follow Clean Architecture
+- Be independently testable
+- Be independently deployable within the application
+- Use shared platform services
+- Respect RBAC permissions
+- Support offline synchronization where applicable
+- Be configurable through Feature Flags
+- Be tenant-aware
+- Support white-label deployments
 
-------------------------------------------------------------------------
+---
 
 # Standard Module Structure
 
 Every module shall follow the same internal organization.
 
-``` text
+```text
 module_name/
 ├── presentation/
 ├── application/
@@ -50,7 +50,7 @@ Each module shall define: - Business responsibilities - Navigation -
 Permission requirements - APIs - Offline behavior - Synchronization
 rules - Audit requirements - Notifications - Analytics events
 
-------------------------------------------------------------------------
+---
 
 # Platform Foundation Modules
 
@@ -58,39 +58,39 @@ rules - Audit requirements - Notifications - Analytics events
 
 Responsibilities
 
--   Client Code based login
--   User authentication
--   MFA (future)
--   Token lifecycle
--   Session validation
--   Password management
--   Biometric unlock
--   Device registration
+- Client Code based login
+- User authentication
+- MFA (future)
+- Token lifecycle
+- Session validation
+- Password management
+- Biometric unlock
+- Device registration
 
 ## Tenant Configuration
 
 Responsibilities
 
--   Tenant resolution
--   Branding
--   Theme
--   Logo
--   Feature configuration
--   Business rules
--   Time zone
--   Localization
+- Tenant resolution
+- Branding
+- Theme
+- Logo
+- Feature configuration
+- Business rules
+- Time zone
+- Localization
 
 ## User Profile
 
 Responsibilities
 
--   Profile
--   Preferences
--   Device settings
--   Notification preferences
--   Security settings
+- Profile
+- Preferences
+- Device settings
+- Notification preferences
+- Security settings
 
-------------------------------------------------------------------------
+---
 
 # Workforce Modules
 
@@ -98,54 +98,54 @@ Responsibilities
 
 Shall provide:
 
--   Personalized dashboard
--   KPI cards
--   Assigned work
--   Pending approvals
--   Quick actions
--   Alerts
--   Announcements
+- Personalized dashboard
+- KPI cards
+- Assigned work
+- Pending approvals
+- Quick actions
+- Alerts
+- Announcements
 
 ## Attendance
 
 Capabilities:
 
--   Check-In
--   Check-Out
--   GPS validation
--   Geofencing
--   Biometric verification
--   Selfie/photo verification (configurable)
--   Digital signature
--   Shift awareness
--   Offline attendance
--   Attendance history
+- Check-In
+- Check-Out
+- GPS validation
+- Geofencing
+- Biometric verification
+- Selfie/photo verification (configurable)
+- Digital signature
+- Shift awareness
+- Offline attendance
+- Attendance history
 
 ## GPS Tracking
 
 Capabilities
 
--   Real-time location
--   Background tracking
--   Route history
--   Visit timeline
--   GPS health
--   Geofence monitoring
--   Battery optimization awareness
+- Real-time location
+- Background tracking
+- Route history
+- Visit timeline
+- GPS health
+- Geofence monitoring
+- Battery optimization awareness
 
 ## Leave Management
 
 Capabilities
 
--   Apply leave
--   Approval status
--   Leave balance
--   Leave calendar
--   Attachments
--   Cancellation
--   History
+- Apply leave
+- Approval status
+- Leave balance
+- Leave calendar
+- Attachments
+- Cancellation
+- History
 
-------------------------------------------------------------------------
+---
 
 # Operations Modules
 
@@ -153,44 +153,44 @@ Capabilities
 
 Capabilities
 
--   Fault creation
--   Assignment
--   Reassignment
--   Priority
--   SLA tracking
--   Status workflow
--   Work log
--   Resolution notes
--   Attachments
--   Customer feedback
--   Closure
+- Fault creation
+- Assignment
+- Reassignment
+- Priority
+- SLA tracking
+- Status workflow
+- Work log
+- Resolution notes
+- Attachments
+- Customer feedback
+- Closure
 
 ## Lead Management
 
 Capabilities
 
--   Lead creation
--   Lead assignment
--   Follow-up
--   Pipeline
--   Status updates
--   Conversion
--   Notes
--   Attachments
+- Lead creation
+- Lead assignment
+- Follow-up
+- Pipeline
+- Status updates
+- Conversion
+- Notes
+- Attachments
 
 ## Document Management
 
 Capabilities
 
--   Upload
--   Download
--   Preview
--   Categorization
--   Version awareness
--   Offline cache
--   Sharing (policy driven)
+- Upload
+- Download
+- Preview
+- Categorization
+- Version awareness
+- Offline cache
+- Sharing (policy driven)
 
-------------------------------------------------------------------------
+---
 
 # Communication Modules
 
@@ -198,29 +198,29 @@ Capabilities
 
 Supported channels
 
--   Push
--   In-App
--   WhatsApp
--   Email
+- Push
+- In-App
+- WhatsApp
+- Email
 
 Capabilities
 
--   Read status
--   Filters
--   Categories
--   Deep linking
--   Retry awareness
+- Read status
+- Filters
+- Categories
+- Deep linking
+- Retry awareness
 
 ## Announcement Center
 
 Capabilities
 
--   Company notices
--   Tenant notices
--   Emergency alerts
--   Policy updates
+- Company notices
+- Tenant notices
+- Emergency alerts
+- Policy updates
 
-------------------------------------------------------------------------
+---
 
 # Analytics Modules
 
@@ -228,25 +228,25 @@ Capabilities
 
 Capabilities
 
--   Personal reports
--   Attendance reports
--   GPS reports
--   Fault reports
--   Lead reports
--   Productivity reports
--   Export requests
+- Personal reports
+- Attendance reports
+- GPS reports
+- Fault reports
+- Lead reports
+- Productivity reports
+- Export requests
 
 ## Productivity
 
 Capabilities
 
--   Daily KPIs
--   Weekly KPIs
--   Monthly KPIs
--   Goal tracking
--   Activity summary
+- Daily KPIs
+- Weekly KPIs
+- Monthly KPIs
+- Goal tracking
+- Activity summary
 
-------------------------------------------------------------------------
+---
 
 # Platform Modules
 
@@ -254,130 +254,130 @@ Capabilities
 
 Responsibilities
 
--   Preferences
--   Language
--   Theme
--   Security
--   Session management
--   Device management
--   Cache management
+- Preferences
+- Language
+- Theme
+- Security
+- Session management
+- Device management
+- Cache management
 
 ## Offline Synchronization
 
 Responsibilities
 
--   Queue management
--   Retry
--   Conflict detection
--   Merge strategy
--   Delta synchronization
--   Sync monitoring
+- Queue management
+- Retry
+- Conflict detection
+- Merge strategy
+- Delta synchronization
+- Sync monitoring
 
 ## Audit
 
 Responsibilities
 
--   Local audit metadata
--   Activity logging
--   Offline audit capture
--   Synchronization metadata
+- Local audit metadata
+- Activity logging
+- Offline audit capture
+- Synchronization metadata
 
-------------------------------------------------------------------------
+---
 
 # Cross-Module Services
 
 Every feature module shall integrate with:
 
--   Authentication
--   Authorization
--   RBAC
--   Module Engine
--   Feature Flags
--   Notification Engine
--   Workflow Engine
--   Sync Engine
--   Analytics
--   Logging
--   Configuration
+- Authentication
+- Authorization
+- RBAC
+- Module Engine
+- Feature Flags
+- Notification Engine
+- Workflow Engine
+- Sync Engine
+- Analytics
+- Logging
+- Configuration
 
-------------------------------------------------------------------------
+---
 
 # Dynamic Module Engine
 
 Modules shall be dynamically controlled using:
 
--   Tenant licensing
--   Feature flags
--   Permissions
--   Subscription plans
--   White-label configuration
+- Tenant licensing
+- Feature flags
+- Permissions
+- Subscription plans
+- White-label configuration
 
 States
 
--   Enabled
--   Disabled
--   Trial
--   Beta
--   Licensed
+- Enabled
+- Disabled
+- Trial
+- Beta
+- Licensed
 
-------------------------------------------------------------------------
+---
 
 # Navigation Rules
 
 Navigation shall be:
 
--   Permission aware
--   Tenant aware
--   Module aware
--   Deep-link capable
--   Offline aware
+- Permission aware
+- Tenant aware
+- Module aware
+- Deep-link capable
+- Offline aware
 
-------------------------------------------------------------------------
+---
 
 # Offline Requirements
 
 Applicable modules shall support:
 
--   Local persistence
--   Queueing
--   Retry
--   Merge
--   Conflict resolution
--   Background synchronization
+- Local persistence
+- Queueing
+- Retry
+- Merge
+- Conflict resolution
+- Background synchronization
 
-------------------------------------------------------------------------
+---
 
 # Security Requirements
 
 Every module shall:
 
--   Validate permissions
--   Validate session
--   Protect sensitive data
--   Encrypt local secrets
--   Record audit events
--   Respect tenant isolation
+- Validate permissions
+- Validate session
+- Protect sensitive data
+- Encrypt local secrets
+- Record audit events
+- Respect tenant isolation
 
-------------------------------------------------------------------------
+---
 
 # Extensibility
 
 The architecture shall support additional modules without restructuring
 existing features, including:
 
--   Payroll
--   CRM
--   Inventory
--   Procurement
--   Assets
--   Expenses
--   Approvals
--   Customer Portal
--   Vendor Portal
--   AI Assistant
--   Workflow Automation
+- Payroll
+- CRM
+- Inventory
+- Procurement
+- Assets
+- Expenses
+- Approvals
+- Customer Portal
+- Vendor Portal
+- AI Assistant
+- Workflow Automation
 
-------------------------------------------------------------------------
+---
 
 # Module Dependency Rules
 
@@ -389,7 +389,7 @@ existing features, including:
     appropriate.
 5.  Domain logic shall remain isolated inside each feature.
 
-------------------------------------------------------------------------
+---
 
 # Conclusion
 

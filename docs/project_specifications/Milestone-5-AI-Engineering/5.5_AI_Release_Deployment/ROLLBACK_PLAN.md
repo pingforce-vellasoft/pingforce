@@ -1,4 +1,3 @@
-
 # ROLLBACK_PLAN.md
 
 # Enterprise Rollback Plan
@@ -63,27 +62,27 @@ Critical triggers include:
 
 # Decision Matrix
 
-| Severity | Action |
-|----------|--------|
-| Minor issue | Monitor or hotfix |
-| Medium issue | Evaluate rollback |
-| Critical production failure | Immediate rollback |
-| Security compromise | Rollback and isolate |
-| Data integrity risk | Stop traffic and recover |
+| Severity                    | Action                   |
+| --------------------------- | ------------------------ |
+| Minor issue                 | Monitor or hotfix        |
+| Medium issue                | Evaluate rollback        |
+| Critical production failure | Immediate rollback       |
+| Security compromise         | Rollback and isolate     |
+| Data integrity risk         | Stop traffic and recover |
 
 ---
 
 # Roles & Responsibilities
 
-| Role | Responsibility |
-|------|----------------|
-| Release Manager | Go/No-Go rollback decision |
-| Engineering Lead | Technical assessment |
-| DevOps Engineer | Execute rollback |
-| DBA | Database recovery |
-| QA Lead | Validation after rollback |
-| Security Team | Security assessment |
-| Product Owner | Business approval and communication |
+| Role             | Responsibility                      |
+| ---------------- | ----------------------------------- |
+| Release Manager  | Go/No-Go rollback decision          |
+| Engineering Lead | Technical assessment                |
+| DevOps Engineer  | Execute rollback                    |
+| DBA              | Database recovery                   |
+| QA Lead          | Validation after rollback           |
+| Security Team    | Security assessment                 |
+| Product Owner    | Business approval and communication |
 
 ---
 

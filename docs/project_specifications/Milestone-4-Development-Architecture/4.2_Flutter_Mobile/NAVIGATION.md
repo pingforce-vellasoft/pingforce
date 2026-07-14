@@ -11,24 +11,24 @@ white-label mobile applications.
 This document is a design specification and not an implementation status
 report.
 
-------------------------------------------------------------------------
+---
 
 # Navigation Objectives
 
 The navigation architecture shall:
 
--   Be scalable and modular
--   Be RBAC-aware
--   Be tenant-aware
--   Support dynamic modules
--   Support deep linking
--   Support offline-first workflows
--   Support white-label deployments
--   Minimize navigation coupling
--   Support feature flags
--   Provide consistent UX
+- Be scalable and modular
+- Be RBAC-aware
+- Be tenant-aware
+- Support dynamic modules
+- Support deep linking
+- Support offline-first workflows
+- Support white-label deployments
+- Minimize navigation coupling
+- Support feature flags
+- Provide consistent UX
 
-------------------------------------------------------------------------
+---
 
 # Navigation Technology
 
@@ -38,20 +38,20 @@ implementation).
 
 Routing shall integrate with:
 
--   Authentication
--   Session management
--   RBAC
--   Module Engine
--   Feature Flags
--   Tenant Configuration
--   Deep Links
--   Notification actions
+- Authentication
+- Session management
+- RBAC
+- Module Engine
+- Feature Flags
+- Tenant Configuration
+- Deep Links
+- Notification actions
 
-------------------------------------------------------------------------
+---
 
 # Navigation Hierarchy
 
-``` text
+```text
 Application
 │
 ├── Splash
@@ -73,7 +73,7 @@ Application
 └── Global Dialogs
 ```
 
-------------------------------------------------------------------------
+---
 
 # Navigation Layers
 
@@ -88,11 +88,11 @@ Application
 9.  Deep Link Navigation
 10. Background Event Navigation
 
-------------------------------------------------------------------------
+---
 
 # Startup Flow
 
-``` text
+```text
 Launch
  ↓
 Splash
@@ -112,21 +112,21 @@ Dynamic Menu Construction
 Dashboard
 ```
 
-------------------------------------------------------------------------
+---
 
 # Authentication Flow
 
--   Client Code
--   Login
--   Multi-factor Authentication (future)
--   Password Reset
--   Session Recovery
--   Biometric Unlock
--   Logout
+- Client Code
+- Login
+- Multi-factor Authentication (future)
+- Password Reset
+- Session Recovery
+- Biometric Unlock
+- Logout
 
 Unauthenticated users shall not access protected routes.
 
-------------------------------------------------------------------------
+---
 
 # Main Shell
 
@@ -134,13 +134,13 @@ The main shell shall host dynamically enabled modules.
 
 Menu visibility shall depend on:
 
--   Tenant license
--   Module enablement
--   Feature flags
--   User permissions
--   Business rules
+- Tenant license
+- Module enablement
+- Feature flags
+- User permissions
+- Business rules
 
-------------------------------------------------------------------------
+---
 
 # Dynamic Menu Engine
 
@@ -148,19 +148,19 @@ Menus shall be generated from backend configuration.
 
 Each menu item may include:
 
--   Identifier
--   Display Name
--   Icon
--   Route
--   Parent Menu
--   Sort Order
--   Permission
--   Module
--   Feature Flag
--   Badge
--   Visibility Rules
+- Identifier
+- Display Name
+- Icon
+- Route
+- Parent Menu
+- Sort Order
+- Permission
+- Module
+- Feature Flag
+- Badge
+- Visibility Rules
 
-------------------------------------------------------------------------
+---
 
 # Module Navigation
 
@@ -168,7 +168,7 @@ Each feature module shall own its internal navigation graph.
 
 Typical flow:
 
-``` text
+```text
 List
  ↓
 Details
@@ -182,21 +182,21 @@ Attachments
 
 No module shall directly manipulate another module's internal routes.
 
-------------------------------------------------------------------------
+---
 
 # Route Guards
 
 Every protected route shall validate:
 
--   Authentication
--   Active session
--   Tenant
--   Subscription
--   Module availability
--   Permission
--   Feature flag
+- Authentication
+- Active session
+- Tenant
+- Subscription
+- Module availability
+- Permission
+- Feature flag
 
-------------------------------------------------------------------------
+---
 
 # RBAC Navigation
 
@@ -206,21 +206,21 @@ Role → Permission Group → Permission → Action → Data Scope
 
 Hidden modules shall not expose navigable routes.
 
-------------------------------------------------------------------------
+---
 
 # Deep Linking
 
 The architecture shall support:
 
--   Push notification links
--   Email links
--   QR code links
--   Universal/App links
--   Internal cross-module links
+- Push notification links
+- Email links
+- QR code links
+- Universal/App links
+- Internal cross-module links
 
 Every deep link shall pass through authentication and authorization.
 
-------------------------------------------------------------------------
+---
 
 # Offline Navigation
 
@@ -229,100 +229,100 @@ The application shall remain navigable while offline.
 Offline-capable screens shall display locally available content and
 queue eligible actions for synchronization.
 
-------------------------------------------------------------------------
+---
 
 # Navigation State
 
 Navigation state shall preserve:
 
--   Current route
--   Selected tenant
--   Active module
--   Tab state
--   Search filters
--   Form progress (where applicable)
--   Scroll position (where applicable)
+- Current route
+- Selected tenant
+- Active module
+- Tab state
+- Search filters
+- Form progress (where applicable)
+- Scroll position (where applicable)
 
-------------------------------------------------------------------------
+---
 
 # Notification Navigation
 
 Notification actions may navigate to:
 
--   Attendance
--   Fault Details
--   Lead Details
--   Documents
--   Approvals
--   Dashboard
--   Announcements
+- Attendance
+- Fault Details
+- Lead Details
+- Documents
+- Approvals
+- Dashboard
+- Announcements
 
 Navigation shall validate permissions before opening content.
 
-------------------------------------------------------------------------
+---
 
 # Error Navigation
 
 Dedicated flows shall exist for:
 
--   Unauthorized
--   Forbidden
--   Tenant unavailable
--   Session expired
--   Offline unavailable
--   Page not found
--   Maintenance mode
+- Unauthorized
+- Forbidden
+- Tenant unavailable
+- Session expired
+- Offline unavailable
+- Page not found
+- Maintenance mode
 
-------------------------------------------------------------------------
+---
 
 # White-Label Support
 
 Navigation shall support tenant-specific:
 
--   Landing pages
--   Module ordering
--   Icons
--   Labels
--   Hidden features
--   Branding
+- Landing pages
+- Module ordering
+- Icons
+- Labels
+- Hidden features
+- Branding
 
-------------------------------------------------------------------------
+---
 
 # Accessibility
 
 Navigation shall support:
 
--   Screen readers
--   Keyboard navigation (where applicable)
--   Accessible focus order
--   Consistent back navigation
--   Semantic route labels
+- Screen readers
+- Keyboard navigation (where applicable)
+- Accessible focus order
+- Consistent back navigation
+- Semantic route labels
 
-------------------------------------------------------------------------
+---
 
 # Performance
 
 Navigation architecture shall support:
 
--   Lazy loading
--   Deferred module initialization
--   Minimal rebuilds
--   Efficient state restoration
+- Lazy loading
+- Deferred module initialization
+- Minimal rebuilds
+- Efficient state restoration
 
-------------------------------------------------------------------------
+---
 
 # Testing
 
 Navigation shall be verified through:
 
--   Unit tests
--   Widget tests
--   Integration tests
--   Deep-link tests
--   Permission tests
--   Offline navigation tests
+- Unit tests
+- Widget tests
+- Integration tests
+- Deep-link tests
+- Permission tests
+- Offline navigation tests
 
-------------------------------------------------------------------------
+---
 
 # Future Expansion
 
@@ -331,7 +331,7 @@ Payroll, CRM, Inventory, Assets, Procurement, Expenses, AI Assistant,
 Customer Portal, Vendor Portal, Workflow Engine and Analytics without
 requiring architectural redesign.
 
-------------------------------------------------------------------------
+---
 
 # Conclusion
 

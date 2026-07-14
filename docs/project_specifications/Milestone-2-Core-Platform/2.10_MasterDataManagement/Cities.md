@@ -1,7 +1,9 @@
 # Cities.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Master Data Module
+
 ### Cities / Municipalities Master Data Specification
 
 **Module:** Core Platform → Master Data
@@ -176,19 +178,19 @@ Indexes:
 
 # 12. REST APIs
 
-GET    /api/v1/master/cities
+GET /api/v1/master/cities
 
-GET    /api/v1/master/cities/{id}
+GET /api/v1/master/cities/{id}
 
-GET    /api/v1/master/states/{stateId}/cities
+GET /api/v1/master/states/{stateId}/cities
 
-POST   /api/v1/master/cities
+POST /api/v1/master/cities
 
-PUT    /api/v1/master/cities/{id}
+PUT /api/v1/master/cities/{id}
 
 DELETE /api/v1/master/cities/{id}
 
-GET    /api/v1/master/cities/search
+GET /api/v1/master/cities/search
 
 ---
 

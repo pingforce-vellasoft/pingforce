@@ -253,16 +253,20 @@ Exports
 # 15. RBAC
 
 Employee
+
 - Create offline attendance
 - View sync status
 
 Manager
+
 - View team sync failures
 
 Employer
+
 - Configure offline policies
 
 Super Admin
+
 - Monitor tenant synchronization
 - Configure retry policies
 

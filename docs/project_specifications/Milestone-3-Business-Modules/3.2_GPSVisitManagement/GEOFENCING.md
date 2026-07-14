@@ -31,21 +31,26 @@ The Geofencing Engine ensures field visits are started, executed, and completed 
 # 3. Supported Geofence Types
 
 ## Circular Geofence
+
 - Radius-based boundary
 - Configurable radius (10m–5000m)
 
 ## Polygon Geofence
+
 - Multiple coordinate points
 - Suitable for campuses and industrial sites
 
 ## Dynamic Geofence
+
 - Customer-specific temporary locations
 - Created automatically during visit planning
 
 ## Route Geofence
+
 - Allowed travel corridor for route validation
 
 ## Multi-Zone Geofence
+
 - Multiple valid locations for a single visit
 
 ---
@@ -53,6 +58,7 @@ The Geofencing Engine ensures field visits are started, executed, and completed 
 # 4. Functional Requirements
 
 ## Geofence Management
+
 - Create geofence
 - Update geofence
 - Archive geofence
@@ -60,12 +66,14 @@ The Geofencing Engine ensures field visits are started, executed, and completed 
 - Bulk import geofences
 
 ## Visit Validation
+
 - Validate entry
 - Validate exit
 - Validate stay duration
 - Validate completion location
 
 ## Monitoring
+
 - Live geofence status
 - Entry/exit history
 - Violations dashboard
@@ -167,6 +175,7 @@ Channels
 - Route Compliance
 
 Exports
+
 - Excel
 - CSV
 - PDF
@@ -187,14 +196,14 @@ Exports
 
 # 13. APIs
 
-POST   /geofences
-GET    /geofences
-GET    /geofences/{id}
-PUT    /geofences/{id}
+POST /geofences
+GET /geofences
+GET /geofences/{id}
+PUT /geofences/{id}
 DELETE /geofences/{id}
-POST   /geofences/validate
-GET    /geofences/events
-GET    /geofences/violations
+POST /geofences/validate
+GET /geofences/events
+GET /geofences/violations
 
 ---
 

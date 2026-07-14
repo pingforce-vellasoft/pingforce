@@ -1,4 +1,3 @@
-
 # SLA_MANAGEMENT.md
 
 # Fault Management Module - SLA Management Specification
@@ -43,18 +42,23 @@ The engine is fully configurable per tenant and integrates with:
 # 3. SLA Types
 
 ## Response SLA
+
 Maximum time to acknowledge or accept a ticket.
 
 ## Resolution SLA
+
 Maximum time to resolve a ticket.
 
 ## Escalation SLA
+
 Time before escalating to higher authority.
 
 ## Verification SLA
+
 Time allowed for QA or customer verification.
 
 ## Closure SLA
+
 Maximum time to close a resolved ticket.
 
 ---
@@ -77,11 +81,11 @@ Each tenant may define SLA based on:
 Example:
 
 | Priority | Response | Resolution |
-|----------|----------|-----------|
-| Critical | 15 min | 2 hrs |
-| High | 30 min | 4 hrs |
-| Medium | 2 hrs | 8 hrs |
-| Low | 4 hrs | 24 hrs |
+| -------- | -------- | ---------- |
+| Critical | 15 min   | 2 hrs      |
+| High     | 30 min   | 4 hrs      |
+| Medium   | 2 hrs    | 8 hrs      |
+| Low      | 4 hrs    | 24 hrs     |
 
 ---
 
@@ -103,24 +107,29 @@ Ticket Created
 # 6. SLA Timer Rules
 
 Response SLA starts:
+
 - On ticket creation (default)
 - Or on workflow state (tenant configurable)
 
 Resolution SLA starts:
+
 - On assignment
 - Or acceptance
 - Or in-progress
 
 Pause states (configurable):
+
 - On Hold
 - Waiting for Customer
 - Waiting for Parts
 - Vendor Support
 
 Resume:
+
 - In Progress
 
 Stop:
+
 - Closed
 
 ---
@@ -128,21 +137,27 @@ Stop:
 # 7. Escalation Levels
 
 Level 1:
+
 - Technician
 
 Level 2:
+
 - Team Lead
 
 Level 3:
+
 - Manager
 
 Level 4:
+
 - Regional Manager
 
 Level 5:
+
 - Employer / Client Admin
 
 Escalation actions:
+
 - Notification
 - Priority increase
 - Auto reassignment
@@ -195,14 +210,17 @@ Assignment Engine updates:
 # 11. Notification Integration
 
 Warnings:
+
 - 75% SLA consumed
 - 90% SLA consumed
 
 Breach:
+
 - Immediate alert
 - Escalation notifications
 
 Channels:
+
 - Push
 - Email
 - WhatsApp
@@ -246,11 +264,13 @@ Capture:
 # 14. Reports
 
 Operational:
+
 - Active SLA Dashboard
 - Near Breach Tickets
 - Breached Tickets
 
 Management:
+
 - SLA Compliance %
 - Average Response Time
 - Average Resolution Time
@@ -258,6 +278,7 @@ Management:
 - Technician Performance
 
 Exports:
+
 - Excel
 - CSV
 - PDF

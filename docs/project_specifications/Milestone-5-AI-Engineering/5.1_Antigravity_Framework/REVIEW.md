@@ -235,24 +235,31 @@ Before production:
 # 15. Roles & Responsibilities
 
 Product Owner
+
 - Business approval
 
 Solution Architect
+
 - Architecture approval
 
 AI Architect
+
 - AI design approval
 
 Technical Lead
+
 - Code quality
 
 Security Team
+
 - Security validation
 
 QA Team
+
 - Functional validation
 
 DevOps
+
 - Deployment readiness
 
 ---

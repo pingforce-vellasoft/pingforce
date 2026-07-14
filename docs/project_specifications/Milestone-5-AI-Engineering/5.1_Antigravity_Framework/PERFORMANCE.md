@@ -69,15 +69,15 @@ AI Gateway
 
 # 5. Service Level Objectives (SLOs)
 
-| Capability | Target |
-|------------|--------|
-| Authentication | < 500 ms |
-| API Response | < 1 sec |
-| Interactive AI | < 3 sec |
-| Tool Invocation | < 2 sec |
-| RAG Retrieval | < 1 sec |
-| Background Tasks | Queue based |
-| Dashboard Refresh | < 5 sec |
+| Capability        | Target      |
+| ----------------- | ----------- |
+| Authentication    | < 500 ms    |
+| API Response      | < 1 sec     |
+| Interactive AI    | < 3 sec     |
+| Tool Invocation   | < 2 sec     |
+| RAG Retrieval     | < 1 sec     |
+| Background Tasks  | Queue based |
+| Dashboard Refresh | < 5 sec     |
 
 Availability target: **99.9% or higher**
 

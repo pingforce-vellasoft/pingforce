@@ -101,10 +101,10 @@ Evaluate:
 
 - main
 - develop
-- feature/*
-- bugfix/*
-- release/*
-- hotfix/*
+- feature/\*
+- bugfix/\*
+- release/\*
+- hotfix/\*
 
 ## Commit Convention
 

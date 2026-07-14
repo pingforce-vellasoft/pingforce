@@ -1,7 +1,9 @@
 # Logos.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – White Label Module
+
 ### Logo Management Specification
 
 **Module:** Core Platform → White Label  
@@ -63,15 +65,15 @@ Optional:
 
 # 4. Usage Matrix
 
-| Logo | Web | Mobile | Login | Reports | Email | Notifications |
-|------|-----|--------|-------|---------|-------|---------------|
-| Master | ✓ | ✓ | - | - | - | - |
-| Primary | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Dark | ✓ | ✓ | ✓ | - | - | - |
-| Light | ✓ | ✓ | ✓ | - | - | - |
-| Favicon | ✓ | - | - | - | - | - |
-| App Icon | - | ✓ | - | - | - | - |
-| Watermark | - | - | - | ✓ | - | - |
+| Logo      | Web | Mobile | Login | Reports | Email | Notifications |
+| --------- | --- | ------ | ----- | ------- | ----- | ------------- |
+| Master    | ✓   | ✓      | -     | -       | -     | -             |
+| Primary   | ✓   | ✓      | ✓     | ✓       | ✓     | ✓             |
+| Dark      | ✓   | ✓      | ✓     | -       | -     | -             |
+| Light     | ✓   | ✓      | ✓     | -       | -     | -             |
+| Favicon   | ✓   | -      | -     | -       | -     | -             |
+| App Icon  | -   | ✓      | -     | -       | -     | -             |
+| Watermark | -   | -      | -     | ✓       | -     | -             |
 
 ---
 
@@ -120,17 +122,17 @@ Rejected files generate audit events.
 Object storage layout:
 
 branding/
-  {tenant_id}/
-    logos/
-      master/
-      primary/
-      dark/
-      light/
-      favicon/
-      app/
-      splash/
-      reports/
-      email/
+{tenant_id}/
+logos/
+master/
+primary/
+dark/
+light/
+favicon/
+app/
+splash/
+reports/
+email/
 
 Requirements:
 
@@ -228,17 +230,17 @@ Indexes:
 
 # 13. REST APIs
 
-GET    /api/v1/logos
+GET /api/v1/logos
 
-GET    /api/v1/logos/{type}
+GET /api/v1/logos/{type}
 
-POST   /api/v1/logos
+POST /api/v1/logos
 
-PUT    /api/v1/logos/{id}
+PUT /api/v1/logos/{id}
 
-POST   /api/v1/logos/publish
+POST /api/v1/logos/publish
 
-POST   /api/v1/logos/rollback
+POST /api/v1/logos/rollback
 
 DELETE /api/v1/logos/{id}
 

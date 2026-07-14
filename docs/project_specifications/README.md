@@ -1,4 +1,3 @@
-
 # Enterprise Workforce Management SaaS Platform
 
 ## README
@@ -107,19 +106,19 @@ Templates, ADRs, standards, changelogs.
 
 # Technology Stack
 
-| Layer | Technology |
-|---|---|
-| Web | Angular |
-| Mobile | Flutter |
-| Backend | NestJS |
-| Database | PostgreSQL |
-| Cache | Redis |
-| AI | LLM Services |
-| Auth | JWT/OAuth2 |
-| Containers | Docker |
-| Orchestration | Kubernetes |
-| Cloud | OCI |
-| CI/CD | GitHub Actions |
+| Layer         | Technology     |
+| ------------- | -------------- |
+| Web           | Angular        |
+| Mobile        | Flutter        |
+| Backend       | NestJS         |
+| Database      | PostgreSQL     |
+| Cache         | Redis          |
+| AI            | LLM Services   |
+| Auth          | JWT/OAuth2     |
+| Containers    | Docker         |
+| Orchestration | Kubernetes     |
+| Cloud         | OCI            |
+| CI/CD         | GitHub Actions |
 
 ---
 
@@ -152,6 +151,7 @@ Templates, ADRs, standards, changelogs.
 - Monitoring
 
 Each milestone contains:
+
 - README
 - CHANGELOG
 - PROJECT_STATE
@@ -192,6 +192,7 @@ Each milestone contains:
 Documentation Baseline: Enterprise v1.0
 
 Status:
+
 - Core architecture documented
 - AI Engineering documented
 - Release Engineering documented
@@ -204,18 +205,23 @@ Documentation Readiness: 95%
 # Roadmap
 
 Phase 1
+
 - Documentation baseline
 
 Phase 2
+
 - Reference implementation
 
 Phase 3
+
 - Production platform
 
 Phase 4
+
 - AI-assisted engineering automation
 
 Phase 5
+
 - Marketplace and ecosystem
 
 ---
@@ -223,6 +229,7 @@ Phase 5
 # Contributing
 
 Follow:
+
 - Coding standards
 - Architecture principles
 - Documentation standards

@@ -32,6 +32,7 @@ The Reports module provides operational, managerial, executive, compliance, and 
 # 3. Report Categories
 
 ## Operational Reports
+
 - Daily Visit Report
 - Weekly Visit Report
 - Monthly Visit Report
@@ -42,6 +43,7 @@ The Reports module provides operational, managerial, executive, compliance, and 
 - Reopened Visits
 
 ## Employee Reports
+
 - Employee Visit Summary
 - Employee Productivity
 - Attendance vs Visits
@@ -51,6 +53,7 @@ The Reports module provides operational, managerial, executive, compliance, and 
 - Visit Timeline
 
 ## GPS Reports
+
 - GPS Tracking Report
 - GPS Accuracy Report
 - GPS Compliance Report
@@ -58,6 +61,7 @@ The Reports module provides operational, managerial, executive, compliance, and 
 - GPS Signal Quality
 
 ## Route Reports
+
 - Route Summary
 - Route Efficiency
 - Planned vs Actual Route
@@ -67,12 +71,14 @@ The Reports module provides operational, managerial, executive, compliance, and 
 - Distance Analysis
 
 ## Geofencing Reports
+
 - Geofence Compliance
 - Entry/Exit History
 - Geofence Violations
 - Outside Boundary Visits
 
 ## SLA Reports
+
 - SLA Compliance
 - SLA Breaches
 - Response Time
@@ -80,6 +86,7 @@ The Reports module provides operational, managerial, executive, compliance, and 
 - Delay Analysis
 
 ## Customer Reports
+
 - Customer Coverage
 - Customer Visit History
 - Repeat Visits
@@ -87,6 +94,7 @@ The Reports module provides operational, managerial, executive, compliance, and 
 - Site Visit Summary
 
 ## Productivity Reports
+
 - Employee Productivity
 - Team Productivity
 - Branch Productivity
@@ -95,6 +103,7 @@ The Reports module provides operational, managerial, executive, compliance, and 
 - KPI Scorecards
 
 ## Audit Reports
+
 - Visit Audit Trail
 - Assignment History
 - GPS Validation History
@@ -145,6 +154,7 @@ The Reports module provides operational, managerial, executive, compliance, and 
 - Yearly
 
 Delivery Channels
+
 - Email
 - Secure Download
 - Shared Link
@@ -155,6 +165,7 @@ Delivery Channels
 # 7. Dashboards Integration
 
 Reports are accessible from:
+
 - Employee Dashboard
 - Supervisor Dashboard
 - Operations Dashboard

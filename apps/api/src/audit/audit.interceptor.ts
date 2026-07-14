@@ -63,7 +63,9 @@ export class AuditInterceptor implements NestInterceptor {
       const entityId =
         request.params?.id ??
         segments.find((s: string) =>
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s),
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            s,
+          ),
         ) ??
         '-';
 
@@ -79,7 +81,8 @@ export class AuditInterceptor implements NestInterceptor {
         entityId,
         action: `${method} ${path}`,
         outcome,
-        severity: outcome === 'FAILURE' && statusCode === 403 ? 'MEDIUM' : 'INFO',
+        severity:
+          outcome === 'FAILURE' && statusCode === 403 ? 'MEDIUM' : 'INFO',
         newValue: includeBody ? sanitize(request.body) : undefined,
         requestId: request.requestId,
         ipAddress: request.ip,

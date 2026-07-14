@@ -1,7 +1,9 @@
 # Team.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Multi-Tenant Module
+
 ### Team Domain Specification
 
 **Module:** Core Platform → Multi-Tenant  
@@ -301,21 +303,21 @@ Composite indexes:
 
 # 14. REST APIs
 
-GET    /api/v1/teams
+GET /api/v1/teams
 
-GET    /api/v1/teams/{id}
+GET /api/v1/teams/{id}
 
-POST   /api/v1/teams
+POST /api/v1/teams
 
-PUT    /api/v1/teams/{id}
+PUT /api/v1/teams/{id}
 
-PATCH  /api/v1/teams/{id}/status
+PATCH /api/v1/teams/{id}/status
 
-POST   /api/v1/teams/{id}/lead
+POST /api/v1/teams/{id}/lead
 
-GET    /api/v1/teams/{id}/members
+GET /api/v1/teams/{id}/members
 
-POST   /api/v1/teams/{id}/members
+POST /api/v1/teams/{id}/members
 
 DELETE /api/v1/teams/{id}/members/{userId}
 

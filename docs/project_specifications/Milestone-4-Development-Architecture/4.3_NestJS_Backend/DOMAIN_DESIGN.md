@@ -1,4 +1,3 @@
-
 # DOMAIN_DESIGN.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -135,26 +134,31 @@ Every domain shall define aggregates that enforce business consistency.
 Examples:
 
 Attendance
+
 - AttendanceRecord
 - CheckIn
 - CheckOut
 
 Lead
+
 - Lead
 - LeadActivity
 - LeadAssignment
 
 Fault
+
 - FaultTicket
 - ResolutionAttempt
 - SLAStatus
 
 User
+
 - User
 - UserProfile
 - UserRole
 
 Asset
+
 - Asset
 - AssetAssignment
 

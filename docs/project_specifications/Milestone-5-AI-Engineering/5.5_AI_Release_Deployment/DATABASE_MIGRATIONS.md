@@ -1,4 +1,3 @@
-
 # DATABASE_MIGRATIONS.md
 
 # Enterprise Database Migration Strategy
@@ -68,16 +67,16 @@ The strategy supports the enterprise multi-tenant SaaS platform including RBAC, 
 
 Filename format:
 
-V<version>__<description>.sql
+V<version>\_\_<description>.sql
 
 Examples:
 
-V001__Initial_Schema.sql
-V002__RBAC.sql
-V003__Feature_Flags.sql
-V004__Workflow_Engine.sql
-V005__Attendance_Module.sql
-V006__Lead_Management.sql
+V001**Initial_Schema.sql
+V002**RBAC.sql
+V003**Feature_Flags.sql
+V004**Workflow_Engine.sql
+V005**Attendance_Module.sql
+V006**Lead_Management.sql
 
 Rules:
 

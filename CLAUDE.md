@@ -11,6 +11,7 @@
 Target: ISPs, field service orgs, facility management, security agencies, telecom operators.
 
 **Monorepo structure:**
+
 ```
 apps/
   api/          # NestJS backend (TypeScript)
@@ -27,33 +28,35 @@ docs/           # Project specs, ADRs, milestones
 
 ## Tech Stack
 
-| Layer | Tech | Version |
-|---|---|---|
-| Mobile | Flutter + Riverpod | Stable |
-| Admin Web | Angular + Angular Material | 21 |
-| Backend | NestJS | LTS |
-| Language | TypeScript (backend/admin), Dart (mobile) | strict mode |
-| Database | PostgreSQL | 16+ |
-| ORM | Prisma | Latest stable |
-| Cache | Redis | — |
-| Queue | BullMQ | — |
-| Auth | JWT + Refresh Tokens | — |
-| Storage | OCI Object Storage | — |
-| Container | Docker (multi-stage) | — |
-| Cloud | Oracle Cloud Infrastructure (OCI) | — |
-| CI/CD | GitHub Actions | — |
-| Monorepo | NX | — |
-| Monitoring | Prometheus + Grafana | — |
-| Logging | nestjs-pino (structured JSON) | — |
+| Layer      | Tech                                      | Version       |
+| ---------- | ----------------------------------------- | ------------- |
+| Mobile     | Flutter + Riverpod                        | Stable        |
+| Admin Web  | Angular + Angular Material                | 21            |
+| Backend    | NestJS                                    | LTS           |
+| Language   | TypeScript (backend/admin), Dart (mobile) | strict mode   |
+| Database   | PostgreSQL                                | 16+           |
+| ORM        | Prisma                                    | Latest stable |
+| Cache      | Redis                                     | —             |
+| Queue      | BullMQ                                    | —             |
+| Auth       | JWT + Refresh Tokens                      | —             |
+| Storage    | OCI Object Storage                        | —             |
+| Container  | Docker (multi-stage)                      | —             |
+| Cloud      | Oracle Cloud Infrastructure (OCI)         | —             |
+| CI/CD      | GitHub Actions                            | —             |
+| Monorepo   | NX                                        | —             |
+| Monitoring | Prometheus + Grafana                      | —             |
+| Logging    | nestjs-pino (structured JSON)             | —             |
 
 ---
 
 ## NestJS (Backend)
 
 ### Architecture (strict layer order)
+
 ```
 Controller → Service → Repository → Prisma
 ```
+
 - Business logic: Services only. Never in controllers or repositories.
 - No raw SQL unless justified in an ADR.
 - Every feature = its own NestJS module.
@@ -61,6 +64,7 @@ Controller → Service → Repository → Prisma
 - `@UseGuards(JwtAuthGuard, RbacGuard)` on protected routes.
 
 ### Module structure pattern
+
 ```
 src/
   feature/
@@ -74,6 +78,7 @@ src/
 ```
 
 ### Key conventions
+
 - API prefix: `/api/v1/...` (URI versioning via `VersioningType.URI`)
 - Swagger: auto-generated at `/api/docs`
 - Global pipes: `ValidationPipe` with `whitelist: true`, `forbidNonWhitelisted: true`, `transform: true`
@@ -84,6 +89,7 @@ src/
 - Logging: `nestjs-pino` — structured JSON, include `tenant_id`, `user_id`, `request_id`
 
 ### Multi-tenancy pattern
+
 Every query MUST scope to `tenantId`. Never query without tenant filter on business tables.
 
 ```typescript
@@ -96,11 +102,13 @@ async findAll(tenantId: string) {
 ```
 
 ### RBAC
+
 - Decorator: `@RequirePermission('resource:action')`
 - Guard: `RbacGuard` reads permissions from JWT claims
 - Never bypass RBAC on business endpoints
 
 ### TypeScript rules
+
 - `strict: true` — no `any`
 - `readonly` preferred on DTOs
 - Explicit return types on all service/repository methods
@@ -111,9 +119,11 @@ async findAll(tenantId: string) {
 ## Prisma (ORM)
 
 ### Schema location
+
 `prisma/schema.prisma`
 
 ### Mandatory columns on every business model
+
 ```prisma
 id        String    @id @default(uuid())
 tenantId  String
@@ -125,11 +135,13 @@ deletedAt DateTime?   // soft delete
 ```
 
 ### Indexes required
+
 - `tenantId` on every business table
 - Foreign keys
 - Frequently searched columns
 
 ### Commands
+
 ```bash
 # Generate client after schema change
 npx prisma generate
@@ -148,9 +160,11 @@ npx prisma studio
 ```
 
 ### Soft delete
+
 Never hard-delete business records. Always set `deletedAt = now()`. All queries filter `deletedAt: null`.
 
 ### Transactions
+
 Multi-table business operations MUST use `prisma.$transaction([...])`.
 
 ---
@@ -158,6 +172,7 @@ Multi-table business operations MUST use `prisma.$transaction([...])`.
 ## Angular (Admin Portal)
 
 ### Standards
+
 - Angular 21 standalone components — no NgModules
 - Signals-first state management (`signal()`, `computed()`, `effect()`)
 - RxJS for async streams only
@@ -168,6 +183,7 @@ Multi-table business operations MUST use `prisma.$transaction([...])`.
 - HTTP Interceptors: `JwtInterceptor`, `ErrorInterceptor`, `LoadingInterceptor`
 
 ### File naming
+
 ```
 employee-list.component.ts
 employee.service.ts
@@ -175,6 +191,7 @@ employee.model.ts
 ```
 
 ### API calls
+
 Never in components. Always in services.
 
 ```typescript
@@ -185,6 +202,7 @@ getEmployees(): Observable<Employee[]> {
 ```
 
 ### Folder structure
+
 ```
 src/app/
   core/
@@ -203,6 +221,7 @@ src/app/
 ## Flutter (Mobile)
 
 ### Architecture — Clean Architecture per feature
+
 ```
 lib/
   features/
@@ -232,6 +251,7 @@ lib/
 ```
 
 ### State management — Riverpod (not BLoC)
+
 - `StateNotifier` + `StateNotifierProvider` for feature state
 - `ConsumerWidget` / `ConsumerStatefulWidget` for all screens
 - `ProviderScope` at root (`main.dart`)
@@ -249,23 +269,29 @@ final featureProvider = StateNotifierProvider<FeatureNotifier, FeatureState>(
 ```
 
 ### Dependency injection
+
 `get_it` service locator. Setup in `lib/injection_container.dart`. Call `di.init()` in `main()`.
 
 ### Navigation
+
 `go_router` via `routerProvider`. Routes defined in `lib/core/navigation/app_router.dart`.
 
 ### Local storage
+
 - `Hive` + `hive_flutter` for offline cache
 - `flutter_secure_storage` for tokens/secrets
 
 ### Networking
+
 - `dio` with `TokenInterceptor` for JWT auto-attach + refresh
 - All remote calls go through datasource classes only
 
 ### Offline-first
+
 `OfflineAwareScaffold` wraps screens needing offline state. `SyncProvider` handles background sync. `ConnectivityProvider` watches network state.
 
 ### File naming
+
 ```
 employee_list_screen.dart
 employee_state.dart
@@ -277,6 +303,7 @@ employee_repository_impl.dart
 ```
 
 ### Theme
+
 `AppTheme.lightTheme` / `AppTheme.darkTheme` in `lib/core/theme/`. Colors: `AppColors`, Typography: `AppTypography`, Dimensions: `AppDimensions`. White-label: colors come from tenant config.
 
 ---
@@ -284,6 +311,7 @@ employee_repository_impl.dart
 ## NX (Monorepo)
 
 ### Key commands
+
 ```bash
 # Run affected tests/lint/build (what CI uses)
 npx nx affected -t lint test build
@@ -307,6 +335,7 @@ npx nx g @nx/nest:resource feature-name --project api
 ```
 
 ### CI uses NX affected
+
 Only changed projects are tested/built. `nrwl/nx-set-shas@v4` sets the base SHA for diff.
 
 ---
@@ -314,15 +343,18 @@ Only changed projects are tested/built. `nrwl/nx-set-shas@v4` sets the base SHA 
 ## GitHub Actions (CI/CD)
 
 ### Workflows
-| File | Trigger | Does |
-|---|---|---|
-| `.github/workflows/ci.yml` | push/PR to main | NX affected: lint, test, build |
+
+| File                                  | Trigger                           | Does                                |
+| ------------------------------------- | --------------------------------- | ----------------------------------- |
+| `.github/workflows/ci.yml`            | push/PR to main                   | NX affected: lint, test, build      |
 | `.github/workflows/flutter_build.yml` | push/PR touching `apps/mobile/**` | Flutter analyze + APK release build |
 
 ### CI pipeline stages (full planned)
+
 1. Install → 2. Lint → 3. Unit Tests → 4. Build → 5. Security Scan → 6. Package → 7. Deploy → 8. Smoke Tests
 
 ### Flutter CI specifics
+
 - Java 17 (Zulu) required for Android SDK
 - `subosito/flutter-action@v2` stable channel
 - APK artifact retained 7 days: `PingForce-Mobile-Release-APK`
@@ -332,10 +364,12 @@ Only changed projects are tested/built. `nrwl/nx-set-shas@v4` sets the base SHA 
 ## Docker + OCI Deployment
 
 ### Docker
+
 - Multi-stage builds for production images
 - Secrets via OCI Vault — never in Dockerfiles or env files committed to git
 
 ### OCI Services in use
+
 - Compute (VM instances)
 - Load Balancer
 - Virtual Cloud Network (VCN)
@@ -348,11 +382,13 @@ Only changed projects are tested/built. `nrwl/nx-set-shas@v4` sets the base SHA 
 ## Database (PostgreSQL)
 
 ### Naming
+
 - Tables: `snake_case` plural (e.g., `attendance_sessions`)
 - All UUIDs for PKs
 - All business tables have `tenant_id`
 
 ### Migrations
+
 Via Prisma migrations only. No ad-hoc SQL changes to production.
 
 ---
@@ -374,6 +410,7 @@ Via Prisma migrations only. No ad-hoc SQL changes to production.
 ## Error Handling
 
 Every error must:
+
 1. Be logged (structured JSON with correlation ID)
 2. Include `request_id`
 3. Never expose stack traces to clients
@@ -384,6 +421,7 @@ Every error must:
 ## Git Conventions
 
 ### Branch naming
+
 ```
 feature/short-description
 bugfix/short-description
@@ -392,6 +430,7 @@ release/v1.x.x
 ```
 
 ### Commits — Conventional Commits
+
 ```
 feat: add GPS validation to attendance check-in
 fix: correct token expiry check in JWT guard
@@ -405,6 +444,7 @@ test: add unit tests for leave service
 ## AI-Generated Code Rules
 
 All AI output (including from Claude) MUST pass:
+
 1. Architecture review (correct layer placement)
 2. Security review (tenant isolation, RBAC, no secrets)
 3. Performance review (no N+1, pagination, caching)
@@ -434,6 +474,7 @@ No AI output merges without human approval.
 ## Definition of Done
 
 Feature is complete only when:
+
 - [ ] Code implemented in correct layer
 - [ ] Tenant isolation enforced
 - [ ] DTO validation present

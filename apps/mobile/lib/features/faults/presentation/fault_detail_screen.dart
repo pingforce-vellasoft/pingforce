@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/app_states.dart';
 import 'fault_state.dart';
-import 'widgets/fault_list_card.dart'; // re-uses _PriorityBadge, _StatusChip
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FAULT DETAIL SCREEN  (AUDIT §7.2)
@@ -643,28 +642,16 @@ class _SlaCountdownBanner extends StatefulWidget {
 }
 
 class _SlaCountdownBannerState extends State<_SlaCountdownBanner> {
-  late Duration _remaining;
-
   @override
   void initState() {
     super.initState();
-    _updateRemaining();
     _tick();
-  }
-
-  void _updateRemaining() {
-    final due = widget.fault.dueAt;
-    if (due == null) {
-      _remaining = Duration.zero;
-      return;
-    }
-    _remaining = due.difference(DateTime.now());
   }
 
   void _tick() {
     Future.delayed(const Duration(seconds: 30), () {
       if (!mounted) return;
-      setState(_updateRemaining);
+      setState(() {}); // recompute slaRemainingLabel
       _tick();
     });
   }

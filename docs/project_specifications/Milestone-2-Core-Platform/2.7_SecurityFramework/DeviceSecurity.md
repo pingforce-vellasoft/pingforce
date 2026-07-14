@@ -1,7 +1,9 @@
 # DeviceSecurity.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Security Module
+
 ### Device Security & Endpoint Trust Specification
 
 **Module:** Core Platform → Security
@@ -234,19 +236,19 @@ Indexes:
 
 # 16. REST APIs
 
-GET    /api/v1/security/devices
+GET /api/v1/security/devices
 
-GET    /api/v1/security/devices/{id}
+GET /api/v1/security/devices/{id}
 
-POST   /api/v1/security/devices/enroll
+POST /api/v1/security/devices/enroll
 
-POST   /api/v1/security/devices/verify
+POST /api/v1/security/devices/verify
 
-POST   /api/v1/security/devices/revoke
+POST /api/v1/security/devices/revoke
 
-GET    /api/v1/security/devices/compliance
+GET /api/v1/security/devices/compliance
 
-POST   /api/v1/security/devices/trust
+POST /api/v1/security/devices/trust
 
 ---
 

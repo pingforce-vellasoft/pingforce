@@ -266,20 +266,20 @@ Exports
 
 # 12. APIs
 
-POST   /visits
-GET    /visits
-GET    /visits/{id}
-PUT    /visits/{id}
+POST /visits
+GET /visits
+GET /visits/{id}
+PUT /visits/{id}
 DELETE /visits/{id}
 
-POST   /visits/{id}/accept
-POST   /visits/{id}/reject
-POST   /visits/{id}/start
-POST   /visits/{id}/pause
-POST   /visits/{id}/resume
-POST   /visits/{id}/complete
-POST   /visits/{id}/cancel
-POST   /visits/{id}/reopen
+POST /visits/{id}/accept
+POST /visits/{id}/reject
+POST /visits/{id}/start
+POST /visits/{id}/pause
+POST /visits/{id}/resume
+POST /visits/{id}/complete
+POST /visits/{id}/cancel
+POST /visits/{id}/reopen
 
 ---
 

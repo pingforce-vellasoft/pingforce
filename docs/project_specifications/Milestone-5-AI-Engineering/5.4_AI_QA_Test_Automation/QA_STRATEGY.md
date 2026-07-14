@@ -1,14 +1,13 @@
-
 # QA Strategy
 
 ## Document Information
 
-| Field | Value |
-|---|---|
-| Document | QA_STRATEGY.md |
-| Project | Enterprise Multi-Tenant AI Engineering Platform |
+| Field    | Value                                                        |
+| -------- | ------------------------------------------------------------ |
+| Document | QA_STRATEGY.md                                               |
+| Project  | Enterprise Multi-Tenant AI Engineering Platform              |
 | Audience | QA Engineers, Developers, DevOps, Architects, Product Owners |
-| Version | 1.0 |
+| Version  | 1.0                                                          |
 
 ---
 
@@ -193,12 +192,12 @@ Production Release
 
 # 8. Defect Severity
 
-| Severity | Description |
-|---|---|
+| Severity | Description                                                   |
+| -------- | ------------------------------------------------------------- |
 | Critical | System unavailable, security breach, tenant isolation failure |
-| High | Major feature broken |
-| Medium | Partial functionality impacted |
-| Low | Cosmetic or usability issue |
+| High     | Major feature broken                                          |
+| Medium   | Partial functionality impacted                                |
+| Low      | Cosmetic or usability issue                                   |
 
 Priority is determined from business impact and customer urgency.
 
@@ -360,7 +359,7 @@ The QA strategy evolves through:
 
 The QA program is considered successful when:
 
-- >95% automated regression coverage
+- > 95% automated regression coverage
 - Zero Critical production defects at release
 - High-severity escape rate below defined threshold
 - AI evaluation benchmarks consistently met

@@ -93,19 +93,19 @@ Angular Admin
 
 # Technology Stack
 
-| Layer | Technology |
-|------|------------|
-| Web | Angular 21 |
-| Mobile | Flutter |
-| Backend | NestJS |
-| Language | TypeScript |
-| Database | PostgreSQL |
-| ORM | Prisma |
-| Cache | Redis |
-| Queue | BullMQ |
-| Cloud | Oracle Cloud Infrastructure |
-| CI/CD | GitHub Actions |
-| Container | Docker |
+| Layer     | Technology                  |
+| --------- | --------------------------- |
+| Web       | Angular 21                  |
+| Mobile    | Flutter                     |
+| Backend   | NestJS                      |
+| Language  | TypeScript                  |
+| Database  | PostgreSQL                  |
+| ORM       | Prisma                      |
+| Cache     | Redis                       |
+| Queue     | BullMQ                      |
+| Cloud     | Oracle Cloud Infrastructure |
+| CI/CD     | GitHub Actions              |
+| Container | Docker                      |
 
 ---
 
@@ -130,6 +130,7 @@ Documentation follows a documentation-first approach.
 # Milestones
 
 ## Milestone 1
+
 Foundation
 
 - Vision
@@ -140,6 +141,7 @@ Foundation
 - Definition of Done
 
 ## Milestone 2
+
 Core Platform
 
 - Authentication
@@ -151,6 +153,7 @@ Core Platform
 - Workflow Engine
 
 ## Milestone 3
+
 Business Modules
 
 - Attendance

@@ -1,4 +1,3 @@
-
 # REPORTS.md
 
 # Fault Management Module – Reporting Specification
@@ -32,6 +31,7 @@ The Reporting module delivers operational, managerial, executive, compliance, an
 # 3. Report Categories
 
 ## Operational Reports
+
 - Open Faults
 - Closed Faults
 - Pending Assignments
@@ -42,6 +42,7 @@ The Reporting module delivers operational, managerial, executive, compliance, an
 - Duplicate Faults
 
 ## SLA Reports
+
 - Response SLA Compliance
 - Resolution SLA Compliance
 - Near Breach Report
@@ -50,6 +51,7 @@ The Reporting module delivers operational, managerial, executive, compliance, an
 - SLA Trend Analysis
 
 ## Assignment Reports
+
 - Technician Workload
 - Assignment History
 - Reassignment Analysis
@@ -58,6 +60,7 @@ The Reporting module delivers operational, managerial, executive, compliance, an
 - Idle Technician Report
 
 ## Attempt Reports
+
 - Attempt History
 - Daily Visit Report
 - Failed Attempts
@@ -66,6 +69,7 @@ The Reporting module delivers operational, managerial, executive, compliance, an
 - Visit Duration Analysis
 
 ## Workflow Reports
+
 - Status Distribution
 - Workflow Aging
 - Transition History
@@ -73,12 +77,14 @@ The Reporting module delivers operational, managerial, executive, compliance, an
 - Workflow Bottlenecks
 
 ## Escalation Reports
+
 - Escalated Tickets
 - Escalation by Level
 - Escalation Effectiveness
 - Escalation Response Time
 
 ## Customer Reports
+
 - CSAT
 - NPS
 - Feedback Response Rate
@@ -86,6 +92,7 @@ The Reporting module delivers operational, managerial, executive, compliance, an
 - Customer Complaint Trends
 
 ## RCA Reports
+
 - Repeat Fault Analysis
 - Root Cause Distribution
 - CAPA Status
@@ -93,6 +100,7 @@ The Reporting module delivers operational, managerial, executive, compliance, an
 - Preventive Action Effectiveness
 
 ## Productivity Reports
+
 - Technician Productivity
 - Team Productivity
 - Branch Performance
@@ -100,6 +108,7 @@ The Reporting module delivers operational, managerial, executive, compliance, an
 - Manager Performance
 
 ## Executive Reports
+
 - Enterprise KPIs
 - Monthly Business Review
 - Quarterly Performance
@@ -107,6 +116,7 @@ The Reporting module delivers operational, managerial, executive, compliance, an
 - Forecast & Capacity Planning
 
 ## Audit & Compliance Reports
+
 - Audit Trail
 - Configuration Changes
 - Login History
@@ -154,6 +164,7 @@ The Reporting module delivers operational, managerial, executive, compliance, an
 - PDF
 
 Optional:
+
 - JSON
 - XML
 
@@ -162,6 +173,7 @@ Optional:
 # 7. Scheduling
 
 Supports:
+
 - Daily
 - Weekly
 - Monthly
@@ -170,6 +182,7 @@ Supports:
 - Custom Cron (platform)
 
 Delivery:
+
 - Email
 - Secure Download
 - In-App Notification
@@ -206,6 +219,7 @@ Delivery:
 # 10. Analytics Integration
 
 Reports consume:
+
 - Materialized views
 - Aggregation services
 - Historical snapshots
@@ -229,6 +243,7 @@ Reports consume:
 # 12. Database Objects
 
 Materialized Views:
+
 - mv_fault_summary
 - mv_sla_summary
 - mv_assignment_summary
@@ -238,6 +253,7 @@ Materialized Views:
 - mv_productivity_summary
 
 Tables:
+
 - report_definitions
 - report_schedules
 - report_exports
@@ -248,6 +264,7 @@ Tables:
 # 13. Performance
 
 Targets:
+
 - Dashboard reports <3 sec
 - Large reports via async generation
 - Cached aggregations
@@ -259,6 +276,7 @@ Targets:
 # 14. Mobile Support
 
 Managers can:
+
 - View summaries
 - Run favorite reports
 - Export PDFs

@@ -1,6 +1,7 @@
 # TECH_STACK.md
 
 # Enterprise Workforce Platform
+
 ## Official Technology Stack Specification
 
 **Version:** 1.0.0
@@ -38,24 +39,24 @@ The platform is designed around the following principles:
 
 # 3. High-Level Stack
 
-| Layer | Technology | Purpose |
-|--------|------------|---------|
-| Web Admin | Angular 21 | Enterprise administration portal |
-| Mobile | Flutter (Stable) | Android & iOS application |
-| Backend | NestJS | REST APIs and business services |
-| Language | TypeScript | Web & Backend |
-| Mobile Language | Dart | Flutter development |
-| Database | PostgreSQL 16+ | Primary transactional database |
-| ORM | Prisma | Type-safe data access |
-| Cache | Redis | Caching and session data |
-| Queue | BullMQ | Background jobs |
-| Auth | JWT + Refresh Tokens | Authentication |
-| Storage | OCI Object Storage | Documents & media |
-| Container | Docker | Packaging |
-| Cloud | Oracle Cloud Infrastructure | Production hosting |
-| CI/CD | GitHub Actions | Build & deployment |
-| Monitoring | Prometheus + Grafana | Metrics |
-| Logging | Structured JSON | Centralized observability |
+| Layer           | Technology                  | Purpose                          |
+| --------------- | --------------------------- | -------------------------------- |
+| Web Admin       | Angular 21                  | Enterprise administration portal |
+| Mobile          | Flutter (Stable)            | Android & iOS application        |
+| Backend         | NestJS                      | REST APIs and business services  |
+| Language        | TypeScript                  | Web & Backend                    |
+| Mobile Language | Dart                        | Flutter development              |
+| Database        | PostgreSQL 16+              | Primary transactional database   |
+| ORM             | Prisma                      | Type-safe data access            |
+| Cache           | Redis                       | Caching and session data         |
+| Queue           | BullMQ                      | Background jobs                  |
+| Auth            | JWT + Refresh Tokens        | Authentication                   |
+| Storage         | OCI Object Storage          | Documents & media                |
+| Container       | Docker                      | Packaging                        |
+| Cloud           | Oracle Cloud Infrastructure | Production hosting               |
+| CI/CD           | GitHub Actions              | Build & deployment               |
+| Monitoring      | Prometheus + Grafana        | Metrics                          |
+| Logging         | Structured JSON             | Centralized observability        |
 
 ---
 

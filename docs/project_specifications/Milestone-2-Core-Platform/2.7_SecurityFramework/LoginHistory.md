@@ -1,7 +1,9 @@
 # LoginHistory.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Security Module
+
 ### Login History & Authentication Activity Specification
 
 **Module:** Core Platform → Security
@@ -227,17 +229,17 @@ Partition monthly for scalability.
 
 # 14. REST APIs
 
-GET    /api/v1/security/login-history
+GET /api/v1/security/login-history
 
-GET    /api/v1/security/login-history/{id}
+GET /api/v1/security/login-history/{id}
 
-GET    /api/v1/security/login-history/user/{userId}
+GET /api/v1/security/login-history/user/{userId}
 
-GET    /api/v1/security/login-history/session/{sessionId}
+GET /api/v1/security/login-history/session/{sessionId}
 
-POST   /api/v1/security/login-history/search
+POST /api/v1/security/login-history/search
 
-GET    /api/v1/security/login-history/export
+GET /api/v1/security/login-history/export
 
 ---
 

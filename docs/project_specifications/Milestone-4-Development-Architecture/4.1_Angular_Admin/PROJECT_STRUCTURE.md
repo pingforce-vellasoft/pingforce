@@ -317,11 +317,11 @@ config/
 - kebab-case folders
 - PascalCase classes
 - camelCase variables
-- *.service.ts
-- *.component.ts
-- *.guard.ts
-- *.interceptor.ts
-- *.model.ts
+- \*.service.ts
+- \*.component.ts
+- \*.guard.ts
+- \*.interceptor.ts
+- \*.model.ts
 
 ---
 

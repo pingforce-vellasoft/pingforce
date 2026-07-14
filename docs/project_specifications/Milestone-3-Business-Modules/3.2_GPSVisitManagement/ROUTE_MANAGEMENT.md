@@ -238,16 +238,16 @@ Exports
 
 # 14. APIs
 
-POST   /routes
-GET    /routes
-GET    /routes/{id}
-PUT    /routes/{id}
+POST /routes
+GET /routes
+GET /routes/{id}
+PUT /routes/{id}
 DELETE /routes/{id}
-POST   /routes/{id}/optimize
-POST   /routes/{id}/assign
-POST   /routes/{id}/start
-POST   /routes/{id}/complete
-GET    /routes/{id}/playback
+POST /routes/{id}/optimize
+POST /routes/{id}/assign
+POST /routes/{id}/start
+POST /routes/{id}/complete
+GET /routes/{id}/playback
 
 ---
 

@@ -12,41 +12,41 @@ application lifecycle.
 This document is a future-state architectural specification and
 implementation blueprint.
 
-------------------------------------------------------------------------
+---
 
 # Objectives
 
 The testing architecture shall:
 
--   Ensure enterprise-grade quality
--   Validate functional and non-functional requirements
--   Prevent regressions
--   Support continuous delivery
--   Validate security and compliance
--   Verify offline-first behavior
--   Ensure multi-tenant isolation
--   Measure application performance
--   Improve long-term maintainability
+- Ensure enterprise-grade quality
+- Validate functional and non-functional requirements
+- Prevent regressions
+- Support continuous delivery
+- Validate security and compliance
+- Verify offline-first behavior
+- Ensure multi-tenant isolation
+- Measure application performance
+- Improve long-term maintainability
 
-------------------------------------------------------------------------
+---
 
 # Quality Principles
 
--   Shift Left Testing
--   Test Automation First
--   Risk-Based Testing
--   Continuous Validation
--   Repeatable Results
--   Independent Verification
--   Traceability
--   Security by Validation
--   Performance Awareness
+- Shift Left Testing
+- Test Automation First
+- Risk-Based Testing
+- Continuous Validation
+- Repeatable Results
+- Independent Verification
+- Traceability
+- Security by Validation
+- Performance Awareness
 
-------------------------------------------------------------------------
+---
 
 # Testing Pyramid
 
-``` text
+```text
                Manual Validation
                      ▲
               End-to-End Tests
@@ -61,7 +61,7 @@ The testing architecture shall:
 The majority of automated tests shall exist at the Unit and Widget
 layers.
 
-------------------------------------------------------------------------
+---
 
 # Test Levels
 
@@ -69,285 +69,285 @@ layers.
 
 Validate:
 
--   Business rules
--   Use cases
--   Repository logic
--   Utility classes
--   Validators
--   Mappers
--   Domain services
+- Business rules
+- Use cases
+- Repository logic
+- Utility classes
+- Validators
+- Mappers
+- Domain services
 
 ## Widget Testing
 
 Validate:
 
--   UI rendering
--   State changes
--   User interaction
--   Form validation
--   Navigation
--   Theme rendering
--   Accessibility behavior
+- UI rendering
+- State changes
+- User interaction
+- Form validation
+- Navigation
+- Theme rendering
+- Accessibility behavior
 
 ## Integration Testing
 
 Validate:
 
--   Module interaction
--   API communication
--   Offline synchronization
--   Authentication
--   RBAC
--   Notifications
--   GPS workflows
+- Module interaction
+- API communication
+- Offline synchronization
+- Authentication
+- RBAC
+- Notifications
+- GPS workflows
 
 ## End-to-End Testing
 
 Validate complete user journeys including:
 
--   Login
--   Attendance
--   GPS tracking
--   Fault lifecycle
--   Lead lifecycle
--   Document upload
--   Synchronization
--   Logout
+- Login
+- Attendance
+- GPS tracking
+- Fault lifecycle
+- Lead lifecycle
+- Document upload
+- Synchronization
+- Logout
 
-------------------------------------------------------------------------
+---
 
 # Functional Testing
 
 The platform shall validate:
 
--   Authentication
--   Authorization
--   Attendance
--   GPS
--   Fault Management
--   Lead Management
--   Documents
--   Notifications
--   Reports
--   Settings
--   White Label
--   Feature Flags
--   Module Engine
+- Authentication
+- Authorization
+- Attendance
+- GPS
+- Fault Management
+- Lead Management
+- Documents
+- Notifications
+- Reports
+- Settings
+- White Label
+- Feature Flags
+- Module Engine
 
-------------------------------------------------------------------------
+---
 
 # Non-Functional Testing
 
 The testing strategy shall include:
 
--   Performance
--   Scalability
--   Reliability
--   Availability
--   Battery usage
--   Memory usage
--   Network usage
--   Usability
--   Accessibility
--   Localization
+- Performance
+- Scalability
+- Reliability
+- Availability
+- Battery usage
+- Memory usage
+- Network usage
+- Usability
+- Accessibility
+- Localization
 
-------------------------------------------------------------------------
+---
 
 # Security Testing
 
 Validation shall include:
 
--   Authentication
--   Authorization
--   Secure storage
--   API security
--   Certificate pinning
--   Offline security
--   Session management
--   Device validation
--   Penetration testing
--   Dependency scanning
+- Authentication
+- Authorization
+- Secure storage
+- API security
+- Certificate pinning
+- Offline security
+- Session management
+- Device validation
+- Penetration testing
+- Dependency scanning
 
-------------------------------------------------------------------------
+---
 
 # Offline Testing
 
 Offline scenarios shall validate:
 
--   Queue creation
--   Queue processing
--   Synchronization
--   Conflict resolution
--   Retry logic
--   Cache behavior
--   Data persistence
--   Recovery after reconnect
+- Queue creation
+- Queue processing
+- Synchronization
+- Conflict resolution
+- Retry logic
+- Cache behavior
+- Data persistence
+- Recovery after reconnect
 
-------------------------------------------------------------------------
+---
 
 # Synchronization Testing
 
 Synchronization validation shall include:
 
--   Upload queue
--   Download queue
--   Delta synchronization
--   Retry processing
--   Conflict handling
--   Batch processing
--   Performance under load
+- Upload queue
+- Download queue
+- Delta synchronization
+- Retry processing
+- Conflict handling
+- Batch processing
+- Performance under load
 
-------------------------------------------------------------------------
+---
 
 # GPS Testing
 
 GPS validation shall include:
 
--   Location acquisition
--   Geofence entry
--   Geofence exit
--   Background tracking
--   Attendance validation
--   Offline buffering
--   Synchronization
--   Battery optimization
+- Location acquisition
+- Geofence entry
+- Geofence exit
+- Background tracking
+- Attendance validation
+- Offline buffering
+- Synchronization
+- Battery optimization
 
-------------------------------------------------------------------------
+---
 
 # White Label Testing
 
 Validation shall include:
 
--   Tenant branding
--   Theme switching
--   Module enablement
--   Feature flags
--   Licensing
--   Localization
--   Tenant isolation
+- Tenant branding
+- Theme switching
+- Module enablement
+- Feature flags
+- Licensing
+- Localization
+- Tenant isolation
 
-------------------------------------------------------------------------
+---
 
 # RBAC Testing
 
 Authorization testing shall validate:
 
--   Role permissions
--   Data scope
--   Menu visibility
--   Screen visibility
--   Button visibility
--   API authorization
--   Workflow authorization
--   Tenant isolation
+- Role permissions
+- Data scope
+- Menu visibility
+- Screen visibility
+- Button visibility
+- API authorization
+- Workflow authorization
+- Tenant isolation
 
-------------------------------------------------------------------------
+---
 
 # Compatibility Testing
 
 The platform shall be validated across:
 
--   Supported Android versions
--   Supported iOS versions
--   Phone form factors
--   Tablet form factors
--   Multiple screen sizes
--   Multiple languages
--   Light and Dark themes
+- Supported Android versions
+- Supported iOS versions
+- Phone form factors
+- Tablet form factors
+- Multiple screen sizes
+- Multiple languages
+- Light and Dark themes
 
-------------------------------------------------------------------------
+---
 
 # Test Environments
 
 Testing environments shall include:
 
--   Local Development
--   Development
--   QA
--   UAT
--   Staging
--   Production Validation
+- Local Development
+- Development
+- QA
+- UAT
+- Staging
+- Production Validation
 
 Each environment shall maintain isolated configuration.
 
-------------------------------------------------------------------------
+---
 
 # Test Data Management
 
 The architecture shall support:
 
--   Seed data
--   Mock data
--   Synthetic data
--   Tenant-specific datasets
--   Anonymized production-like data
--   Repeatable datasets
+- Seed data
+- Mock data
+- Synthetic data
+- Tenant-specific datasets
+- Anonymized production-like data
+- Repeatable datasets
 
-------------------------------------------------------------------------
+---
 
 # Automation
 
 Automated testing shall support:
 
--   Unit execution
--   Widget execution
--   Integration execution
--   End-to-end execution
--   Performance benchmarks
--   Security scanning
--   Static analysis
--   Code coverage
+- Unit execution
+- Widget execution
+- Integration execution
+- End-to-end execution
+- Performance benchmarks
+- Security scanning
+- Static analysis
+- Code coverage
 
 Automation shall integrate with CI/CD pipelines.
 
-------------------------------------------------------------------------
+---
 
 # Reporting
 
 Quality reports shall include:
 
--   Test execution
--   Pass/Fail rate
--   Code coverage
--   Performance trends
--   Security findings
--   Regression history
--   Flaky test detection
--   Environment health
+- Test execution
+- Pass/Fail rate
+- Code coverage
+- Performance trends
+- Security findings
+- Regression history
+- Flaky test detection
+- Environment health
 
-------------------------------------------------------------------------
+---
 
 # Metrics
 
 Quality metrics shall include:
 
--   Test coverage
--   Defect density
--   Regression rate
--   Mean time to detect
--   Mean time to resolve
--   Escaped defects
--   Automation percentage
--   Release readiness
+- Test coverage
+- Defect density
+- Regression rate
+- Mean time to detect
+- Mean time to resolve
+- Escaped defects
+- Automation percentage
+- Release readiness
 
-------------------------------------------------------------------------
+---
 
 # Integration
 
 Testing shall integrate with:
 
--   CI/CD
--   Authentication
--   RBAC
--   Offline Engine
--   Synchronization Engine
--   GPS Services
--   Notification Engine
--   White Label
--   Analytics
--   Audit Framework
+- CI/CD
+- Authentication
+- RBAC
+- Offline Engine
+- Synchronization Engine
+- GPS Services
+- Notification Engine
+- White Label
+- Analytics
+- Audit Framework
 
-------------------------------------------------------------------------
+---
 
 # Architectural Rules
 
@@ -360,7 +360,7 @@ Testing shall integrate with:
 7.  Automated testing shall be prioritized over manual repetition.
 8.  Test artifacts shall remain version controlled.
 
-------------------------------------------------------------------------
+---
 
 # Future Expansion
 
@@ -369,7 +369,7 @@ visual regression testing, chaos engineering, mutation testing, contract
 testing, synthetic monitoring, production validation, and additional
 enterprise quality practices without architectural redesign.
 
-------------------------------------------------------------------------
+---
 
 # Conclusion
 

@@ -1,7 +1,9 @@
 # Upload.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – File Management Module
+
 ### File Upload & Storage Specification
 
 **Module:** Core Platform → File Management
@@ -245,21 +247,21 @@ Indexes:
 
 # 14. REST APIs
 
-POST   /api/v1/files/upload
+POST /api/v1/files/upload
 
-POST   /api/v1/files/upload/chunk
+POST /api/v1/files/upload/chunk
 
-POST   /api/v1/files/upload/complete
+POST /api/v1/files/upload/complete
 
-GET    /api/v1/files/{id}
+GET /api/v1/files/{id}
 
-GET    /api/v1/files
+GET /api/v1/files
 
-PUT    /api/v1/files/{id}
+PUT /api/v1/files/{id}
 
 DELETE /api/v1/files/{id}
 
-POST   /api/v1/files/{id}/restore
+POST /api/v1/files/{id}/restore
 
 ---
 

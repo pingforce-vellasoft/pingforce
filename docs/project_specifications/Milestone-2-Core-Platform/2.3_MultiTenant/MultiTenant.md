@@ -1,6 +1,7 @@
 # MultiTenant.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Multi-Tenant Architecture Specification
 
 **Module:** Core Platform → Multi-Tenant
@@ -70,25 +71,25 @@ Architecture Model:
 Platform
 │
 ├── Tenant A
-│   ├── Users
-│   ├── Attendance
-│   ├── GPS
-│   ├── Fault Tickets
-│   └── Reports
+│ ├── Users
+│ ├── Attendance
+│ ├── GPS
+│ ├── Fault Tickets
+│ └── Reports
 │
 ├── Tenant B
-│   ├── Users
-│   ├── Attendance
-│   ├── Leads
-│   ├── Settings
-│   └── Reports
+│ ├── Users
+│ ├── Attendance
+│ ├── Leads
+│ ├── Settings
+│ └── Reports
 │
 └── Platform Services
-    ├── Authentication
-    ├── RBAC
-    ├── Notifications
-    ├── Audit
-    └── Monitoring
+├── Authentication
+├── RBAC
+├── Notifications
+├── Audit
+└── Monitoring
 
 Logical isolation is enforced through tenant identifiers and authorization.
 
@@ -99,12 +100,10 @@ Logical isolation is enforced through tenant identifiers and authorization.
 Approved strategy:
 
 Shared Application
-+
-Shared Database
-+
-Shared Schema
-+
-Tenant ID on every business table
+
+- Shared Database
+- Shared Schema
+- Tenant ID on every business table
 
 Mandatory rule:
 

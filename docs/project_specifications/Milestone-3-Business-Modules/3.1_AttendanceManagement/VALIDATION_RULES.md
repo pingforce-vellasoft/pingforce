@@ -47,18 +47,23 @@ The Validation Engine enforces all business, security, workflow, GPS, shift, att
 # 4. Authentication Validation
 
 VAL-AUTH-001
+
 - User must be authenticated.
 
 VAL-AUTH-002
+
 - JWT token must be valid.
 
 VAL-AUTH-003
+
 - Session must not be expired.
 
 VAL-AUTH-004
+
 - User account must be active.
 
 VAL-AUTH-005
+
 - Tenant must be resolved before processing.
 
 ---
@@ -66,18 +71,23 @@ VAL-AUTH-005
 # 5. Attendance Validation
 
 VAL-ATT-001
+
 - Only one active attendance session per employee.
 
 VAL-ATT-002
+
 - Check-Out requires an active Check-In.
 
 VAL-ATT-003
+
 - Attendance date cannot violate tenant policy.
 
 VAL-ATT-004
+
 - Duplicate attendance is not allowed.
 
 VAL-ATT-005
+
 - Attendance method must be enabled.
 
 ---
@@ -226,18 +236,23 @@ Every failed and successful validation records:
 # 18. RBAC
 
 Employee
+
 - Personal validations
 
 Manager
+
 - Team validation outcomes
 
 HR
+
 - Attendance validation review
 
 Employer
+
 - Configure validation policies
 
 Super Admin
+
 - Platform validation defaults
 
 ---

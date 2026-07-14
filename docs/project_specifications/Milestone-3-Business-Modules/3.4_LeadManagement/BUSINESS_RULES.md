@@ -4,16 +4,18 @@
 
 ## Document Information
 
-  Item       Value
-  ---------- --------------------------------------
-  Module     Lead Management
-  Platform   Enterprise Workforce Management SaaS
-  Document   Business Rules
-  Version    1.0
-  Status     Production Ready
-  Owner      Product Management
+Item Value
 
-------------------------------------------------------------------------
+---
+
+Module Lead Management
+Platform Enterprise Workforce Management SaaS
+Document Business Rules
+Version 1.0
+Status Production Ready
+Owner Product Management
+
+---
 
 # 1. Purpose
 
@@ -22,26 +24,26 @@ module. These rules ensure consistent behavior across Web, Mobile, APIs,
 Integrations, Reports, and Workflows while supporting a configurable,
 multi-tenant SaaS architecture.
 
-------------------------------------------------------------------------
+---
 
 # 2. Scope
 
 These rules apply to:
 
--   Lead Creation
--   Lead Qualification
--   Lead Assignment
--   Follow-up Management
--   Pipeline Management
--   Lead Conversion
--   Notifications
--   Reporting
--   Mobile Offline Operations
--   APIs
--   Security
--   Multi-Tenant Data Isolation
+- Lead Creation
+- Lead Qualification
+- Lead Assignment
+- Follow-up Management
+- Pipeline Management
+- Lead Conversion
+- Notifications
+- Reporting
+- Mobile Offline Operations
+- APIs
+- Security
+- Multi-Tenant Data Isolation
 
-------------------------------------------------------------------------
+---
 
 # 3. Tenant Rules
 
@@ -58,7 +60,7 @@ Users shall never access leads belonging to another tenant.
 Each tenant may configure: - Lead pipeline - Lead sources - Assignment
 rules - SLA - Notifications - Custom fields - Mandatory fields
 
-------------------------------------------------------------------------
+---
 
 # 4. Lead Creation Rules
 
@@ -82,7 +84,7 @@ Every lead must have a valid lead source.
 
 Every lead must always have one active owner.
 
-------------------------------------------------------------------------
+---
 
 # 5. Assignment Rules
 
@@ -100,7 +102,7 @@ logging - Notification to new owner
 
 Previous ownership records shall never be deleted.
 
-------------------------------------------------------------------------
+---
 
 # 6. Pipeline Rules
 
@@ -123,7 +125,7 @@ Approval - Manager Review
 Lost leads require: - Mandatory reason - Loss category - Competitor
 (optional) - Closure notes
 
-------------------------------------------------------------------------
+---
 
 # 7. Follow-up Rules
 
@@ -141,28 +143,28 @@ Missed follow-ups trigger: - Notification - Escalation - Dashboard alert
 Rescheduling requires: - Reason - Previous schedule retained - Audit
 trail
 
-------------------------------------------------------------------------
+---
 
 # 8. Activity Rules
 
 ### BR-050 Supported Activities
 
--   Calls
--   Meetings
--   Visits
--   Emails
--   WhatsApp
--   SMS
--   Notes
--   Documents
--   Quotations
+- Calls
+- Meetings
+- Visits
+- Emails
+- WhatsApp
+- SMS
+- Notes
+- Documents
+- Quotations
 
 ### BR-051 Immutable History
 
 Completed activities cannot be permanently removed without
 administrative privileges.
 
-------------------------------------------------------------------------
+---
 
 # 9. Conversion Rules
 
@@ -180,7 +182,7 @@ Contract - Project - Service Request
 
 All conversion events shall be permanently audited.
 
-------------------------------------------------------------------------
+---
 
 # 10. Security Rules
 
@@ -201,7 +203,7 @@ Global (Super Admin)
 Attachments shall: - Support virus scanning - Store securely - Follow
 tenant access policies
 
-------------------------------------------------------------------------
+---
 
 # 11. API Rules
 
@@ -219,7 +221,7 @@ Tenant-specific API limits apply.
 Incoming webhooks shall: - Validate signature - Validate payload -
 Reject duplicates - Audit requests
 
-------------------------------------------------------------------------
+---
 
 # 12. Offline Rules
 
@@ -234,7 +236,7 @@ without network connectivity.
 Synchronization shall: - Retry automatically - Resolve conflicts -
 Preserve timestamps - Prevent duplicate creation
 
-------------------------------------------------------------------------
+---
 
 # 13. Notification Rules
 
@@ -245,54 +247,54 @@ Converted - Lost - SLA Breach
 
 Notification templates are configurable per tenant.
 
-------------------------------------------------------------------------
+---
 
 # 14. Reporting Rules
 
 Reports must support:
 
--   Date filters
--   Region filters
--   Branch filters
--   Team filters
--   Employee filters
--   Campaign filters
--   Source filters
--   Product filters
+- Date filters
+- Region filters
+- Branch filters
+- Team filters
+- Employee filters
+- Campaign filters
+- Source filters
+- Product filters
 
 Exports: - Excel - CSV - PDF
 
-------------------------------------------------------------------------
+---
 
 # 15. Audit Rules
 
 The following actions shall always be audited:
 
--   Lead creation
--   Updates
--   Assignment
--   Reassignment
--   Pipeline changes
--   Conversion
--   Imports
--   Exports
--   Login context
--   API operations
+- Lead creation
+- Updates
+- Assignment
+- Reassignment
+- Pipeline changes
+- Conversion
+- Imports
+- Exports
+- Login context
+- API operations
 
 Audit records include: - User - Tenant - Timestamp - Device - Browser -
 IP Address - GPS (if available) - Previous Value - New Value
 
-------------------------------------------------------------------------
+---
 
 # 16. Performance Rules
 
--   Search response \< 2 seconds
--   Dashboard load \< 5 seconds
--   Import 100,000+ records
--   Horizontal scalability
--   99.9% uptime target
+- Search response \< 2 seconds
+- Dashboard load \< 5 seconds
+- Import 100,000+ records
+- Horizontal scalability
+- 99.9% uptime target
 
-------------------------------------------------------------------------
+---
 
 # 17. Compliance Rules
 
@@ -300,7 +302,7 @@ Platform shall support: - GDPR-ready architecture - Audit retention
 policies - Data encryption - Secure backups - Role-based access -
 Complete activity history
 
-------------------------------------------------------------------------
+---
 
 # 18. Future Business Rules
 
@@ -308,7 +310,7 @@ Reserved for: - AI Lead Scoring - Predictive Conversion - Marketing
 Automation - Chatbot Lead Qualification - Geo-intelligent Assignment -
 Intelligent Duplicate Detection
 
-------------------------------------------------------------------------
+---
 
 # 19. Rule Governance
 

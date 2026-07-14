@@ -1,4 +1,3 @@
-
 # DATABASE.md
 
 # Fault Management Module – Database Design Specification

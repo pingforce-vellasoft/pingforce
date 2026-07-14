@@ -30,29 +30,34 @@ The Secret Management architecture shall:
 The platform shall classify secrets into the following categories:
 
 ## Infrastructure Secrets
+
 - Cloud credentials
 - Terraform credentials
 - Kubernetes service accounts
 - Container registry credentials
 
 ## Database Secrets
+
 - PostgreSQL usernames/passwords
 - Connection strings
 - Read replica credentials
 - Migration credentials
 
 ## Cache & Messaging
+
 - Redis credentials
 - Queue credentials
 - Message broker authentication
 
 ## Application Secrets
+
 - JWT signing keys
 - Refresh token keys
 - Encryption keys
 - Session secrets
 
 ## Third-Party Integrations
+
 - Firebase
 - WhatsApp Business API
 - SMTP
@@ -62,6 +67,7 @@ The platform shall classify secrets into the following categories:
 - OAuth providers
 
 ## White-Label & Tenant Secrets
+
 - Tenant API keys
 - Customer webhooks
 - Tenant SMTP credentials

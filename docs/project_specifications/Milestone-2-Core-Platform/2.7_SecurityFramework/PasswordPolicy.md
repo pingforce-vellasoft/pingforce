@@ -1,7 +1,9 @@
 # PasswordPolicy.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Security Module
+
 ### Password Policy & Credential Management Specification
 
 **Module:** Core Platform → Security
@@ -252,17 +254,17 @@ Indexes:
 
 # 16. REST APIs
 
-GET    /api/v1/security/password-policy
+GET /api/v1/security/password-policy
 
-PUT    /api/v1/security/password-policy
+PUT /api/v1/security/password-policy
 
-POST   /api/v1/security/password/reset
+POST /api/v1/security/password/reset
 
-POST   /api/v1/security/password/change
+POST /api/v1/security/password/change
 
-POST   /api/v1/security/password/validate
+POST /api/v1/security/password/validate
 
-GET    /api/v1/security/password/history
+GET /api/v1/security/password/history
 
 ---
 

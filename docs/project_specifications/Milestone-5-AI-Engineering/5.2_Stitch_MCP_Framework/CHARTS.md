@@ -1,4 +1,3 @@
-
 # CHARTS.md
 
 # Stitch Charts & Data Visualization Standards
@@ -45,37 +44,44 @@ The standards apply to Angular Admin Portal, Flutter Mobile Application, Super A
 # 4. Supported Chart Types
 
 ## Comparison
+
 - Bar
 - Horizontal Bar
 - Grouped Bar
 - Stacked Bar
 
 ## Trends
+
 - Line
 - Area
 - Sparkline
 
 ## Distribution
+
 - Histogram
 - Box Plot
 - Heatmap
 
 ## Composition
+
 - Pie
 - Donut
 - Treemap
 - Stacked Area
 
 ## Relationships
+
 - Scatter
 - Bubble
 
 ## Progress
+
 - Gauge
 - Progress Ring
 - KPI Card
 
 ## Geographic
+
 - Region Map
 - Cluster Map
 - GPS Heatmap
@@ -123,6 +129,7 @@ Charts are defined for:
 # 7. Dashboard Integration
 
 Charts should integrate with:
+
 - KPI widgets
 - Filters
 - Saved views
@@ -146,12 +153,15 @@ Charts should integrate with:
 # 9. Responsive Behavior
 
 Desktop:
+
 - Multiple charts per row
 
 Tablet:
+
 - Adaptive grid
 
 Mobile:
+
 - Single-column charts
 - Swipe between visualizations
 
@@ -192,6 +202,7 @@ Mobile:
 # 13. White-Label Support
 
 Configurable:
+
 - Theme
 - Colors
 - Fonts
@@ -204,6 +215,7 @@ Configurable:
 # 14. AI Generation Standards
 
 AI-generated charts must:
+
 - Use approved design tokens
 - Select appropriate visualization types
 - Respect RBAC
@@ -215,6 +227,7 @@ AI-generated charts must:
 # 15. Export
 
 Supported:
+
 - PNG
 - SVG
 - PDF
@@ -226,6 +239,7 @@ Supported:
 # 16. Testing
 
 Validate:
+
 - Data accuracy
 - Rendering
 - Responsiveness
@@ -238,6 +252,7 @@ Validate:
 # 17. Governance
 
 Changes require:
+
 - Product review
 - UX review
 - Engineering approval

@@ -1,7 +1,9 @@
 # ApprovalWorkflow.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Workflows Module
+
 ### Enterprise Approval Workflow Specification
 
 **Module:** Core Platform → Workflows
@@ -290,21 +292,21 @@ Indexes:
 
 # 17. REST APIs
 
-GET    /api/v1/workflows
+GET /api/v1/workflows
 
-GET    /api/v1/workflows/{id}
+GET /api/v1/workflows/{id}
 
-POST   /api/v1/workflows
+POST /api/v1/workflows
 
-PUT    /api/v1/workflows/{id}
+PUT /api/v1/workflows/{id}
 
-POST   /api/v1/workflows/{id}/publish
+POST /api/v1/workflows/{id}/publish
 
-POST   /api/v1/workflows/{id}/activate
+POST /api/v1/workflows/{id}/activate
 
-POST   /api/v1/workflows/instances/{id}/action
+POST /api/v1/workflows/instances/{id}/action
 
-GET    /api/v1/workflows/instances/{id}/history
+GET /api/v1/workflows/instances/{id}/history
 
 ---
 

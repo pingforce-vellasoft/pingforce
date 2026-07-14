@@ -1,7 +1,9 @@
 # LeadSources.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Master Data Module
+
 ### Lead Sources Master Data Specification
 
 **Module:** Core Platform → Master Data
@@ -217,19 +219,19 @@ Indexes:
 
 # 12. REST APIs
 
-GET    /api/v1/master/lead-sources
+GET /api/v1/master/lead-sources
 
-GET    /api/v1/master/lead-sources/{id}
+GET /api/v1/master/lead-sources/{id}
 
-POST   /api/v1/master/lead-sources
+POST /api/v1/master/lead-sources
 
-PUT    /api/v1/master/lead-sources/{id}
+PUT /api/v1/master/lead-sources/{id}
 
 DELETE /api/v1/master/lead-sources/{id}
 
-GET    /api/v1/master/lead-sources/tree
+GET /api/v1/master/lead-sources/tree
 
-POST   /api/v1/master/lead-sources/import
+POST /api/v1/master/lead-sources/import
 
 ---
 

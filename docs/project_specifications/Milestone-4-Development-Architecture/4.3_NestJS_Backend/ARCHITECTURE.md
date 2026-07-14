@@ -1,4 +1,3 @@
-
 # NestJS Backend Architecture Specification
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -31,19 +30,19 @@ The backend shall provide a secure, scalable, configurable, enterprise-grade pla
 
 # 3. Technology Direction
 
-| Layer | Planned Technology |
-|--------|--------------------|
-| Runtime | Node.js LTS |
-| Framework | NestJS |
-| Language | TypeScript |
-| ORM | Prisma |
-| Database | PostgreSQL |
-| Cache | Redis |
-| Queue | BullMQ |
-| API | REST (OpenAPI) |
+| Layer          | Planned Technology  |
+| -------------- | ------------------- |
+| Runtime        | Node.js LTS         |
+| Framework      | NestJS              |
+| Language       | TypeScript          |
+| ORM            | Prisma              |
+| Database       | PostgreSQL          |
+| Cache          | Redis               |
+| Queue          | BullMQ              |
+| API            | REST (OpenAPI)      |
 | Authentication | JWT + Refresh Token |
-| Container | Docker |
-| CI/CD | GitHub Actions |
+| Container      | Docker              |
+| CI/CD          | GitHub Actions      |
 
 ---
 

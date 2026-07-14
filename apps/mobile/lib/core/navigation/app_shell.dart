@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../theme/theme.dart';
 import '../sync/sync_provider.dart';
 import '../network/connectivity_provider.dart';
-import '../widgets/offline_aware_scaffold.dart';
 import '../widgets/app_states.dart';
 import 'nav_destinations.dart';
 

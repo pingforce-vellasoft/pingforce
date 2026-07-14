@@ -1,4 +1,3 @@
-
 # AUTHENTICATION.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -259,8 +258,8 @@ Representative endpoints:
 - POST /auth/change-password
 - POST /auth/forgot-password
 - POST /auth/reset-password
-- GET  /auth/profile
-- GET  /auth/sessions
+- GET /auth/profile
+- GET /auth/sessions
 
 API paths are illustrative and may evolve under versioned routing.
 

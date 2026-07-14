@@ -1,4 +1,3 @@
-
 # CODING_STANDARDS.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -68,27 +67,35 @@ Each module shall encapsulate its own business logic, DTOs, controllers, service
 # 5. Naming Conventions
 
 Classes:
+
 - PascalCase
 
 Interfaces:
+
 - Prefix with `I` only where architectural contracts require it; otherwise use descriptive interface names.
 
 Files:
+
 - kebab-case
 
 Variables & Functions:
+
 - camelCase
 
 Constants:
+
 - UPPER_SNAKE_CASE
 
 Enums:
+
 - PascalCase
 
 Database tables:
+
 - snake_case plural
 
 Database columns:
+
 - snake_case
 
 ---

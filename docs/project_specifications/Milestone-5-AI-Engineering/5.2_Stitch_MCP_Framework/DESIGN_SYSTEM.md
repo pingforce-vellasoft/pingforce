@@ -1,7 +1,7 @@
-
 # DESIGN_SYSTEM.md
 
 # Stitch Design System
+
 **Module:** AI_Engineering/Stitch  
 **Version:** 1.0.0
 
@@ -43,6 +43,7 @@ This document defines the enterprise design system used by the AI-assisted Stitc
 ## 5. Design Tokens
 
 ### Colors
+
 - Primary
 - Secondary
 - Success
@@ -56,6 +57,7 @@ This document defines the enterprise design system used by the AI-assisted Stitc
 - Text Secondary
 
 ### Typography
+
 - Headings H1-H6
 - Body
 - Caption
@@ -64,10 +66,12 @@ This document defines the enterprise design system used by the AI-assisted Stitc
 - Monospace
 
 ### Spacing
+
 Use an 8-point spacing system:
 4, 8, 16, 24, 32, 40, 48, 64 pixels.
 
 ### Radius
+
 - Small
 - Medium
 - Large
@@ -75,6 +79,7 @@ Use an 8-point spacing system:
 - Circular
 
 ### Elevation
+
 - Level 0
 - Level 1
 - Level 2
@@ -128,6 +133,7 @@ The design system supports UI generation for:
 ## 9. White-Label Support
 
 Brand configuration includes:
+
 - Logo
 - App name
 - Theme
@@ -166,6 +172,7 @@ Brand configuration includes:
 ## 13. Integration
 
 Works with:
+
 - Angular
 - Flutter
 - NestJS APIs
@@ -177,6 +184,7 @@ Works with:
 ## 14. Governance
 
 Changes require:
+
 - UX review
 - Accessibility validation
 - Component review

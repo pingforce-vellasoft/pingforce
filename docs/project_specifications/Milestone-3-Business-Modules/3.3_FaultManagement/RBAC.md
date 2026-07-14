@@ -1,4 +1,3 @@
-
 # RBAC.md
 
 # Fault Management Module – Role-Based Access Control (RBAC) Specification
@@ -66,6 +65,7 @@ Tenants may create custom roles.
 # 4. Permission Groups
 
 ## Fault Management
+
 - fault.view
 - fault.create
 - fault.update
@@ -77,6 +77,7 @@ Tenants may create custom roles.
 - fault.close
 
 ## Assignment
+
 - assignment.view
 - assignment.create
 - assignment.update
@@ -84,24 +85,28 @@ Tenants may create custom roles.
 - assignment.override
 
 ## Workflow
+
 - workflow.view
 - workflow.transition
 - workflow.override
 - workflow.configure
 
 ## SLA
+
 - sla.view
 - sla.configure
 - sla.override
 - sla.report
 
 ## Escalation
+
 - escalation.view
 - escalation.execute
 - escalation.configure
 - escalation.override
 
 ## Attempts
+
 - attempt.view
 - attempt.create
 - attempt.submit
@@ -109,12 +114,14 @@ Tenants may create custom roles.
 - attempt.export
 
 ## Customer Feedback
+
 - feedback.view
 - feedback.request
 - feedback.analytics
 - feedback.override
 
 ## RCA
+
 - rca.view
 - rca.create
 - rca.assign
@@ -123,6 +130,7 @@ Tenants may create custom roles.
 - rca.analytics
 
 ## Reports & Dashboards
+
 - reports.view
 - reports.export
 - dashboard.view
@@ -130,6 +138,7 @@ Tenants may create custom roles.
 - analytics.view
 
 ## Configuration
+
 - settings.view
 - settings.update
 - master.view
@@ -158,10 +167,12 @@ Queries are automatically filtered according to scope.
 # 6. Role Matrix
 
 ## Super Admin
+
 - Full platform access
 - Cross-tenant administration
 
 ## Client Administrator
+
 - Full tenant administration
 - Configuration
 - Reports
@@ -170,6 +181,7 @@ Queries are automatically filtered according to scope.
 - Masters
 
 ## Manager
+
 - Manage operational faults
 - Assign/Reassign
 - Escalate
@@ -177,6 +189,7 @@ Queries are automatically filtered according to scope.
 - Reports
 
 ## Technician
+
 - View assigned work
 - Accept assignments
 - Submit attempts
@@ -184,11 +197,13 @@ Queries are automatically filtered according to scope.
 - Upload evidence
 
 ## Customer
+
 - Create/view own tickets
 - Submit feedback
 - Track status
 
 ## Vendor
+
 - View vendor-assigned work
 - Submit progress
 - Upload documents
@@ -226,6 +241,7 @@ Example:
 POST /faults/{id}/assign
 
 Requires:
+
 - assignment.create
 - Team/Branch scope or higher
 
@@ -238,14 +254,17 @@ Workflow transitions require dedicated permissions.
 Examples:
 
 Assigned → Accepted
+
 - Technician
 - assignment.accept
 
 Resolved → Closed
+
 - Manager
 - fault.close
 
 Closed → Reopened
+
 - Manager/Admin
 - fault.reopen
 
@@ -258,7 +277,8 @@ Permissions are evaluated after feature availability.
 Example:
 
 If RCA module disabled:
-- rca.* permissions ignored.
+
+- rca.\* permissions ignored.
 
 ---
 

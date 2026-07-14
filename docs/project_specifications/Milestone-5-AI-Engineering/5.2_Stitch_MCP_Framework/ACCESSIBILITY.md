@@ -1,4 +1,3 @@
-
 # ACCESSIBILITY.md
 
 # Stitch Accessibility Standards

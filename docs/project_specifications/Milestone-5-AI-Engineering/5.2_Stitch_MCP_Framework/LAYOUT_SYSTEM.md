@@ -1,4 +1,3 @@
-
 # LAYOUT_SYSTEM.md
 
 # Stitch Layout System

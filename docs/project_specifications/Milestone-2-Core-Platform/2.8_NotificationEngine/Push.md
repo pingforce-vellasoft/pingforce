@@ -1,7 +1,9 @@
 # Push.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Notifications Module
+
 ### Push Notification Specification
 
 **Module:** Core Platform → Notifications
@@ -196,19 +198,19 @@ Indexes:
 
 # 14. REST APIs
 
-GET    /api/v1/push
+GET /api/v1/push
 
-POST   /api/v1/push/send
+POST /api/v1/push/send
 
-POST   /api/v1/push/broadcast
+POST /api/v1/push/broadcast
 
-POST   /api/v1/push/test
+POST /api/v1/push/test
 
-GET    /api/v1/push/history
+GET /api/v1/push/history
 
-PUT    /api/v1/push/preferences
+PUT /api/v1/push/preferences
 
-POST   /api/v1/push/register-device
+POST /api/v1/push/register-device
 
 DELETE /api/v1/push/register-device/{id}
 

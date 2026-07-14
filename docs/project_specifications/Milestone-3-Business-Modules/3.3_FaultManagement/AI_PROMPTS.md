@@ -1,4 +1,3 @@
-
 # AI_PROMPTS.md
 
 # Fault Management Module – AI Prompts & Intelligent Automation Specification
@@ -49,7 +48,9 @@ The AI layer integrates with:
 # 3. AI Agents
 
 ## Technician Assistant
+
 Responsibilities:
+
 - Troubleshooting guidance
 - Step-by-step repair instructions
 - Safety reminders
@@ -57,23 +58,27 @@ Responsibilities:
 - Knowledge article retrieval
 
 ## Dispatcher Assistant
+
 - Assignment recommendations
 - Workload balancing
 - Route suggestions
 - Technician availability
 
 ## Manager Assistant
+
 - SLA risk summary
 - Escalation recommendations
 - Productivity analysis
 - Team performance insights
 
 ## RCA Assistant
+
 - Suggest probable root causes
 - Recommend CAPA
 - Summarize investigations
 
 ## Customer Assistant
+
 - Ticket status
 - Appointment updates
 - FAQ
@@ -89,12 +94,14 @@ Responsibilities:
 Classify the fault.
 
 Input:
+
 - Title
 - Description
 - Attachments
 - Customer history
 
 Output:
+
 - Category
 - Priority
 - Confidence
@@ -106,6 +113,7 @@ Output:
 ## Assignment Recommendation
 
 Input:
+
 - Fault details
 - Skills
 - Technician workload
@@ -113,6 +121,7 @@ Input:
 - SLA remaining
 
 Output:
+
 - Ranked technician list
 - Assignment reason
 - Estimated travel time
@@ -122,12 +131,14 @@ Output:
 ## Troubleshooting Assistant
 
 Input:
+
 - Fault category
 - Symptoms
 - Equipment
 - Error codes
 
 Output:
+
 - Diagnostic checklist
 - Possible causes
 - Recommended actions
@@ -138,10 +149,12 @@ Output:
 ## Work Log Summary
 
 Input:
+
 - Technician notes
 - Attempt history
 
 Output:
+
 - Professional work summary
 - Customer-friendly summary
 - Internal engineering notes
@@ -151,12 +164,14 @@ Output:
 ## SLA Risk Prediction
 
 Input:
+
 - Current workflow
 - Remaining SLA
 - Technician workload
 - Historical trends
 
 Output:
+
 - Breach probability
 - Risk factors
 - Recommended actions
@@ -166,12 +181,14 @@ Output:
 ## Escalation Recommendation
 
 Input:
+
 - Ticket
 - SLA
 - Attempts
 - Priority
 
 Output:
+
 - Escalate?
 - Level
 - Reason
@@ -182,12 +199,14 @@ Output:
 ## RCA Generation
 
 Input:
+
 - Attempts
 - Feedback
 - Logs
 - Attachments
 
 Output:
+
 - Probable root causes
 - Confidence score
 - CAPA recommendations
@@ -198,11 +217,13 @@ Output:
 ## Customer Response Generator
 
 Input:
+
 - Fault status
 - Resolution
 - Language
 
 Output:
+
 - Professional customer update
 - Simple explanation
 - Next steps
@@ -212,12 +233,14 @@ Output:
 ## Executive Summary
 
 Input:
+
 - KPI data
 - SLA metrics
 - Escalations
 - RCA
 
 Output:
+
 - One-page executive summary
 - Risks
 - Opportunities
@@ -309,6 +332,7 @@ Near SLA Breach
 # 10. Audit
 
 Log:
+
 - Prompt version
 - Model
 - User

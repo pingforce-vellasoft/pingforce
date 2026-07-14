@@ -59,12 +59,12 @@ Example:
 
 # Release Status
 
-| Version | Status | Description |
-|----------|--------|-------------|
-| 0.1.0 | Draft | Repository initialization |
-| 1.0.0 | Planned | Phase 1 Production Documentation |
-| 2.0.0 | Planned | Enterprise MVP |
-| 3.0.0 | Planned | AI Native Platform |
+| Version | Status  | Description                      |
+| ------- | ------- | -------------------------------- |
+| 0.1.0   | Draft   | Repository initialization        |
+| 1.0.0   | Planned | Phase 1 Production Documentation |
+| 2.0.0   | Planned | Enterprise MVP                   |
+| 3.0.0   | Planned | AI Native Platform               |
 
 ---
 

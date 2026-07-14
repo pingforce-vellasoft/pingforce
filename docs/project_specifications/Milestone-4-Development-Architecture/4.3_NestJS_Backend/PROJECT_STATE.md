@@ -1,4 +1,3 @@
-
 # PROJECT_STATE.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -46,20 +45,20 @@ The backend shall provide:
 
 # 4. Planned Technology Stack
 
-| Layer | Planned Technology |
-|--------|--------------------|
-| Runtime | Node.js |
-| Framework | NestJS |
-| Language | TypeScript |
-| ORM | Prisma |
-| Database | PostgreSQL |
-| Cache | Redis |
-| Queue | BullMQ |
-| Object Storage | OCI Object Storage / S3 Compatible |
-| Containerization | Docker |
-| API Documentation | OpenAPI / Swagger |
-| Authentication | JWT + Refresh Tokens |
-| Observability | OpenTelemetry |
+| Layer             | Planned Technology                 |
+| ----------------- | ---------------------------------- |
+| Runtime           | Node.js                            |
+| Framework         | NestJS                             |
+| Language          | TypeScript                         |
+| ORM               | Prisma                             |
+| Database          | PostgreSQL                         |
+| Cache             | Redis                              |
+| Queue             | BullMQ                             |
+| Object Storage    | OCI Object Storage / S3 Compatible |
+| Containerization  | Docker                             |
+| API Documentation | OpenAPI / Swagger                  |
+| Authentication    | JWT + Refresh Tokens               |
+| Observability     | OpenTelemetry                      |
 
 ---
 

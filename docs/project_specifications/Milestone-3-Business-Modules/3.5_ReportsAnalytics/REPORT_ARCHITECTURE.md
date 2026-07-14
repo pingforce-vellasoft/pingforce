@@ -1,15 +1,15 @@
-
 # REPORT_ARCHITECTURE.md
+
 # Reports & Analytics Module Architecture
 
 ## Document Information
 
-| Item | Value |
-|------|-------|
-| Module | Reports & Analytics |
+| Item     | Value                                             |
+| -------- | ------------------------------------------------- |
+| Module   | Reports & Analytics                               |
 | Platform | Enterprise Multi-Tenant Workforce Management SaaS |
-| Version | 2.0 |
-| Status | Production Ready |
+| Version  | 2.0                                               |
+| Status   | Production Ready                                  |
 
 ---
 
@@ -62,6 +62,7 @@ Engine Engine   Layer
 # 3. Core Components
 
 ## Data Collection Layer
+
 - REST API ingestion
 - Event-driven updates
 - Database queries
@@ -69,6 +70,7 @@ Engine Engine   Layer
 - Tenant-aware ingestion
 
 ## Reporting Data Service
+
 - Data normalization
 - Tenant segregation
 - Data validation
@@ -76,7 +78,9 @@ Engine Engine   Layer
 - Metric preparation
 
 ## KPI Engine
+
 Calculates:
+
 - Attendance %
 - Productivity
 - SLA compliance
@@ -87,7 +91,9 @@ Calculates:
 - Feature usage
 
 ## Aggregation Engine
+
 Supports:
+
 - Hourly
 - Daily
 - Weekly
@@ -97,6 +103,7 @@ Supports:
 - Custom windows
 
 ## Cache Layer
+
 - Redis caching
 - Query optimization
 - Dashboard cache
@@ -105,6 +112,7 @@ Supports:
 - Cache invalidation
 
 ## Analytics Engine
+
 - Trend analysis
 - Comparative analytics
 - Drill-down
@@ -113,6 +121,7 @@ Supports:
 - Forecast-ready datasets
 
 ## Dashboard Engine
+
 - Dynamic widgets
 - Configurable layouts
 - Saved dashboards
@@ -120,6 +129,7 @@ Supports:
 - White-label branding
 
 ## Report Engine
+
 - Standard reports
 - Executive reports
 - Compliance reports
@@ -127,6 +137,7 @@ Supports:
 - Custom reports
 
 ## Export Engine
+
 - Excel
 - CSV
 - PDF
@@ -135,6 +146,7 @@ Supports:
 - Async processing
 
 ## Schedule Engine
+
 - Daily
 - Weekly
 - Monthly
@@ -172,6 +184,7 @@ Supports:
 # 6. Multi-Tenant Design
 
 Each tenant has:
+
 - Independent dashboards
 - Independent report templates
 - Custom branding
@@ -182,6 +195,7 @@ Each tenant has:
 # 7. Dashboard Architecture
 
 Widgets:
+
 - KPI Cards
 - Charts
 - Tables
@@ -192,6 +206,7 @@ Widgets:
 - SLA indicators
 
 Capabilities:
+
 - Drag & drop
 - Resize
 - Save layouts
@@ -215,6 +230,7 @@ Capabilities:
 # 9. API Architecture
 
 Representative endpoints:
+
 - GET /reports
 - GET /reports/{id}
 - POST /reports/generate

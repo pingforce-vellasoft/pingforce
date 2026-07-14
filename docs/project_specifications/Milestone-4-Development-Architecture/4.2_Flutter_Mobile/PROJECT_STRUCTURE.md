@@ -9,26 +9,26 @@ follow. The structure is designed for scalability, modularity,
 maintainability, white-labeling, multi-tenancy, RBAC, offline
 capability, and future expansion.
 
-------------------------------------------------------------------------
+---
 
 # Design Principles
 
--   Feature-first organization
--   Clean Architecture
--   Modular development
--   Separation of concerns
--   Domain-driven organization
--   Reusable shared components
--   Offline-first
--   API-first
--   Configuration-driven UI
--   Testability
+- Feature-first organization
+- Clean Architecture
+- Modular development
+- Separation of concerns
+- Domain-driven organization
+- Reusable shared components
+- Offline-first
+- API-first
+- Configuration-driven UI
+- Testability
 
-------------------------------------------------------------------------
+---
 
 # Target Repository Structure
 
-``` text
+```text
 flutter_mobile/
 │
 ├── android/
@@ -95,18 +95,18 @@ metadata
 
 Shared platform foundation:
 
--   Networking
--   Authentication
--   Authorization
--   RBAC
--   Module Engine
--   Feature Flags
--   Sync Engine
--   Storage
--   Security
--   Error Handling
--   Logging
--   Utilities
+- Networking
+- Authentication
+- Authorization
+- RBAC
+- Module Engine
+- Feature Flags
+- Sync Engine
+- Storage
+- Security
+- Error Handling
+- Logging
+- Utilities
 
 # lib/shared
 
@@ -117,16 +117,16 @@ Tables - Loaders - Charts - Empty States - Form Components
 
 Platform integrations:
 
--   API Client
--   GPS
--   Camera
--   Biometrics
--   Notifications
--   File Picker
--   Background Services
--   Connectivity
--   Analytics
--   Crash Reporting
+- API Client
+- GPS
+- Camera
+- Biometrics
+- Notifications
+- File Picker
+- Background Services
+- Connectivity
+- Analytics
+- Crash Reporting
 
 # lib/modules
 
@@ -134,7 +134,7 @@ Each business capability shall remain isolated.
 
 Example:
 
-``` text
+```text
 modules/
  ├── authentication/
  ├── dashboard/
@@ -155,7 +155,7 @@ modules/
 
 Every module should contain:
 
-``` text
+```text
 feature/
  ├── presentation/
  ├── application/
@@ -221,7 +221,7 @@ Encryption - Certificate pinning - Device integrity - Session management
 
 # Testing Structure
 
-``` text
+```text
 test/
  ├── unit/
  ├── widget/

@@ -1,7 +1,9 @@
 # AssignmentWorkflow.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Workflows Module
+
 ### Assignment Workflow Specification
 
 **Module:** Core Platform → Workflows
@@ -252,23 +254,23 @@ Indexes:
 
 # 15. REST APIs
 
-GET    /api/v1/assignments/rules
+GET /api/v1/assignments/rules
 
-POST   /api/v1/assignments/rules
+POST /api/v1/assignments/rules
 
-PUT    /api/v1/assignments/rules/{id}
+PUT /api/v1/assignments/rules/{id}
 
-GET    /api/v1/assignments/queues
+GET /api/v1/assignments/queues
 
-POST   /api/v1/assignments/{id}/assign
+POST /api/v1/assignments/{id}/assign
 
-POST   /api/v1/assignments/{id}/reassign
+POST /api/v1/assignments/{id}/reassign
 
-POST   /api/v1/assignments/{id}/accept
+POST /api/v1/assignments/{id}/accept
 
-POST   /api/v1/assignments/{id}/complete
+POST /api/v1/assignments/{id}/complete
 
-GET    /api/v1/assignments/{id}/history
+GET /api/v1/assignments/{id}/history
 
 ---
 

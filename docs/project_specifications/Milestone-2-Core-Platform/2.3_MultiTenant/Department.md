@@ -1,7 +1,9 @@
 # Department.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Multi-Tenant Module
+
 ### Department Domain Specification
 
 **Module:** Core Platform → Multi-Tenant
@@ -290,21 +292,21 @@ Composite indexes:
 
 # 14. APIs
 
-GET    /api/v1/departments
+GET /api/v1/departments
 
-GET    /api/v1/departments/{id}
+GET /api/v1/departments/{id}
 
-POST   /api/v1/departments
+POST /api/v1/departments
 
-PUT    /api/v1/departments/{id}
+PUT /api/v1/departments/{id}
 
-PATCH  /api/v1/departments/{id}/status
+PATCH /api/v1/departments/{id}/status
 
-POST   /api/v1/departments/{id}/manager
+POST /api/v1/departments/{id}/manager
 
-GET    /api/v1/departments/{id}/employees
+GET /api/v1/departments/{id}/employees
 
-GET    /api/v1/departments/tree
+GET /api/v1/departments/tree
 
 ---
 

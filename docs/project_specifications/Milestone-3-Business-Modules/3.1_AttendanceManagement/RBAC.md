@@ -45,9 +45,11 @@ Authorization is evaluated on every request.
 # 4. Core Roles
 
 ## Super Admin
+
 Platform-wide administration.
 
 Capabilities:
+
 - Manage tenants
 - Configure global defaults
 - Enable/Disable Attendance module
@@ -62,6 +64,7 @@ Capabilities:
 Tenant administration.
 
 Capabilities:
+
 - Configure attendance policies
 - Manage shifts
 - Configure geofences
@@ -73,6 +76,7 @@ Capabilities:
 ## HR Administrator
 
 Capabilities:
+
 - Manage attendance
 - Manage shifts
 - Process corrections
@@ -84,6 +88,7 @@ Capabilities:
 ## Manager
 
 Capabilities:
+
 - View team attendance
 - Approve corrections
 - Monitor GPS
@@ -95,6 +100,7 @@ Capabilities:
 ## Employee / Field Staff
 
 Capabilities:
+
 - Check-In
 - Check-Out
 - View attendance
@@ -107,6 +113,7 @@ Capabilities:
 ## Auditor
 
 Capabilities:
+
 - Read-only access
 - Audit logs
 - Reports
@@ -258,6 +265,7 @@ Unauthorized requests return HTTP 403.
 Navigation visibility is permission-based.
 
 Hidden Items:
+
 - Menus
 - Buttons
 - Actions

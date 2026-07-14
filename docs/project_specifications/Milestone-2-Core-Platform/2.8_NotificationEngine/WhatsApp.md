@@ -1,7 +1,9 @@
 # WhatsApp.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Notifications Module
+
 ### WhatsApp Notification Specification
 
 **Module:** Core Platform → Notifications  
@@ -233,21 +235,21 @@ Indexes:
 
 # 14. REST APIs
 
-GET    /api/v1/whatsapp/templates
+GET /api/v1/whatsapp/templates
 
-POST   /api/v1/whatsapp/templates
+POST /api/v1/whatsapp/templates
 
-PUT    /api/v1/whatsapp/templates/{id}
+PUT /api/v1/whatsapp/templates/{id}
 
-POST   /api/v1/whatsapp/send
+POST /api/v1/whatsapp/send
 
-POST   /api/v1/whatsapp/test
+POST /api/v1/whatsapp/test
 
-GET    /api/v1/whatsapp/history
+GET /api/v1/whatsapp/history
 
-PUT    /api/v1/whatsapp/preferences
+PUT /api/v1/whatsapp/preferences
 
-POST   /api/v1/whatsapp/webhook
+POST /api/v1/whatsapp/webhook
 
 ---
 

@@ -74,6 +74,7 @@ Search • Dashboards • Alerts • Audit
 The platform shall collect logs from:
 
 ## Application Layer
+
 - Angular Admin
 - Flutter backend interactions
 - NestJS API
@@ -84,6 +85,7 @@ The platform shall collect logs from:
 - Module Engine
 
 ## Infrastructure Layer
+
 - Kubernetes
 - Docker
 - NGINX
@@ -94,6 +96,7 @@ The platform shall collect logs from:
 - Redis
 
 ## Security Layer
+
 - Authentication
 - Authorization
 - RBAC
@@ -104,6 +107,7 @@ The platform shall collect logs from:
 - Certificate events
 
 ## CI/CD
+
 - GitHub Actions
 - Terraform
 - Helm

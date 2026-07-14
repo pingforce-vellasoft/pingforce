@@ -69,6 +69,7 @@ The DR strategy shall cover:
 The architecture shall address:
 
 ## Infrastructure Failures
+
 - Compute failure
 - Storage failure
 - Network failure
@@ -76,6 +77,7 @@ The architecture shall address:
 - Kubernetes cluster failure
 
 ## Application Failures
+
 - API outage
 - Background worker failure
 - Scheduler failure
@@ -83,12 +85,14 @@ The architecture shall address:
 - Notification platform failure
 
 ## Data Incidents
+
 - Database corruption
 - Accidental deletion
 - Ransomware
 - Data integrity failure
 
 ## Security Incidents
+
 - Credential compromise
 - Secret leakage
 - DDoS attack
@@ -96,6 +100,7 @@ The architecture shall address:
 - Privilege escalation
 
 ## Regional Events
+
 - Cloud region outage
 - Power failure
 - Natural disaster
@@ -105,14 +110,14 @@ The architecture shall address:
 
 # Recovery Objectives
 
-| Service | Target RPO | Target RTO |
-|---------|-----------:|-----------:|
-| Authentication | <=15 min | <=30 min |
-| Core API | <=15 min | <=1 hr |
-| PostgreSQL | <=15 min | <=1 hr |
-| Redis | <=30 min | <=1 hr |
-| Object Storage | <=1 hr | <=2 hr |
-| Reporting | <=4 hr | <=8 hr |
+| Service        | Target RPO | Target RTO |
+| -------------- | ---------: | ---------: |
+| Authentication |   <=15 min |   <=30 min |
+| Core API       |   <=15 min |     <=1 hr |
+| PostgreSQL     |   <=15 min |     <=1 hr |
+| Redis          |   <=30 min |     <=1 hr |
+| Object Storage |     <=1 hr |     <=2 hr |
+| Reporting      |     <=4 hr |     <=8 hr |
 
 Objectives shall be configurable according to business and subscription requirements.
 

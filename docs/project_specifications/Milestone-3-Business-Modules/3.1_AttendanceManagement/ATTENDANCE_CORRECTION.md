@@ -261,21 +261,26 @@ Export Formats
 # 16. RBAC
 
 Employee
+
 - Create own request
 - View own requests
 
 Manager
+
 - Review team requests
 
 HR
+
 - Approve / Reject
 - Override (if permitted)
 
 Employer
+
 - Configure policies
 - Final approval
 
 Super Admin
+
 - Global oversight
 - Emergency override
 

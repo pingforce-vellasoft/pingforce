@@ -1,4 +1,3 @@
-
 # PRODUCTION_VALIDATION.md
 
 # Enterprise Production Validation Guide
@@ -300,25 +299,25 @@ Capture:
 
 # Escalation Matrix
 
-| Severity | Action |
-|----------|--------|
-| Sev-1 | Immediate rollback |
-| Sev-2 | Release Manager decision |
-| Sev-3 | Monitor and hotfix |
-| Sev-4 | Schedule correction |
+| Severity | Action                   |
+| -------- | ------------------------ |
+| Sev-1    | Immediate rollback       |
+| Sev-2    | Release Manager decision |
+| Sev-3    | Monitor and hotfix       |
+| Sev-4    | Schedule correction      |
 
 ---
 
 # Production Sign-Off
 
-| Role | Approval |
-|------|----------|
-| Product Owner | |
-| Engineering Lead | |
-| QA Lead | |
-| DevOps | |
-| Security | |
-| Release Manager | |
+| Role             | Approval |
+| ---------------- | -------- |
+| Product Owner    |          |
+| Engineering Lead |          |
+| QA Lead          |          |
+| DevOps           |          |
+| Security         |          |
+| Release Manager  |          |
 
 ---
 

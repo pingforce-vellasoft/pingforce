@@ -1,7 +1,9 @@
 # InApp.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Notifications Module
+
 ### In-App Notification Specification
 
 **Module:** Core Platform → Notifications
@@ -234,25 +236,25 @@ Indexes:
 
 # 16. REST APIs
 
-GET    /api/v1/inapp
+GET /api/v1/inapp
 
-GET    /api/v1/inapp/{id}
+GET /api/v1/inapp/{id}
 
-POST   /api/v1/inapp/send
+POST /api/v1/inapp/send
 
-POST   /api/v1/inapp/broadcast
+POST /api/v1/inapp/broadcast
 
-PUT    /api/v1/inapp/{id}/read
+PUT /api/v1/inapp/{id}/read
 
-PUT    /api/v1/inapp/read-all
+PUT /api/v1/inapp/read-all
 
-PUT    /api/v1/inapp/{id}/archive
+PUT /api/v1/inapp/{id}/archive
 
 DELETE /api/v1/inapp/{id}
 
-GET    /api/v1/inapp/preferences
+GET /api/v1/inapp/preferences
 
-PUT    /api/v1/inapp/preferences
+PUT /api/v1/inapp/preferences
 
 ---
 

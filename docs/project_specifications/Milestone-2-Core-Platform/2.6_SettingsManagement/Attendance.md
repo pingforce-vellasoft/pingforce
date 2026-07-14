@@ -7,6 +7,7 @@ This file has been created so it can be downloaded.
 
 In the next step, this file should be replaced with the complete enterprise
 Attendance specification (40–60 pages equivalent) covering:
+
 - Attendance policies
 - GPS & geofencing
 - Shifts

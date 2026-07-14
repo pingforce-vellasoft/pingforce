@@ -25,25 +25,25 @@ existing documentation.
 
 Please upload one of the following:
 
--   AI_Engineering folder
--   or the existing Stitch folder
--   or previous README.md, CHANGELOG.md and PROJECT_STATE.md files
+- AI_Engineering folder
+- or the existing Stitch folder
+- or previous README.md, CHANGELOG.md and PROJECT_STATE.md files
 
 Once available, the generated README will include:
 
--   Complete Stitch architecture
--   Enterprise AI UI generation workflow
--   Angular integration
--   Flutter integration
--   Design tokens
--   Theme engine
--   Component generation
--   Prompt engineering
--   Accessibility
--   Enterprise best practices
--   Security
--   Versioning
--   CI/CD integration
--   Cross references to the documentation suite
+- Complete Stitch architecture
+- Enterprise AI UI generation workflow
+- Angular integration
+- Flutter integration
+- Design tokens
+- Theme engine
+- Component generation
+- Prompt engineering
+- Accessibility
+- Enterprise best practices
+- Security
+- Versioning
+- CI/CD integration
+- Cross references to the documentation suite
 
 No placeholders or stubs will be used in the final version.

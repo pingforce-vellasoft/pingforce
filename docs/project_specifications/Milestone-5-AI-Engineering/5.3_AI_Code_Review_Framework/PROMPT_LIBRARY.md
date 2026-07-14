@@ -14,22 +14,22 @@ This library supports enterprise governance, multi-tenant SaaS
 deployments, RBAC, white-label platforms, and continuous prompt
 improvement.
 
-------------------------------------------------------------------------
+---
 
 # Objectives
 
--   Standardize AI review behavior
--   Ensure consistent review quality
--   Reduce prompt drift
--   Enable reusable prompt templates
--   Support tenant-specific customization
--   Maintain prompt governance and auditability
+- Standardize AI review behavior
+- Ensure consistent review quality
+- Reduce prompt drift
+- Enable reusable prompt templates
+- Support tenant-specific customization
+- Maintain prompt governance and auditability
 
-------------------------------------------------------------------------
+---
 
 # Prompt Lifecycle
 
-``` text
+```text
 Prompt Authoring
       │
 Peer Review
@@ -49,93 +49,93 @@ Monitoring
 Continuous Improvement
 ```
 
-------------------------------------------------------------------------
+---
 
 # Prompt Categories
 
 ## General Code Review
 
--   Full repository review
--   Pull request review
--   Commit review
--   Incremental review
--   Regression review
+- Full repository review
+- Pull request review
+- Commit review
+- Incremental review
+- Regression review
 
 ## Architecture Review
 
--   Clean Architecture
--   SOLID validation
--   Domain boundaries
--   Microservice review
--   API architecture
+- Clean Architecture
+- SOLID validation
+- Domain boundaries
+- Microservice review
+- API architecture
 
 ## Security Review
 
--   OWASP Top 10
--   Authentication
--   Authorization
--   Secrets detection
--   Dependency review
--   AI security
+- OWASP Top 10
+- Authentication
+- Authorization
+- Secrets detection
+- Dependency review
+- AI security
 
 ## Performance Review
 
--   Frontend optimization
--   Backend optimization
--   Database optimization
--   Infrastructure performance
--   AI inference optimization
+- Frontend optimization
+- Backend optimization
+- Database optimization
+- Infrastructure performance
+- AI inference optimization
 
 ## Framework-Specific Prompts
 
 ### Angular
 
--   Standalone components
--   Signals/RxJS
--   Routing
--   Forms
--   Performance
--   Accessibility
+- Standalone components
+- Signals/RxJS
+- Routing
+- Forms
+- Performance
+- Accessibility
 
 ### Flutter
 
--   Clean Architecture
--   Riverpod/Bloc
--   Offline sync
--   Performance
--   Accessibility
+- Clean Architecture
+- Riverpod/Bloc
+- Offline sync
+- Performance
+- Accessibility
 
 ### NestJS
 
--   Modules
--   Controllers
--   Services
--   DTO validation
--   Prisma
--   Redis
+- Modules
+- Controllers
+- Services
+- DTO validation
+- Prisma
+- Redis
 
 ### PostgreSQL
 
--   Schema review
--   Migration review
--   Query optimization
--   Index strategy
--   Multi-tenancy
+- Schema review
+- Migration review
+- Query optimization
+- Index strategy
+- Multi-tenancy
 
 ### DevOps
 
--   CI/CD
--   Kubernetes
--   Docker
--   Terraform
--   GitHub Actions
--   Security scanning
+- CI/CD
+- Kubernetes
+- Docker
+- Terraform
+- GitHub Actions
+- Security scanning
 
-------------------------------------------------------------------------
+---
 
 # Prompt Template
 
-``` yaml
+```yaml
 id:
 name:
 category:
@@ -155,124 +155,124 @@ owner:
 last_reviewed:
 ```
 
-------------------------------------------------------------------------
+---
 
 # Prompt Variables
 
--   {{repository}}
--   {{branch}}
--   {{pull_request}}
--   {{changed_files}}
--   {{coding_standards}}
--   {{architecture_guidelines}}
--   {{tenant_rules}}
--   {{security_policies}}
--   {{framework}}
--   {{language}}
--   {{project_context}}
+- {{repository}}
+- {{branch}}
+- {{pull_request}}
+- {{changed_files}}
+- {{coding_standards}}
+- {{architecture_guidelines}}
+- {{tenant_rules}}
+- {{security_policies}}
+- {{framework}}
+- {{language}}
+- {{project_context}}
 
-------------------------------------------------------------------------
+---
 
 # Output Schema
 
 Every review prompt should generate:
 
--   Executive Summary
--   Findings
--   Severity
--   Root Cause
--   Recommendation
--   Suggested Code
--   Confidence Score
--   References
--   Risk Level
--   Merge Recommendation
+- Executive Summary
+- Findings
+- Severity
+- Root Cause
+- Recommendation
+- Suggested Code
+- Confidence Score
+- References
+- Risk Level
+- Merge Recommendation
 
-------------------------------------------------------------------------
+---
 
 # Prompt Governance
 
--   Version controlled
--   Peer reviewed
--   Security approved
--   Architecture approved
--   Tested before release
--   Immutable audit history
+- Version controlled
+- Peer reviewed
+- Security approved
+- Architecture approved
+- Tested before release
+- Immutable audit history
 
-------------------------------------------------------------------------
+---
 
 # Prompt Versioning
 
 Semantic versioning:
 
--   Major: behavioral change
--   Minor: capability improvement
--   Patch: wording refinement
+- Major: behavioral change
+- Minor: capability improvement
+- Patch: wording refinement
 
 Example:
 
--   v1.0.0
--   v1.1.0
--   v1.1.1
+- v1.0.0
+- v1.1.0
+- v1.1.1
 
-------------------------------------------------------------------------
+---
 
 # Multi-Tenant Support
 
 Each tenant may override:
 
--   Coding standards
--   Naming conventions
--   Security policies
--   Architecture rules
--   Review thresholds
--   Output branding
+- Coding standards
+- Naming conventions
+- Security policies
+- Architecture rules
+- Review thresholds
+- Output branding
 
 Core prompts remain protected.
 
-------------------------------------------------------------------------
+---
 
 # Quality Metrics
 
 Track:
 
--   Prompt acceptance rate
--   Hallucination rate
--   False positives
--   False negatives
--   Review consistency
--   Reviewer satisfaction
--   Token consumption
--   Cost per review
+- Prompt acceptance rate
+- Hallucination rate
+- False positives
+- False negatives
+- Review consistency
+- Reviewer satisfaction
+- Token consumption
+- Cost per review
 
-------------------------------------------------------------------------
+---
 
 # Security
 
--   Prompt injection resistance
--   Context isolation
--   Secret redaction
--   Sensitive data filtering
--   Model access control
--   Audit logging
+- Prompt injection resistance
+- Context isolation
+- Secret redaction
+- Sensitive data filtering
+- Model access control
+- Audit logging
 
-------------------------------------------------------------------------
+---
 
 # Best Practices
 
--   Keep prompts modular.
--   Separate system and user prompts.
--   Use structured outputs.
--   Version every prompt.
--   Validate prompts with representative repositories.
--   Continuously refine using reviewer feedback.
--   Never expose secrets or tenant data in prompts.
+- Keep prompts modular.
+- Separate system and user prompts.
+- Use structured outputs.
+- Version every prompt.
+- Validate prompts with representative repositories.
+- Continuously refine using reviewer feedback.
+- Never expose secrets or tenant data in prompts.
 
-------------------------------------------------------------------------
+---
 
 # Repository Layout
 
-``` text
+```text
 AI_Code_Review/
 ├── README.md
 ├── PROMPT_LIBRARY.md
@@ -295,18 +295,18 @@ AI_Code_Review/
 └── reports/
 ```
 
-------------------------------------------------------------------------
+---
 
 # Future Roadmap
 
--   Self-optimizing prompts
--   Prompt A/B testing
--   Organization knowledge graph integration
--   Multi-model prompt routing
--   Automatic prompt quality scoring
--   Autonomous prompt refinement agents
+- Self-optimizing prompts
+- Prompt A/B testing
+- Organization knowledge graph integration
+- Multi-model prompt routing
+- Automatic prompt quality scoring
+- Autonomous prompt refinement agents
 
-------------------------------------------------------------------------
+---
 
 **Version:** 1.0.0
 

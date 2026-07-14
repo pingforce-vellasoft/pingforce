@@ -1,16 +1,15 @@
-
 # REGRESSION_TESTING.md
 
 # Enterprise Regression Testing Strategy
 
 ## Document Information
 
-| Field | Value |
-|---|---|
-| Project | Enterprise Multi-Tenant AI Engineering Platform |
-| Document | REGRESSION_TESTING.md |
-| Status | Planning Phase (Pre-Implementation) |
-| Version | 1.0 |
+| Field    | Value                                                        |
+| -------- | ------------------------------------------------------------ |
+| Project  | Enterprise Multi-Tenant AI Engineering Platform              |
+| Document | REGRESSION_TESTING.md                                        |
+| Status   | Planning Phase (Pre-Implementation)                          |
+| Version  | 1.0                                                          |
 | Audience | QA Engineers, Developers, Architects, DevOps, Product Owners |
 
 ---

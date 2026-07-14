@@ -1,7 +1,9 @@
 # Manager.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – User Management Module
+
 ### Manager Domain Specification
 
 **Module:** Core Platform → User Management  
@@ -271,23 +273,23 @@ Indexes:
 
 # 14. REST APIs
 
-GET    /api/v1/managers
+GET /api/v1/managers
 
-GET    /api/v1/managers/{id}
+GET /api/v1/managers/{id}
 
-POST   /api/v1/managers
+POST /api/v1/managers
 
-PUT    /api/v1/managers/{id}
+PUT /api/v1/managers/{id}
 
-PATCH  /api/v1/managers/{id}/status
+PATCH /api/v1/managers/{id}/status
 
-POST   /api/v1/managers/{id}/delegate
+POST /api/v1/managers/{id}/delegate
 
-POST   /api/v1/managers/{id}/approve
+POST /api/v1/managers/{id}/approve
 
-GET    /api/v1/managers/{id}/team
+GET /api/v1/managers/{id}/team
 
-GET    /api/v1/managers/{id}/dashboard
+GET /api/v1/managers/{id}/dashboard
 
 ---
 

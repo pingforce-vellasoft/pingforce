@@ -32,6 +32,7 @@ The File Management component manages all documents, images, videos, audio recor
 # 3. Supported File Types
 
 ## Images
+
 - JPG
 - JPEG
 - PNG
@@ -39,6 +40,7 @@ The File Management component manages all documents, images, videos, audio recor
 - HEIC
 
 ## Documents
+
 - PDF
 - DOCX
 - XLSX
@@ -46,17 +48,20 @@ The File Management component manages all documents, images, videos, audio recor
 - TXT
 
 ## Audio
+
 - MP3
 - AAC
 - WAV
 - M4A
 
 ## Video
+
 - MP4
 - MOV
 - AVI
 
 ## Other
+
 - Customer Signature
 - QR Images
 - Barcode Images
@@ -195,14 +200,14 @@ Retention periods configurable per tenant.
 
 # 14. APIs
 
-POST   /files/upload
-POST   /files/bulk-upload
-GET    /files/{id}
-GET    /files/download/{id}
-PUT    /files/{id}
+POST /files/upload
+POST /files/bulk-upload
+GET /files/{id}
+GET /files/download/{id}
+PUT /files/{id}
 DELETE /files/{id}
-GET    /files/search
-GET    /files/history/{id}
+GET /files/search
+GET /files/history/{id}
 
 ---
 

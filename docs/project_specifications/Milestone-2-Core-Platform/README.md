@@ -1,6 +1,7 @@
 # Core Platform README
 
 # Enterprise Workforce Platform
+
 ## Milestone 2 – Core Platform
 
 **Version:** 1.0.0  
@@ -46,6 +47,7 @@ The Core Platform aims to:
 # Included Modules
 
 ## 2.1 Authentication
+
 Responsible for identity verification, JWT issuance, refresh tokens, password policies, account lockout, future MFA and SSO support.
 
 Deliverables include:
@@ -304,4 +306,3 @@ It is intentionally technology-agnostic from a business perspective while provid
 - CODING_STANDARDS.md
 - BUSINESS_RULES.md
 - DEFINITION_OF_DONE.md
-

@@ -1,4 +1,3 @@
-
 # FILES.md
 
 # Fault Management Module – File & Document Management Specification
@@ -35,6 +34,7 @@ It supports attachments for faults, attempts, work logs, customer feedback, RCA 
 # 3. Supported File Types
 
 Images
+
 - JPG
 - JPEG
 - PNG
@@ -42,6 +42,7 @@ Images
 - HEIC (optional)
 
 Documents
+
 - PDF
 - DOC
 - DOCX
@@ -53,12 +54,14 @@ Documents
 - CSV
 
 Media
+
 - MP4
 - MOV
 - AVI
 - WEBM
 
 Archives (optional)
+
 - ZIP
 - 7Z
 

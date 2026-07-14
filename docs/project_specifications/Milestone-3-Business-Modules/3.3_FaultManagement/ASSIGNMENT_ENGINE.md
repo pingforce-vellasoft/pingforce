@@ -1,4 +1,3 @@
-
 # ASSIGNMENT_ENGINE.md
 
 # Fault Management Module – Assignment Engine Specification
@@ -37,21 +36,27 @@ Assignment decisions may be performed manually, automatically, or through config
 # 3. Assignment Types
 
 ## Manual Assignment
+
 Performed by authorized managers.
 
 ## Automatic Assignment
+
 Rule-driven allocation using configurable algorithms.
 
 ## Bulk Assignment
+
 Assign multiple faults simultaneously.
 
 ## Reassignment
+
 Move ownership while preserving complete history.
 
 ## Escalation Assignment
+
 Automatic reassignment after SLA breach.
 
 ## Vendor Assignment
+
 Assign to external vendors or contractors.
 
 ---

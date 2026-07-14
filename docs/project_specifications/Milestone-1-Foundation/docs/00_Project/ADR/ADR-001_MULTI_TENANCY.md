@@ -3,9 +3,11 @@
 **Status:** Accepted
 
 ## 1. Context
+
 The Enterprise Workforce Platform is a multi-tenant SaaS platform serving multiple independent clients from a single deployment.
 
 Core objectives:
+
 - Unlimited tenants
 - Complete tenant isolation
 - White-label branding
@@ -15,6 +17,7 @@ Core objectives:
 - OCI deployment readiness
 
 ## 2. Decision
+
 Use a **Shared Application + Shared PostgreSQL Database + Logical Isolation** architecture.
 
 Every business table contains a mandatory `tenant_id`.
@@ -34,7 +37,9 @@ Internet
 → PostgreSQL
 
 ## 4. Tenant Resolution
+
 Priority:
+
 1. JWT tenant_id
 2. Custom domain
 3. Client code
@@ -45,6 +50,7 @@ Requests without tenant context are rejected.
 ## 5. Database Strategy
 
 Mandatory columns:
+
 - tenant_id
 - created_by
 - created_at
@@ -52,6 +58,7 @@ Mandatory columns:
 - deleted_at
 
 Indexes:
+
 - tenant_id
 - tenant_id + status
 - tenant_id + created_at
@@ -65,6 +72,7 @@ Indexes:
 ## 7. White Label
 
 Each tenant owns:
+
 - Logo
 - Theme
 - Colors
@@ -83,6 +91,7 @@ Each tenant owns:
 ## 9. Scalability
 
 Supports:
+
 - Thousands of tenants
 - Millions of users
 - Horizontal NestJS scaling
@@ -93,15 +102,19 @@ Supports:
 ## 10. Alternatives Considered
 
 ### Separate database per tenant
+
 Pros:
+
 - Strong isolation
 
 Cons:
+
 - Higher operational cost
 
 Decision: Rejected.
 
 ### Shared database with logical isolation
+
 Chosen for scalability, maintainability and cost efficiency.
 
 ## 11. Implementation Rules

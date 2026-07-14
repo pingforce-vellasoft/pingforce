@@ -25,14 +25,14 @@ This document defines the performance strategy for the Angular Admin Portal. The
 
 Recommended targets:
 
-| Area | Target |
-|------|--------|
-| Initial Load | < 3 seconds |
-| Route Navigation | < 1 second |
-| API Response (Average) | < 500 ms |
-| Dashboard Load | < 2 seconds |
-| Table Search | < 1 second |
-| UI Interaction | < 100 ms |
+| Area                   | Target      |
+| ---------------------- | ----------- |
+| Initial Load           | < 3 seconds |
+| Route Navigation       | < 1 second  |
+| API Response (Average) | < 500 ms    |
+| Dashboard Load         | < 2 seconds |
+| Table Search           | < 1 second  |
+| UI Interaction         | < 100 ms    |
 
 Actual values may vary based on infrastructure and network conditions.
 

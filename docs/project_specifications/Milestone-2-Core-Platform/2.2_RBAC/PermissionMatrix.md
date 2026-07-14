@@ -1,7 +1,9 @@
 # PermissionMatrix.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – RBAC Module
+
 ### Permission Matrix Specification
 
 **Module:** Core Platform → RBAC
@@ -56,40 +58,40 @@ Default decision: **DENY**
 
 # 4. Standard Actions
 
-| Action | Description |
-|---------|-------------|
-| CREATE | Create a new record |
-| READ | View data |
-| UPDATE | Modify existing data |
-| DELETE | Soft delete a record |
-| APPROVE | Approve business workflow |
-| ASSIGN | Assign work |
-| REASSIGN | Reassign work |
-| EXPORT | Export reports/data |
-| IMPORT | Import data |
-| CONFIGURE | Configure settings |
-| EXECUTE | Execute business action |
-| AUDIT | View audit information |
+| Action    | Description               |
+| --------- | ------------------------- |
+| CREATE    | Create a new record       |
+| READ      | View data                 |
+| UPDATE    | Modify existing data      |
+| DELETE    | Soft delete a record      |
+| APPROVE   | Approve business workflow |
+| ASSIGN    | Assign work               |
+| REASSIGN  | Reassign work             |
+| EXPORT    | Export reports/data       |
+| IMPORT    | Import data               |
+| CONFIGURE | Configure settings        |
+| EXECUTE   | Execute business action   |
+| AUDIT     | View audit information    |
 
 ---
 
 # 5. Standard Platform Roles
 
-| Role | Scope |
-|------|-------|
-| Platform Super Admin | Entire platform |
-| Platform Support | Platform operations |
-| Platform Auditor | Read-only platform visibility |
-| Platform DevOps | Infrastructure |
-| Tenant Administrator | Single tenant administration |
-| Manager | Department/team |
-| Supervisor | Operational supervision |
-| Employee | Standard workforce user |
-| Field Staff | Field operations |
-| Sales Executive | Sales & lead management |
-| Customer Support | Fault handling |
-| Client User | Customer portal |
-| Read Only | Reporting only |
+| Role                 | Scope                         |
+| -------------------- | ----------------------------- |
+| Platform Super Admin | Entire platform               |
+| Platform Support     | Platform operations           |
+| Platform Auditor     | Read-only platform visibility |
+| Platform DevOps      | Infrastructure                |
+| Tenant Administrator | Single tenant administration  |
+| Manager              | Department/team               |
+| Supervisor           | Operational supervision       |
+| Employee             | Standard workforce user       |
+| Field Staff          | Field operations              |
+| Sales Executive      | Sales & lead management       |
+| Customer Support     | Fault handling                |
+| Client User          | Customer portal               |
+| Read Only            | Reporting only                |
 
 ---
 
@@ -97,103 +99,103 @@ Default decision: **DENY**
 
 ## Authentication
 
-| Role | Login | Logout | Password Reset | Manage Users |
-|------|:----:|:------:|:--------------:|:------------:|
-| Platform Super Admin | ✓ | ✓ | ✓ | ✓ |
-| Tenant Administrator | ✓ | ✓ | ✓ | ✓ |
-| Manager | ✓ | ✓ | ✓ (self) | ✗ |
-| Employee | ✓ | ✓ | ✓ (self) | ✗ |
-| Client User | ✓ | ✓ | ✓ (self) | ✗ |
+| Role                 | Login | Logout | Password Reset | Manage Users |
+| -------------------- | :---: | :----: | :------------: | :----------: |
+| Platform Super Admin |   ✓   |   ✓    |       ✓        |      ✓       |
+| Tenant Administrator |   ✓   |   ✓    |       ✓        |      ✓       |
+| Manager              |   ✓   |   ✓    |    ✓ (self)    |      ✗       |
+| Employee             |   ✓   |   ✓    |    ✓ (self)    |      ✗       |
+| Client User          |   ✓   |   ✓    |    ✓ (self)    |      ✗       |
 
 ---
 
 ## RBAC
 
-| Role | Roles | Permissions | Assign Roles | Configure |
-|------|:-----:|:-----------:|:------------:|:---------:|
-| Platform Super Admin | ✓ | ✓ | ✓ | ✓ |
-| Tenant Administrator | ✓ | ✓ | ✓ | ✓ (tenant) |
-| Manager | Read | ✗ | ✗ | ✗ |
-| Employee | ✗ | ✗ | ✗ | ✗ |
+| Role                 | Roles | Permissions | Assign Roles | Configure  |
+| -------------------- | :---: | :---------: | :----------: | :--------: |
+| Platform Super Admin |   ✓   |      ✓      |      ✓       |     ✓      |
+| Tenant Administrator |   ✓   |      ✓      |      ✓       | ✓ (tenant) |
+| Manager              | Read  |      ✗      |      ✗       |     ✗      |
+| Employee             |   ✗   |      ✗      |      ✗       |     ✗      |
 
 ---
 
 ## User Management
 
-| Role | Create | Read | Update | Delete |
-|------|:------:|:----:|:------:|:------:|
-| Platform Super Admin | ✓ | ✓ | ✓ | ✓ |
-| Tenant Administrator | ✓ | ✓ | ✓ | ✓ |
-| Manager | ✗ | ✓ | Limited | ✗ |
-| Employee | ✗ | Self | Self | ✗ |
+| Role                 | Create | Read | Update  | Delete |
+| -------------------- | :----: | :--: | :-----: | :----: |
+| Platform Super Admin |   ✓    |  ✓   |    ✓    |   ✓    |
+| Tenant Administrator |   ✓    |  ✓   |    ✓    |   ✓    |
+| Manager              |   ✗    |  ✓   | Limited |   ✗    |
+| Employee             |   ✗    | Self |  Self   |   ✗    |
 
 ---
 
 ## Attendance
 
-| Role | Check In | Check Out | Approve | Reports |
-|------|:--------:|:---------:|:-------:|:------:|
-| Tenant Administrator | ✓ | ✓ | ✓ | ✓ |
-| Manager | ✓ | ✓ | ✓ | ✓ |
-| Employee | ✓ | ✓ | ✗ | Self |
-| Field Staff | ✓ | ✓ | ✗ | Self |
+| Role                 | Check In | Check Out | Approve | Reports |
+| -------------------- | :------: | :-------: | :-----: | :-----: |
+| Tenant Administrator |    ✓     |     ✓     |    ✓    |    ✓    |
+| Manager              |    ✓     |     ✓     |    ✓    |    ✓    |
+| Employee             |    ✓     |     ✓     |    ✗    |  Self   |
+| Field Staff          |    ✓     |     ✓     |    ✗    |  Self   |
 
 ---
 
 ## GPS & Visits
 
-| Role | Track | View | Assign | Reports |
-|------|:-----:|:----:|:------:|:------:|
-| Tenant Administrator | ✓ | ✓ | ✓ | ✓ |
-| Manager | ✓ | ✓ | ✓ | ✓ |
-| Field Staff | ✓ | Self | ✗ | Self |
-| Employee | Optional | Self | ✗ | Self |
+| Role                 |  Track   | View | Assign | Reports |
+| -------------------- | :------: | :--: | :----: | :-----: |
+| Tenant Administrator |    ✓     |  ✓   |   ✓    |    ✓    |
+| Manager              |    ✓     |  ✓   |   ✓    |    ✓    |
+| Field Staff          |    ✓     | Self |   ✗    |  Self   |
+| Employee             | Optional | Self |   ✗    |  Self   |
 
 ---
 
 ## Fault Management
 
-| Role | Create | Assign | Resolve | Close |
-|------|:------:|:------:|:-------:|:-----:|
-| Tenant Administrator | ✓ | ✓ | ✓ | ✓ |
-| Manager | ✓ | ✓ | ✓ | ✓ |
-| Customer Support | ✓ | ✓ | ✓ | ✗ |
-| Field Staff | ✓ | ✗ | ✓ | ✗ |
-| Client User | ✓ | ✗ | ✗ | ✗ |
+| Role                 | Create | Assign | Resolve | Close |
+| -------------------- | :----: | :----: | :-----: | :---: |
+| Tenant Administrator |   ✓    |   ✓    |    ✓    |   ✓   |
+| Manager              |   ✓    |   ✓    |    ✓    |   ✓   |
+| Customer Support     |   ✓    |   ✓    |    ✓    |   ✗   |
+| Field Staff          |   ✓    |   ✗    |    ✓    |   ✗   |
+| Client User          |   ✓    |   ✗    |    ✗    |   ✗   |
 
 ---
 
 ## Lead Management
 
-| Role | Create | Update | Assign | Convert |
-|------|:------:|:------:|:------:|:-------:|
-| Tenant Administrator | ✓ | ✓ | ✓ | ✓ |
-| Manager | ✓ | ✓ | ✓ | ✓ |
-| Sales Executive | ✓ | ✓ | ✗ | Limited |
-| Employee | ✗ | ✗ | ✗ | ✗ |
+| Role                 | Create | Update | Assign | Convert |
+| -------------------- | :----: | :----: | :----: | :-----: |
+| Tenant Administrator |   ✓    |   ✓    |   ✓    |    ✓    |
+| Manager              |   ✓    |   ✓    |   ✓    |    ✓    |
+| Sales Executive      |   ✓    |   ✓    |   ✗    | Limited |
+| Employee             |   ✗    |   ✗    |   ✗    |    ✗    |
 
 ---
 
 ## Reports
 
-| Role | View | Export | Schedule |
-|------|:----:|:------:|:--------:|
-| Platform Super Admin | ✓ | ✓ | ✓ |
-| Tenant Administrator | ✓ | ✓ | ✓ |
-| Manager | ✓ | ✓ | Limited |
-| Employee | Self | ✗ | ✗ |
-| Client User | Limited | ✗ | ✗ |
+| Role                 |  View   | Export | Schedule |
+| -------------------- | :-----: | :----: | :------: |
+| Platform Super Admin |    ✓    |   ✓    |    ✓     |
+| Tenant Administrator |    ✓    |   ✓    |    ✓     |
+| Manager              |    ✓    |   ✓    | Limited  |
+| Employee             |  Self   |   ✗    |    ✗     |
+| Client User          | Limited |   ✗    |    ✗     |
 
 ---
 
 ## Settings
 
-| Role | Tenant Settings | Branding | Feature Flags |
-|------|:---------------:|:--------:|:-------------:|
-| Platform Super Admin | ✓ | ✓ | ✓ |
-| Tenant Administrator | ✓ | ✓ | ✓ (tenant) |
-| Manager | ✗ | ✗ | ✗ |
-| Employee | ✗ | ✗ | ✗ |
+| Role                 | Tenant Settings | Branding | Feature Flags |
+| -------------------- | :-------------: | :------: | :-----------: |
+| Platform Super Admin |        ✓        |    ✓     |       ✓       |
+| Tenant Administrator |        ✓        |    ✓     |  ✓ (tenant)   |
+| Manager              |        ✗        |    ✗     |       ✗       |
+| Employee             |        ✗        |    ✗     |       ✗       |
 
 ---
 
@@ -272,17 +274,20 @@ Administrative events are always audited.
 # 13. Testing Strategy
 
 Functional:
+
 - Positive and negative authorization scenarios
 - Multi-role evaluation
 - Module enable/disable
 
 Security:
+
 - Privilege escalation
 - Cross-tenant access
 - Direct API invocation
 - Feature flag bypass
 
 Performance:
+
 - High concurrency
 - Large permission catalog
 - Bulk authorization requests

@@ -18,63 +18,65 @@ modules.
 
 ## Objectives
 
--   Centralized notification framework
--   Multi-channel delivery (Push, Email, WhatsApp, SMS, In-App)
--   Tenant-specific branding and templates
--   Dynamic variables and localization
--   Workflow-triggered automation
--   Retry, throttling, priority, scheduling, and delivery tracking
--   Complete audit logging
--   Enterprise scalability
+- Centralized notification framework
+- Multi-channel delivery (Push, Email, WhatsApp, SMS, In-App)
+- Tenant-specific branding and templates
+- Dynamic variables and localization
+- Workflow-triggered automation
+- Retry, throttling, priority, scheduling, and delivery tracking
+- Complete audit logging
+- Enterprise scalability
 
 ## Supported Channels
 
-  Channel                    Supported
-  -------------------------- -------------------------------
-  In-App Notifications       ✓
-  Push Notifications (FCM)   ✓
-  Email                      ✓
-  WhatsApp                   ✓
-  SMS                        ✓
-  Webhooks                   ✓
-  Future Channels            Microsoft Teams, Slack, Voice
+Channel Supported
+
+---
+
+In-App Notifications ✓
+Push Notifications (FCM) ✓
+Email ✓
+WhatsApp ✓
+SMS ✓
+Webhooks ✓
+Future Channels Microsoft Teams, Slack, Voice
 
 ## Core Capabilities
 
--   Notification Template Management
--   Event Driven Notification Engine
--   Workflow Integration
--   Approval Notifications
--   Scheduled Notifications
--   Reminder Engine
--   Escalation Notifications
--   Broadcast Messaging
--   Tenant Branding
--   Localization
--   Delivery Tracking
--   Read Receipts
--   Retry Queue
--   Dead Letter Queue
--   Notification Analytics
--   User Preferences
--   Quiet Hours
--   Priority Routing
+- Notification Template Management
+- Event Driven Notification Engine
+- Workflow Integration
+- Approval Notifications
+- Scheduled Notifications
+- Reminder Engine
+- Escalation Notifications
+- Broadcast Messaging
+- Tenant Branding
+- Localization
+- Delivery Tracking
+- Read Receipts
+- Retry Queue
+- Dead Letter Queue
+- Notification Analytics
+- User Preferences
+- Quiet Hours
+- Priority Routing
 
 ## Event Sources
 
--   Authentication
--   Attendance
--   GPS
--   Leave
--   Fault Management
--   Lead Management
--   User Management
--   Approval Engine
--   Workflow Engine
--   Subscription & Licensing
--   Security Monitoring
--   Audit Engine
--   Scheduled Jobs
+- Authentication
+- Attendance
+- GPS
+- Leave
+- Fault Management
+- Lead Management
+- User Management
+- Approval Engine
+- Workflow Engine
+- Subscription & Licensing
+- Security Monitoring
+- Audit Engine
+- Scheduled Jobs
 
 ## Notification Lifecycle
 
@@ -94,154 +96,154 @@ modules.
 
 Templates support:
 
--   Dynamic placeholders
--   HTML Email
--   Rich Push
--   WhatsApp variables
--   Multi-language content
--   Tenant branding
--   Versioning
--   Preview/Test mode
+- Dynamic placeholders
+- HTML Email
+- Rich Push
+- WhatsApp variables
+- Multi-language content
+- Tenant branding
+- Versioning
+- Preview/Test mode
 
 Example variables:
 
--   {{EmployeeName}}
--   {{CompanyName}}
--   {{FaultNumber}}
--   {{AttendanceDate}}
--   {{LeadName}}
--   {{ApprovalStatus}}
+- {{EmployeeName}}
+- {{CompanyName}}
+- {{FaultNumber}}
+- {{AttendanceDate}}
+- {{LeadName}}
+- {{ApprovalStatus}}
 
 ## Priority Levels
 
--   Critical
--   High
--   Normal
--   Low
+- Critical
+- High
+- Normal
+- Low
 
 ## Retry Policy
 
--   Configurable retry count
--   Exponential backoff
--   Dead-letter queue
--   Failure reason logging
+- Configurable retry count
+- Exponential backoff
+- Dead-letter queue
+- Failure reason logging
 
 ## Notification Preferences
 
 Users may configure:
 
--   Channel preferences
--   Quiet hours
--   Language
--   Module subscriptions
--   Digest mode
--   Emergency override
+- Channel preferences
+- Quiet hours
+- Language
+- Module subscriptions
+- Digest mode
+- Emergency override
 
 ## Tenant Configuration
 
 Each tenant can configure:
 
--   Logo
--   Email sender
--   WhatsApp configuration
--   SMS provider
--   Push credentials
--   Theme
--   Language
--   Timezone
--   Notification rules
+- Logo
+- Email sender
+- WhatsApp configuration
+- SMS provider
+- Push credentials
+- Theme
+- Language
+- Timezone
+- Notification rules
 
 ## Security
 
--   RBAC protected
--   Tenant isolation
--   Encryption for sensitive payloads
--   Audit trail
--   Rate limiting
--   Signed webhooks
+- RBAC protected
+- Tenant isolation
+- Encryption for sensitive payloads
+- Audit trail
+- Rate limiting
+- Signed webhooks
 
 ## Database (High Level)
 
--   notification_templates
--   notification_channels
--   notification_events
--   notification_queue
--   notification_delivery_logs
--   notification_preferences
--   notification_rules
--   notification_variables
+- notification_templates
+- notification_channels
+- notification_events
+- notification_queue
+- notification_delivery_logs
+- notification_preferences
+- notification_rules
+- notification_variables
 
 ## APIs
 
--   Create Notification
--   Send Notification
--   Schedule Notification
--   Cancel Notification
--   Retry Failed Notification
--   List Notifications
--   Mark as Read
--   Get Delivery Status
--   Manage Templates
--   Manage Preferences
+- Create Notification
+- Send Notification
+- Schedule Notification
+- Cancel Notification
+- Retry Failed Notification
+- List Notifications
+- Mark as Read
+- Get Delivery Status
+- Manage Templates
+- Manage Preferences
 
 ## Mobile Features
 
--   In-app notification center
--   Offline sync
--   Badge counts
--   Deep links
--   Action buttons
--   Read status synchronization
+- In-app notification center
+- Offline sync
+- Badge counts
+- Deep links
+- Action buttons
+- Read status synchronization
 
 ## Admin Portal
 
--   Template Designer
--   Delivery Dashboard
--   Failed Queue Monitor
--   Channel Configuration
--   Notification Analytics
--   Broadcast Manager
--   Scheduler
--   Audit Viewer
+- Template Designer
+- Delivery Dashboard
+- Failed Queue Monitor
+- Channel Configuration
+- Notification Analytics
+- Broadcast Manager
+- Scheduler
+- Audit Viewer
 
 ## KPIs
 
--   Delivery Success %
--   Average Delivery Time
--   Open Rate
--   Click Rate
--   Failure Rate
--   Retry Success
--   Channel Utilization
+- Delivery Success %
+- Average Delivery Time
+- Open Rate
+- Click Rate
+- Failure Rate
+- Retry Success
+- Channel Utilization
 
 ## Integrations
 
--   Firebase Cloud Messaging
--   SMTP
--   WhatsApp Business API
--   SMS Gateway
--   REST Webhooks
+- Firebase Cloud Messaging
+- SMTP
+- WhatsApp Business API
+- SMS Gateway
+- REST Webhooks
 
 ## Dependencies
 
--   RBAC Engine
--   Workflow Engine
--   Feature Flag Engine
--   Settings Engine
--   Multi-Tenant Engine
--   Audit Engine
+- RBAC Engine
+- Workflow Engine
+- Feature Flag Engine
+- Settings Engine
+- Multi-Tenant Engine
+- Audit Engine
 
 ## Future Roadmap
 
--   AI-based delivery optimization
--   Smart notification batching
--   Predictive reminders
--   Adaptive channel selection
--   Voice notifications
--   Microsoft Teams integration
--   Slack integration
+- AI-based delivery optimization
+- Smart notification batching
+- Predictive reminders
+- Adaptive channel selection
+- Voice notifications
+- Microsoft Teams integration
+- Slack integration
 
 ## Version
 
--   Version: 2.0 Enterprise
--   Status: Production Ready
+- Version: 2.0 Enterprise
+- Status: Production Ready

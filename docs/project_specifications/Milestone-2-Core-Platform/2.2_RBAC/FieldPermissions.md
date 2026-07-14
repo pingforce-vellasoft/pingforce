@@ -1,7 +1,9 @@
 # FieldPermissions.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – RBAC Module
+
 ### Field-Level Permission & Data Access Specification
 
 **Module:** Core Platform → RBAC  
@@ -197,7 +199,7 @@ Example:
 
 ↓
 
-98******10
+98**\*\***10
 
 Masking never modifies stored data.
 

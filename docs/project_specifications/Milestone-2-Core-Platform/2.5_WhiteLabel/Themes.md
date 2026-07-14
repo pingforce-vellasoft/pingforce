@@ -1,7 +1,9 @@
 # Themes.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – White Label Module
+
 ### Theme Management Specification
 
 **Module:** Core Platform → White Label  
@@ -37,13 +39,13 @@ The subsystem shall:
 # 3. Theme Architecture
 
 Platform Theme
-    ↓
+↓
 Tenant Theme
-    ↓
+↓
 Company Overrides (future)
-    ↓
+↓
 User Preferences
-    ↓
+↓
 Component Theme
 
 Precedence:
@@ -282,21 +284,21 @@ Indexes:
 
 # 15. REST APIs
 
-GET    /api/v1/themes
+GET /api/v1/themes
 
-GET    /api/v1/themes/{id}
+GET /api/v1/themes/{id}
 
-POST   /api/v1/themes
+POST /api/v1/themes
 
-PUT    /api/v1/themes/{id}
+PUT /api/v1/themes/{id}
 
-POST   /api/v1/themes/{id}/publish
+POST /api/v1/themes/{id}/publish
 
-POST   /api/v1/themes/{id}/rollback
+POST /api/v1/themes/{id}/rollback
 
-GET    /api/v1/users/me/theme
+GET /api/v1/users/me/theme
 
-PUT    /api/v1/users/me/theme
+PUT /api/v1/users/me/theme
 
 ---
 

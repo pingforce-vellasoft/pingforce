@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/theme.dart';
-import '../../../core/widgets/app_states.dart';
 import 'auth_state.dart';
 import 'widgets/auth_widgets.dart';
 import 'auth_notifier.dart';

@@ -1,6 +1,7 @@
 # OTP.md
 
 # Enterprise Workforce Platform
+
 ## Authentication Module – One-Time Password (OTP) Specification
 
 **Module:** Core Platform → Authentication  
@@ -46,34 +47,40 @@ The OTP subsystem shall:
 
 # 3. Supported OTP Types
 
-| Type | Status | Usage |
-|------|--------|------|
-| Email OTP | Supported | Login, password reset, verification |
-| SMS OTP | Planned | Login, mobile verification |
-| Authenticator App (TOTP) | Planned | MFA |
-| Voice OTP | Future | Accessibility |
+| Type                     | Status    | Usage                               |
+| ------------------------ | --------- | ----------------------------------- |
+| Email OTP                | Supported | Login, password reset, verification |
+| SMS OTP                  | Planned   | Login, mobile verification          |
+| Authenticator App (TOTP) | Planned   | MFA                                 |
+| Voice OTP                | Future    | Accessibility                       |
 
 ---
 
 # 4. Business Rules
 
 ### BR-OTP-001
+
 Each OTP is associated with exactly one:
+
 - Tenant
 - User (or pending user)
 - Purpose
 - Channel
 
 ### BR-OTP-002
+
 An OTP is valid for a single successful verification only.
 
 ### BR-OTP-003
+
 Expired OTPs cannot be reused.
 
 ### BR-OTP-004
+
 Maximum verification attempts are tenant configurable.
 
 ### BR-OTP-005
+
 OTP generation and verification events are audited.
 
 ---
@@ -95,10 +102,12 @@ OTP generation and verification events are audited.
 # 6. Generation Rules
 
 Recommended length:
+
 - Default: 6 digits
 - Configurable: 4–8 digits
 
 Generation requirements:
+
 - Cryptographically secure RNG
 - No sequential values
 - No predictable patterns
@@ -109,6 +118,7 @@ Generation requirements:
 # 7. Expiration Policy
 
 Default validity:
+
 - Email OTP: 10 minutes
 - SMS OTP: 5 minutes
 - TOTP: 30 seconds (future)
@@ -120,6 +130,7 @@ Expired OTPs are automatically rejected.
 # 8. Retry Policy
 
 Default limits:
+
 - Verification attempts: 5
 - Resend requests: 3
 - Cool-down between resends: 60 seconds
@@ -133,6 +144,7 @@ Exceeding limits may temporarily block further requests.
 OTP values are **never stored in plaintext**.
 
 Persist only:
+
 - otp_hash
 - tenant_id
 - user_id
@@ -146,6 +158,7 @@ Persist only:
 - device_id
 
 Hashing recommendation:
+
 - SHA-256 or Argon2 depending on storage strategy.
 
 ---
@@ -155,10 +168,12 @@ Hashing recommendation:
 ## Email
 
 Provider:
+
 - SMTP
 - Enterprise Email Service
 
 Template variables:
+
 - OTP
 - Expiry time
 - Tenant branding
@@ -167,6 +182,7 @@ Template variables:
 ## SMS
 
 Future integration:
+
 - SMS Gateway
 - Country-aware routing
 - Delivery status tracking
@@ -218,6 +234,7 @@ Mandatory controls:
 - Secrets managed in OCI Vault
 
 Reference:
+
 - OWASP ASVS
 - OWASP Authentication Cheat Sheet
 
@@ -265,6 +282,7 @@ Audit the following:
 - OTP Resent
 
 Audit records include:
+
 - tenant_id
 - user_id
 - request_id
@@ -277,17 +295,20 @@ Audit records include:
 # 17. Test Strategy
 
 Unit Tests
+
 - Generation
 - Hashing
 - Expiry
 - Retry logic
 
 Integration Tests
+
 - Request → Verify
 - Request → Resend → Verify
 - Password reset with OTP
 
 Security Tests
+
 - Replay attack
 - Brute-force simulation
 - Expired OTP
@@ -295,6 +316,7 @@ Security Tests
 - Invalid purpose
 
 Load Tests
+
 - Concurrent OTP generation
 - Bulk verification
 

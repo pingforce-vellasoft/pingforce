@@ -1,4 +1,3 @@
-
 # DASHBOARDS.md
 
 # Fault Management Module – Dashboards & Analytics Specification
@@ -35,9 +34,11 @@ Dashboards are role-based, tenant-aware, configurable, and integrate with the An
 # 3. Dashboard Types
 
 ## Operational Dashboard
+
 For service desk and managers.
 
 Widgets:
+
 - Open Faults
 - New Faults Today
 - Assigned vs Unassigned

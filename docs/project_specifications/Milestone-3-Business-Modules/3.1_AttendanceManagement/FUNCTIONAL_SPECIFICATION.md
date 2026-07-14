@@ -46,12 +46,14 @@ Each tenant can enable or disable individual attendance methods.
 ## FR-001 Employee Check-In
 
 Preconditions:
+
 - Authenticated user
 - Active employment
 - Valid device
 - Required permissions
 
 Flow:
+
 1. User opens Attendance screen.
 2. App validates GPS/device.
 3. Geo-fence is verified (if enabled).
@@ -61,6 +63,7 @@ Flow:
 7. Audit log created.
 
 Postconditions:
+
 - Attendance session created.
 - Dashboard updated.
 

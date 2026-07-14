@@ -1,16 +1,15 @@
-
 # SECURITY_TESTING.md
 
 # Enterprise Security Testing Strategy
 
 ## Document Information
 
-| Field | Value |
-|---|---|
-| Project | Enterprise Multi-Tenant AI Engineering Platform |
-| Document | SECURITY_TESTING.md |
-| Status | Planning Phase (Pre-Implementation) |
-| Version | 1.0 |
+| Field    | Value                                                  |
+| -------- | ------------------------------------------------------ |
+| Project  | Enterprise Multi-Tenant AI Engineering Platform        |
+| Document | SECURITY_TESTING.md                                    |
+| Status   | Planning Phase (Pre-Implementation)                    |
+| Version  | 1.0                                                    |
 | Audience | Security Engineers, QA, Developers, DevOps, Architects |
 
 ---

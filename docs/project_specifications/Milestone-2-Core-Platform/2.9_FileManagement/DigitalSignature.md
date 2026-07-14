@@ -1,7 +1,9 @@
 # DigitalSignature.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – File Management Module
+
 ### Digital Signature & Electronic Signing Specification
 
 **Module:** Core Platform → File Management  
@@ -214,19 +216,19 @@ Indexes:
 
 # 14. REST APIs
 
-POST   /api/v1/signatures/request
+POST /api/v1/signatures/request
 
-POST   /api/v1/signatures/sign
+POST /api/v1/signatures/sign
 
-POST   /api/v1/signatures/verify
+POST /api/v1/signatures/verify
 
-GET    /api/v1/signatures/{id}
+GET /api/v1/signatures/{id}
 
-GET    /api/v1/signatures/document/{documentId}
+GET /api/v1/signatures/document/{documentId}
 
-POST   /api/v1/signatures/cancel
+POST /api/v1/signatures/cancel
 
-GET    /api/v1/signatures/history
+GET /api/v1/signatures/history
 
 ---
 

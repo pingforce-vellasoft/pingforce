@@ -134,6 +134,7 @@ The Settings module provides centralized configuration of GPS Visit Management. 
 # 11. Notification Settings
 
 Channels
+
 - Push
 - Email
 - SMS
@@ -141,6 +142,7 @@ Channels
 - In-App
 
 Events
+
 - Assignment
 - Reminder
 - Start
@@ -211,6 +213,7 @@ Events
 # 17. Audit
 
 Audit all:
+
 - Configuration Changes
 - Feature Toggles
 - Policy Updates

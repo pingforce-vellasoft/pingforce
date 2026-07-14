@@ -1,7 +1,7 @@
 PROJECT_STATE.md
 
-Part 1
-========
+# Part 1
+
 Project Overview
 Current Status
 Business Goals
@@ -11,8 +11,8 @@ Modules Overview
 Feature Matrix
 Implementation Summary
 
-Part 2
-========
+# Part 2
+
 Detailed Module Status
 Visit Management
 GPS Tracking
@@ -23,8 +23,8 @@ Location History
 Evidence
 Notifications
 
-Part 3
-========
+# Part 3
+
 Database
 API
 Mobile
@@ -35,8 +35,8 @@ RBAC
 Testing
 Validation
 
-Part 4
-========
+# Part 4
+
 Deployment
 Security
 DevOps

@@ -46,13 +46,13 @@ The workflow is fully configurable through the Workflow Engine and integrates wi
 
 # 3. Supported Roles
 
-| Role | Capabilities |
-|------|--------------|
-| Super Admin | Configure platform and modules |
-| Employer | View all company faults |
-| Manager | Create, assign, approve, monitor |
-| Technician / Employee | Accept, work, resolve |
-| Customer (Optional) | Raise/view own tickets |
+| Role                  | Capabilities                     |
+| --------------------- | -------------------------------- |
+| Super Admin           | Configure platform and modules   |
+| Employer              | View all company faults          |
+| Manager               | Create, assign, approve, monitor |
+| Technician / Employee | Accept, work, resolve            |
+| Customer (Optional)   | Raise/view own tickets           |
 
 ---
 

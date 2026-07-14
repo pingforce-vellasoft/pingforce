@@ -73,25 +73,30 @@ shared/charts/
 # Supported Chart Types
 
 ## KPI Charts
+
 - KPI Cards
 - Progress Indicators
 - Gauges
 
 ## Trend Charts
+
 - Line Chart
 - Area Chart
 - Spline Chart
 
 ## Comparison Charts
+
 - Vertical Bar Chart
 - Horizontal Bar Chart
 - Stacked Bar Chart
 
 ## Distribution Charts
+
 - Pie Chart
 - Donut Chart
 
 ## Timeline Charts
+
 - Attendance Timeline
 - GPS Movement Timeline
 - Fault Resolution Timeline
@@ -102,30 +107,35 @@ shared/charts/
 # Business Usage
 
 ## Attendance
+
 - Daily Attendance
 - Monthly Attendance
 - Late Arrivals
 - Overtime
 
 ## GPS
+
 - Active Employees
 - Travel Distance
 - Visit Count
 - Geofence Compliance
 
 ## Fault Management
+
 - Open vs Closed Faults
 - SLA Performance
 - Resolution Time
 - Technician Performance
 
 ## Lead Management
+
 - Pipeline Status
 - Lead Sources
 - Conversion Rate
 - Sales Funnel
 
 ## Reports
+
 - Productivity
 - Department Comparison
 - Monthly Trends
@@ -229,12 +239,15 @@ Use:
 # Responsive Behaviour
 
 Desktop:
+
 - Multi-chart dashboard
 
 Tablet:
+
 - Two-column charts
 
 Mobile:
+
 - Single-column stacked charts
 
 ---

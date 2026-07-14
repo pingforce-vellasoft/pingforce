@@ -1,4 +1,3 @@
-
 # PROJECT_CONTEXT.md
 
 # Stitch Project Context

@@ -1,7 +1,9 @@
 # Employer.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – User Management Module
+
 ### Employer Domain Specification
 
 **Module:** Core Platform → User Management
@@ -279,21 +281,21 @@ Composite:
 
 # 15. REST APIs
 
-GET    /api/v1/employers
+GET /api/v1/employers
 
-GET    /api/v1/employers/{id}
+GET /api/v1/employers/{id}
 
-POST   /api/v1/employers
+POST /api/v1/employers
 
-PUT    /api/v1/employers/{id}
+PUT /api/v1/employers/{id}
 
-PATCH  /api/v1/employers/{id}/status
+PATCH /api/v1/employers/{id}/status
 
-GET    /api/v1/employers/{id}/employees
+GET /api/v1/employers/{id}/employees
 
-POST   /api/v1/employers/{id}/onboard
+POST /api/v1/employers/{id}/onboard
 
-POST   /api/v1/employers/{id}/offboard
+POST /api/v1/employers/{id}/offboard
 
 ---
 

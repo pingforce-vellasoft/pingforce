@@ -1,4 +1,3 @@
-
 # BUILD_RELEASE.md
 
 > **Enterprise Multi-Tenant Workforce Management SaaS Platform**
@@ -55,10 +54,10 @@ Illustrative branches:
 
 - main
 - develop (optional)
-- feature/*
-- bugfix/*
-- hotfix/*
-- release/*
+- feature/\*
+- bugfix/\*
+- hotfix/\*
+- release/\*
 
 The chosen branching strategy shall align with team size and release cadence.
 

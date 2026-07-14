@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Inject,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import { AuditService } from '../audit/audit.service';
 
@@ -68,9 +64,7 @@ export class SessionService {
       where: { id: sessionId },
       select: { revokedAt: true, expiresAt: true },
     });
-    return (
-      !!session && !session.revokedAt && session.expiresAt > new Date()
-    );
+    return !!session && !session.revokedAt && session.expiresAt > new Date();
   }
 
   async touch(sessionId: string): Promise<void> {

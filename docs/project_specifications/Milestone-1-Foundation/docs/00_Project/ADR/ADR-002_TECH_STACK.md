@@ -23,28 +23,29 @@ This Architecture Decision Record defines the official technology stack for the 
 
 # 3. Approved Technology Stack
 
-| Layer | Technology | Decision |
-|-------|------------|----------|
-| Web Admin | Angular 21 | Primary web framework |
-| Mobile | Flutter | Android & iOS from one codebase |
-| Backend | NestJS | Modular enterprise backend |
-| Language | TypeScript | Web & Backend |
-| Mobile Language | Dart | Flutter |
-| Database | PostgreSQL | Primary relational database |
-| ORM | Prisma | Database access |
-| Cache | Redis | Caching & queues |
-| Queue | BullMQ | Background jobs |
-| Authentication | JWT + Refresh Tokens | Stateless authentication |
-| Storage | OCI Object Storage | Files & media |
-| CI/CD | GitHub Actions | Build & deployment |
-| Containers | Docker | Standard runtime |
-| Cloud | Oracle Cloud Infrastructure | Production |
-| Monitoring | Prometheus + Grafana | Metrics |
-| Logging | Structured JSON Logs | Centralized logging |
+| Layer           | Technology                  | Decision                        |
+| --------------- | --------------------------- | ------------------------------- |
+| Web Admin       | Angular 21                  | Primary web framework           |
+| Mobile          | Flutter                     | Android & iOS from one codebase |
+| Backend         | NestJS                      | Modular enterprise backend      |
+| Language        | TypeScript                  | Web & Backend                   |
+| Mobile Language | Dart                        | Flutter                         |
+| Database        | PostgreSQL                  | Primary relational database     |
+| ORM             | Prisma                      | Database access                 |
+| Cache           | Redis                       | Caching & queues                |
+| Queue           | BullMQ                      | Background jobs                 |
+| Authentication  | JWT + Refresh Tokens        | Stateless authentication        |
+| Storage         | OCI Object Storage          | Files & media                   |
+| CI/CD           | GitHub Actions              | Build & deployment              |
+| Containers      | Docker                      | Standard runtime                |
+| Cloud           | Oracle Cloud Infrastructure | Production                      |
+| Monitoring      | Prometheus + Grafana        | Metrics                         |
+| Logging         | Structured JSON Logs        | Centralized logging             |
 
 # 4. Frontend
 
 Angular 21 is selected because of:
+
 - Standalone APIs
 - Signals
 - Enterprise architecture
@@ -53,6 +54,7 @@ Angular 21 is selected because of:
 - Long-term support
 
 Use:
+
 - Angular Material 3
 - RxJS
 - Signals-first state
@@ -63,6 +65,7 @@ Use:
 # 5. Mobile
 
 Flutter is selected because it provides:
+
 - Single Android/iOS codebase
 - High performance
 - Native rendering
@@ -70,6 +73,7 @@ Flutter is selected because it provides:
 - Offline-first capability
 
 Packages:
+
 - Riverpod
 - go_router
 - dio
@@ -81,6 +85,7 @@ Packages:
 # 6. Backend
 
 NestJS provides:
+
 - Modular architecture
 - Dependency Injection
 - Guards
@@ -90,6 +95,7 @@ NestJS provides:
 - Testing support
 
 Patterns:
+
 - Clean Architecture
 - Repository Pattern
 - CQRS where beneficial
@@ -100,6 +106,7 @@ Patterns:
 PostgreSQL is the system of record.
 
 Standards:
+
 - UUID primary keys
 - tenant_id on business entities
 - Soft delete
@@ -110,6 +117,7 @@ Standards:
 # 8. Infrastructure
 
 Deployment target:
+
 - OCI Compute
 - OCI Load Balancer
 - OCI Object Storage
@@ -117,6 +125,7 @@ Deployment target:
 - OCI Networking
 
 Containerization:
+
 - Docker
 - Multi-stage builds
 
@@ -135,12 +144,14 @@ Containerization:
 # 10. AI Engineering Stack
 
 Development tools:
+
 - ChatGPT
 - Antigravity
 - Stitch MCP
 - GitHub Copilot
 
 Documentation:
+
 - Markdown
 - Mermaid diagrams
 - ADRs
@@ -165,6 +176,7 @@ Documentation:
 # 13. Governance
 
 Technology changes require:
+
 1. New ADR
 2. Architecture review
 3. Impact assessment
@@ -173,6 +185,7 @@ Technology changes require:
 # 14. Consequences
 
 Benefits:
+
 - Unified engineering standards
 - Simplified onboarding
 - Lower maintenance cost
@@ -180,6 +193,7 @@ Benefits:
 - Consistent development practices
 
 Trade-offs:
+
 - Team must maintain expertise in selected technologies.
 - Framework upgrades require governance.
 

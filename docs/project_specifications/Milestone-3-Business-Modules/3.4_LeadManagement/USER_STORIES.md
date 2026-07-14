@@ -4,15 +4,17 @@
 
 ## Document Information
 
-  Item       Value
-  ---------- --------------------------------------
-  Module     Lead Management
-  Platform   Enterprise Workforce Management SaaS
-  Document   User Stories
-  Version    1.0
-  Status     Ready for Development
+Item Value
 
-------------------------------------------------------------------------
+---
+
+Module Lead Management
+Platform Enterprise Workforce Management SaaS
+Document User Stories
+Version 1.0
+Status Ready for Development
+
+---
 
 # Introduction
 
@@ -20,19 +22,19 @@ This document defines the functional user stories for the Lead
 Management module. Stories are organized by persona and are intended to
 drive UI/UX design, API development, testing, and sprint planning.
 
-------------------------------------------------------------------------
+---
 
 # Personas
 
--   Super Admin
--   Employer / Client Admin
--   Sales Manager
--   Sales Executive / Field Staff
--   Marketing User
--   Customer (Future Portal)
--   System Integration/API Client
+- Super Admin
+- Employer / Client Admin
+- Sales Manager
+- Sales Executive / Field Staff
+- Marketing User
+- Customer (Future Portal)
+- System Integration/API Client
 
-------------------------------------------------------------------------
+---
 
 # Epic 1 -- Lead Capture
 
@@ -44,13 +46,13 @@ drive UI/UX design, API development, testing, and sprint planning.
 
 ### Acceptance Criteria
 
--   Mandatory fields validated
--   Duplicate detection performed
--   Attachments supported
--   GPS captured (optional)
--   Audit log created
+- Mandatory fields validated
+- Duplicate detection performed
+- Attachments supported
+- GPS captured (optional)
+- Audit log created
 
-------------------------------------------------------------------------
+---
 
 ## US-002 Bulk Import
 
@@ -61,7 +63,7 @@ drive UI/UX design, API development, testing, and sprint planning.
 Acceptance Criteria - Template validation - Duplicate reporting - Error
 report generation - Background processing - Import history maintained
 
-------------------------------------------------------------------------
+---
 
 ## US-003 API Lead Capture
 
@@ -71,7 +73,7 @@ that** external systems automatically create leads.
 Acceptance Criteria - Secure API keys - Tenant resolution - Rate
 limiting - Validation - Audit trail
 
-------------------------------------------------------------------------
+---
 
 # Epic 2 -- Lead Assignment
 
@@ -83,7 +85,7 @@ availability.
 Acceptance Criteria - Single/bulk assignment - Notifications sent -
 Ownership history retained
 
-------------------------------------------------------------------------
+---
 
 ## US-005 Auto Assignment
 
@@ -92,7 +94,7 @@ As a Client Admin, I want configurable assignment rules.
 Rules Supported - Round Robin - Region - Branch - Product - Skills -
 Workload - Priority
 
-------------------------------------------------------------------------
+---
 
 ## US-006 Reassignment
 
@@ -101,7 +103,7 @@ As a Manager, I want to reassign leads while preserving history.
 Acceptance Criteria - Mandatory reason - Previous owner retained - Audit
 log created
 
-------------------------------------------------------------------------
+---
 
 # Epic 3 -- Pipeline Management
 
@@ -113,7 +115,7 @@ pipeline.
 Stages - New - Assigned - Contacted - Qualified - Proposal -
 Negotiation - Won - Lost - Archived
 
-------------------------------------------------------------------------
+---
 
 ## US-008 Configurable Workflow
 
@@ -122,7 +124,7 @@ As a Client Admin, I want custom lead stages per tenant.
 Acceptance Criteria - Add/Edit/Delete stages - Validation rules -
 Required fields - SLA timers
 
-------------------------------------------------------------------------
+---
 
 # Epic 4 -- Follow-up Management
 
@@ -133,13 +135,13 @@ As a Sales Executive, I want reminders for future follow-ups.
 Acceptance Criteria - Calendar - Push - Email - WhatsApp - SMS - In-App
 notifications
 
-------------------------------------------------------------------------
+---
 
 ## US-010 Missed Follow-up Escalation
 
 As a Manager, I want overdue follow-ups escalated automatically.
 
-------------------------------------------------------------------------
+---
 
 # Epic 5 -- Activity Tracking
 
@@ -150,7 +152,7 @@ Notes - Attachments - Quotations
 
 Every activity is timestamped and audited.
 
-------------------------------------------------------------------------
+---
 
 # Epic 6 -- Lead Conversion
 
@@ -161,13 +163,13 @@ As a Sales Executive, I want to convert qualified leads.
 Conversion may create: - Customer - Organization - Opportunity -
 Contract - Project
 
-------------------------------------------------------------------------
+---
 
 ## US-013 Lost Lead
 
 Managers require mandatory loss reasons and analytics.
 
-------------------------------------------------------------------------
+---
 
 # Epic 7 -- Search
 
@@ -176,33 +178,33 @@ Managers require mandatory loss reasons and analytics.
 Search by: - Name - Phone - Email - Company - Product - Campaign -
 Owner - Status - Tags
 
-------------------------------------------------------------------------
+---
 
 ## US-015 Advanced Filters
 
 Filter by: - Date - Region - Branch - Team - Source - Priority - SLA -
 Pipeline Stage
 
-------------------------------------------------------------------------
+---
 
 # Epic 8 -- Reporting
 
 ## US-016 Operational Reports
 
--   Daily Leads
--   Pending Follow-ups
--   Assigned Leads
--   Conversion Summary
+- Daily Leads
+- Pending Follow-ups
+- Assigned Leads
+- Conversion Summary
 
 ## US-017 Executive Dashboards
 
--   Manager Dashboard
--   Employer Dashboard
--   Super Admin Dashboard
+- Manager Dashboard
+- Employer Dashboard
+- Super Admin Dashboard
 
 Exports: - Excel - CSV - PDF
 
-------------------------------------------------------------------------
+---
 
 # Epic 9 -- Notifications
 
@@ -213,7 +215,7 @@ Converted - Lost - SLA Breach
 
 Channels - Push - Email - WhatsApp - SMS - In-App
 
-------------------------------------------------------------------------
+---
 
 # Epic 10 -- Mobile
 
@@ -224,7 +226,7 @@ Record activities
 
 Synchronization: - Retry Queue - Conflict Resolution - Background Sync
 
-------------------------------------------------------------------------
+---
 
 # Epic 11 -- Security
 
@@ -233,7 +235,7 @@ Synchronization: - Retry Queue - Conflict Resolution - Background Sync
 Platform must support: - RBAC - Row-level Security - Tenant Isolation -
 JWT Authentication - MFA (Optional) - Complete Audit Trail
 
-------------------------------------------------------------------------
+---
 
 # Epic 12 -- Administration
 
@@ -242,7 +244,7 @@ JWT Authentication - MFA (Optional) - Complete Audit Trail
 Client Admins can: - Enable/Disable Lead module - Configure pipelines -
 Configure assignment rules - Configure notifications - Configure SLA
 
-------------------------------------------------------------------------
+---
 
 # Epic 13 -- Future AI
 
@@ -262,7 +264,7 @@ Create leads by scanning business cards.
 
 Recommend optimal follow-up timing and communication.
 
-------------------------------------------------------------------------
+---
 
 # Definition of Done
 

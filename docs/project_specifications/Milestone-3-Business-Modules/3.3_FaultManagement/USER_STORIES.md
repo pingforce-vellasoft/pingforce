@@ -1,4 +1,3 @@
-
 # USER_STORIES.md
 
 # Fault Management Module – User Stories

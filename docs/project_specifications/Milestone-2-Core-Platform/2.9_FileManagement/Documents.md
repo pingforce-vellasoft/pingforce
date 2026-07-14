@@ -1,7 +1,9 @@
 # Documents.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – File Management Module
+
 ### Enterprise Document Management Specification
 
 **Module:** Core Platform → File Management
@@ -244,21 +246,21 @@ Indexes:
 
 # 15. REST APIs
 
-POST   /api/v1/documents/upload
+POST /api/v1/documents/upload
 
-GET    /api/v1/documents
+GET /api/v1/documents
 
-GET    /api/v1/documents/{id}
+GET /api/v1/documents/{id}
 
-PUT    /api/v1/documents/{id}
+PUT /api/v1/documents/{id}
 
 DELETE /api/v1/documents/{id}
 
-POST   /api/v1/documents/{id}/approve
+POST /api/v1/documents/{id}/approve
 
-POST   /api/v1/documents/{id}/restore
+POST /api/v1/documents/{id}/restore
 
-GET    /api/v1/documents/search
+GET /api/v1/documents/search
 
 ---
 

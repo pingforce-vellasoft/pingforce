@@ -48,44 +48,44 @@ X-Tenant-Id: <tenant>
 
 # 4. Visit APIs
 
-POST   /visits
-GET    /visits
-GET    /visits/{visitId}
-PUT    /visits/{visitId}
+POST /visits
+GET /visits
+GET /visits/{visitId}
+PUT /visits/{visitId}
 DELETE /visits/{visitId}
 
-POST   /visits/{visitId}/assign
-POST   /visits/{visitId}/accept
-POST   /visits/{visitId}/reject
-POST   /visits/{visitId}/start
-POST   /visits/{visitId}/pause
-POST   /visits/{visitId}/resume
-POST   /visits/{visitId}/complete
-POST   /visits/{visitId}/cancel
-POST   /visits/{visitId}/reopen
+POST /visits/{visitId}/assign
+POST /visits/{visitId}/accept
+POST /visits/{visitId}/reject
+POST /visits/{visitId}/start
+POST /visits/{visitId}/pause
+POST /visits/{visitId}/resume
+POST /visits/{visitId}/complete
+POST /visits/{visitId}/cancel
+POST /visits/{visitId}/reopen
 
 ---
 
 # 5. Route APIs
 
 POST /routes
-GET  /routes
-GET  /routes/{routeId}
-PUT  /routes/{routeId}
+GET /routes
+GET /routes/{routeId}
+PUT /routes/{routeId}
 DELETE /routes/{routeId}
 
 POST /routes/{routeId}/optimize
 POST /routes/{routeId}/assign
-GET  /routes/{routeId}/playback
+GET /routes/{routeId}/playback
 
 ---
 
 # 6. GPS APIs
 
 POST /gps/location
-GET  /gps/live
-GET  /gps/history
-GET  /gps/playback
+GET /gps/live
+GET /gps/history
+GET /gps/playback
 POST /gps/validate
 
 ---
@@ -93,9 +93,9 @@ POST /gps/validate
 # 7. Geofence APIs
 
 POST /geofences
-GET  /geofences
-GET  /geofences/{id}
-PUT  /geofences/{id}
+GET /geofences
+GET /geofences/{id}
+PUT /geofences/{id}
 DELETE /geofences/{id}
 POST /geofences/validate
 
@@ -113,10 +113,11 @@ GET /locations/route/{routeId}
 # 9. Evidence APIs
 
 POST /visits/{visitId}/evidence
-GET  /visits/{visitId}/evidence
+GET /visits/{visitId}/evidence
 DELETE /evidence/{evidenceId}
 
 Supported:
+
 - Images
 - Documents
 - Signature
@@ -129,8 +130,8 @@ Supported:
 
 POST /sync/start
 POST /sync/manual
-GET  /sync/status
-GET  /sync/history
+GET /sync/status
+GET /sync/history
 POST /sync/retry
 POST /sync/resolve
 
@@ -179,17 +180,17 @@ PUT /notifications/preferences
 Success
 
 {
-  "success": true,
-  "message": "Operation completed",
-  "data": {}
+"success": true,
+"message": "Operation completed",
+"data": {}
 }
 
 Error
 
 {
-  "success": false,
-  "code": "VALIDATION_FAILED",
-  "message": "Validation failed"
+"success": false,
+"code": "VALIDATION_FAILED",
+"message": "Validation failed"
 }
 
 ---

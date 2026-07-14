@@ -13,61 +13,63 @@ APIs, and future integrations.
 
 ## Architecture Goals
 
--   Multi-tenant database architecture
--   Enterprise RBAC
--   White-label support
--   Feature flag engine
--   Module registry
--   Workflow engine
--   Notification engine
--   Audit logging
--   High performance
--   Horizontal scalability
--   High availability
+- Multi-tenant database architecture
+- Enterprise RBAC
+- White-label support
+- Feature flag engine
+- Module registry
+- Workflow engine
+- Notification engine
+- Audit logging
+- High performance
+- Horizontal scalability
+- High availability
 
 ## Technology
 
-  Component    Choice
-  ------------ ------------------------------------------------
-  Database     PostgreSQL 16+
-  ORM          Prisma
-  Cache        Redis
-  Search       PostgreSQL Full Text (future Elastic optional)
-  Migrations   Prisma Migrate
-  Backups      Automated PITR
+Component Choice
+
+---
+
+Database PostgreSQL 16+
+ORM Prisma
+Cache Redis
+Search PostgreSQL Full Text (future Elastic optional)
+Migrations Prisma Migrate
+Backups Automated PITR
 
 ## Core Schemas
 
--   platform
--   auth
--   tenant
--   organization
--   attendance
--   gps
--   leave
--   lead
--   fault
--   notification
--   workflow
--   audit
--   analytics
--   reporting
--   documents
--   assets
--   licensing
--   branding
--   settings
+- platform
+- auth
+- tenant
+- organization
+- attendance
+- gps
+- leave
+- lead
+- fault
+- notification
+- workflow
+- audit
+- analytics
+- reporting
+- documents
+- assets
+- licensing
+- branding
+- settings
 
 ## Enterprise Capabilities
 
 ### Multi-Tenant
 
--   Tenant isolation
--   Shared platform
--   Tenant configuration
--   Branding
--   Timezone
--   Localization
+- Tenant isolation
+- Shared platform
+- Tenant configuration
+- Branding
+- Timezone
+- Localization
 
 ### RBAC
 
@@ -77,11 +79,11 @@ Role → Permission Group → Permission → Action → Data Scope
 
 Supports:
 
--   Row-level security
--   Department scope
--   Branch scope
--   Region scope
--   Company scope
+- Row-level security
+- Department scope
+- Branch scope
+- Region scope
+- Company scope
 
 ### Module Engine
 
@@ -89,26 +91,26 @@ Modules are dynamically enabled per tenant.
 
 Examples:
 
--   Attendance
--   GPS
--   Lead Management
--   Fault Management
--   Documents
--   Assets
--   Reports
--   Analytics
+- Attendance
+- GPS
+- Lead Management
+- Fault Management
+- Documents
+- Assets
+- Reports
+- Analytics
 
 ### Feature Flags
 
 Supports enabling/disabling:
 
--   GPS
--   Offline mode
--   Biometrics
--   Digital Signature
--   WhatsApp
--   API Access
--   White Label
+- GPS
+- Offline mode
+- Biometrics
+- Digital Signature
+- WhatsApp
+- API Access
+- White Label
 
 ### Workflow Engine
 
@@ -128,55 +130,55 @@ Open → Assigned → In Progress → Resolved → Closed
 
 Channels:
 
--   Push
--   Email
--   WhatsApp
--   SMS
--   In-App
+- Push
+- Email
+- WhatsApp
+- SMS
+- In-App
 
 ### Audit Framework
 
 Captures:
 
--   User
--   Tenant
--   IP
--   Device
--   Browser
--   GPS
--   Old Value
--   New Value
--   Timestamp
+- User
+- Tenant
+- IP
+- Device
+- Browser
+- GPS
+- Old Value
+- New Value
+- Timestamp
 
 ## Performance
 
--   Partition large tables
--   Proper indexing
--   Read replicas
--   Connection pooling
--   Materialized views
--   Query optimization
+- Partition large tables
+- Proper indexing
+- Read replicas
+- Connection pooling
+- Materialized views
+- Query optimization
 
 ## Backup & Recovery
 
--   Daily full backup
--   WAL archiving
--   Point-in-Time Recovery
--   Disaster Recovery plan
--   Restore validation
+- Daily full backup
+- WAL archiving
+- Point-in-Time Recovery
+- Disaster Recovery plan
+- Restore validation
 
 ## Security
 
--   Encryption at rest
--   TLS in transit
--   Secrets management
--   SQL injection protection
--   Least privilege
--   Row-level security
+- Encryption at rest
+- TLS in transit
+- Secrets management
+- SQL injection protection
+- Least privilege
+- Row-level security
 
 ## Folder Structure
 
-``` text
+```text
 PostgreSQL/
 ├── README.md
 ├── DATABASE_ARCHITECTURE.md
@@ -199,23 +201,23 @@ PostgreSQL/
 
 ## Development Standards
 
--   UUID primary keys
--   Soft deletes
--   Audit columns
--   UTC timestamps
--   Foreign key integrity
--   Optimized indexes
--   Versioned migrations
+- UUID primary keys
+- Soft deletes
+- Audit columns
+- UTC timestamps
+- Foreign key integrity
+- Optimized indexes
+- Versioned migrations
 
 ## Roadmap
 
--   Logical replication
--   CQRS projections
--   Event sourcing support
--   AI analytics schema
--   Data warehouse integration
+- Logical replication
+- CQRS projections
+- Event sourcing support
+- AI analytics schema
+- Data warehouse integration
 
-------------------------------------------------------------------------
+---
 
 This README serves as the master index for the PostgreSQL architecture.
 Each companion document expands one enterprise domain in

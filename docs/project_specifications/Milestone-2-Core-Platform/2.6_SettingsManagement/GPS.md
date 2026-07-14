@@ -1,7 +1,9 @@
 # GPS.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Settings Module
+
 ### GPS & Location Settings Specification
 
 **Module:** Core Platform → Settings  
@@ -202,19 +204,19 @@ status
 
 # 14. REST APIs
 
-GET    /api/v1/settings/gps
+GET /api/v1/settings/gps
 
-PUT    /api/v1/settings/gps
+PUT /api/v1/settings/gps
 
-GET    /api/v1/geofences
+GET /api/v1/geofences
 
-POST   /api/v1/geofences
+POST /api/v1/geofences
 
-PUT    /api/v1/geofences/{id}
+PUT /api/v1/geofences/{id}
 
 DELETE /api/v1/geofences/{id}
 
-POST   /api/v1/settings/gps/publish
+POST /api/v1/settings/gps/publish
 
 ---
 

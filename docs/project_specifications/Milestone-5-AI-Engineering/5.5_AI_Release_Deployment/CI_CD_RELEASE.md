@@ -1,4 +1,3 @@
-
 # CI_CD_RELEASE.md
 
 # Enterprise CI/CD Release Pipeline
@@ -94,14 +93,14 @@ Monitoring & Observability
 
 # Trigger Matrix
 
-| Trigger | Pipeline |
-|---------|----------|
-| feature/* | Build + Lint + Unit Tests |
-| develop | Integration + Security |
-| release/* | Full Regression + UAT |
-| hotfix/* | Accelerated Validation |
-| main | Production Release |
-| Scheduled | Dependency & Security Scans |
+| Trigger    | Pipeline                    |
+| ---------- | --------------------------- |
+| feature/\* | Build + Lint + Unit Tests   |
+| develop    | Integration + Security      |
+| release/\* | Full Regression + UAT       |
+| hotfix/\*  | Accelerated Validation      |
+| main       | Production Release          |
+| Scheduled  | Dependency & Security Scans |
 
 ---
 

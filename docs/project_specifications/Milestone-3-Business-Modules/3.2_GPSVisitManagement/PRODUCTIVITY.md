@@ -32,6 +32,7 @@ The Productivity Management component measures, analyzes, and improves field wor
 # 3. Productivity Dimensions
 
 ## Employee Productivity
+
 - Visits Completed
 - Visits Assigned
 - First-Time Completion
@@ -40,6 +41,7 @@ The Productivity Management component measures, analyzes, and improves field wor
 - Idle Time
 
 ## Route Productivity
+
 - Distance Travelled
 - Route Efficiency
 - Travel Time
@@ -47,12 +49,14 @@ The Productivity Management component measures, analyzes, and improves field wor
 - Missed Stops
 
 ## Customer Productivity
+
 - Customer Coverage
 - Visit Frequency
 - Repeat Visits
 - SLA Satisfaction
 
 ## Operational Productivity
+
 - Team Performance
 - Branch Performance
 - Regional Performance
@@ -63,12 +67,14 @@ The Productivity Management component measures, analyzes, and improves field wor
 # 4. Functional Requirements
 
 ## KPI Calculation
+
 - Automatic KPI computation
 - Real-time updates
 - Historical trends
 - Tenant-specific formulas
 
 ## Productivity Monitoring
+
 - Daily productivity
 - Weekly productivity
 - Monthly productivity
@@ -76,6 +82,7 @@ The Productivity Management component measures, analyzes, and improves field wor
 - Yearly productivity
 
 ## Benchmarking
+
 - Employee comparison
 - Team comparison
 - Branch comparison
@@ -83,6 +90,7 @@ The Productivity Management component measures, analyzes, and improves field wor
 - Organization comparison
 
 ## Goal Tracking
+
 - Productivity targets
 - Achievement percentage
 - Trend analysis
@@ -93,6 +101,7 @@ The Productivity Management component measures, analyzes, and improves field wor
 # 5. KPIs
 
 Employee KPIs
+
 - Visit Completion %
 - First-Time Completion %
 - Average Visit Duration
@@ -102,6 +111,7 @@ Employee KPIs
 - Productivity Score
 
 Operational KPIs
+
 - SLA Compliance %
 - GPS Compliance %
 - Route Efficiency %
@@ -111,6 +121,7 @@ Operational KPIs
 - On-Time Arrival %
 
 Executive KPIs
+
 - Organization Productivity
 - Regional Productivity
 - Team Productivity
@@ -137,18 +148,21 @@ Visits Completed Within SLA / Total Visits × 100
 # 7. Dashboards
 
 Employee Dashboard
+
 - Personal KPIs
 - Visit Summary
 - Route Summary
 - Performance Trend
 
 Manager Dashboard
+
 - Team Productivity
 - Live Performance
 - SLA Status
 - Route Efficiency
 
 Executive Dashboard
+
 - Enterprise KPIs
 - Regional Comparison
 - Department Comparison
@@ -170,6 +184,7 @@ Executive Dashboard
 - Customer Coverage
 
 Exports
+
 - Excel
 - CSV
 - PDF

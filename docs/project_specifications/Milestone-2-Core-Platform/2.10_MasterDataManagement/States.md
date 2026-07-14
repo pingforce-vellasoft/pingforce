@@ -1,7 +1,9 @@
 # States.md
 
 # Enterprise Workforce Platform
+
 ## Core Platform – Master Data Module
+
 ### States / Provinces Master Data Specification
 
 **Module:** Core Platform → Master Data
@@ -171,19 +173,19 @@ Indexes:
 
 # 12. REST APIs
 
-GET    /api/v1/master/states
+GET /api/v1/master/states
 
-GET    /api/v1/master/states/{id}
+GET /api/v1/master/states/{id}
 
-GET    /api/v1/master/countries/{countryId}/states
+GET /api/v1/master/countries/{countryId}/states
 
-POST   /api/v1/master/states
+POST /api/v1/master/states
 
-PUT    /api/v1/master/states/{id}
+PUT /api/v1/master/states/{id}
 
 DELETE /api/v1/master/states/{id}
 
-GET    /api/v1/master/states/search
+GET /api/v1/master/states/search
 
 ---
 

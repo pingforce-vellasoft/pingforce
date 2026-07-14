@@ -1,4 +1,3 @@
-
 # VERSIONING.md
 
 # Enterprise Versioning Strategy
@@ -53,12 +52,12 @@ Examples:
 
 Stages:
 
-| Identifier | Purpose |
-|------------|---------|
-| alpha | Early internal development |
-| beta | Feature-complete testing |
-| rc | Release Candidate |
-| stable | Production release |
+| Identifier | Purpose                    |
+| ---------- | -------------------------- |
+| alpha      | Early internal development |
+| beta       | Feature-complete testing   |
+| rc         | Release Candidate          |
+| stable     | Production release         |
 
 ---
 
@@ -113,9 +112,9 @@ Tag rules:
 
 - main → Stable releases
 - develop → Next minor version
-- release/* → Release candidates
-- hotfix/* → Patch releases
-- feature/* → Development only
+- release/\* → Release candidates
+- hotfix/\* → Patch releases
+- feature/\* → Development only
 
 ---
 
@@ -182,10 +181,10 @@ Every migration is versioned.
 
 Examples:
 
-V1__Initial.sql
-V2__RBAC.sql
-V3__FeatureFlags.sql
-V4__Workflow.sql
+V1**Initial.sql
+V2**RBAC.sql
+V3**FeatureFlags.sql
+V4**Workflow.sql
 
 Rules:
 
@@ -353,15 +352,15 @@ Every version records:
 
 # Example Release Matrix
 
-| Platform | Version |
-|----------|---------|
-| Platform | 2.5.0 |
-| Admin Portal | 2.5.0 |
-| Android | 2.5.0 |
-| Backend API | 2.5.0 |
-| AI Service | 2.5.0 |
-| Database | V28 |
-| Infrastructure | 2.5.0 |
+| Platform       | Version |
+| -------------- | ------- |
+| Platform       | 2.5.0   |
+| Admin Portal   | 2.5.0   |
+| Android        | 2.5.0   |
+| Backend API    | 2.5.0   |
+| AI Service     | 2.5.0   |
+| Database       | V28     |
+| Infrastructure | 2.5.0   |
 
 ---
 

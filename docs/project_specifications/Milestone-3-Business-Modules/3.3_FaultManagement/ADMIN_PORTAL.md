@@ -1,4 +1,3 @@
-
 # ADMIN_PORTAL.md
 
 # Fault Management Module – Admin Portal Specification
