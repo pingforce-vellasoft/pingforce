@@ -8,7 +8,6 @@ import 'features/attendance/data/repositories/attendance_repository_impl.dart';
 import 'features/attendance/domain/repositories/attendance_repository.dart';
 import 'features/attendance/domain/usecases/punch_command.dart';
 import 'features/attendance/domain/usecases/register_device_command.dart';
-import 'features/attendance/presentation/bloc/attendance_bloc.dart';
 import 'features/auth/data/datasources/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
@@ -16,7 +15,6 @@ import 'features/auth/domain/usecases/login_command.dart';
 import 'features/auth/domain/usecases/signup_command.dart';
 import 'features/auth/domain/usecases/google_auth_command.dart';
 import 'features/auth/domain/usecases/onboard_tenant_command.dart';
-import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'core/network/token_interceptor.dart';
 import 'core/hardware/hardware_service.dart';
 import 'core/hardware/hardware_service_impl.dart';
@@ -39,13 +37,6 @@ Future<void> init() async {
   });
 
   // --- Features: Auth ---
-  sl.registerFactory(() => AuthBloc(
-    loginCommand: sl(),
-    signupCommand: sl(),
-    googleAuthCommand: sl(),
-    onboardTenantCommand: sl(),
-    authRepository: sl(),
-  ));
   sl.registerLazySingleton(() => LoginCommand(sl()));
   sl.registerLazySingleton(() => SignupCommand(sl()));
   sl.registerLazySingleton(() => GoogleAuthCommand(sl()));
@@ -58,12 +49,6 @@ Future<void> init() async {
   );
 
   // --- Features: Attendance ---
-  // Bloc
-  sl.registerFactory(() => AttendanceBloc(
-    punchCommand: sl(),
-    registerDeviceCommand: sl(),
-  ));
-
   // Use Cases
   sl.registerLazySingleton(() => PunchCommand(sl()));
   sl.registerLazySingleton(() => RegisterDeviceCommand(sl()));
