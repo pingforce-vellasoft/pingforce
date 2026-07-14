@@ -175,7 +175,7 @@ abstract class _$$LoginStateImplCopyWith<$Res>
   factory _$$LoginStateImplCopyWith(
     _$LoginStateImpl value,
     $Res Function(_$LoginStateImpl) then,
-  ) = __$$LoginStateImplCopyWithImpl<$Res>;
+  ) = _$$LoginStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -198,10 +198,10 @@ abstract class _$$LoginStateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$LoginStateImplCopyWithImpl<$Res>
+class _$$LoginStateImplCopyWithImpl<$Res>
     extends _$LoginStateCopyWithImpl<$Res, _$LoginStateImpl>
     implements _$$LoginStateImplCopyWith<$Res> {
-  __$$LoginStateImplCopyWithImpl(
+  _$$LoginStateImplCopyWithImpl(
     _$LoginStateImpl _value,
     $Res Function(_$LoginStateImpl) _then,
   ) : super(_value, _then);
@@ -427,7 +427,7 @@ class _$LoginStateImpl extends _LoginState {
   @override
   @pragma('vm:prefer-inline')
   _$$LoginStateImplCopyWith<_$LoginStateImpl> get copyWith =>
-      __$$LoginStateImplCopyWithImpl<_$LoginStateImpl>(this, _$identity);
+      _$$LoginStateImplCopyWithImpl<_$LoginStateImpl>(this, _$identity);
 }
 
 abstract class _LoginState extends LoginState {
@@ -673,7 +673,7 @@ abstract class _$$ForgotPasswordStateImplCopyWith<$Res>
   factory _$$ForgotPasswordStateImplCopyWith(
     _$ForgotPasswordStateImpl value,
     $Res Function(_$ForgotPasswordStateImpl) then,
-  ) = __$$ForgotPasswordStateImplCopyWithImpl<$Res>;
+  ) = _$$ForgotPasswordStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -700,10 +700,10 @@ abstract class _$$ForgotPasswordStateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$ForgotPasswordStateImplCopyWithImpl<$Res>
+class _$$ForgotPasswordStateImplCopyWithImpl<$Res>
     extends _$ForgotPasswordStateCopyWithImpl<$Res, _$ForgotPasswordStateImpl>
     implements _$$ForgotPasswordStateImplCopyWith<$Res> {
-  __$$ForgotPasswordStateImplCopyWithImpl(
+  _$$ForgotPasswordStateImplCopyWithImpl(
     _$ForgotPasswordStateImpl _value,
     $Res Function(_$ForgotPasswordStateImpl) _then,
   ) : super(_value, _then);
@@ -977,7 +977,7 @@ class _$ForgotPasswordStateImpl extends _ForgotPasswordState {
   @override
   @pragma('vm:prefer-inline')
   _$$ForgotPasswordStateImplCopyWith<_$ForgotPasswordStateImpl> get copyWith =>
-      __$$ForgotPasswordStateImplCopyWithImpl<_$ForgotPasswordStateImpl>(
+      _$$ForgotPasswordStateImplCopyWithImpl<_$ForgotPasswordStateImpl>(
         this,
         _$identity,
       );

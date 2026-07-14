@@ -133,7 +133,7 @@ abstract class _$$KpiCardImplCopyWith<$Res> implements $KpiCardCopyWith<$Res> {
   factory _$$KpiCardImplCopyWith(
     _$KpiCardImpl value,
     $Res Function(_$KpiCardImpl) then,
-  ) = __$$KpiCardImplCopyWithImpl<$Res>;
+  ) = _$$KpiCardImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -151,10 +151,10 @@ abstract class _$$KpiCardImplCopyWith<$Res> implements $KpiCardCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$KpiCardImplCopyWithImpl<$Res>
+class _$$KpiCardImplCopyWithImpl<$Res>
     extends _$KpiCardCopyWithImpl<$Res, _$KpiCardImpl>
     implements _$$KpiCardImplCopyWith<$Res> {
-  __$$KpiCardImplCopyWithImpl(
+  _$$KpiCardImplCopyWithImpl(
     _$KpiCardImpl _value,
     $Res Function(_$KpiCardImpl) _then,
   ) : super(_value, _then);
@@ -310,7 +310,7 @@ class _$KpiCardImpl implements _KpiCard {
   @override
   @pragma('vm:prefer-inline')
   _$$KpiCardImplCopyWith<_$KpiCardImpl> get copyWith =>
-      __$$KpiCardImplCopyWithImpl<_$KpiCardImpl>(this, _$identity);
+      _$$KpiCardImplCopyWithImpl<_$KpiCardImpl>(this, _$identity);
 }
 
 abstract class _KpiCard implements KpiCard {
@@ -464,7 +464,7 @@ abstract class _$$QuickActionImplCopyWith<$Res>
   factory _$$QuickActionImplCopyWith(
     _$QuickActionImpl value,
     $Res Function(_$QuickActionImpl) then,
-  ) = __$$QuickActionImplCopyWithImpl<$Res>;
+  ) = _$$QuickActionImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -480,10 +480,10 @@ abstract class _$$QuickActionImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$QuickActionImplCopyWithImpl<$Res>
+class _$$QuickActionImplCopyWithImpl<$Res>
     extends _$QuickActionCopyWithImpl<$Res, _$QuickActionImpl>
     implements _$$QuickActionImplCopyWith<$Res> {
-  __$$QuickActionImplCopyWithImpl(
+  _$$QuickActionImplCopyWithImpl(
     _$QuickActionImpl _value,
     $Res Function(_$QuickActionImpl) _then,
   ) : super(_value, _then);
@@ -620,7 +620,7 @@ class _$QuickActionImpl implements _QuickAction {
   @override
   @pragma('vm:prefer-inline')
   _$$QuickActionImplCopyWith<_$QuickActionImpl> get copyWith =>
-      __$$QuickActionImplCopyWithImpl<_$QuickActionImpl>(this, _$identity);
+      _$$QuickActionImplCopyWithImpl<_$QuickActionImpl>(this, _$identity);
 }
 
 abstract class _QuickAction implements QuickAction {
@@ -760,7 +760,7 @@ abstract class _$$ActivityFeedItemImplCopyWith<$Res>
   factory _$$ActivityFeedItemImplCopyWith(
     _$ActivityFeedItemImpl value,
     $Res Function(_$ActivityFeedItemImpl) then,
-  ) = __$$ActivityFeedItemImplCopyWithImpl<$Res>;
+  ) = _$$ActivityFeedItemImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -775,10 +775,10 @@ abstract class _$$ActivityFeedItemImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$ActivityFeedItemImplCopyWithImpl<$Res>
+class _$$ActivityFeedItemImplCopyWithImpl<$Res>
     extends _$ActivityFeedItemCopyWithImpl<$Res, _$ActivityFeedItemImpl>
     implements _$$ActivityFeedItemImplCopyWith<$Res> {
-  __$$ActivityFeedItemImplCopyWithImpl(
+  _$$ActivityFeedItemImplCopyWithImpl(
     _$ActivityFeedItemImpl _value,
     $Res Function(_$ActivityFeedItemImpl) _then,
   ) : super(_value, _then);
@@ -901,7 +901,7 @@ class _$ActivityFeedItemImpl implements _ActivityFeedItem {
   @override
   @pragma('vm:prefer-inline')
   _$$ActivityFeedItemImplCopyWith<_$ActivityFeedItemImpl> get copyWith =>
-      __$$ActivityFeedItemImplCopyWithImpl<_$ActivityFeedItemImpl>(
+      _$$ActivityFeedItemImplCopyWithImpl<_$ActivityFeedItemImpl>(
         this,
         _$identity,
       );
@@ -1112,7 +1112,7 @@ abstract class _$$AttendanceHeroDataImplCopyWith<$Res>
   factory _$$AttendanceHeroDataImplCopyWith(
     _$AttendanceHeroDataImpl value,
     $Res Function(_$AttendanceHeroDataImpl) then,
-  ) = __$$AttendanceHeroDataImplCopyWithImpl<$Res>;
+  ) = _$$AttendanceHeroDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -1137,10 +1137,10 @@ abstract class _$$AttendanceHeroDataImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$AttendanceHeroDataImplCopyWithImpl<$Res>
+class _$$AttendanceHeroDataImplCopyWithImpl<$Res>
     extends _$AttendanceHeroDataCopyWithImpl<$Res, _$AttendanceHeroDataImpl>
     implements _$$AttendanceHeroDataImplCopyWith<$Res> {
-  __$$AttendanceHeroDataImplCopyWithImpl(
+  _$$AttendanceHeroDataImplCopyWithImpl(
     _$AttendanceHeroDataImpl _value,
     $Res Function(_$AttendanceHeroDataImpl) _then,
   ) : super(_value, _then);
@@ -1377,7 +1377,7 @@ class _$AttendanceHeroDataImpl implements _AttendanceHeroData {
   @override
   @pragma('vm:prefer-inline')
   _$$AttendanceHeroDataImplCopyWith<_$AttendanceHeroDataImpl> get copyWith =>
-      __$$AttendanceHeroDataImplCopyWithImpl<_$AttendanceHeroDataImpl>(
+      _$$AttendanceHeroDataImplCopyWithImpl<_$AttendanceHeroDataImpl>(
         this,
         _$identity,
       );
@@ -1533,7 +1533,7 @@ abstract class _$$TeamMemberStatusImplCopyWith<$Res>
   factory _$$TeamMemberStatusImplCopyWith(
     _$TeamMemberStatusImpl value,
     $Res Function(_$TeamMemberStatusImpl) then,
-  ) = __$$TeamMemberStatusImplCopyWithImpl<$Res>;
+  ) = _$$TeamMemberStatusImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -1546,10 +1546,10 @@ abstract class _$$TeamMemberStatusImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TeamMemberStatusImplCopyWithImpl<$Res>
+class _$$TeamMemberStatusImplCopyWithImpl<$Res>
     extends _$TeamMemberStatusCopyWithImpl<$Res, _$TeamMemberStatusImpl>
     implements _$$TeamMemberStatusImplCopyWith<$Res> {
-  __$$TeamMemberStatusImplCopyWithImpl(
+  _$$TeamMemberStatusImplCopyWithImpl(
     _$TeamMemberStatusImpl _value,
     $Res Function(_$TeamMemberStatusImpl) _then,
   ) : super(_value, _then);
@@ -1643,7 +1643,7 @@ class _$TeamMemberStatusImpl implements _TeamMemberStatus {
   @override
   @pragma('vm:prefer-inline')
   _$$TeamMemberStatusImplCopyWith<_$TeamMemberStatusImpl> get copyWith =>
-      __$$TeamMemberStatusImplCopyWithImpl<_$TeamMemberStatusImpl>(
+      _$$TeamMemberStatusImplCopyWithImpl<_$TeamMemberStatusImpl>(
         this,
         _$identity,
       );
@@ -1770,7 +1770,7 @@ abstract class _$$TeamStatusSummaryImplCopyWith<$Res>
   factory _$$TeamStatusSummaryImplCopyWith(
     _$TeamStatusSummaryImpl value,
     $Res Function(_$TeamStatusSummaryImpl) then,
-  ) = __$$TeamStatusSummaryImplCopyWithImpl<$Res>;
+  ) = _$$TeamStatusSummaryImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -1784,10 +1784,10 @@ abstract class _$$TeamStatusSummaryImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TeamStatusSummaryImplCopyWithImpl<$Res>
+class _$$TeamStatusSummaryImplCopyWithImpl<$Res>
     extends _$TeamStatusSummaryCopyWithImpl<$Res, _$TeamStatusSummaryImpl>
     implements _$$TeamStatusSummaryImplCopyWith<$Res> {
-  __$$TeamStatusSummaryImplCopyWithImpl(
+  _$$TeamStatusSummaryImplCopyWithImpl(
     _$TeamStatusSummaryImpl _value,
     $Res Function(_$TeamStatusSummaryImpl) _then,
   ) : super(_value, _then);
@@ -1901,7 +1901,7 @@ class _$TeamStatusSummaryImpl implements _TeamStatusSummary {
   @override
   @pragma('vm:prefer-inline')
   _$$TeamStatusSummaryImplCopyWith<_$TeamStatusSummaryImpl> get copyWith =>
-      __$$TeamStatusSummaryImplCopyWithImpl<_$TeamStatusSummaryImpl>(
+      _$$TeamStatusSummaryImplCopyWithImpl<_$TeamStatusSummaryImpl>(
         this,
         _$identity,
       );
@@ -2045,7 +2045,7 @@ abstract class _$$DashboardUserInfoImplCopyWith<$Res>
   factory _$$DashboardUserInfoImplCopyWith(
     _$DashboardUserInfoImpl value,
     $Res Function(_$DashboardUserInfoImpl) then,
-  ) = __$$DashboardUserInfoImplCopyWithImpl<$Res>;
+  ) = _$$DashboardUserInfoImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -2061,10 +2061,10 @@ abstract class _$$DashboardUserInfoImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$DashboardUserInfoImplCopyWithImpl<$Res>
+class _$$DashboardUserInfoImplCopyWithImpl<$Res>
     extends _$DashboardUserInfoCopyWithImpl<$Res, _$DashboardUserInfoImpl>
     implements _$$DashboardUserInfoImplCopyWith<$Res> {
-  __$$DashboardUserInfoImplCopyWithImpl(
+  _$$DashboardUserInfoImplCopyWithImpl(
     _$DashboardUserInfoImpl _value,
     $Res Function(_$DashboardUserInfoImpl) _then,
   ) : super(_value, _then);
@@ -2200,7 +2200,7 @@ class _$DashboardUserInfoImpl implements _DashboardUserInfo {
   @override
   @pragma('vm:prefer-inline')
   _$$DashboardUserInfoImplCopyWith<_$DashboardUserInfoImpl> get copyWith =>
-      __$$DashboardUserInfoImplCopyWithImpl<_$DashboardUserInfoImpl>(
+      _$$DashboardUserInfoImplCopyWithImpl<_$DashboardUserInfoImpl>(
         this,
         _$identity,
       );
@@ -2320,7 +2320,7 @@ abstract class _$$SyncInfoImplCopyWith<$Res>
   factory _$$SyncInfoImplCopyWith(
     _$SyncInfoImpl value,
     $Res Function(_$SyncInfoImpl) then,
-  ) = __$$SyncInfoImplCopyWithImpl<$Res>;
+  ) = _$$SyncInfoImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -2332,10 +2332,10 @@ abstract class _$$SyncInfoImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$SyncInfoImplCopyWithImpl<$Res>
+class _$$SyncInfoImplCopyWithImpl<$Res>
     extends _$SyncInfoCopyWithImpl<$Res, _$SyncInfoImpl>
     implements _$$SyncInfoImplCopyWith<$Res> {
-  __$$SyncInfoImplCopyWithImpl(
+  _$$SyncInfoImplCopyWithImpl(
     _$SyncInfoImpl _value,
     $Res Function(_$SyncInfoImpl) _then,
   ) : super(_value, _then);
@@ -2428,7 +2428,7 @@ class _$SyncInfoImpl implements _SyncInfo {
   @override
   @pragma('vm:prefer-inline')
   _$$SyncInfoImplCopyWith<_$SyncInfoImpl> get copyWith =>
-      __$$SyncInfoImplCopyWithImpl<_$SyncInfoImpl>(this, _$identity);
+      _$$SyncInfoImplCopyWithImpl<_$SyncInfoImpl>(this, _$identity);
 }
 
 abstract class _SyncInfo implements SyncInfo {
@@ -2671,7 +2671,7 @@ abstract class _$$DashboardStateImplCopyWith<$Res>
   factory _$$DashboardStateImplCopyWith(
     _$DashboardStateImpl value,
     $Res Function(_$DashboardStateImpl) then,
-  ) = __$$DashboardStateImplCopyWithImpl<$Res>;
+  ) = _$$DashboardStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -2702,10 +2702,10 @@ abstract class _$$DashboardStateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$DashboardStateImplCopyWithImpl<$Res>
+class _$$DashboardStateImplCopyWithImpl<$Res>
     extends _$DashboardStateCopyWithImpl<$Res, _$DashboardStateImpl>
     implements _$$DashboardStateImplCopyWith<$Res> {
-  __$$DashboardStateImplCopyWithImpl(
+  _$$DashboardStateImplCopyWithImpl(
     _$DashboardStateImpl _value,
     $Res Function(_$DashboardStateImpl) _then,
   ) : super(_value, _then);
@@ -2954,7 +2954,7 @@ class _$DashboardStateImpl extends _DashboardState {
   @override
   @pragma('vm:prefer-inline')
   _$$DashboardStateImplCopyWith<_$DashboardStateImpl> get copyWith =>
-      __$$DashboardStateImplCopyWithImpl<_$DashboardStateImpl>(
+      _$$DashboardStateImplCopyWithImpl<_$DashboardStateImpl>(
         this,
         _$identity,
       );

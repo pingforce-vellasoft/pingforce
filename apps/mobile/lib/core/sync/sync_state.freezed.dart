@@ -159,7 +159,7 @@ abstract class _$$SyncQueueItemImplCopyWith<$Res>
   factory _$$SyncQueueItemImplCopyWith(
     _$SyncQueueItemImpl value,
     $Res Function(_$SyncQueueItemImpl) then,
-  ) = __$$SyncQueueItemImplCopyWithImpl<$Res>;
+  ) = _$$SyncQueueItemImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -180,10 +180,10 @@ abstract class _$$SyncQueueItemImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$SyncQueueItemImplCopyWithImpl<$Res>
+class _$$SyncQueueItemImplCopyWithImpl<$Res>
     extends _$SyncQueueItemCopyWithImpl<$Res, _$SyncQueueItemImpl>
     implements _$$SyncQueueItemImplCopyWith<$Res> {
-  __$$SyncQueueItemImplCopyWithImpl(
+  _$$SyncQueueItemImplCopyWithImpl(
     _$SyncQueueItemImpl _value,
     $Res Function(_$SyncQueueItemImpl) _then,
   ) : super(_value, _then);
@@ -378,7 +378,7 @@ class _$SyncQueueItemImpl extends _SyncQueueItem {
   @override
   @pragma('vm:prefer-inline')
   _$$SyncQueueItemImplCopyWith<_$SyncQueueItemImpl> get copyWith =>
-      __$$SyncQueueItemImplCopyWithImpl<_$SyncQueueItemImpl>(this, _$identity);
+      _$$SyncQueueItemImplCopyWithImpl<_$SyncQueueItemImpl>(this, _$identity);
 }
 
 abstract class _SyncQueueItem extends SyncQueueItem {
@@ -548,7 +548,7 @@ abstract class _$$SyncConflictImplCopyWith<$Res>
   factory _$$SyncConflictImplCopyWith(
     _$SyncConflictImpl value,
     $Res Function(_$SyncConflictImpl) then,
-  ) = __$$SyncConflictImplCopyWithImpl<$Res>;
+  ) = _$$SyncConflictImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -565,10 +565,10 @@ abstract class _$$SyncConflictImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$SyncConflictImplCopyWithImpl<$Res>
+class _$$SyncConflictImplCopyWithImpl<$Res>
     extends _$SyncConflictCopyWithImpl<$Res, _$SyncConflictImpl>
     implements _$$SyncConflictImplCopyWith<$Res> {
-  __$$SyncConflictImplCopyWithImpl(
+  _$$SyncConflictImplCopyWithImpl(
     _$SyncConflictImpl _value,
     $Res Function(_$SyncConflictImpl) _then,
   ) : super(_value, _then);
@@ -713,7 +713,7 @@ class _$SyncConflictImpl implements _SyncConflict {
   @override
   @pragma('vm:prefer-inline')
   _$$SyncConflictImplCopyWith<_$SyncConflictImpl> get copyWith =>
-      __$$SyncConflictImplCopyWithImpl<_$SyncConflictImpl>(this, _$identity);
+      _$$SyncConflictImplCopyWithImpl<_$SyncConflictImpl>(this, _$identity);
 }
 
 abstract class _SyncConflict implements SyncConflict {
@@ -862,7 +862,7 @@ abstract class _$$SyncStateImplCopyWith<$Res>
   factory _$$SyncStateImplCopyWith(
     _$SyncStateImpl value,
     $Res Function(_$SyncStateImpl) then,
-  ) = __$$SyncStateImplCopyWithImpl<$Res>;
+  ) = _$$SyncStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -878,10 +878,10 @@ abstract class _$$SyncStateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$SyncStateImplCopyWithImpl<$Res>
+class _$$SyncStateImplCopyWithImpl<$Res>
     extends _$SyncStateCopyWithImpl<$Res, _$SyncStateImpl>
     implements _$$SyncStateImplCopyWith<$Res> {
-  __$$SyncStateImplCopyWithImpl(
+  _$$SyncStateImplCopyWithImpl(
     _$SyncStateImpl _value,
     $Res Function(_$SyncStateImpl) _then,
   ) : super(_value, _then);
@@ -1038,7 +1038,7 @@ class _$SyncStateImpl extends _SyncState {
   @override
   @pragma('vm:prefer-inline')
   _$$SyncStateImplCopyWith<_$SyncStateImpl> get copyWith =>
-      __$$SyncStateImplCopyWithImpl<_$SyncStateImpl>(this, _$identity);
+      _$$SyncStateImplCopyWithImpl<_$SyncStateImpl>(this, _$identity);
 }
 
 abstract class _SyncState extends SyncState {

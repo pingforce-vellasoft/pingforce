@@ -127,7 +127,7 @@ class _ShimmerBoxState extends State<ShimmerBox>
 
     return AnimatedBuilder(
       animation: _anim,
-      builder: (_, __) {
+      builder: (_, _) {
         return Container(
           width: widget.width,
           height: widget.height,
@@ -224,9 +224,9 @@ class ShimmerCardRow extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.zero,
         itemCount: cardCount,
-        separatorBuilder: (_, __) =>
+        separatorBuilder: (_, _) =>
             const SizedBox(width: AppSpacing.cardMargin),
-        itemBuilder: (_, __) => ShimmerBox(
+        itemBuilder: (_, _) => ShimmerBox(
           width: cardWidth,
           height: cardHeight,
           borderRadius: AppRadius.lgAll,
@@ -733,7 +733,7 @@ class PendingSyncBadge extends StatelessWidget {
           color: PingForceColors.statusInfoContainer,
           borderRadius: AppRadius.pillAll,
           border: Border.all(
-            color: PingForceColors.statusInfo.withOpacity(0.4),
+            color: PingForceColors.statusInfo.withValues(alpha: 0.4),
             width: 1,
           ),
         ),
@@ -867,9 +867,9 @@ class _ConflictVersion extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.space3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: AppRadius.smAll,
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

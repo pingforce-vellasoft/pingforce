@@ -185,7 +185,7 @@ abstract class _$$FaultSummaryImplCopyWith<$Res>
   factory _$$FaultSummaryImplCopyWith(
     _$FaultSummaryImpl value,
     $Res Function(_$FaultSummaryImpl) then,
-  ) = __$$FaultSummaryImplCopyWithImpl<$Res>;
+  ) = _$$FaultSummaryImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -210,10 +210,10 @@ abstract class _$$FaultSummaryImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$FaultSummaryImplCopyWithImpl<$Res>
+class _$$FaultSummaryImplCopyWithImpl<$Res>
     extends _$FaultSummaryCopyWithImpl<$Res, _$FaultSummaryImpl>
     implements _$$FaultSummaryImplCopyWith<$Res> {
-  __$$FaultSummaryImplCopyWithImpl(
+  _$$FaultSummaryImplCopyWithImpl(
     _$FaultSummaryImpl _value,
     $Res Function(_$FaultSummaryImpl) _then,
   ) : super(_value, _then);
@@ -450,7 +450,7 @@ class _$FaultSummaryImpl extends _FaultSummary {
   @override
   @pragma('vm:prefer-inline')
   _$$FaultSummaryImplCopyWith<_$FaultSummaryImpl> get copyWith =>
-      __$$FaultSummaryImplCopyWithImpl<_$FaultSummaryImpl>(this, _$identity);
+      _$$FaultSummaryImplCopyWithImpl<_$FaultSummaryImpl>(this, _$identity);
 }
 
 abstract class _FaultSummary extends FaultSummary {
@@ -611,7 +611,7 @@ abstract class _$$FaultFiltersImplCopyWith<$Res>
   factory _$$FaultFiltersImplCopyWith(
     _$FaultFiltersImpl value,
     $Res Function(_$FaultFiltersImpl) then,
-  ) = __$$FaultFiltersImplCopyWithImpl<$Res>;
+  ) = _$$FaultFiltersImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -625,10 +625,10 @@ abstract class _$$FaultFiltersImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$FaultFiltersImplCopyWithImpl<$Res>
+class _$$FaultFiltersImplCopyWithImpl<$Res>
     extends _$FaultFiltersCopyWithImpl<$Res, _$FaultFiltersImpl>
     implements _$$FaultFiltersImplCopyWith<$Res> {
-  __$$FaultFiltersImplCopyWithImpl(
+  _$$FaultFiltersImplCopyWithImpl(
     _$FaultFiltersImpl _value,
     $Res Function(_$FaultFiltersImpl) _then,
   ) : super(_value, _then);
@@ -759,7 +759,7 @@ class _$FaultFiltersImpl extends _FaultFilters {
   @override
   @pragma('vm:prefer-inline')
   _$$FaultFiltersImplCopyWith<_$FaultFiltersImpl> get copyWith =>
-      __$$FaultFiltersImplCopyWithImpl<_$FaultFiltersImpl>(this, _$identity);
+      _$$FaultFiltersImplCopyWithImpl<_$FaultFiltersImpl>(this, _$identity);
 }
 
 abstract class _FaultFilters extends FaultFilters {
@@ -909,7 +909,7 @@ abstract class _$$FaultAttemptImplCopyWith<$Res>
   factory _$$FaultAttemptImplCopyWith(
     _$FaultAttemptImpl value,
     $Res Function(_$FaultAttemptImpl) then,
-  ) = __$$FaultAttemptImplCopyWithImpl<$Res>;
+  ) = _$$FaultAttemptImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -926,10 +926,10 @@ abstract class _$$FaultAttemptImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$FaultAttemptImplCopyWithImpl<$Res>
+class _$$FaultAttemptImplCopyWithImpl<$Res>
     extends _$FaultAttemptCopyWithImpl<$Res, _$FaultAttemptImpl>
     implements _$$FaultAttemptImplCopyWith<$Res> {
-  __$$FaultAttemptImplCopyWithImpl(
+  _$$FaultAttemptImplCopyWithImpl(
     _$FaultAttemptImpl _value,
     $Res Function(_$FaultAttemptImpl) _then,
   ) : super(_value, _then);
@@ -1084,7 +1084,7 @@ class _$FaultAttemptImpl implements _FaultAttempt {
   @override
   @pragma('vm:prefer-inline')
   _$$FaultAttemptImplCopyWith<_$FaultAttemptImpl> get copyWith =>
-      __$$FaultAttemptImplCopyWithImpl<_$FaultAttemptImpl>(this, _$identity);
+      _$$FaultAttemptImplCopyWithImpl<_$FaultAttemptImpl>(this, _$identity);
 }
 
 abstract class _FaultAttempt implements FaultAttempt {
@@ -1235,7 +1235,7 @@ abstract class _$$FaultTimelineEventImplCopyWith<$Res>
   factory _$$FaultTimelineEventImplCopyWith(
     _$FaultTimelineEventImpl value,
     $Res Function(_$FaultTimelineEventImpl) then,
-  ) = __$$FaultTimelineEventImplCopyWithImpl<$Res>;
+  ) = _$$FaultTimelineEventImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -1251,10 +1251,10 @@ abstract class _$$FaultTimelineEventImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$FaultTimelineEventImplCopyWithImpl<$Res>
+class _$$FaultTimelineEventImplCopyWithImpl<$Res>
     extends _$FaultTimelineEventCopyWithImpl<$Res, _$FaultTimelineEventImpl>
     implements _$$FaultTimelineEventImplCopyWith<$Res> {
-  __$$FaultTimelineEventImplCopyWithImpl(
+  _$$FaultTimelineEventImplCopyWithImpl(
     _$FaultTimelineEventImpl _value,
     $Res Function(_$FaultTimelineEventImpl) _then,
   ) : super(_value, _then);
@@ -1389,7 +1389,7 @@ class _$FaultTimelineEventImpl implements _FaultTimelineEvent {
   @override
   @pragma('vm:prefer-inline')
   _$$FaultTimelineEventImplCopyWith<_$FaultTimelineEventImpl> get copyWith =>
-      __$$FaultTimelineEventImplCopyWithImpl<_$FaultTimelineEventImpl>(
+      _$$FaultTimelineEventImplCopyWithImpl<_$FaultTimelineEventImpl>(
         this,
         _$identity,
       );
@@ -1565,7 +1565,7 @@ abstract class _$$FaultDetailImplCopyWith<$Res>
   factory _$$FaultDetailImplCopyWith(
     _$FaultDetailImpl value,
     $Res Function(_$FaultDetailImpl) then,
-  ) = __$$FaultDetailImplCopyWithImpl<$Res>;
+  ) = _$$FaultDetailImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -1586,10 +1586,10 @@ abstract class _$$FaultDetailImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$FaultDetailImplCopyWithImpl<$Res>
+class _$$FaultDetailImplCopyWithImpl<$Res>
     extends _$FaultDetailCopyWithImpl<$Res, _$FaultDetailImpl>
     implements _$$FaultDetailImplCopyWith<$Res> {
-  __$$FaultDetailImplCopyWithImpl(
+  _$$FaultDetailImplCopyWithImpl(
     _$FaultDetailImpl _value,
     $Res Function(_$FaultDetailImpl) _then,
   ) : super(_value, _then);
@@ -1769,7 +1769,7 @@ class _$FaultDetailImpl implements _FaultDetail {
   @override
   @pragma('vm:prefer-inline')
   _$$FaultDetailImplCopyWith<_$FaultDetailImpl> get copyWith =>
-      __$$FaultDetailImplCopyWithImpl<_$FaultDetailImpl>(this, _$identity);
+      _$$FaultDetailImplCopyWithImpl<_$FaultDetailImpl>(this, _$identity);
 }
 
 abstract class _FaultDetail implements FaultDetail {
@@ -1960,7 +1960,7 @@ abstract class _$$FaultStateImplCopyWith<$Res>
   factory _$$FaultStateImplCopyWith(
     _$FaultStateImpl value,
     $Res Function(_$FaultStateImpl) then,
-  ) = __$$FaultStateImplCopyWithImpl<$Res>;
+  ) = _$$FaultStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -1982,10 +1982,10 @@ abstract class _$$FaultStateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$FaultStateImplCopyWithImpl<$Res>
+class _$$FaultStateImplCopyWithImpl<$Res>
     extends _$FaultStateCopyWithImpl<$Res, _$FaultStateImpl>
     implements _$$FaultStateImplCopyWith<$Res> {
-  __$$FaultStateImplCopyWithImpl(
+  _$$FaultStateImplCopyWithImpl(
     _$FaultStateImpl _value,
     $Res Function(_$FaultStateImpl) _then,
   ) : super(_value, _then);
@@ -2154,7 +2154,7 @@ class _$FaultStateImpl extends _FaultState {
   @override
   @pragma('vm:prefer-inline')
   _$$FaultStateImplCopyWith<_$FaultStateImpl> get copyWith =>
-      __$$FaultStateImplCopyWithImpl<_$FaultStateImpl>(this, _$identity);
+      _$$FaultStateImplCopyWithImpl<_$FaultStateImpl>(this, _$identity);
 }
 
 abstract class _FaultState extends FaultState {

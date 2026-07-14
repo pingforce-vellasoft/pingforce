@@ -167,7 +167,7 @@ class _LoadingBody extends StatelessWidget {
               // Animated progress bar
               AnimatedBuilder(
                 animation: progressAnim,
-                builder: (_, __) => ClipRRect(
+                builder: (_, _) => ClipRRect(
                   borderRadius: AppRadius.pillAll,
                   child: LinearProgressIndicator(
                     value: progressAnim.value,
@@ -450,7 +450,7 @@ class _TenantBrandingWidget extends StatelessWidget {
                   child: Image.network(
                     branding.logoUrl!,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _InitialsAvatar(
+                    errorBuilder: (_, _, _) => _InitialsAvatar(
                         name: branding.tenantName),
                   ),
                 )
@@ -622,7 +622,7 @@ class _UserInfoCard extends StatelessWidget {
                   color: Theme.of(context)
                       .colorScheme
                       .onPrimaryContainer
-                      .withOpacity(0.7),
+                      .withValues(alpha: 0.7),
                 ),
               ),
             ],

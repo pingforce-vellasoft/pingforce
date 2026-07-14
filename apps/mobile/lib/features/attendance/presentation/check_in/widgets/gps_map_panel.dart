@@ -130,8 +130,8 @@ class _GpsMapPanelState extends State<GpsMapPanel>
           center: LatLng(loc.latitude, loc.longitude),
           radius: loc.accuracyMeters,
           strokeWidth: 1,
-          strokeColor: _gpsRingColor(widget.gpsAccuracy).withOpacity(0.6),
-          fillColor: _gpsRingColor(widget.gpsAccuracy).withOpacity(0.12),
+          strokeColor: _gpsRingColor(widget.gpsAccuracy).withValues(alpha: 0.6),
+          fillColor: _gpsRingColor(widget.gpsAccuracy).withValues(alpha: 0.12),
         ),
       );
     }
@@ -266,7 +266,7 @@ class _GpsMapPanelState extends State<GpsMapPanel>
           children: [
             AnimatedBuilder(
               animation: _pulseAnimation,
-              builder: (_, __) => Opacity(
+              builder: (_, _) => Opacity(
                 opacity: _pulseAnimation.value,
                 child: Icon(
                   Icons.gps_not_fixed_rounded,
@@ -296,7 +296,7 @@ class _GpsMapPanelState extends State<GpsMapPanel>
       left: 0,
       right: 0,
       child: Container(
-        color: PingForceColors.statusCriticalContainer.withOpacity(0.92),
+        color: PingForceColors.statusCriticalContainer.withValues(alpha: 0.92),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.space4,
           vertical: AppSpacing.space2,
@@ -329,7 +329,7 @@ class _GpsMapPanelState extends State<GpsMapPanel>
       left: 0,
       right: 0,
       child: Container(
-        color: PingForceColors.statusWarningContainer.withOpacity(0.92),
+        color: PingForceColors.statusWarningContainer.withValues(alpha: 0.92),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.space4,
           vertical: AppSpacing.space2,
@@ -456,7 +456,7 @@ class _MapChip extends StatelessWidget {
         color: Theme.of(context)
             .colorScheme
             .surfaceContainerLowest
-            .withOpacity(0.90),
+            .withValues(alpha: 0.90),
         borderRadius: AppRadius.pillAll,
       ),
       child: Row(

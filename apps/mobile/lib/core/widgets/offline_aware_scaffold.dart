@@ -174,7 +174,7 @@ class _SyncProgressBar extends StatelessWidget {
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: progress / 100),
           duration: const Duration(milliseconds: 300),
-          builder: (_, value, __) => LinearProgressIndicator(
+          builder: (_, value, _) => LinearProgressIndicator(
             value: value,
             backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
             color: Theme.of(context).colorScheme.primary,

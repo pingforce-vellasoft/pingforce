@@ -170,7 +170,7 @@ class _FaultListScreenState extends ConsumerState<FaultListScreen>
                         children: [
                           Text(t),
                           const SizedBox(width: 4),
-                          Consumer(builder: (_, ref, __) {
+                          Consumer(builder: (_, ref, _) {
                             final count = ref
                                 .watch(faultNotifierProvider)
                                 .overdueCount;
@@ -242,7 +242,7 @@ class _FaultListScreenState extends ConsumerState<FaultListScreen>
           80,
         ),
         itemCount: faults.length,
-        separatorBuilder: (_, __) =>
+        separatorBuilder: (_, _) =>
             const SizedBox(height: AppSpacing.cardMargin),
         itemBuilder: (context, index) {
           final fault = faults[index];

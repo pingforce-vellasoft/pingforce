@@ -54,7 +54,6 @@ abstract final class PingForceColors {
 
   static const Color surface = Color(0xFFFAFCFF);
   static const Color onSurface = Color(0xFF1A1C1E);
-  static const Color surfaceVariant = Color(0xFFE1E9F4);
   static const Color onSurfaceVariant = Color(0xFF44474F);
   static const Color surfaceDim = Color(0xFFD9DBE0);
   static const Color surfaceBright = Color(0xFFFAFCFF);
@@ -240,7 +239,6 @@ abstract final class PingForceColors {
         onTertiaryContainer: onTertiaryContainer,
         surface: surface,
         onSurface: onSurface,
-        surfaceVariant: surfaceVariant,
         onSurfaceVariant: onSurfaceVariant,
         surfaceContainerLowest: surfaceContainerLowest,
         surfaceContainerLow: surfaceContainerLow,
@@ -272,7 +270,6 @@ abstract final class PingForceColors {
         onTertiaryContainer: darkOnTertiaryContainer,
         surface: darkSurface,
         onSurface: darkOnSurface,
-        surfaceVariant: darkSurfaceVariant,
         onSurfaceVariant: darkOnSurfaceVariant,
         surfaceContainerLowest: darkSurfaceContainerLowest,
         surfaceContainerLow: darkSurfaceContainerLow,

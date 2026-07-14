@@ -221,7 +221,7 @@ abstract final class AppElevation {
       case 1:
         return [
           BoxShadow(
-            color: const Color(0xFF000000).withOpacity(0.08 * opacity),
+            color: const Color(0xFF000000).withValues(alpha: 0.08 * opacity),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -229,7 +229,7 @@ abstract final class AppElevation {
       case 2:
         return [
           BoxShadow(
-            color: const Color(0xFF000000).withOpacity(0.10 * opacity),
+            color: const Color(0xFF000000).withValues(alpha: 0.10 * opacity),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -237,7 +237,7 @@ abstract final class AppElevation {
       case 3:
         return [
           BoxShadow(
-            color: const Color(0xFF000000).withOpacity(0.12 * opacity),
+            color: const Color(0xFF000000).withValues(alpha: 0.12 * opacity),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -245,7 +245,7 @@ abstract final class AppElevation {
       case 4:
         return [
           BoxShadow(
-            color: const Color(0xFF000000).withOpacity(0.14 * opacity),
+            color: const Color(0xFF000000).withValues(alpha: 0.14 * opacity),
             blurRadius: 24,
             offset: const Offset(0, 6),
           ),
@@ -254,7 +254,7 @@ abstract final class AppElevation {
       default:
         return [
           BoxShadow(
-            color: const Color(0xFF000000).withOpacity(0.16 * opacity),
+            color: const Color(0xFF000000).withValues(alpha: 0.16 * opacity),
             blurRadius: 32,
             offset: const Offset(0, 8),
           ),

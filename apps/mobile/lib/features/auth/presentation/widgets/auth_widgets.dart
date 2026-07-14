@@ -37,10 +37,10 @@ class AuthErrorBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: isCritical
               ? Theme.of(context).colorScheme.errorContainer
-              : Theme.of(context).colorScheme.errorContainer.withOpacity(0.7),
+              : Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.7),
           borderRadius: AppRadius.mdAll,
           border: Border.all(
-            color: Theme.of(context).colorScheme.error.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5),
           ),
         ),
         padding: const EdgeInsets.symmetric(
@@ -72,7 +72,7 @@ class AuthErrorBanner extends StatelessWidget {
                       color: Theme.of(context)
                           .colorScheme
                           .onErrorContainer
-                          .withOpacity(0.85),
+                          .withValues(alpha: 0.85),
                     ),
                   ),
                 ],

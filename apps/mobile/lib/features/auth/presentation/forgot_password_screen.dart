@@ -322,8 +322,12 @@ class _OtpStepState extends ConsumerState<_OtpStep> {
 
   @override
   void dispose() {
-    for (final c in _ctrls) c.dispose();
-    for (final f in _focuses) f.dispose();
+    for (final c in _ctrls) {
+      c.dispose();
+    }
+    for (final f in _focuses) {
+      f.dispose();
+    }
     super.dispose();
   }
 

@@ -10,6 +10,7 @@
 ///   borderRadius: AppRadius.lgAll
 ///   elevation: AppElevation.card
 ///   duration: AppDurations.medium
+library;
 
 export 'app_colors.dart';
 export 'app_typography.dart';

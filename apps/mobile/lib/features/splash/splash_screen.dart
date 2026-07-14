@@ -179,7 +179,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     end: Alignment.bottomRight,
                     colors: [
                       Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                      Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                       Theme.of(context).colorScheme.primary,
                     ],
                     stops: const [0.0, 0.5, 1.0],
@@ -201,7 +201,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   // ── Logo ─────────────────────────────────────────────
                   AnimatedBuilder(
                     animation: _logoCtrl,
-                    builder: (_, __) => FadeTransition(
+                    builder: (_, _) => FadeTransition(
                       opacity: _logoOpacity,
                       child: ScaleTransition(
                         scale: _logoScale,
@@ -239,7 +239,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         color: Theme.of(context)
                             .colorScheme
                             .onPrimary
-                            .withOpacity(0.75),
+                            .withValues(alpha: 0.75),
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -268,7 +268,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     color: Theme.of(context)
                         .colorScheme
                         .onPrimary
-                        .withOpacity(0.4),
+                        .withValues(alpha: 0.4),
                   ),
                 ),
               ),
@@ -295,14 +295,14 @@ class _PingForceLogo extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.15),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.15),
         border: Border.all(
-          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.3),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 32,
             offset: const Offset(0, 8),
           ),
@@ -336,7 +336,7 @@ class _LoadingDots extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: AnimatedBuilder(
             animation: animations[i],
-            builder: (_, __) => Opacity(
+            builder: (_, _) => Opacity(
               opacity: animations[i].value,
               child: Container(
                 width: 6,
@@ -365,7 +365,7 @@ class _MeshPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Theme.of(context).colorScheme.onPrimary.withOpacity(0.04)
+      ..color = Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.04)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 

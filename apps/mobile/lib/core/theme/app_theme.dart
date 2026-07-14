@@ -246,7 +246,7 @@ abstract final class AppTheme {
         disabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.smAll,
           borderSide: BorderSide(
-            color: colorScheme.onSurface.withOpacity(0.12),
+            color: colorScheme.onSurface.withValues(alpha: 0.12),
             width: 1.5,
           ),
         ),
@@ -260,7 +260,7 @@ abstract final class AppTheme {
 
       // ── Chip ──────────────────────────────────────────────────────────────
       chipTheme: ChipThemeData(
-        backgroundColor: colorScheme.surfaceVariant,
+        backgroundColor: colorScheme.surfaceContainerHighest,
         selectedColor: colorScheme.secondaryContainer,
         labelStyle: AppTypography.labelMedium,
         padding: AppSpacing.chipPaddingAll,
@@ -441,8 +441,8 @@ abstract final class AppTheme {
 
       // ── Material Tap / Splash ─────────────────────────────────────────────
       splashFactory: InkSparkle.splashFactory,
-      splashColor: colorScheme.primary.withOpacity(0.08),
-      highlightColor: colorScheme.primary.withOpacity(0.04),
+      splashColor: colorScheme.primary.withValues(alpha: 0.08),
+      highlightColor: colorScheme.primary.withValues(alpha: 0.04),
     );
   }
 }

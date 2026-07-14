@@ -96,6 +96,9 @@ class _CheckInSuccessOverlayState extends State<CheckInSuccessOverlay>
     // Accessibility: announce success
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final time = _formatTime(widget.result.checkInTime);
+      // TODO(flutter-3.36+): migrate to SemanticsService.sendAnnouncement once
+      // the minimum SDK guarantees it; `announce` still works on current SDKs.
+      // ignore: deprecated_member_use
       SemanticsService.announce(
         'Check-in successful at $time',
         TextDirection.ltr,
@@ -148,7 +151,7 @@ class _CheckInSuccessOverlayState extends State<CheckInSuccessOverlay>
         color: Theme.of(context)
             .colorScheme
             .surfaceContainerLowest
-            .withOpacity(0.97),
+            .withValues(alpha: 0.97),
         child: SafeArea(
           child: Padding(
             padding: AppSpacing.screenPaddingAll,
@@ -309,7 +312,7 @@ class _AnimatedCheckmark extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: animation,
-      builder: (_, __) {
+      builder: (_, _) {
         return Stack(
           alignment: Alignment.center,
           children: [
@@ -372,7 +375,7 @@ class _StatusBadge extends StatelessWidget {
         vertical: AppSpacing.space1,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: AppRadius.pillAll,
       ),
       child: Row(

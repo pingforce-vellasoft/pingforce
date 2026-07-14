@@ -98,7 +98,7 @@ class _AttendanceActiveSessionCardState
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: PingForceColors.statusWarning.withOpacity(0.15),
+                      color: PingForceColors.statusWarning.withValues(alpha: 0.15),
                       borderRadius: AppRadius.pillAll,
                     ),
                     child: Text(

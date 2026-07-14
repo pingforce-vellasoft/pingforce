@@ -348,7 +348,7 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
     return ListView.separated(
       padding: AppSpacing.screenPaddingAll,
       itemCount: fault.attempts.length,
-      separatorBuilder: (_, __) =>
+      separatorBuilder: (_, _) =>
           const SizedBox(height: AppSpacing.cardMargin),
       itemBuilder: (context, i) {
         final attempt = fault.attempts[i];
@@ -407,7 +407,7 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
           child: Image.network(
             fault.attachmentUrls[i],
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
+            errorBuilder: (_, _, _) => Container(
               color: Theme.of(context).colorScheme.surfaceContainerHigh,
               child: const Icon(Icons.broken_image_rounded),
             ),
@@ -933,7 +933,7 @@ class _SectionCard extends StatelessWidget {
               children: [
                 Text(title, style: AppTypography.titleSmall),
                 const Spacer(),
-                if (trailing != null) trailing!,
+                ?trailing,
               ],
             ),
             const SizedBox(height: AppSpacing.space3),
@@ -985,7 +985,7 @@ class _DetailRow extends StatelessWidget {
             ],
           ),
         ),
-        if (trailing != null) trailing!,
+        ?trailing,
       ],
     );
   }
@@ -1006,7 +1006,7 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: AppRadius.pillAll,
       ),
       child: Row(

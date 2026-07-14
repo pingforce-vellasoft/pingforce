@@ -316,10 +316,10 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
                             height: 96,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _current.accentColor.withOpacity(0.12),
+                              color: _current.accentColor.withValues(alpha: 0.12),
                               border: Border.all(
                                 color:
-                                    _current.accentColor.withOpacity(0.3),
+                                    _current.accentColor.withValues(alpha: 0.3),
                                 width: 1.5,
                               ),
                             ),
@@ -368,10 +368,10 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
                             ),
                             decoration: BoxDecoration(
                               color:
-                                  _current.accentColor.withOpacity(0.10),
+                                  _current.accentColor.withValues(alpha: 0.10),
                               borderRadius: AppRadius.pillAll,
                               border: Border.all(
-                                color: _current.accentColor.withOpacity(0.3),
+                                color: _current.accentColor.withValues(alpha: 0.3),
                               ),
                             ),
                             child: Row(
@@ -563,7 +563,7 @@ class _DeniedBanner extends StatelessWidget {
               color: Theme.of(context)
                   .colorScheme
                   .onErrorContainer
-                  .withOpacity(0.85),
+                  .withValues(alpha: 0.85),
             ),
           ),
         ],

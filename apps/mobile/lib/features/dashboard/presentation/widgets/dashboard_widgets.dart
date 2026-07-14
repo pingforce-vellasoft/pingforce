@@ -117,7 +117,7 @@ class _UserAvatar extends StatelessWidget {
         backgroundColor:
             Theme.of(context).colorScheme.primaryContainer,
         backgroundImage: NetworkImage(avatarUrl!),
-        onBackgroundImageError: (_, __) {},
+        onBackgroundImageError: (_, _) {},
       );
     }
 
@@ -178,7 +178,7 @@ class KpiCardsRow extends StatelessWidget {
         padding: EdgeInsets.zero,
         physics: const BouncingScrollPhysics(),
         itemCount: isLoading ? 3 : cards.length,
-        separatorBuilder: (_, __) =>
+        separatorBuilder: (_, _) =>
             const SizedBox(width: AppSpacing.cardMargin),
         itemBuilder: (context, index) {
           if (isLoading) return const _KpiCardSkeleton();
@@ -501,7 +501,7 @@ class _QuickActionCellState extends State<_QuickActionCell>
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: iconColor.withOpacity(0.1),
+                      color: iconColor.withValues(alpha: 0.1),
                       borderRadius: AppRadius.smAll,
                     ),
                     child: Icon(

@@ -295,7 +295,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/more',
                 name: 'more',
-                redirect: (_, __) => '/home', // More opens a sheet, not a route
+                redirect: (_, _) => '/home', // More opens a sheet, not a route
               ),
             ],
           ),

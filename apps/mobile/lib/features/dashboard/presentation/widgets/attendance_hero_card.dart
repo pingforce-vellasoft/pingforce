@@ -555,7 +555,7 @@ class _ShiftProgressBar extends StatelessWidget {
       children: [
         AnimatedBuilder(
           animation: animation,
-          builder: (_, __) {
+          builder: (_, _) {
             final animated = fraction * animation.value;
             return ClipRRect(
               borderRadius: AppRadius.pillAll,

@@ -202,7 +202,7 @@ class _BiometricScreenState extends ConsumerState<BiometricScreen>
                       // Outer pulse ring
                       AnimatedBuilder(
                         animation: _pulseOpacity,
-                        builder: (_, __) => Transform.scale(
+                        builder: (_, _) => Transform.scale(
                           scale: _pulseScale.value,
                           child: Container(
                             width: 128,
@@ -212,12 +212,12 @@ class _BiometricScreenState extends ConsumerState<BiometricScreen>
                               color: Theme.of(context)
                                   .colorScheme
                                   .primary
-                                  .withOpacity(_pulseOpacity.value * 0.15),
+                                  .withValues(alpha: _pulseOpacity.value * 0.15),
                               border: Border.all(
                                 color: Theme.of(context)
                                     .colorScheme
                                     .primary
-                                    .withOpacity(_pulseOpacity.value),
+                                    .withValues(alpha: _pulseOpacity.value),
                                 width: 1.5,
                               ),
                             ),

@@ -238,7 +238,7 @@ class _DocumentListScreenState extends ConsumerState<DocumentListScreen>
           : ListView.separated(
               padding: AppSpacing.screenPaddingAll,
               itemCount: _filtered.length,
-              separatorBuilder: (_, __) =>
+              separatorBuilder: (_, _) =>
                   const SizedBox(height: AppSpacing.cardMargin),
               itemBuilder: (_, i) => _DocumentCard(
                 doc: _filtered[i],
@@ -287,7 +287,7 @@ class _DocumentCard extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: doc.type.color.withOpacity(0.12),
+            color: doc.type.color.withValues(alpha: 0.12),
             borderRadius: AppRadius.mdAll,
           ),
           child: Icon(doc.type.icon, color: doc.type.color),
@@ -307,7 +307,7 @@ class _DocumentCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: doc.type.color.withOpacity(0.10),
+                  color: doc.type.color.withValues(alpha: 0.10),
                   borderRadius: AppRadius.pillAll,
                 ),
                 child: Text(
@@ -413,14 +413,14 @@ class _UploadSheetState extends State<_UploadSheet> {
               decoration: BoxDecoration(
                 borderRadius: AppRadius.lgAll,
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
                   width: 1.5,
                   style: BorderStyle.none,  // dashed — use CustomPaint in prod
                 ),
                 color: Theme.of(context)
                     .colorScheme
                     .primaryContainer
-                    .withOpacity(0.3),
+                    .withValues(alpha: 0.3),
               ),
               child: _fileName != null
                   ? Column(
@@ -591,7 +591,7 @@ class _PreviewSheet extends StatelessWidget {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: doc.type.color.withOpacity(0.12),
+                            color: doc.type.color.withValues(alpha: 0.12),
                             borderRadius: AppRadius.mdAll,
                           ),
                           child: Icon(doc.type.icon, color: doc.type.color),

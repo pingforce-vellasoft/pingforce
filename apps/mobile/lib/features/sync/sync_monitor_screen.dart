@@ -334,13 +334,13 @@ class _ActiveSyncProgress extends StatelessWidget {
               tween: Tween(
                   begin: 0, end: syncState.currentProgress / 100),
               duration: const Duration(milliseconds: 400),
-              builder: (_, value, __) => ClipRRect(
+              builder: (_, value, _) => ClipRRect(
                 borderRadius: AppRadius.pillAll,
                 child: LinearProgressIndicator(
                   value: value,
                   minHeight: 6,
                   backgroundColor:
-                      Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
@@ -521,9 +521,9 @@ class _ConflictVersionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.space3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: AppRadius.smAll,
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -210,7 +210,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: methods.length,
-        separatorBuilder: (_, __) => AppSpacing.iconGapBox,
+        separatorBuilder: (_, _) => AppSpacing.iconGapBox,
         itemBuilder: (context, index) {
           final method = methods[index];
           final isGps = method == 'GPS';

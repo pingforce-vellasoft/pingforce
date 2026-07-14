@@ -298,7 +298,7 @@ class _LeaveApplyTabState extends State<_LeaveApplyTab> {
                 label: Text(type.label),
                 selected: selected,
                 onSelected: (_) => setState(() => _selectedType = type),
-                selectedColor: type.color.withOpacity(0.15),
+                selectedColor: type.color.withValues(alpha: 0.15),
                 checkmarkColor: type.color,
                 side: BorderSide(
                   color: selected ? type.color : Theme.of(context).colorScheme.outlineVariant,
@@ -571,7 +571,7 @@ class _LeaveBalanceCard extends StatelessWidget {
                           balance.usedFraction + balance.pendingFraction,
                       child: Container(
                           height: 8,
-                          color: type.color.withOpacity(0.35)),
+                          color: type.color.withValues(alpha: 0.35)),
                     ),
                 ],
               ),
@@ -583,7 +583,7 @@ class _LeaveBalanceCard extends StatelessWidget {
                 const SizedBox(width: AppSpacing.space4),
                 if (balance.pending > 0)
                   _Legend(
-                      color: type.color.withOpacity(0.4),
+                      color: type.color.withValues(alpha: 0.4),
                       label: 'Pending ${balance.pending.toInt()}'),
               ],
             ),
@@ -672,7 +672,7 @@ class _LeaveHistoryTab extends StatelessWidget {
     return ListView.separated(
       padding: AppSpacing.screenPaddingAll,
       itemCount: _history.length,
-      separatorBuilder: (_, __) =>
+      separatorBuilder: (_, _) =>
           const SizedBox(height: AppSpacing.cardMargin),
       itemBuilder: (_, i) => _LeaveHistoryCard(app: _history[i]),
     );
