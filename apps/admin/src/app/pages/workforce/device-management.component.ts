@@ -3,7 +3,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
-import { HttpClient } from '@angular/common/http';
+import { WorkforceService } from '../../core/services/workforce.service';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../core/components/confirm-dialog.component';
@@ -80,7 +80,7 @@ import { ConfirmDialogComponent } from '../../core/components/confirm-dialog.com
   `,
 })
 export class DeviceManagementComponent implements OnInit {
-  private http = inject(HttpClient);
+  private workforceService = inject(WorkforceService);
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
 
@@ -91,7 +91,7 @@ export class DeviceManagementComponent implements OnInit {
   }
 
   loadDevices() {
-    this.http.get<any[]>('/api/v1/attendance/device').subscribe({
+    this.workforceService.getDevices().subscribe({
       next: (data) => (this.devices = data),
       error: (err) => console.error(err),
     });
@@ -113,11 +113,8 @@ export class DeviceManagementComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.http
-          .post('/api/v1/attendance/device/revoke', {
-            employeeId: device.employeeId,
-            deviceId: device.deviceId,
-          })
+        this.workforceService
+          .revokeDevice(device.employeeId, device.deviceId)
           .subscribe({
             next: () => {
               this.snackBar.open('Device revoked successfully', 'Close', {

@@ -49,4 +49,31 @@ export class WorkforceService {
       reason,
     });
   }
+
+  // ── Geofences ──────────────────────────────────────────────────────────────
+
+  getGeofences() {
+    return this.http.get<any[]>('/api/v1/attendance/geofence');
+  }
+
+  createGeofence(payload: unknown) {
+    return this.http.post('/api/v1/attendance/geofence', payload);
+  }
+
+  deleteGeofence(id: string) {
+    return this.http.delete(`/api/v1/attendance/geofence/${id}`);
+  }
+
+  // ── Devices ────────────────────────────────────────────────────────────────
+
+  getDevices() {
+    return this.http.get<any[]>('/api/v1/attendance/device');
+  }
+
+  revokeDevice(employeeId: string, deviceId: string) {
+    return this.http.post('/api/v1/attendance/device/revoke', {
+      employeeId,
+      deviceId,
+    });
+  }
 }

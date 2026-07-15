@@ -5,6 +5,13 @@ abstract class AuthRemoteDataSource {
   Future<Map<String, dynamic>> signup(String email, String password);
   Future<Map<String, dynamic>> googleAuth(String idToken);
   Future<Map<String, dynamic>> onboardTenant(Map<String, dynamic> data);
+  Future<void> requestPasswordReset(String email, String tenantCode);
+  Future<void> confirmPasswordReset(
+    String email,
+    String tenantCode,
+    String otp,
+    String newPassword,
+  );
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -57,5 +64,31 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       data: data,
     );
     return response.data;
+  }
+
+  @override
+  Future<void> requestPasswordReset(String email, String tenantCode) async {
+    await dio.post(
+      '/api/v1/auth/reset-password',
+      data: {'email': email, 'tenantCode': tenantCode},
+    );
+  }
+
+  @override
+  Future<void> confirmPasswordReset(
+    String email,
+    String tenantCode,
+    String otp,
+    String newPassword,
+  ) async {
+    await dio.post(
+      '/api/v1/auth/reset-password/confirm',
+      data: {
+        'email': email,
+        'tenantCode': tenantCode,
+        'otp': otp,
+        'newPassword': newPassword,
+      },
+    );
   }
 }

@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { PlatformService } from '../../core/services/platform.service';
 
 @Component({
   selector: 'app-create-tenant',
@@ -404,7 +404,7 @@ import { HttpClient } from '@angular/common/http';
   ],
 })
 export class CreateTenantComponent {
-  private http = inject(HttpClient);
+  private platformService = inject(PlatformService);
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
 
@@ -447,7 +447,7 @@ export class CreateTenantComponent {
       adminEmail: this.formData.contactEmail,
     };
 
-    this.http.post('/api/v1/tenants', payload).subscribe({
+    this.platformService.createTenant(payload).subscribe({
       next: (res: any) => {
         this.snackBar.open(
           `Tenant created! Workspace ID: ${res.code}`,

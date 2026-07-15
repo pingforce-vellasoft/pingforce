@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { PlatformService } from '../../core/services/platform.service';
 import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -689,7 +689,7 @@ export class TenantDetailsComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private http: HttpClient,
+    private platformService: PlatformService,
     private snackBar: MatSnackBar,
     private location: Location,
   ) {}
@@ -702,7 +702,7 @@ export class TenantDetailsComponent implements OnInit {
   }
 
   loadTenant() {
-    this.http.get(`/api/v1/tenants/${this.tenantId}`).subscribe({
+    this.platformService.getTenant(this.tenantId).subscribe({
       next: (res) => {
         this.tenant = res;
       },
@@ -740,21 +740,19 @@ export class TenantDetailsComponent implements OnInit {
   }
 
   saveChanges() {
-    this.http
-      .patch(`/api/v1/tenants/${this.tenantId}`, this.editData)
-      .subscribe({
-        next: (res) => {
-          this.tenant = { ...this.tenant, ...this.editData };
-          this.editMode = false;
-          this.snackBar.open('Tenant updated successfully', 'Close', {
-            duration: 3000,
-          });
-        },
-        error: () =>
-          this.snackBar.open('Failed to update tenant', 'Close', {
-            duration: 3000,
-          }),
-      });
+    this.platformService.updateTenant(this.tenantId, this.editData).subscribe({
+      next: () => {
+        this.tenant = { ...this.tenant, ...this.editData };
+        this.editMode = false;
+        this.snackBar.open('Tenant updated successfully', 'Close', {
+          duration: 3000,
+        });
+      },
+      error: () =>
+        this.snackBar.open('Failed to update tenant', 'Close', {
+          duration: 3000,
+        }),
+    });
   }
 
   getAccessibleTextColor(hexColor: string): string {

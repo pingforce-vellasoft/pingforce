@@ -11,7 +11,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatMenuModule } from '@angular/material/menu';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { PlatformService } from '../../core/services/platform.service';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
@@ -318,13 +318,13 @@ import { AuthService } from '../../core/auth/auth.service';
 })
 export class DashboardComponent implements OnInit {
   authService = inject(AuthService);
-  private http = inject(HttpClient);
+  private platformService = inject(PlatformService);
 
   tenants: any[] = [];
 
   ngOnInit() {
     if (this.authService.currentUser()?.roleCode === 'SUPER_ADMIN') {
-      this.http.get<any[]>('/api/v1/tenants').subscribe({
+      this.platformService.getTenants().subscribe({
         next: (res) => {
           this.tenants = res;
         },

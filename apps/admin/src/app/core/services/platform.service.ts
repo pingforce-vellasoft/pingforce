@@ -1,0 +1,50 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+/**
+ * Platform administration API (4.1 API_LAYER.md — feature-based services,
+ * no direct HttpClient usage in components).
+ */
+@Injectable({
+  providedIn: 'root',
+})
+export class PlatformService {
+  private http = inject(HttpClient);
+
+  // ── Tenants ────────────────────────────────────────────────────────────────
+
+  getTenants(): Observable<any[]> {
+    return this.http.get<any[]>('/api/v1/tenants');
+  }
+
+  getTenant(id: string): Observable<any> {
+    return this.http.get(`/api/v1/tenants/${id}`);
+  }
+
+  createTenant(payload: unknown): Observable<any> {
+    return this.http.post('/api/v1/tenants', payload);
+  }
+
+  deleteTenant(id: string): Observable<any> {
+    return this.http.delete(`/api/v1/tenants/${id}`);
+  }
+
+  updateTenant(id: string, payload: unknown): Observable<any> {
+    return this.http.patch(`/api/v1/tenants/${id}`, payload);
+  }
+
+  updateTenantProvisioning(id: string, payload: unknown): Observable<any> {
+    return this.http.patch(`/api/v1/tenants/${id}/provisioning`, payload);
+  }
+
+  // ── Platform settings ──────────────────────────────────────────────────────
+
+  getSettings(): Observable<any[]> {
+    return this.http.get<any[]>('/api/v1/platform/settings');
+  }
+
+  updateSettings(payload: unknown): Observable<any> {
+    return this.http.put('/api/v1/platform/settings', payload);
+  }
+}

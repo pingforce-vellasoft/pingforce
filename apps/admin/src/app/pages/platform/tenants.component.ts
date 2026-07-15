@@ -9,7 +9,7 @@ import {
   MatDialogModule,
   MAT_DIALOG_DATA,
 } from '@angular/material/dialog';
-import { HttpClient } from '@angular/common/http';
+import { PlatformService } from '../../core/services/platform.service';
 import { NgClass } from '@angular/common';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -951,7 +951,7 @@ export class ConfirmActionDialogComponent {
   ],
 })
 export class TenantsComponent implements OnInit {
-  private http = inject(HttpClient);
+  private platformService = inject(PlatformService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
 
@@ -986,7 +986,7 @@ export class TenantsComponent implements OnInit {
   }
 
   loadTenants() {
-    this.http.get<any[]>('/api/v1/tenants').subscribe({
+    this.platformService.getTenants().subscribe({
       next: (data) => (this.tenants = data),
       error: () =>
         this.snackBar.open('Failed to load tenants', 'Close', {
@@ -1024,8 +1024,8 @@ export class TenantsComponent implements OnInit {
 
   private executeToggle(tenant: any, isEnabled: boolean) {
     tenant.isAttendanceEnabled = isEnabled;
-    this.http
-      .patch(`/api/v1/tenants/${tenant.id}/provisioning`, {
+    this.platformService
+      .updateTenantProvisioning(tenant.id, {
         isAttendanceEnabled: isEnabled,
         maxFieldStaff: tenant.maxFieldStaff,
       })
@@ -1089,8 +1089,8 @@ export class TenantsComponent implements OnInit {
   }
 
   private executeTenantStatusToggle(tenant: any, newStatus: string) {
-    this.http
-      .patch(`/api/v1/tenants/${tenant.id}`, {
+    this.platformService
+      .updateTenant(tenant.id, {
         subscriptionStatus: newStatus,
         status: newStatus,
       })
@@ -1126,7 +1126,7 @@ export class TenantsComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((confirmed) => {
       if (confirmed) {
-        this.http.delete(`/api/v1/tenants/${tenant.id}`).subscribe({
+        this.platformService.deleteTenant(tenant.id).subscribe({
           next: () => {
             this.snackBar.open('Tenant deleted successfully', 'Close', {
               duration: 3000,

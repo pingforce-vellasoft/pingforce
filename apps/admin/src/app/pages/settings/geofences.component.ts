@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { WorkforceService } from '../../core/services/workforce.service';
 import {
   MatDialogModule,
   MatDialog,
@@ -552,7 +552,7 @@ import { OverlayModule } from '@angular/cdk/overlay';
   ],
 })
 export class GeofenceSettingsComponent implements OnInit {
-  private http = inject(HttpClient);
+  private workforceService = inject(WorkforceService);
   private sanitizer = inject(DomSanitizer);
 
   displayedColumns: string[] = ['name', 'coordinates', 'radius', 'actions'];
@@ -564,7 +564,7 @@ export class GeofenceSettingsComponent implements OnInit {
   }
 
   loadGeofences() {
-    this.http.get<any[]>('/api/v1/attendance/geofence').subscribe({
+    this.workforceService.getGeofences().subscribe({
       next: (data) => {
         this.geofences = (data || []).map((g: any) => ({
           ...g,
@@ -582,7 +582,7 @@ export class GeofenceSettingsComponent implements OnInit {
       longitude: Number(this.newGeofence.longitude),
       radiusMeters: Number(this.newGeofence.radiusMeters),
     };
-    this.http.post('/api/v1/attendance/geofence', payload).subscribe({
+    this.workforceService.createGeofence(payload).subscribe({
       next: () => {
         this.loadGeofences();
         this.newGeofence = {
@@ -601,7 +601,7 @@ export class GeofenceSettingsComponent implements OnInit {
 
   deleteGeofence(id: string) {
     if (!id) return;
-    this.http.delete(`/api/v1/attendance/geofence/${id}`).subscribe({
+    this.workforceService.deleteGeofence(id).subscribe({
       next: () => this.loadGeofences(),
       error: (err) => console.error('Failed to delete geofence', err),
     });

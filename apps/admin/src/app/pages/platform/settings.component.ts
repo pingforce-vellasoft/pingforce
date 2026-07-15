@@ -14,7 +14,7 @@ import {
   FormBuilder,
   FormGroup,
 } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { PlatformService } from '../../core/services/platform.service';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
@@ -571,7 +571,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 })
 export class PlatformSettingsComponent implements OnInit {
   private fb = inject(FormBuilder);
-  private http = inject(HttpClient);
+  private platformService = inject(PlatformService);
   private snackBar = inject(MatSnackBar);
 
   integrationsForm: FormGroup;
@@ -606,7 +606,7 @@ export class PlatformSettingsComponent implements OnInit {
   }
 
   loadSettings() {
-    this.http.get<any[]>('/api/v1/platform/settings').subscribe({
+    this.platformService.getSettings().subscribe({
       next: (settings) => {
         const mapProvider =
           settings.find((s) => s.key === 'MAP_PROVIDER')?.value ||
@@ -654,7 +654,7 @@ export class PlatformSettingsComponent implements OnInit {
       { key: 'MAPBOX_KEY', value: vals.mapboxKey, category: 'INTEGRATIONS' },
     ];
 
-    this.http.put('/api/v1/platform/settings', payload).subscribe({
+    this.platformService.updateSettings(payload).subscribe({
       next: () =>
         this.snackBar.open('Integration settings saved successfully', 'Close', {
           duration: 3000,
@@ -681,7 +681,7 @@ export class PlatformSettingsComponent implements OnInit {
       },
     ];
 
-    this.http.put('/api/v1/platform/settings', payload).subscribe({
+    this.platformService.updateSettings(payload).subscribe({
       next: () =>
         this.snackBar.open('Compliance rules saved successfully', 'Close', {
           duration: 3000,

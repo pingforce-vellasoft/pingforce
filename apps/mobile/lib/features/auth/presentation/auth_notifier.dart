@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import '../../../core/auth/auth_session.dart';
 import '../../../injection_container.dart';
+import '../domain/repositories/auth_repository.dart';
 import '../domain/usecases/login_command.dart';
 import 'auth_state.dart';
 
@@ -250,21 +253,44 @@ class ForgotPasswordNotifier extends AutoDisposeNotifier<ForgotPasswordState> {
     }
 
     state = state.copyWith(isLoading: true, authError: AuthErrorCode.none);
-    try {
-      // TODO: POST /api/v1/auth/forgot-password/send-otp
-      await Future<void>.delayed(const Duration(milliseconds: 900));
+
+    final tenantCode = await _storedTenantCode();
+    if (tenantCode == null) {
       state = state.copyWith(
         isLoading: false,
-        otpSent: true,
-        countdownSeconds: 60,
-        canResend: false,
+        identifierError:
+            'Workspace unknown on this device - sign in once first',
       );
-      _startCountdown();
-    } on Exception {
-      state = state.copyWith(
+      return;
+    }
+
+    final result = await sl<AuthRepository>().requestPasswordReset(
+      state.identifier.trim(),
+      tenantCode,
+    );
+
+    result.fold(
+      (_) => state = state.copyWith(
         isLoading: false,
         authError: AuthErrorCode.networkError,
-      );
+      ),
+      (_) {
+        state = state.copyWith(
+          isLoading: false,
+          otpSent: true,
+          countdownSeconds: 60,
+          canResend: false,
+        );
+        _startCountdown();
+      },
+    );
+  }
+
+  Future<String?> _storedTenantCode() async {
+    try {
+      return await sl<FlutterSecureStorage>().read(key: 'tenant_code');
+    } catch (_) {
+      return null;
     }
   }
 
@@ -276,18 +302,13 @@ class ForgotPasswordNotifier extends AutoDisposeNotifier<ForgotPasswordState> {
   }
 
   Future<void> verifyOtp() async {
-    state = state.copyWith(isLoading: true, otpError: null);
-    try {
-      // TODO: POST /api/v1/auth/forgot-password/verify-otp
-      await Future<void>.delayed(const Duration(milliseconds: 700));
-      state = state.copyWith(isLoading: false, otpVerified: true);
-    } on Exception {
-      state = state.copyWith(
-        isLoading: false,
-        otpError: 'Incorrect or expired code. Please try again.',
-        otp: '',
-      );
+    // The API validates the OTP atomically at the confirm step (single-use);
+    // advance to the password step and surface any OTP error there.
+    if (state.otp.length != 6) {
+      state = state.copyWith(otpError: 'Enter the 6-digit code');
+      return;
     }
+    state = state.copyWith(isLoading: false, otpVerified: true);
   }
 
   Future<void> resendOtp() async {
@@ -327,8 +348,8 @@ class ForgotPasswordNotifier extends AutoDisposeNotifier<ForgotPasswordState> {
     String? passwordError;
     String? confirmPasswordError;
 
-    if (state.newPassword.length < 8) {
-      passwordError = 'Password must be at least 8 characters';
+    if (state.newPassword.length < 12) {
+      passwordError = 'Password must be at least 12 characters';
     } else if (state.passwordStrength == PasswordStrength.weak) {
       passwordError = 'Password is too weak — add numbers or symbols';
     }
@@ -346,16 +367,24 @@ class ForgotPasswordNotifier extends AutoDisposeNotifier<ForgotPasswordState> {
     }
 
     state = state.copyWith(isLoading: true);
-    try {
-      // TODO: POST /api/v1/auth/forgot-password/reset
-      await Future<void>.delayed(const Duration(milliseconds: 1000));
-      state = state.copyWith(isLoading: false, isComplete: true);
-    } on Exception {
-      state = state.copyWith(
+
+    final tenantCode = await _storedTenantCode();
+    final result = await sl<AuthRepository>().confirmPasswordReset(
+      state.identifier.trim(),
+      tenantCode ?? '',
+      state.otp,
+      state.newPassword,
+    );
+
+    result.fold(
+      (_) => state = state.copyWith(
         isLoading: false,
-        authError: AuthErrorCode.serverError,
-      );
-    }
+        otpVerified: false,
+        otp: '',
+        otpError: 'Incorrect or expired code. Please try again.',
+      ),
+      (_) => state = state.copyWith(isLoading: false, isComplete: true),
+    );
   }
 
   // ── Countdown ──────────────────────────────────────────────────────────

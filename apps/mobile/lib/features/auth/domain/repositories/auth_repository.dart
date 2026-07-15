@@ -23,4 +23,18 @@ abstract class AuthRepository {
 
   /// Destroys the secure session
   Future<Either<Failure, void>> logout();
+
+  /// Requests a password-reset OTP to be emailed (no user enumeration).
+  Future<Either<Failure, void>> requestPasswordReset(
+    String email,
+    String tenantCode,
+  );
+
+  /// Confirms the reset with the emailed OTP and sets the new password.
+  Future<Either<Failure, void>> confirmPasswordReset(
+    String email,
+    String tenantCode,
+    String otp,
+    String newPassword,
+  );
 }
