@@ -111,7 +111,7 @@ abstract class _$$TenantBrandingImplCopyWith<$Res>
   factory _$$TenantBrandingImplCopyWith(
     _$TenantBrandingImpl value,
     $Res Function(_$TenantBrandingImpl) then,
-  ) = _$$TenantBrandingImplCopyWithImpl<$Res>;
+  ) = __$$TenantBrandingImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -125,10 +125,10 @@ abstract class _$$TenantBrandingImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$TenantBrandingImplCopyWithImpl<$Res>
+class __$$TenantBrandingImplCopyWithImpl<$Res>
     extends _$TenantBrandingCopyWithImpl<$Res, _$TenantBrandingImpl>
     implements _$$TenantBrandingImplCopyWith<$Res> {
-  _$$TenantBrandingImplCopyWithImpl(
+  __$$TenantBrandingImplCopyWithImpl(
     _$TenantBrandingImpl _value,
     $Res Function(_$TenantBrandingImpl) _then,
   ) : super(_value, _then);
@@ -244,7 +244,7 @@ class _$TenantBrandingImpl implements _TenantBranding {
   @override
   @pragma('vm:prefer-inline')
   _$$TenantBrandingImplCopyWith<_$TenantBrandingImpl> get copyWith =>
-      _$$TenantBrandingImplCopyWithImpl<_$TenantBrandingImpl>(
+      __$$TenantBrandingImplCopyWithImpl<_$TenantBrandingImpl>(
         this,
         _$identity,
       );
@@ -386,7 +386,7 @@ abstract class _$$TenantConfigImplCopyWith<$Res>
   factory _$$TenantConfigImplCopyWith(
     _$TenantConfigImpl value,
     $Res Function(_$TenantConfigImpl) then,
-  ) = _$$TenantConfigImplCopyWithImpl<$Res>;
+  ) = __$$TenantConfigImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -403,10 +403,10 @@ abstract class _$$TenantConfigImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$TenantConfigImplCopyWithImpl<$Res>
+class __$$TenantConfigImplCopyWithImpl<$Res>
     extends _$TenantConfigCopyWithImpl<$Res, _$TenantConfigImpl>
     implements _$$TenantConfigImplCopyWith<$Res> {
-  _$$TenantConfigImplCopyWithImpl(
+  __$$TenantConfigImplCopyWithImpl(
     _$TenantConfigImpl _value,
     $Res Function(_$TenantConfigImpl) _then,
   ) : super(_value, _then);
@@ -547,7 +547,7 @@ class _$TenantConfigImpl extends _TenantConfig {
   @override
   @pragma('vm:prefer-inline')
   _$$TenantConfigImplCopyWith<_$TenantConfigImpl> get copyWith =>
-      _$$TenantConfigImplCopyWithImpl<_$TenantConfigImpl>(this, _$identity);
+      __$$TenantConfigImplCopyWithImpl<_$TenantConfigImpl>(this, _$identity);
 }
 
 abstract class _TenantConfig extends TenantConfig {
@@ -698,7 +698,7 @@ abstract class _$$AppLaunchStateImplCopyWith<$Res>
   factory _$$AppLaunchStateImplCopyWith(
     _$AppLaunchStateImpl value,
     $Res Function(_$AppLaunchStateImpl) then,
-  ) = _$$AppLaunchStateImplCopyWithImpl<$Res>;
+  ) = __$$AppLaunchStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -716,10 +716,10 @@ abstract class _$$AppLaunchStateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$AppLaunchStateImplCopyWithImpl<$Res>
+class __$$AppLaunchStateImplCopyWithImpl<$Res>
     extends _$AppLaunchStateCopyWithImpl<$Res, _$AppLaunchStateImpl>
     implements _$$AppLaunchStateImplCopyWith<$Res> {
-  _$$AppLaunchStateImplCopyWithImpl(
+  __$$AppLaunchStateImplCopyWithImpl(
     _$AppLaunchStateImpl _value,
     $Res Function(_$AppLaunchStateImpl) _then,
   ) : super(_value, _then);
@@ -847,7 +847,7 @@ class _$AppLaunchStateImpl extends _AppLaunchState {
   @override
   @pragma('vm:prefer-inline')
   _$$AppLaunchStateImplCopyWith<_$AppLaunchStateImpl> get copyWith =>
-      _$$AppLaunchStateImplCopyWithImpl<_$AppLaunchStateImpl>(
+      __$$AppLaunchStateImplCopyWithImpl<_$AppLaunchStateImpl>(
         this,
         _$identity,
       );

@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/auth_session.dart';
+import '../../../injection_container.dart';
+import '../domain/usecases/login_command.dart';
 import 'auth_state.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -35,25 +38,14 @@ class LoginNotifier extends Notifier<LoginState> {
     state = state.copyWith(isLoading: true, authError: AuthErrorCode.none);
 
     try {
-      // TODO: Call tenant resolution API
-      await Future<void>.delayed(const Duration(milliseconds: 900));
-
-      // Stub: resolve tenant name from code
-      final resolved = _resolveTenantStub(state.tenantCode.trim());
-      if (resolved == null) {
-        state = state.copyWith(
-          isLoading: false,
-          authError: AuthErrorCode.invalidTenantCode,
-        );
-        return;
-      }
-
-      // ✅ Tenant resolved — advance to step 2 with branding
+      // The tenant code is validated server-side at login; advance to
+      // credentials with the code as the workspace label until a public
+      // tenant-branding endpoint exists.
+      final code = state.tenantCode.trim().toUpperCase();
       state = state.copyWith(
         isLoading: false,
         step: LoginStep.credentials,
-        resolvedTenantName: resolved,
-        // Check if biometric is enrolled for this device
+        resolvedTenantName: code,
         isBiometricAvailable: await _checkBiometricAvailability(),
         isBiometricEnabled: await _checkBiometricEnrolled(),
       );
@@ -122,19 +114,28 @@ class LoginNotifier extends Notifier<LoginState> {
       authError: AuthErrorCode.none,
     );
 
-    try {
-      // TODO: POST /api/v1/auth/login
-      await Future<void>.delayed(const Duration(milliseconds: 1200));
+    // Real login via the clean-architecture data layer (stores JWT +
+    // refresh token in secure storage on success).
+    final result = await sl<LoginCommand>()(
+      LoginParams(
+        email: state.username.trim(),
+        password: state.password,
+        tenantCode: state.tenantCode.trim().toUpperCase(),
+      ),
+    );
 
-      // Stub: simulate success
-      // On success → navigation handled by router auth listener
-      state = state.copyWith(isLoading: false);
-    } on Exception catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        authError: _classifyAuthError(e.toString()),
-      );
-    }
+    result.fold(
+      (failure) {
+        state = state.copyWith(
+          isLoading: false,
+          authError: _classifyAuthError(failure.message),
+        );
+      },
+      (user) {
+        AuthSession.instance.signIn(roleCode: user.role);
+        state = state.copyWith(isLoading: false, isAuthenticated: true);
+      },
+    );
   }
 
   // ── Biometric ──────────────────────────────────────────────────────────
@@ -170,16 +171,6 @@ class LoginNotifier extends Notifier<LoginState> {
   }
 
   // ── Private helpers ────────────────────────────────────────────────────
-
-  String? _resolveTenantStub(String code) {
-    // TODO: Replace with real API
-    const map = {
-      'ACME': 'ACME Corporation',
-      'DEMO': 'Demo Workspace',
-      'TEST': 'Test Workspace',
-    };
-    return map[code.toUpperCase()];
-  }
 
   Future<bool> _checkBiometricAvailability() async {
     // TODO: local_auth.isDeviceSupported()

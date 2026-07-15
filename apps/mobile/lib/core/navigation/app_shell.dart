@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/auth_session.dart';
 import '../theme/theme.dart';
 import '../sync/sync_provider.dart';
 import '../network/connectivity_provider.dart';
@@ -760,11 +761,10 @@ class RouteGuard {
     return null;
   }
 
-  // ── Stub implementations — replace with real providers ───────────────────
+  // ── Session-backed checks ─────────────────────────────────────────────────
 
   static bool _isAuthenticated() {
-    // TODO: ref.read(authProvider).isAuthenticated
-    return true; // stub: always authenticated
+    return AuthSession.instance.isAuthenticated;
   }
 
   static bool _isSessionExpired() {

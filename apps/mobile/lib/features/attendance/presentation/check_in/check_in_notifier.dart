@@ -3,15 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../../../../injection_container.dart';
+import '../../domain/usecases/punch_command.dart' as punch_uc;
+import '../../domain/usecases/register_device_command.dart';
 import 'check_in_state.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CHECK-IN NOTIFIER  (CHECKIN_FLOW_SPEC.md §6 state machine)
 //
 // Drives the attendance screen through S1..S14. GPS permission, position
-// acquisition and mock-location detection are real (geolocator); shift,
-// policy and the punch API call are stubbed until the data layer is bridged.
-// TODO(phase-2): call PunchCommand / attendance datasource via get_it.
+// acquisition, mock-location detection (geolocator) and the punch API call
+// (PunchCommand via get_it) are real; shift/policy remain stubbed until the
+// tenant-policy endpoint exists.
 // ─────────────────────────────────────────────────────────────────────────────
 
 final checkInNotifierProvider =
@@ -155,31 +158,69 @@ class CheckInNotifier extends Notifier<CheckInState> {
       return;
     }
 
+    final location = state.location;
+    if (location == null) {
+      state = state.copyWith(
+        status: CheckInScreenStatus.error,
+        buttonMode: CheckInButtonMode.error,
+        errorMessage: 'Location unavailable. Try again.',
+      );
+      return;
+    }
+
     state = state.copyWith(
       status: CheckInScreenStatus.submitting,
       buttonMode: CheckInButtonMode.submitting,
     );
 
-    // TODO(phase-2): execute PunchCommand with location + device signature.
-    await Future<void>.delayed(const Duration(milliseconds: 800));
+    // Real punch via the clean-architecture data layer. Signature payload is
+    // accepted as-is server-side until device-key signing lands (Phase 5b).
+    final params = punch_uc.PunchParams(
+      latitude: location.latitude,
+      longitude: location.longitude,
+      cryptographicSignature: 'gps:${location.timestamp.toIso8601String()}',
+    );
 
-    final now = DateTime.now();
-    state = state.copyWith(
-      status: CheckInScreenStatus.success,
-      buttonMode: CheckInButtonMode.success,
-      showSuccessOverlay: true,
-      checkInResult: CheckInResult(
-        attendanceId: 'local-${now.millisecondsSinceEpoch}',
-        checkInTime: now,
-        shiftName: state.shift?.shiftName ?? 'Shift',
-        branchName: 'Main Branch',
-        isOffline: !state.isOnline,
-      ),
-      activeSession: ActiveSession(
-        sessionId: 'local-${now.millisecondsSinceEpoch}',
-        checkInTime: now,
-        shiftName: state.shift?.shiftName ?? 'Shift',
-      ),
+    var result = await sl<punch_uc.PunchCommand>()(params);
+
+    // First punch on a fresh install fails with an untrusted device —
+    // register this device once, then retry.
+    if (result.isLeft()) {
+      final registered = await sl<RegisterDeviceCommand>()(
+        const RegisterDeviceParams(publicKey: 'mobile-client'),
+      );
+      if (registered.isRight()) {
+        result = await sl<punch_uc.PunchCommand>()(params);
+      }
+    }
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(
+          status: CheckInScreenStatus.error,
+          buttonMode: CheckInButtonMode.error,
+          errorMessage: failure.message,
+        );
+      },
+      (session) {
+        state = state.copyWith(
+          status: CheckInScreenStatus.success,
+          buttonMode: CheckInButtonMode.success,
+          showSuccessOverlay: true,
+          checkInResult: CheckInResult(
+            attendanceId: session.id,
+            checkInTime: session.punchIn,
+            shiftName: state.shift?.shiftName ?? 'Shift',
+            branchName: 'Main Branch',
+            isOffline: !state.isOnline,
+          ),
+          activeSession: ActiveSession(
+            sessionId: session.id,
+            checkInTime: session.punchIn,
+            shiftName: state.shift?.shiftName ?? 'Shift',
+          ),
+        );
+      },
     );
   }
 

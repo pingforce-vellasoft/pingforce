@@ -18,6 +18,8 @@ import 'features/auth/domain/usecases/onboard_tenant_command.dart';
 import 'core/network/token_interceptor.dart';
 import 'core/hardware/hardware_service.dart';
 import 'core/hardware/hardware_service_impl.dart';
+import 'core/hardware/device_identity.dart';
+import 'features/faults/data/faults_remote_data_source.dart';
 
 final sl = GetIt.instance;
 
@@ -26,6 +28,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => const FlutterSecureStorage());
   sl.registerLazySingleton(() => LocalAuthentication());
   sl.registerLazySingleton<HardwareService>(() => HardwareServiceImpl());
+  sl.registerLazySingleton(() => DeviceIdentity(sl()));
   
   sl.registerLazySingleton(() {
     // Note: If testing locally, use 'http://10.0.2.2:3000' for emulator
@@ -55,11 +58,16 @@ Future<void> init() async {
 
   // Repository
   sl.registerLazySingleton<AttendanceRepository>(
-    () => AttendanceRepositoryImpl(remoteDataSource: sl()),
+    () => AttendanceRepositoryImpl(remoteDataSource: sl(), deviceIdentity: sl()),
   );
 
   // Data sources
   sl.registerLazySingleton<AttendanceRemoteDataSource>(
     () => AttendanceRemoteDataSourceImpl(dio: sl()),
+  );
+
+  // --- Features: Faults ---
+  sl.registerLazySingleton<FaultsRemoteDataSource>(
+    () => FaultsRemoteDataSourceImpl(dio: sl()),
   );
 }

@@ -6,7 +6,7 @@ abstract class AttendanceRepository {
   /// Checks if the device is registered for the current user.
   Future<Either<Failure, bool>> isDeviceRegistered();
 
-  /// Registers the device's public key with the backend.
+  /// Registers this device's public key with the backend.
   Future<Either<Failure, void>> registerDevice(String publicKey);
 
   /// Performs a Geofenced + Biometric Punch (In or Out).

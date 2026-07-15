@@ -89,6 +89,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       if (next.hasBanner && prev?.authError != next.authError) {
         _shakeCtrl.forward(from: 0);
       }
+      // Login succeeded → enter the app
+      if (next.isAuthenticated && prev?.isAuthenticated != true) {
+        context.go('/home');
+      }
     });
 
     final isLandscape =

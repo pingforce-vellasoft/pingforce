@@ -24,6 +24,7 @@ mixin _$LoginState {
   bool get isPasswordVisible => throw _privateConstructorUsedError;
   bool get rememberDevice => throw _privateConstructorUsedError;
   bool get isLoading => throw _privateConstructorUsedError;
+  bool get isAuthenticated => throw _privateConstructorUsedError;
   bool get isBiometricAvailable => throw _privateConstructorUsedError;
   bool get isBiometricEnabled =>
       throw _privateConstructorUsedError; // Validation
@@ -59,6 +60,7 @@ abstract class $LoginStateCopyWith<$Res> {
     bool isPasswordVisible,
     bool rememberDevice,
     bool isLoading,
+    bool isAuthenticated,
     bool isBiometricAvailable,
     bool isBiometricEnabled,
     String? tenantCodeError,
@@ -92,6 +94,7 @@ class _$LoginStateCopyWithImpl<$Res, $Val extends LoginState>
     Object? isPasswordVisible = null,
     Object? rememberDevice = null,
     Object? isLoading = null,
+    Object? isAuthenticated = null,
     Object? isBiometricAvailable = null,
     Object? isBiometricEnabled = null,
     Object? tenantCodeError = freezed,
@@ -130,6 +133,10 @@ class _$LoginStateCopyWithImpl<$Res, $Val extends LoginState>
             isLoading: null == isLoading
                 ? _value.isLoading
                 : isLoading // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            isAuthenticated: null == isAuthenticated
+                ? _value.isAuthenticated
+                : isAuthenticated // ignore: cast_nullable_to_non_nullable
                       as bool,
             isBiometricAvailable: null == isBiometricAvailable
                 ? _value.isBiometricAvailable
@@ -175,7 +182,7 @@ abstract class _$$LoginStateImplCopyWith<$Res>
   factory _$$LoginStateImplCopyWith(
     _$LoginStateImpl value,
     $Res Function(_$LoginStateImpl) then,
-  ) = _$$LoginStateImplCopyWithImpl<$Res>;
+  ) = __$$LoginStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -186,6 +193,7 @@ abstract class _$$LoginStateImplCopyWith<$Res>
     bool isPasswordVisible,
     bool rememberDevice,
     bool isLoading,
+    bool isAuthenticated,
     bool isBiometricAvailable,
     bool isBiometricEnabled,
     String? tenantCodeError,
@@ -198,10 +206,10 @@ abstract class _$$LoginStateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$LoginStateImplCopyWithImpl<$Res>
+class __$$LoginStateImplCopyWithImpl<$Res>
     extends _$LoginStateCopyWithImpl<$Res, _$LoginStateImpl>
     implements _$$LoginStateImplCopyWith<$Res> {
-  _$$LoginStateImplCopyWithImpl(
+  __$$LoginStateImplCopyWithImpl(
     _$LoginStateImpl _value,
     $Res Function(_$LoginStateImpl) _then,
   ) : super(_value, _then);
@@ -218,6 +226,7 @@ class _$$LoginStateImplCopyWithImpl<$Res>
     Object? isPasswordVisible = null,
     Object? rememberDevice = null,
     Object? isLoading = null,
+    Object? isAuthenticated = null,
     Object? isBiometricAvailable = null,
     Object? isBiometricEnabled = null,
     Object? tenantCodeError = freezed,
@@ -256,6 +265,10 @@ class _$$LoginStateImplCopyWithImpl<$Res>
         isLoading: null == isLoading
             ? _value.isLoading
             : isLoading // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        isAuthenticated: null == isAuthenticated
+            ? _value.isAuthenticated
+            : isAuthenticated // ignore: cast_nullable_to_non_nullable
                   as bool,
         isBiometricAvailable: null == isBiometricAvailable
             ? _value.isBiometricAvailable
@@ -305,6 +318,7 @@ class _$LoginStateImpl extends _LoginState {
     this.isPasswordVisible = false,
     this.rememberDevice = false,
     this.isLoading = false,
+    this.isAuthenticated = false,
     this.isBiometricAvailable = false,
     this.isBiometricEnabled = false,
     this.tenantCodeError,
@@ -338,6 +352,9 @@ class _$LoginStateImpl extends _LoginState {
   final bool isLoading;
   @override
   @JsonKey()
+  final bool isAuthenticated;
+  @override
+  @JsonKey()
   final bool isBiometricAvailable;
   @override
   @JsonKey()
@@ -362,7 +379,7 @@ class _$LoginStateImpl extends _LoginState {
 
   @override
   String toString() {
-    return 'LoginState(step: $step, tenantCode: $tenantCode, username: $username, password: $password, isPasswordVisible: $isPasswordVisible, rememberDevice: $rememberDevice, isLoading: $isLoading, isBiometricAvailable: $isBiometricAvailable, isBiometricEnabled: $isBiometricEnabled, tenantCodeError: $tenantCodeError, usernameError: $usernameError, passwordError: $passwordError, authError: $authError, resolvedTenantName: $resolvedTenantName, resolvedTenantLogoUrl: $resolvedTenantLogoUrl)';
+    return 'LoginState(step: $step, tenantCode: $tenantCode, username: $username, password: $password, isPasswordVisible: $isPasswordVisible, rememberDevice: $rememberDevice, isLoading: $isLoading, isAuthenticated: $isAuthenticated, isBiometricAvailable: $isBiometricAvailable, isBiometricEnabled: $isBiometricEnabled, tenantCodeError: $tenantCodeError, usernameError: $usernameError, passwordError: $passwordError, authError: $authError, resolvedTenantName: $resolvedTenantName, resolvedTenantLogoUrl: $resolvedTenantLogoUrl)';
   }
 
   @override
@@ -383,6 +400,8 @@ class _$LoginStateImpl extends _LoginState {
                 other.rememberDevice == rememberDevice) &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
+            (identical(other.isAuthenticated, isAuthenticated) ||
+                other.isAuthenticated == isAuthenticated) &&
             (identical(other.isBiometricAvailable, isBiometricAvailable) ||
                 other.isBiometricAvailable == isBiometricAvailable) &&
             (identical(other.isBiometricEnabled, isBiometricEnabled) ||
@@ -411,6 +430,7 @@ class _$LoginStateImpl extends _LoginState {
     isPasswordVisible,
     rememberDevice,
     isLoading,
+    isAuthenticated,
     isBiometricAvailable,
     isBiometricEnabled,
     tenantCodeError,
@@ -427,7 +447,7 @@ class _$LoginStateImpl extends _LoginState {
   @override
   @pragma('vm:prefer-inline')
   _$$LoginStateImplCopyWith<_$LoginStateImpl> get copyWith =>
-      _$$LoginStateImplCopyWithImpl<_$LoginStateImpl>(this, _$identity);
+      __$$LoginStateImplCopyWithImpl<_$LoginStateImpl>(this, _$identity);
 }
 
 abstract class _LoginState extends LoginState {
@@ -439,6 +459,7 @@ abstract class _LoginState extends LoginState {
     final bool isPasswordVisible,
     final bool rememberDevice,
     final bool isLoading,
+    final bool isAuthenticated,
     final bool isBiometricAvailable,
     final bool isBiometricEnabled,
     final String? tenantCodeError,
@@ -464,6 +485,8 @@ abstract class _LoginState extends LoginState {
   bool get rememberDevice;
   @override
   bool get isLoading;
+  @override
+  bool get isAuthenticated;
   @override
   bool get isBiometricAvailable;
   @override
@@ -673,7 +696,7 @@ abstract class _$$ForgotPasswordStateImplCopyWith<$Res>
   factory _$$ForgotPasswordStateImplCopyWith(
     _$ForgotPasswordStateImpl value,
     $Res Function(_$ForgotPasswordStateImpl) then,
-  ) = _$$ForgotPasswordStateImplCopyWithImpl<$Res>;
+  ) = __$$ForgotPasswordStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -700,10 +723,10 @@ abstract class _$$ForgotPasswordStateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$ForgotPasswordStateImplCopyWithImpl<$Res>
+class __$$ForgotPasswordStateImplCopyWithImpl<$Res>
     extends _$ForgotPasswordStateCopyWithImpl<$Res, _$ForgotPasswordStateImpl>
     implements _$$ForgotPasswordStateImplCopyWith<$Res> {
-  _$$ForgotPasswordStateImplCopyWithImpl(
+  __$$ForgotPasswordStateImplCopyWithImpl(
     _$ForgotPasswordStateImpl _value,
     $Res Function(_$ForgotPasswordStateImpl) _then,
   ) : super(_value, _then);
@@ -977,7 +1000,7 @@ class _$ForgotPasswordStateImpl extends _ForgotPasswordState {
   @override
   @pragma('vm:prefer-inline')
   _$$ForgotPasswordStateImplCopyWith<_$ForgotPasswordStateImpl> get copyWith =>
-      _$$ForgotPasswordStateImplCopyWithImpl<_$ForgotPasswordStateImpl>(
+      __$$ForgotPasswordStateImplCopyWithImpl<_$ForgotPasswordStateImpl>(
         this,
         _$identity,
       );

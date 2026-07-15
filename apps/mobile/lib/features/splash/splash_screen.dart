@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/theme.dart';
-import '../../../core/tenant/tenant_provider.dart';
+import '../../core/auth/auth_session.dart';
+import '../../core/theme/theme.dart';
+import '../../core/tenant/tenant_provider.dart';
+import '../../injection_container.dart' as di;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPLASH SCREEN  (AUDIT §2 — Splash Screen & App Launch)
@@ -145,12 +147,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _navigate();
   }
 
-  void _navigate() {
+  Future<void> _navigate() async {
     if (!mounted) return;
+    // Restore auth state from secure storage before routing so the
+    // RouteGuard sees the real session (4.2 AUTHENTICATION.md).
+    await AuthSession.instance.hydrate(di.sl());
+    if (!mounted) return;
+
     // Trigger the launch sequence in the notifier
     ref.read(appLaunchProvider.notifier).runLaunchSequence();
-    // Navigate to the resolution screen
-    context.go('/tenant-resolution');
+
+    if (AuthSession.instance.isAuthenticated) {
+      context.go('/home');
+    } else {
+      context.go('/tenant-resolution');
+    }
   }
 
   @override

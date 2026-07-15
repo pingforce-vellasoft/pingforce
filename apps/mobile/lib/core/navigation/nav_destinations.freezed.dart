@@ -104,7 +104,7 @@ abstract class _$$DestinationFabConfigImplCopyWith<$Res>
   factory _$$DestinationFabConfigImplCopyWith(
     _$DestinationFabConfigImpl value,
     $Res Function(_$DestinationFabConfigImpl) then,
-  ) = _$$DestinationFabConfigImplCopyWithImpl<$Res>;
+  ) = __$$DestinationFabConfigImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -117,10 +117,10 @@ abstract class _$$DestinationFabConfigImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$DestinationFabConfigImplCopyWithImpl<$Res>
+class __$$DestinationFabConfigImplCopyWithImpl<$Res>
     extends _$DestinationFabConfigCopyWithImpl<$Res, _$DestinationFabConfigImpl>
     implements _$$DestinationFabConfigImplCopyWith<$Res> {
-  _$$DestinationFabConfigImplCopyWithImpl(
+  __$$DestinationFabConfigImplCopyWithImpl(
     _$DestinationFabConfigImpl _value,
     $Res Function(_$DestinationFabConfigImpl) _then,
   ) : super(_value, _then);
@@ -230,7 +230,7 @@ class _$DestinationFabConfigImpl implements _DestinationFabConfig {
   @pragma('vm:prefer-inline')
   _$$DestinationFabConfigImplCopyWith<_$DestinationFabConfigImpl>
   get copyWith =>
-      _$$DestinationFabConfigImplCopyWithImpl<_$DestinationFabConfigImpl>(
+      __$$DestinationFabConfigImplCopyWithImpl<_$DestinationFabConfigImpl>(
         this,
         _$identity,
       );
@@ -332,17 +332,17 @@ abstract class _$$SpeedDialItemImplCopyWith<$Res>
   factory _$$SpeedDialItemImplCopyWith(
     _$SpeedDialItemImpl value,
     $Res Function(_$SpeedDialItemImpl) then,
-  ) = _$$SpeedDialItemImplCopyWithImpl<$Res>;
+  ) = __$$SpeedDialItemImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({String tooltip, IconData icon, String route});
 }
 
 /// @nodoc
-class _$$SpeedDialItemImplCopyWithImpl<$Res>
+class __$$SpeedDialItemImplCopyWithImpl<$Res>
     extends _$SpeedDialItemCopyWithImpl<$Res, _$SpeedDialItemImpl>
     implements _$$SpeedDialItemImplCopyWith<$Res> {
-  _$$SpeedDialItemImplCopyWithImpl(
+  __$$SpeedDialItemImplCopyWithImpl(
     _$SpeedDialItemImpl _value,
     $Res Function(_$SpeedDialItemImpl) _then,
   ) : super(_value, _then);
@@ -415,7 +415,7 @@ class _$SpeedDialItemImpl implements _SpeedDialItem {
   @override
   @pragma('vm:prefer-inline')
   _$$SpeedDialItemImplCopyWith<_$SpeedDialItemImpl> get copyWith =>
-      _$$SpeedDialItemImplCopyWithImpl<_$SpeedDialItemImpl>(this, _$identity);
+      __$$SpeedDialItemImplCopyWithImpl<_$SpeedDialItemImpl>(this, _$identity);
 }
 
 abstract class _SpeedDialItem implements SpeedDialItem {
@@ -578,7 +578,7 @@ abstract class _$$NavDestinationImplCopyWith<$Res>
   factory _$$NavDestinationImplCopyWith(
     _$NavDestinationImpl value,
     $Res Function(_$NavDestinationImpl) then,
-  ) = _$$NavDestinationImplCopyWithImpl<$Res>;
+  ) = __$$NavDestinationImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -599,10 +599,10 @@ abstract class _$$NavDestinationImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$NavDestinationImplCopyWithImpl<$Res>
+class __$$NavDestinationImplCopyWithImpl<$Res>
     extends _$NavDestinationCopyWithImpl<$Res, _$NavDestinationImpl>
     implements _$$NavDestinationImplCopyWith<$Res> {
-  _$$NavDestinationImplCopyWithImpl(
+  __$$NavDestinationImplCopyWithImpl(
     _$NavDestinationImpl _value,
     $Res Function(_$NavDestinationImpl) _then,
   ) : super(_value, _then);
@@ -760,7 +760,7 @@ class _$NavDestinationImpl extends _NavDestination {
   @override
   @pragma('vm:prefer-inline')
   _$$NavDestinationImplCopyWith<_$NavDestinationImpl> get copyWith =>
-      _$$NavDestinationImplCopyWithImpl<_$NavDestinationImpl>(
+      __$$NavDestinationImplCopyWithImpl<_$NavDestinationImpl>(
         this,
         _$identity,
       );

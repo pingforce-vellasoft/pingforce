@@ -126,6 +126,7 @@ class LoginState with _$LoginState {
     @Default(false) bool isPasswordVisible,
     @Default(false) bool rememberDevice,
     @Default(false) bool isLoading,
+    @Default(false) bool isAuthenticated,
     @Default(false) bool isBiometricAvailable,
     @Default(false) bool isBiometricEnabled,
     // Validation

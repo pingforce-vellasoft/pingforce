@@ -2,8 +2,13 @@ import 'package:dio/dio.dart';
 import '../models/attendance_model.dart';
 
 abstract class AttendanceRemoteDataSource {
-  Future<void> registerDevice(String publicKey);
-  Future<AttendanceModel> punch(double lat, double lng, String signature);
+  Future<void> registerDevice(String deviceId, String publicKey);
+  Future<AttendanceModel> punch(
+    String deviceId,
+    double lat,
+    double lng,
+    String signature,
+  );
 }
 
 class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
@@ -12,12 +17,11 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
   AttendanceRemoteDataSourceImpl({required this.dio});
 
   @override
-  Future<void> registerDevice(String publicKey) async {
-    // Note: Assuming auth token interceptor is attached to Dio elsewhere.
+  Future<void> registerDevice(String deviceId, String publicKey) async {
     final response = await dio.post(
       '/api/v1/attendance/device/register',
       data: {
-        'deviceId': 'device_from_plugin', // TODO: Get actual device ID using device_info_plus
+        'deviceId': deviceId,
         'publicKey': publicKey,
       },
     );
@@ -27,17 +31,24 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
   }
 
   @override
-  Future<AttendanceModel> punch(double lat, double lng, String signature) async {
+  Future<AttendanceModel> punch(
+    String deviceId,
+    double lat,
+    double lng,
+    String signature,
+  ) async {
+    // Body matches the API PunchDto contract exactly
     final response = await dio.post(
       '/api/v1/attendance/punch',
       data: {
-        'attendanceMethod': 'BIOMETRIC',
-        'deviceSignature': signature,
+        'deviceId': deviceId,
         'latitude': lat,
         'longitude': lng,
+        'signature': signature,
+        'timestamp': DateTime.now().toIso8601String(),
       },
     );
-    
+
     if (response.statusCode == 200 || response.statusCode == 201) {
       return AttendanceModel.fromJson(response.data);
     } else {
