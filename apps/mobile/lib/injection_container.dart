@@ -20,6 +20,7 @@ import 'core/hardware/hardware_service.dart';
 import 'core/hardware/hardware_service_impl.dart';
 import 'core/hardware/device_identity.dart';
 import 'features/faults/data/faults_remote_data_source.dart';
+import 'features/visits/data/visits_remote_data_source.dart';
 
 final sl = GetIt.instance;
 
@@ -69,5 +70,10 @@ Future<void> init() async {
   // --- Features: Faults ---
   sl.registerLazySingleton<FaultsRemoteDataSource>(
     () => FaultsRemoteDataSourceImpl(dio: sl()),
+  );
+
+  // --- Features: Visits ---
+  sl.registerLazySingleton<VisitsRemoteDataSource>(
+    () => VisitsRemoteDataSourceImpl(dio: sl()),
   );
 }

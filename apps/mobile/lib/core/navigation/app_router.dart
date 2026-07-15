@@ -17,6 +17,7 @@ import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/attendance/presentation/check_in/attendance_screen.dart';
 import '../../features/faults/presentation/fault_list_screen.dart';
 import '../../features/faults/presentation/fault_detail_screen.dart';
+import '../../features/visits/presentation/visit_list_screen.dart';
 import '../../features/sync/sync_monitor_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -220,8 +221,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/visits',
                 name: 'visits',
-                builder: (context, state) =>
-                    const _PlaceholderScreen(name: 'Visit List'),
+                builder: (context, state) => const VisitListScreen(),
                 routes: [
                   GoRoute(
                     path: 'new',

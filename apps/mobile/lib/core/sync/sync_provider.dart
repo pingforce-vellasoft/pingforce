@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../features/attendance/data/datasources/attendance_remote_data_source.dart';
+import '../../features/visits/data/visits_remote_data_source.dart';
 import '../../injection_container.dart';
 import 'sync_state.dart';
 import '../network/connectivity_provider.dart';
@@ -288,9 +289,13 @@ class SyncNotifier extends Notifier<SyncState> {
         final payload = item.payload;
         if (payload == null) return; // nothing to send — drop silently
         await sl<AttendanceRemoteDataSource>().syncPunches([payload]);
-      // Other modules gain sync endpoints in Phase 6
-      case SyncItemModule.faults:
       case SyncItemModule.visits:
+        final payload = item.payload;
+        if (payload == null) return;
+        // Idempotent replay via clientRef (POST /visits/sync)
+        await sl<VisitsRemoteDataSource>().syncActions([payload]);
+      // Remaining modules gain client sync flows in a later phase
+      case SyncItemModule.faults:
       case SyncItemModule.leads:
       case SyncItemModule.documents:
       case SyncItemModule.profile:
