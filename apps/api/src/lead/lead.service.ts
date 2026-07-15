@@ -5,17 +5,28 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { EventBus } from '@nestjs/cqrs';
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
+import { LeadConvertedEvent } from './events/impl';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { ConvertLeadDto } from './dto/convert-lead.dto';
+import { SyncLeadsDto } from './dto/sync-leads.dto';
 import { LeadRepository } from './lead.repository';
+
+export interface LeadSyncItemResult {
+  readonly clientRef: string;
+  readonly status: 'APPLIED' | 'DUPLICATE' | 'FAILED';
+  readonly leadId?: string;
+  readonly error?: string;
+}
 
 @Injectable()
 export class LeadService {
   constructor(
     private readonly leadRepository: LeadRepository,
     @Inject('IPrismaService') private readonly prisma: ExtendedPrismaClient,
+    private readonly eventBus: EventBus,
   ) {}
 
   async create(tenantId: string, createLeadDto: CreateLeadDto) {
@@ -65,7 +76,7 @@ export class LeadService {
     actorUserId: string,
     dto: ConvertLeadDto,
   ) {
-    return this.prisma.$transaction(async (tx) => {
+    const { result, converted } = await this.prisma.$transaction(async (tx) => {
       const lead = await tx.lead.findFirst({ where: { id, tenantId } });
       if (!lead) throw new NotFoundException(`Lead ${id} not found`);
       if (lead.convertedCustomerId) {
@@ -83,7 +94,7 @@ export class LeadService {
         if (!existing) {
           throw new BadRequestException('mergeWithCustomerId not found');
         }
-        return tx.lead.update({
+        const updatedLead = await tx.lead.update({
           where: { id_tenantId: { id, tenantId } },
           data: {
             convertedCustomerId: existing.id,
@@ -91,6 +102,14 @@ export class LeadService {
             updatedBy: actorUserId,
           },
         });
+        return {
+          result: updatedLead,
+          converted: {
+            leadNumber: lead.leadNumber,
+            customerId: existing.id,
+            ownerUserId: lead.ownerUserId,
+          },
+        };
       }
 
       // Duplicate detection on contact identifiers (§6)
@@ -142,8 +161,76 @@ export class LeadService {
         },
       });
 
-      return customer;
+      return {
+        result: customer,
+        converted: {
+          leadNumber: lead.leadNumber,
+          customerId: customer.id,
+          ownerUserId: lead.ownerUserId,
+        },
+      };
     });
+
+    // LEAD.CONVERTED (3.6 EVENT_CATALOG.md §8) after commit
+    this.eventBus.publish(
+      new LeadConvertedEvent(
+        tenantId,
+        id,
+        converted.leadNumber,
+        converted.customerId,
+        converted.ownerUserId,
+      ),
+    );
+
+    return result;
+  }
+
+  /**
+   * Offline-captured lead ingestion (3.4 LEAD_CAPTURE.md; mirrors the
+   * attendance/visits/faults sync pattern). Items apply in capture order;
+   * the client-generated leadNumber (unique per tenant) makes replays
+   * report DUPLICATE instead of double-creating.
+   */
+  async syncLeads(
+    tenantId: string,
+    dto: SyncLeadsDto,
+  ): Promise<{ results: LeadSyncItemResult[] }> {
+    const ordered = [...dto.leads].sort(
+      (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp),
+    );
+
+    const results: LeadSyncItemResult[] = [];
+    for (const item of ordered) {
+      const { clientRef, timestamp, ...createDto } = item;
+      void timestamp;
+      try {
+        const existing = await this.prisma.lead.findFirst({
+          where: { tenantId, leadNumber: item.leadNumber },
+          select: { id: true },
+        });
+        if (existing) {
+          results.push({
+            clientRef,
+            status: 'DUPLICATE',
+            leadId: existing.id,
+          });
+          continue;
+        }
+        const lead = await this.leadRepository.create(
+          tenantId,
+          createDto as CreateLeadDto,
+        );
+        results.push({ clientRef, status: 'APPLIED', leadId: lead.id });
+      } catch (error) {
+        results.push({
+          clientRef,
+          status: 'FAILED',
+          error: error instanceof Error ? error.message : 'Sync failed',
+        });
+      }
+    }
+
+    return { results };
   }
 
   private generateCustomerCode(): string {

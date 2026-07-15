@@ -6,8 +6,10 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
+import { EventBus } from '@nestjs/cqrs';
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
 import { CurrentUserContext } from '@pingforce-monorepo/shared';
+import { VisitAssignedEvent, VisitStatusChangedEvent } from './events/impl';
 import { CreateVisitDto } from './dto/create-visit.dto';
 import { UpdateVisitDto } from './dto/update-visit.dto';
 import {
@@ -59,6 +61,7 @@ const SAFE_EMPLOYEE_SELECT = {
 export class VisitsService {
   constructor(
     @Inject('IPrismaService') private readonly prisma: ExtendedPrismaClient,
+    private readonly eventBus: EventBus,
   ) {}
 
   // ---------------------------------------------------------------- queries
@@ -144,7 +147,7 @@ export class VisitsService {
 
     const status = dto.employeeId ? VisitState.ASSIGNED : VisitState.PLANNED;
 
-    return this.prisma.$transaction(async (tx) => {
+    const created = await this.prisma.$transaction(async (tx) => {
       const visit = await tx.visit.create({
         data: {
           tenantId,
@@ -177,6 +180,19 @@ export class VisitsService {
       });
       return visit;
     });
+
+    if (created.employeeId) {
+      this.eventBus.publish(
+        new VisitAssignedEvent(
+          tenantId,
+          created.id,
+          created.visitNumber,
+          created.purpose,
+          created.employeeId,
+        ),
+      );
+    }
+    return created;
   }
 
   async update(
@@ -420,7 +436,7 @@ export class VisitsService {
     to: VisitState,
     opts: TransitionOptions = {},
   ) {
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       const visit = await tx.visit.findFirst({ where: { id, tenantId } });
       if (!visit) throw new NotFoundException(`Visit ${id} not found`);
 
@@ -510,6 +526,32 @@ export class VisitsService {
 
       return updated;
     });
+
+    // Notification events after commit (VISIT_MANAGEMENT.md §9)
+    if (to === VisitState.ASSIGNED && updated.employeeId) {
+      this.eventBus.publish(
+        new VisitAssignedEvent(
+          tenantId,
+          updated.id,
+          updated.visitNumber,
+          updated.purpose,
+          updated.employeeId,
+        ),
+      );
+    } else {
+      this.eventBus.publish(
+        new VisitStatusChangedEvent(
+          tenantId,
+          updated.id,
+          updated.visitNumber,
+          to,
+          updated.createdBy,
+          updated.employeeId,
+        ),
+      );
+    }
+
+    return updated;
   }
 
   // --------------------------------------------------------------- helpers

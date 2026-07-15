@@ -9,6 +9,7 @@ import { FaultsRepository } from './faults.repository';
 import { CommandHandlers } from './commands/handlers';
 import { QueryHandlers } from './queries/handlers';
 import { SlaMonitorProcessor } from './sla-monitor.processor';
+import { FaultsSyncService } from './faults-sync.service';
 
 @Module({
   imports: [CqrsModule, BullModule.registerQueue({ name: 'sla-monitor' })],
@@ -20,6 +21,7 @@ import { SlaMonitorProcessor } from './sla-monitor.processor';
     SlaComputationService,
     FaultsRepository,
     SlaMonitorProcessor,
+    FaultsSyncService,
   ],
   exports: [SlaPolicyService, FaultsRepository],
 })

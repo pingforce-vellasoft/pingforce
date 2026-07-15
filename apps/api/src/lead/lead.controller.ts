@@ -13,6 +13,7 @@ import { LeadService } from './lead.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { ConvertLeadDto } from './dto/convert-lead.dto';
+import { SyncLeadsDto } from './dto/sync-leads.dto';
 import { UpdateLeadStageDto } from './dto/update-lead-stage.dto';
 import { UpdateLeadOwnerDto } from './dto/update-lead-owner.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -36,6 +37,12 @@ export class LeadController {
     @Body() createLeadDto: CreateLeadDto,
   ) {
     return this.leadService.create(tenantId, createLeadDto);
+  }
+
+  @Post('sync')
+  @RequirePermission('LEADS', 'CREATE')
+  sync(@CurrentTenant() tenantId: string, @Body() dto: SyncLeadsDto) {
+    return this.leadService.syncLeads(tenantId, dto);
   }
 
   @Get()

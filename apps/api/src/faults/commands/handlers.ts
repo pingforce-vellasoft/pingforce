@@ -128,6 +128,7 @@ export class UpdateFaultStatusHandler
       updateFaultStatusDto.status,
       updateFaultStatusDto.notes ||
         `Status updated to ${updateFaultStatusDto.status}`,
+      updateFaultStatusDto.clientRef,
     );
     this.eventBus.publish(
       new FaultStatusUpdatedEvent(

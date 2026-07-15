@@ -1272,6 +1272,7 @@ model FaultTimeline {
   faultId   String
   status    String
   notes     String?
+  clientRef String? // offline-sync idempotency key
   createdBy String?
   createdAt DateTime @default(now())
 
@@ -1280,6 +1281,7 @@ model FaultTimeline {
 
   @@unique([id, tenantId])
   @@index([tenantId, faultId])
+  @@index([faultId, clientRef])
   @@map("fault_timelines")
 }
 

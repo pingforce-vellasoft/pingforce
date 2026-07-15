@@ -13,6 +13,8 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateFaultDto } from './dto/create-fault.dto';
 import { UpdateFaultDto } from './dto/update-fault.dto';
 import { UpdateFaultStatusDto } from './dto/update-fault-status.dto';
+import { SyncFaultsDto } from './dto/sync-faults.dto';
+import { FaultsSyncService } from './faults-sync.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
@@ -43,7 +45,18 @@ export class FaultsController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly faultsSyncService: FaultsSyncService,
   ) {}
+
+  @Post('sync')
+  @RequirePermission('FAULTS', 'CREATE')
+  sync(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() currentUser: CurrentUserContext,
+    @Body() dto: SyncFaultsDto,
+  ) {
+    return this.faultsSyncService.syncActions(tenantId, currentUser, dto);
+  }
 
   @Post()
   @RequirePermission('FAULTS', 'CREATE')

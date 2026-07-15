@@ -153,6 +153,7 @@ export class FaultsRepository extends PrismaRepository<
     userId: string,
     status: string,
     notes: string,
+    clientRef?: string,
   ) {
     return this.prismaService.$transaction(async (tx: any) => {
       const fault = await tx.fault.findFirst({ where: { id, tenantId } });
@@ -171,6 +172,7 @@ export class FaultsRepository extends PrismaRepository<
           faultId: updatedFault.id,
           status,
           notes,
+          clientRef,
           createdBy: userId,
         },
       });
