@@ -85,6 +85,24 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'workforce/visits',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN_MANAGER'] },
+        loadComponent: () =>
+          import('./pages/workforce/visits.component').then(
+            (m) => m.VisitsComponent,
+          ),
+      },
+      {
+        path: 'reports',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN_MANAGER'] },
+        loadComponent: () =>
+          import('./pages/reports/reports.component').then(
+            (m) => m.ReportsComponent,
+          ),
+      },
+      {
         path: 'workforce/devices',
         canActivate: [roleGuard],
         data: { roles: ['ADMIN_MANAGER'] },

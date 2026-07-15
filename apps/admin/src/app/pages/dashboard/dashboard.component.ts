@@ -172,6 +172,25 @@ import { AuthService } from '../../core/auth/auth.service';
                 <mat-icon matListItemIcon>event_available</mat-icon>
                 <span matListItemTitle>Leave Approvals</span>
               </a>
+              <a
+                mat-list-item
+                routerLink="/dashboard/workforce/visits"
+                routerLinkActive="active-link"
+              >
+                <mat-icon matListItemIcon>where_to_vote</mat-icon>
+                <span matListItemTitle>Field Visits</span>
+              </a>
+
+              <mat-divider></mat-divider>
+              <div mat-subheader>Analytics</div>
+              <a
+                mat-list-item
+                routerLink="/dashboard/reports"
+                routerLinkActive="active-link"
+              >
+                <mat-icon matListItemIcon>insights</mat-icon>
+                <span matListItemTitle>Reports & KPIs</span>
+              </a>
 
               <!-- HIDDEN AS PER REQUEST
               <mat-divider></mat-divider>
