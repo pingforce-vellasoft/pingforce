@@ -25,6 +25,8 @@ import {
   CreateGeofenceDto,
 } from './dto/attendance.dto';
 import { ManualCheckoutDto } from './dto/manual-checkout.dto';
+import { CreateCorrectionDto } from './dto/create-correction.dto';
+import { CorrectionsService } from './corrections.service';
 
 interface AuthRequest {
   user: {
@@ -39,8 +41,71 @@ interface AuthRequest {
 export class AttendanceController {
   constructor(
     private readonly attendanceService: AttendanceService,
+    private readonly correctionsService: CorrectionsService,
     private readonly commandBus: CommandBus,
   ) {}
+
+  // ── Corrections (ATTENDANCE_CORRECTION.md) ────────────────────────────────
+
+  @Post('corrections')
+  @RequirePermission('ATTENDANCE', 'CREATE')
+  async requestCorrection(
+    @Req() req: AuthRequest,
+    @Body() dto: CreateCorrectionDto,
+  ) {
+    return this.correctionsService.requestCorrection(
+      req.user.tenantId,
+      req.user.userId,
+      dto,
+    );
+  }
+
+  @Get('corrections/pending')
+  @RequirePermission('ATTENDANCE', 'READ')
+  async listPendingCorrections(
+    @Req() req: AuthRequest,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.correctionsService.listPending(
+      req.user.tenantId,
+      req.user.userId,
+      skip ? parseInt(skip, 10) : undefined,
+      take ? parseInt(take, 10) : undefined,
+    );
+  }
+
+  @Post('corrections/:id/approve')
+  @RequirePermission('ATTENDANCE', 'APPROVE')
+  async approveCorrection(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body('notes') notes?: string,
+  ) {
+    return this.correctionsService.decide(
+      req.user.tenantId,
+      id,
+      req.user.userId,
+      'APPROVED',
+      notes,
+    );
+  }
+
+  @Post('corrections/:id/reject')
+  @RequirePermission('ATTENDANCE', 'APPROVE')
+  async rejectCorrection(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body('notes') notes?: string,
+  ) {
+    return this.correctionsService.decide(
+      req.user.tenantId,
+      id,
+      req.user.userId,
+      'REJECTED',
+      notes,
+    );
+  }
 
   @Post('device/register')
   @RequirePermission('ATTENDANCE', 'CREATE')

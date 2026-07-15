@@ -8,6 +8,7 @@ import { IPrismaService } from '@pingforce-monorepo/shared';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { RbacService } from '../rbac/rbac.service';
 import { ApprovalsService } from '../approvals/approvals.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class LeaveService {
@@ -16,6 +17,7 @@ export class LeaveService {
     private readonly prisma: IPrismaService,
     private readonly rbacService: RbacService,
     private readonly approvalsService: ApprovalsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async requestLeave(
@@ -255,6 +257,21 @@ export class LeaveService {
       actorUserId: managerId,
       decision: status,
     });
+
+    // Notify the employee (ApprovalWorkflow.md — notification on decision)
+    const owner = await this.prisma.employee.findFirst({
+      where: { id: pending.employeeId, tenantId },
+      select: { firstName: true, user: { select: { email: true } } },
+    });
+    if (owner?.user?.email) {
+      const verb = status === 'APPROVED' ? 'approved' : 'rejected';
+      void this.notifications.sendRawEmail(
+        owner.user.email,
+        `Your leave request has been ${verb}`,
+        `<p>Hi ${owner.firstName},</p>
+         <p>Your leave request from ${decided.startDate.toDateString()} to ${decided.endDate.toDateString()} has been <b>${verb}</b>.</p>`,
+      );
+    }
 
     return decided;
   }

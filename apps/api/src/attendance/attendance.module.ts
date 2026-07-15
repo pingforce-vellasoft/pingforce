@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { AttendanceController } from './attendance.controller';
 import { AttendanceService } from './attendance.service';
+import { CorrectionsService } from './corrections.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AttendanceCommandHandlers } from './commands/handlers';
 import { AttendanceEventHandlers } from './events/handlers';
@@ -11,6 +12,7 @@ import { AttendanceEventHandlers } from './events/handlers';
   controllers: [AttendanceController],
   providers: [
     AttendanceService,
+    CorrectionsService,
     ...AttendanceCommandHandlers,
     ...AttendanceEventHandlers,
   ],
