@@ -12,12 +12,17 @@ import {
 import { LeadService } from './lead.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
+import { ConvertLeadDto } from './dto/convert-lead.dto';
 import { UpdateLeadStageDto } from './dto/update-lead-stage.dto';
 import { UpdateLeadOwnerDto } from './dto/update-lead-owner.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
-import { CurrentTenant } from '@pingforce-monorepo/shared';
+import {
+  CurrentTenant,
+  CurrentUser,
+  CurrentUserContext,
+} from '@pingforce-monorepo/shared';
 
 @UseGuards(JwtAuthGuard, RbacGuard)
 @Controller('leads')
@@ -95,6 +100,17 @@ export class LeadController {
     @Body() dto: UpdateLeadStageDto,
   ) {
     return this.leadService.updateStage(tenantId, id, dto.pipelineStageId);
+  }
+
+  @Post(':id/convert')
+  @RequirePermission('LEADS', 'CONVERT')
+  convert(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Body() dto: ConvertLeadDto,
+  ) {
+    return this.leadService.convert(tenantId, id, user.userId, dto);
   }
 
   @Delete(':id')

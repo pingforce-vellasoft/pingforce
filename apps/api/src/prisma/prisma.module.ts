@@ -31,6 +31,8 @@ const softDeleteModels = [
   'AttendanceCorrection',
   'ShiftAssignment',
   'Geofence',
+  'Visit',
+  'VisitNote',
 ];
 
 function createPrismaClient() {

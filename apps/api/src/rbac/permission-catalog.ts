@@ -175,6 +175,11 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
     description: 'Update leads, stages and ownership',
   },
   { module: 'LEADS', action: 'DELETE', description: 'Delete leads' },
+  {
+    module: 'LEADS',
+    action: 'CONVERT',
+    description: 'Convert qualified leads into customers',
+  },
   // Faults / tickets
   {
     module: 'FAULTS',
@@ -293,6 +298,40 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
     action: 'CREATE',
     description: 'Submit new support tickets or service requests',
   },
+  // GPS visits (3.2_GPSVisitManagement/RBAC.md)
+  {
+    module: 'VISITS',
+    action: 'READ',
+    description: 'View all visits across the tenant',
+  },
+  {
+    module: 'VISITS',
+    action: 'READ_OWN',
+    description: 'View visits assigned to self',
+  },
+  { module: 'VISITS', action: 'CREATE', description: 'Plan and create visits' },
+  {
+    module: 'VISITS',
+    action: 'UPDATE',
+    description: 'Edit visit details and cancel visits',
+  },
+  {
+    module: 'VISITS',
+    action: 'ASSIGN',
+    description: 'Assign or reassign visits to employees',
+  },
+  {
+    module: 'VISITS',
+    action: 'EXECUTE',
+    description:
+      'Execute own visits (accept, start, pause, complete, offline sync)',
+  },
+  {
+    module: 'VISITS',
+    action: 'APPROVE',
+    description: 'Review, approve, close and reopen completed visits',
+  },
+  { module: 'VISITS', action: 'DELETE', description: 'Delete visits' },
   // Live tracking
   {
     module: 'TRACKING',
@@ -335,6 +374,8 @@ const EMPLOYEE_GRANTS: readonly GrantDef[] = [
   { module: 'FAULTS', action: 'READ_OWN', dataScope: 'OWN' },
   { module: 'FAULTS', action: 'CREATE', dataScope: 'OWN' },
   { module: 'FAULTS', action: 'UPDATE', dataScope: 'OWN' },
+  { module: 'VISITS', action: 'READ_OWN', dataScope: 'OWN' },
+  { module: 'VISITS', action: 'EXECUTE', dataScope: 'OWN' },
   { module: 'SHIFTS', action: 'READ_OWN', dataScope: 'OWN' },
   { module: 'MASTER_DATA', action: 'READ', dataScope: 'OWN' },
   { module: 'GEOFENCES', action: 'READ', dataScope: 'OWN' },

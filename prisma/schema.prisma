@@ -24,7 +24,7 @@ model Tenant {
   deletedAt DateTime?
   createdBy String?
   updatedBy String?
-  
+
   // Contact & Company Details
   legalName    String?
   contactEmail String?
@@ -96,6 +96,9 @@ model Tenant {
   claimTimelines        ClaimTimeline[]
   faults                Fault[]
   faultTimelines        FaultTimeline[]
+  visits                Visit[]
+  visitStatusHistory    VisitStatusHistory[]
+  visitNotes            VisitNote[]
 
   roles                 Role[]
   tenantSettings        TenantSetting?
@@ -127,7 +130,6 @@ model SuperAdmin {
 
   @@map("super_admins")
 }
-
 
 model User {
   id           String  @id @default(uuid())
@@ -465,6 +467,8 @@ model Employee {
   salaryStructures      SalaryStructure[]
   payslips              Payslip[]
   expenseClaims         ExpenseClaim[]
+  devices               EmployeeDevice[]
+  visits                Visit[]
 
   @@unique([tenantId, employeeCode])
   @@unique([id, tenantId])
@@ -475,7 +479,6 @@ model Employee {
   @@index([tenantId, teamId])
   @@index([tenantId, reportingManagerId])
   @@map("employees")
-  devices EmployeeDevice[]
 }
 
 model Customer {
@@ -503,12 +506,14 @@ model Customer {
   createdBy          String?
   updatedBy          String?
 
-  tenant         Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  company        Company?   @relation(fields: [companyId], references: [id])
-  accountManager User?      @relation("CustomerAccountManager", fields: [accountManagerId], references: [id])
-  parentCustomer Customer?  @relation("ParentCustomer", fields: [parentCustomerId], references: [id])
-  childCustomers Customer[] @relation("ParentCustomer")
-  faults         Fault[]
+  tenant             Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company            Company?   @relation(fields: [companyId], references: [id])
+  accountManager     User?      @relation("CustomerAccountManager", fields: [accountManagerId], references: [id])
+  parentCustomer     Customer?  @relation("ParentCustomer", fields: [parentCustomerId], references: [id])
+  childCustomers     Customer[] @relation("ParentCustomer")
+  faults             Fault[]
+  visits             Visit[]
+  convertedFromLeads Lead[]     @relation("LeadConvertedCustomer")
 
   @@unique([tenantId, customerCode])
   @@unique([id, tenantId])
@@ -619,42 +624,47 @@ model LeadPriority {
 }
 
 model Lead {
-  id                 String    @id @default(uuid())
-  tenantId           String
-  leadNumber         String
-  firstName          String
-  lastName           String?
-  companyName        String?
-  mobile             String?
-  alternateMobile    String?
-  email              String?
-  expectedValue      Float?
-  currencyCode       String?
-  qualificationScore Int?
-  sourceId           String?
-  campaignId         String?
-  priorityId         String?
-  ownerUserId        String?
-  statusId           String?
-  pipelineStageId    String?
-  tags               Json?
-  customFields       Json?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  deletedAt          DateTime?
-  createdBy          String?
-  updatedBy          String?
+  id                  String    @id @default(uuid())
+  tenantId            String
+  leadNumber          String
+  firstName           String
+  lastName            String?
+  companyName         String?
+  mobile              String?
+  alternateMobile     String?
+  email               String?
+  expectedValue       Float?
+  currencyCode        String?
+  qualificationScore  Int?
+  sourceId            String?
+  campaignId          String?
+  priorityId          String?
+  ownerUserId         String?
+  statusId            String?
+  pipelineStageId     String?
+  tags                Json?
+  customFields        Json?
+  // Customer conversion traceability (3.4 CUSTOMER_CONVERSION.md §4)
+  convertedCustomerId String?
+  convertedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+  createdBy           String?
+  updatedBy           String?
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  ownerUser     User?          @relation("LeadOwner", fields: [ownerUserId], references: [id])
-  status        LeadStatus?    @relation(fields: [statusId], references: [id])
-  pipelineStage PipelineStage? @relation(fields: [pipelineStageId], references: [id])
-  source        LeadSource?    @relation(fields: [sourceId], references: [id])
-  campaign      Campaign?      @relation(fields: [campaignId], references: [id])
-  priority      LeadPriority?  @relation(fields: [priorityId], references: [id])
+  tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ownerUser         User?          @relation("LeadOwner", fields: [ownerUserId], references: [id])
+  status            LeadStatus?    @relation(fields: [statusId], references: [id])
+  pipelineStage     PipelineStage? @relation(fields: [pipelineStageId], references: [id])
+  source            LeadSource?    @relation(fields: [sourceId], references: [id])
+  campaign          Campaign?      @relation(fields: [campaignId], references: [id])
+  priority          LeadPriority?  @relation(fields: [priorityId], references: [id])
+  convertedCustomer Customer?      @relation("LeadConvertedCustomer", fields: [convertedCustomerId], references: [id])
 
   @@unique([tenantId, leadNumber])
   @@unique([id, tenantId])
+  @@index([tenantId, convertedCustomerId])
   @@index([tenantId, ownerUserId])
   @@index([tenantId, statusId])
   @@index([tenantId, pipelineStageId])
@@ -664,7 +674,6 @@ model Lead {
   @@index([tenantId, createdAt])
   @@map("leads")
 }
-
 
 enum AttendanceStatus {
   PRESENT
@@ -739,7 +748,6 @@ model Attendance {
   @@map("attendances")
 }
 
-
 model EmployeeDevice {
   id         String    @id @default(uuid())
   tenantId   String
@@ -786,10 +794,10 @@ model AttendanceSession {
   employee   Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   breaks     AttendanceBreak[]
 
-  attendanceMethod  AttendanceMethod @default(GPS)
-  deviceSignature   String?
-  isSpoofed         Boolean   @default(false)
-  location          Unsupported("geography(Point, 4326)")?
+  attendanceMethod AttendanceMethod                       @default(GPS)
+  deviceSignature  String?
+  isSpoofed        Boolean                                @default(false)
+  location         Unsupported("geography(Point, 4326)")?
 
   @@unique([id, tenantId])
   @@index([tenantId])
@@ -907,9 +915,11 @@ model Geofence {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  visits Visit[]
 
   location Unsupported("geography(Point, 4326)")?
+
   @@unique([id, tenantId])
   @@index([tenantId])
   @@map("geofences")
@@ -1274,6 +1284,102 @@ model FaultTimeline {
 }
 
 // -----------------------------------------------------------------------------
+// GPS VISIT MANAGEMENT (Milestone-3 3.2)
+// -----------------------------------------------------------------------------
+
+model Visit {
+  id             String    @id @default(uuid())
+  tenantId       String
+  visitNumber    String
+  visitType      String    @default("PLANNED") // PLANNED, AD_HOC, EMERGENCY, MAINTENANCE, INSPECTION, INSTALLATION, COMPLAINT, SALES, SURVEY, FOLLOW_UP
+  status         String    @default("PLANNED") // lifecycle in apps/api/src/visits/domain/visit-state.ts
+  priority       String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  purpose        String
+  description    String?
+  customerId     String?
+  employeeId     String?
+  geofenceId     String?
+  siteAddress    String?
+  siteLatitude   Float?
+  siteLongitude  Float?
+  plannedStartAt DateTime
+  plannedEndAt   DateTime?
+  actualStartAt  DateTime?
+  actualEndAt    DateTime?
+  startLatitude  Float?
+  startLongitude Float?
+  endLatitude    Float?
+  endLongitude   Float?
+  gpsValidated   Boolean   @default(false)
+  outcome        String?
+  slaDeadline    DateTime?
+  version        Int       @default(1)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+  createdBy      String?
+  updatedBy      String?
+
+  tenant        Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer      Customer?            @relation(fields: [customerId], references: [id])
+  employee      Employee?            @relation(fields: [employeeId], references: [id])
+  geofence      Geofence?            @relation(fields: [geofenceId], references: [id])
+  statusHistory VisitStatusHistory[]
+  visitNotes    VisitNote[]
+
+  @@unique([tenantId, visitNumber])
+  @@unique([id, tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, customerId])
+  @@index([tenantId, plannedStartAt])
+  @@index([tenantId, createdAt])
+  @@map("visits")
+}
+
+// Immutable transition log — no soft delete, never updated after insert.
+model VisitStatusHistory {
+  id         String   @id @default(uuid())
+  tenantId   String
+  visitId    String
+  fromStatus String?
+  toStatus   String
+  notes      String?
+  latitude   Float?
+  longitude  Float?
+  clientRef  String? // offline-sync idempotency key
+  createdBy  String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  visit  Visit  @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId, visitId])
+  @@index([visitId, clientRef])
+  @@map("visit_status_history")
+}
+
+model VisitNote {
+  id        String    @id @default(uuid())
+  tenantId  String
+  visitId   String
+  note      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  visit  Visit  @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId, visitId])
+  @@map("visit_notes")
+}
+
+// -----------------------------------------------------------------------------
 // SPRINT 6.5: RBAC, SETTINGS, FILES
 // -----------------------------------------------------------------------------
 
@@ -1413,8 +1519,8 @@ model NotificationLog {
 model PlatformSetting {
   id          String   @id @default(uuid())
   key         String   @unique
-  value       String   
-  category    String   
+  value       String
+  category    String
   description String?
   updatedAt   DateTime @updatedAt
   updatedBy   String?
