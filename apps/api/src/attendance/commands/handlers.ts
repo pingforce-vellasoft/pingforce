@@ -12,7 +12,11 @@ import {
   BreakStartedEvent,
   BreakEndedEvent,
 } from '../events/impl';
-import { SessionState, assertTransition, resolveState } from '../domain/session-state';
+import {
+  SessionState,
+  assertTransition,
+  resolveState,
+} from '../domain/session-state';
 
 /**
  * Check-in / check-out (STATE_MACHINE.md §3): the punch decides direction
