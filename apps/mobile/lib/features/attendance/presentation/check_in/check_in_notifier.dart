@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../../../../core/hardware/device_identity.dart';
+import '../../../../core/network/connectivity_provider.dart';
+import '../../../../core/sync/sync_provider.dart';
+import '../../../../core/sync/sync_state.dart';
 import '../../../../injection_container.dart';
 import '../../domain/usecases/punch_command.dart' as punch_uc;
 import '../../domain/usecases/register_device_command.dart';
@@ -45,7 +49,7 @@ class CheckInNotifier extends Notifier<CheckInState> {
     state = state.copyWith(
       policy: policy,
       shift: shift,
-      isOnline: true,
+      isOnline: ref.read(isOnlineProvider),
     );
 
     await _acquireGps();
@@ -173,6 +177,13 @@ class CheckInNotifier extends Notifier<CheckInState> {
       buttonMode: CheckInButtonMode.submitting,
     );
 
+    // Offline path (OFFLINE_SYNC.md §6): no connectivity → save locally,
+    // queue for sync, and show optimistic success flagged as offline.
+    if (!ref.read(isOnlineProvider)) {
+      await _enqueueOfflinePunch(location);
+      return;
+    }
+
     // Real punch via the clean-architecture data layer. Signature payload is
     // accepted as-is server-side until device-key signing lands (Phase 5b).
     final params = punch_uc.PunchParams(
@@ -221,6 +232,51 @@ class CheckInNotifier extends Notifier<CheckInState> {
           ),
         );
       },
+    );
+  }
+
+  /// LOCAL_SAVE → QUEUE CREATED (OFFLINE_SYNC.md §6): stores the punch in the
+  /// Hive-backed sync queue; SyncNotifier drains it when connectivity returns.
+  Future<void> _enqueueOfflinePunch(GpsLocation location) async {
+    final now = DateTime.now();
+    final clientRef = 'punch-${now.microsecondsSinceEpoch}';
+    final deviceId = await sl<DeviceIdentity>().getOrCreate();
+
+    ref.read(syncProvider.notifier).enqueue(
+          SyncQueueItem(
+            id: clientRef,
+            module: SyncItemModule.attendance,
+            entityId: clientRef,
+            operationType: 'create',
+            description: 'Offline attendance punch',
+            queuedAt: now,
+            payload: {
+              'clientRef': clientRef,
+              'deviceId': deviceId,
+              'latitude': location.latitude,
+              'longitude': location.longitude,
+              'signature': 'gps:${now.toIso8601String()}',
+              'timestamp': now.toIso8601String(),
+            },
+          ),
+        );
+
+    state = state.copyWith(
+      status: CheckInScreenStatus.success,
+      buttonMode: CheckInButtonMode.success,
+      showSuccessOverlay: true,
+      checkInResult: CheckInResult(
+        attendanceId: clientRef,
+        checkInTime: now,
+        shiftName: state.shift?.shiftName ?? 'Shift',
+        branchName: 'Main Branch',
+        isOffline: true,
+      ),
+      activeSession: ActiveSession(
+        sessionId: clientRef,
+        checkInTime: now,
+        shiftName: state.shift?.shiftName ?? 'Shift',
+      ),
     );
   }
 

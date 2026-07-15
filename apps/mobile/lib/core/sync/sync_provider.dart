@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
+import '../../features/attendance/data/datasources/attendance_remote_data_source.dart';
+import '../../injection_container.dart';
 import 'sync_state.dart';
 import '../network/connectivity_provider.dart';
 
@@ -38,6 +41,8 @@ final lastSyncedLabelProvider = Provider<String>(
 class SyncNotifier extends Notifier<SyncState> {
   Timer? _syncDebounce;
 
+  static const _boxName = 'sync_queue';
+
   @override
   SyncState build() {
     // Auto-sync when connectivity comes back online
@@ -50,8 +55,71 @@ class SyncNotifier extends Notifier<SyncState> {
     });
 
     ref.onDispose(() => _syncDebounce?.cancel());
+
+    // Restore the persisted queue (OFFLINE_SYNC.md §5 — survives restarts)
+    unawaited(_restoreQueue());
     return const SyncState();
   }
+
+  Future<void> _restoreQueue() async {
+    try {
+      final box = await Hive.openBox<Map>(_boxName);
+      final items = box.values
+          .map((raw) => _itemFromMap(Map<String, dynamic>.from(raw)))
+          .toList();
+      if (items.isNotEmpty) {
+        state = state.copyWith(
+          queue: [...state.queue, ...items],
+          status: SyncQueueStatus.pending,
+        );
+        if (ref.read(isOnlineProvider)) {
+          _syncDebounce?.cancel();
+          _syncDebounce = Timer(const Duration(seconds: 1), _flushQueue);
+        }
+      }
+    } catch (_) {
+      // Corrupt box — start clean rather than blocking the app
+    }
+  }
+
+  Future<void> _persistQueue() async {
+    try {
+      final box = await Hive.openBox<Map>(_boxName);
+      await box.clear();
+      for (final item in state.queue) {
+        await box.put(item.id, _itemToMap(item));
+      }
+    } catch (_) {
+      // Persistence is best-effort; the in-memory queue still drives sync
+    }
+  }
+
+  Map<String, dynamic> _itemToMap(SyncQueueItem item) => {
+        'id': item.id,
+        'module': item.module.name,
+        'entityId': item.entityId,
+        'operationType': item.operationType,
+        'description': item.description,
+        'queuedAt': item.queuedAt.toIso8601String(),
+        'retryCount': item.retryCount,
+        'payload': item.payload,
+      };
+
+  SyncQueueItem _itemFromMap(Map<String, dynamic> map) => SyncQueueItem(
+        id: map['id'] as String,
+        module: SyncItemModule.values.firstWhere(
+          (m) => m.name == map['module'],
+          orElse: () => SyncItemModule.attendance,
+        ),
+        entityId: map['entityId'] as String,
+        operationType: map['operationType'] as String,
+        description: map['description'] as String,
+        queuedAt: DateTime.parse(map['queuedAt'] as String),
+        retryCount: (map['retryCount'] as int?) ?? 0,
+        payload: map['payload'] != null
+            ? Map<String, dynamic>.from(map['payload'] as Map)
+            : null,
+      );
 
   // ── Public API ─────────────────────────────────────────────────────────
 
@@ -64,6 +132,7 @@ class SyncNotifier extends Notifier<SyncState> {
       queue: [...state.queue, item],
       status: SyncQueueStatus.pending,
     );
+    unawaited(_persistQueue());
 
     // If online, sync immediately
     if (ref.read(isOnlineProvider)) {
@@ -80,6 +149,7 @@ class SyncNotifier extends Notifier<SyncState> {
       status: updated.isEmpty ? SyncQueueStatus.idle : state.status,
       completedInBatch: state.completedInBatch + 1,
     );
+    unawaited(_persistQueue());
   }
 
   /// Mark an item as failed (will show in Sync Monitor with error)
@@ -213,24 +283,18 @@ class SyncNotifier extends Notifier<SyncState> {
   }
 
   Future<void> _syncItem(SyncQueueItem item) async {
-    // TODO: Dispatch to the correct repository based on item.module:
-    //
-    // switch (item.module) {
-    //   case SyncItemModule.attendance:
-    //     await ref.read(attendanceRepositoryProvider).sync(item);
-    //   case SyncItemModule.faults:
-    //     await ref.read(faultRepositoryProvider).sync(item);
-    //   case SyncItemModule.visits:
-    //     await ref.read(visitRepositoryProvider).sync(item);
-    //   case SyncItemModule.leads:
-    //     await ref.read(leadRepositoryProvider).sync(item);
-    //   case SyncItemModule.documents:
-    //     await ref.read(documentRepositoryProvider).sync(item);
-    //   case SyncItemModule.profile:
-    //     await ref.read(profileRepositoryProvider).sync(item);
-    // }
-    //
-    // Stub: simulate 200ms network call
-    await Future<void>.delayed(const Duration(milliseconds: 200));
+    switch (item.module) {
+      case SyncItemModule.attendance:
+        final payload = item.payload;
+        if (payload == null) return; // nothing to send — drop silently
+        await sl<AttendanceRemoteDataSource>().syncPunches([payload]);
+      // Other modules gain sync endpoints in Phase 6
+      case SyncItemModule.faults:
+      case SyncItemModule.visits:
+      case SyncItemModule.leads:
+      case SyncItemModule.documents:
+      case SyncItemModule.profile:
+        return;
+    }
   }
 }

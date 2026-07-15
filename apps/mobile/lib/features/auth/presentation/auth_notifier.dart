@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:local_auth/local_auth.dart';
 
 import '../../../core/auth/auth_session.dart';
 import '../../../injection_container.dart';
@@ -134,8 +135,15 @@ class LoginNotifier extends Notifier<LoginState> {
           authError: _classifyAuthError(failure.message),
         );
       },
-      (user) {
+      (user) async {
         AuthSession.instance.signIn(roleCode: user.role);
+        if (state.rememberDevice) {
+          // Enable biometric quick-unlock on this device next launch
+          try {
+            await sl<FlutterSecureStorage>()
+                .write(key: 'biometric_enrolled', value: 'true');
+          } catch (_) {}
+        }
         state = state.copyWith(isLoading: false, isAuthenticated: true);
       },
     );
@@ -176,13 +184,21 @@ class LoginNotifier extends Notifier<LoginState> {
   // ── Private helpers ────────────────────────────────────────────────────
 
   Future<bool> _checkBiometricAvailability() async {
-    // TODO: local_auth.isDeviceSupported()
-    return true;
+    try {
+      return await sl<LocalAuthentication>().isDeviceSupported();
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<bool> _checkBiometricEnrolled() async {
-    // TODO: local_auth.getAvailableBiometrics() + SharedPrefs flag
-    return true;
+    try {
+      final flag =
+          await sl<FlutterSecureStorage>().read(key: 'biometric_enrolled');
+      return flag == 'true';
+    } catch (_) {
+      return false;
+    }
   }
 
   bool _isValidEmail(String s) =>

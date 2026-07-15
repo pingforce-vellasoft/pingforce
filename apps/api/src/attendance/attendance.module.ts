@@ -3,6 +3,7 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { AttendanceController } from './attendance.controller';
 import { AttendanceService } from './attendance.service';
 import { CorrectionsService } from './corrections.service';
+import { OfflineSyncService } from './offline-sync.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AttendanceCommandHandlers } from './commands/handlers';
 import { AttendanceEventHandlers } from './events/handlers';
@@ -13,6 +14,7 @@ import { AttendanceEventHandlers } from './events/handlers';
   providers: [
     AttendanceService,
     CorrectionsService,
+    OfflineSyncService,
     ...AttendanceCommandHandlers,
     ...AttendanceEventHandlers,
   ],

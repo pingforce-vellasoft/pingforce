@@ -31,7 +31,9 @@ mixin _$SyncQueueItem {
   bool get hasConflict => throw _privateConstructorUsedError; // Conflict data
   String? get localValue => throw _privateConstructorUsedError;
   String? get serverValue => throw _privateConstructorUsedError;
-  String? get conflictField => throw _privateConstructorUsedError;
+  String? get conflictField =>
+      throw _privateConstructorUsedError; // Request payload sent to the sync endpoint (OFFLINE_SYNC.md §7)
+  Map<String, dynamic>? get payload => throw _privateConstructorUsedError;
 
   /// Create a copy of SyncQueueItem
   /// with the given fields replaced by the non-null parameter values.
@@ -61,6 +63,7 @@ abstract class $SyncQueueItemCopyWith<$Res> {
     String? localValue,
     String? serverValue,
     String? conflictField,
+    Map<String, dynamic>? payload,
   });
 }
 
@@ -92,6 +95,7 @@ class _$SyncQueueItemCopyWithImpl<$Res, $Val extends SyncQueueItem>
     Object? localValue = freezed,
     Object? serverValue = freezed,
     Object? conflictField = freezed,
+    Object? payload = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -147,6 +151,10 @@ class _$SyncQueueItemCopyWithImpl<$Res, $Val extends SyncQueueItem>
                 ? _value.conflictField
                 : conflictField // ignore: cast_nullable_to_non_nullable
                       as String?,
+            payload: freezed == payload
+                ? _value.payload
+                : payload // ignore: cast_nullable_to_non_nullable
+                      as Map<String, dynamic>?,
           )
           as $Val,
     );
@@ -176,6 +184,7 @@ abstract class _$$SyncQueueItemImplCopyWith<$Res>
     String? localValue,
     String? serverValue,
     String? conflictField,
+    Map<String, dynamic>? payload,
   });
 }
 
@@ -206,6 +215,7 @@ class __$$SyncQueueItemImplCopyWithImpl<$Res>
     Object? localValue = freezed,
     Object? serverValue = freezed,
     Object? conflictField = freezed,
+    Object? payload = freezed,
   }) {
     return _then(
       _$SyncQueueItemImpl(
@@ -261,6 +271,10 @@ class __$$SyncQueueItemImplCopyWithImpl<$Res>
             ? _value.conflictField
             : conflictField // ignore: cast_nullable_to_non_nullable
                   as String?,
+        payload: freezed == payload
+            ? _value._payload
+            : payload // ignore: cast_nullable_to_non_nullable
+                  as Map<String, dynamic>?,
       ),
     );
   }
@@ -283,7 +297,9 @@ class _$SyncQueueItemImpl extends _SyncQueueItem {
     this.localValue,
     this.serverValue,
     this.conflictField,
-  }) : super._();
+    final Map<String, dynamic>? payload,
+  }) : _payload = payload,
+       super._();
 
   @override
   final String id;
@@ -317,10 +333,21 @@ class _$SyncQueueItemImpl extends _SyncQueueItem {
   final String? serverValue;
   @override
   final String? conflictField;
+  // Request payload sent to the sync endpoint (OFFLINE_SYNC.md §7)
+  final Map<String, dynamic>? _payload;
+  // Request payload sent to the sync endpoint (OFFLINE_SYNC.md §7)
+  @override
+  Map<String, dynamic>? get payload {
+    final value = _payload;
+    if (value == null) return null;
+    if (_payload is EqualUnmodifiableMapView) return _payload;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
 
   @override
   String toString() {
-    return 'SyncQueueItem(id: $id, module: $module, entityId: $entityId, operationType: $operationType, description: $description, queuedAt: $queuedAt, retryCount: $retryCount, maxRetries: $maxRetries, errorMessage: $errorMessage, hasConflict: $hasConflict, localValue: $localValue, serverValue: $serverValue, conflictField: $conflictField)';
+    return 'SyncQueueItem(id: $id, module: $module, entityId: $entityId, operationType: $operationType, description: $description, queuedAt: $queuedAt, retryCount: $retryCount, maxRetries: $maxRetries, errorMessage: $errorMessage, hasConflict: $hasConflict, localValue: $localValue, serverValue: $serverValue, conflictField: $conflictField, payload: $payload)';
   }
 
   @override
@@ -351,7 +378,8 @@ class _$SyncQueueItemImpl extends _SyncQueueItem {
             (identical(other.serverValue, serverValue) ||
                 other.serverValue == serverValue) &&
             (identical(other.conflictField, conflictField) ||
-                other.conflictField == conflictField));
+                other.conflictField == conflictField) &&
+            const DeepCollectionEquality().equals(other._payload, _payload));
   }
 
   @override
@@ -370,6 +398,7 @@ class _$SyncQueueItemImpl extends _SyncQueueItem {
     localValue,
     serverValue,
     conflictField,
+    const DeepCollectionEquality().hash(_payload),
   );
 
   /// Create a copy of SyncQueueItem
@@ -396,6 +425,7 @@ abstract class _SyncQueueItem extends SyncQueueItem {
     final String? localValue,
     final String? serverValue,
     final String? conflictField,
+    final Map<String, dynamic>? payload,
   }) = _$SyncQueueItemImpl;
   const _SyncQueueItem._() : super._();
 
@@ -424,7 +454,9 @@ abstract class _SyncQueueItem extends SyncQueueItem {
   @override
   String? get serverValue;
   @override
-  String? get conflictField;
+  String? get conflictField; // Request payload sent to the sync endpoint (OFFLINE_SYNC.md §7)
+  @override
+  Map<String, dynamic>? get payload;
 
   /// Create a copy of SyncQueueItem
   /// with the given fields replaced by the non-null parameter values.

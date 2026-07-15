@@ -9,6 +9,7 @@ abstract class AttendanceRemoteDataSource {
     double lng,
     String signature,
   );
+  Future<void> syncPunches(List<Map<String, dynamic>> punches);
 }
 
 class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
@@ -53,6 +54,19 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
       return AttendanceModel.fromJson(response.data);
     } else {
       throw Exception('Server Error');
+    }
+  }
+
+  @override
+  Future<void> syncPunches(List<Map<String, dynamic>> punches) async {
+    // Offline queue drain (3.1 OFFLINE_SYNC.md) — server is idempotent, so
+    // retried uploads are safe.
+    final response = await dio.post(
+      '/api/v1/attendance/sync',
+      data: {'punches': punches},
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Sync failed');
     }
   }
 }

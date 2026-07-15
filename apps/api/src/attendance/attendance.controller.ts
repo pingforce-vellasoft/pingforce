@@ -27,6 +27,8 @@ import {
 import { ManualCheckoutDto } from './dto/manual-checkout.dto';
 import { CreateCorrectionDto } from './dto/create-correction.dto';
 import { CorrectionsService } from './corrections.service';
+import { SyncPunchesDto } from './dto/sync-punches.dto';
+import { OfflineSyncService } from './offline-sync.service';
 
 interface AuthRequest {
   user: {
@@ -42,8 +44,17 @@ export class AttendanceController {
   constructor(
     private readonly attendanceService: AttendanceService,
     private readonly correctionsService: CorrectionsService,
+    private readonly offlineSyncService: OfflineSyncService,
     private readonly commandBus: CommandBus,
   ) {}
+
+  // ── Offline sync (3.1 OFFLINE_SYNC.md) ────────────────────────────────────
+
+  @Post('sync')
+  @RequirePermission('ATTENDANCE', 'CREATE')
+  async syncPunches(@Req() req: AuthRequest, @Body() dto: SyncPunchesDto) {
+    return this.offlineSyncService.syncPunches(req.user, dto);
+  }
 
   // ── Corrections (ATTENDANCE_CORRECTION.md) ────────────────────────────────
 

@@ -46,6 +46,8 @@ class SyncQueueItem with _$SyncQueueItem {
     String? localValue,
     String? serverValue,
     String? conflictField,
+    // Request payload sent to the sync endpoint (OFFLINE_SYNC.md §7)
+    Map<String, dynamic>? payload,
   }) = _SyncQueueItem;
 
   const SyncQueueItem._();
