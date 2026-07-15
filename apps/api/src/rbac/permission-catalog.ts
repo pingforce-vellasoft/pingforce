@@ -332,6 +332,17 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
     description: 'Review, approve, close and reopen completed visits',
   },
   { module: 'VISITS', action: 'DELETE', description: 'Delete visits' },
+  // Reports & analytics (3.5_ReportsAnalytics/RBAC.md)
+  {
+    module: 'REPORTS',
+    action: 'READ',
+    description: 'View reports, dashboards and KPIs',
+  },
+  {
+    module: 'REPORTS',
+    action: 'EXPORT',
+    description: 'Export reports (CSV)',
+  },
   // Live tracking
   {
     module: 'TRACKING',

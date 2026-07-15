@@ -34,6 +34,7 @@ import { TenantsModule } from '../tenants/tenants.module';
 import { AuditModule } from '../audit/audit.module';
 import { ApprovalsModule } from '../approvals/approvals.module';
 import { VisitsModule } from '../visits/visits.module';
+import { ReportsModule } from '../reports/reports.module';
 
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -100,6 +101,7 @@ import { join } from 'path';
     AuditModule,
     ApprovalsModule,
     VisitsModule,
+    ReportsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

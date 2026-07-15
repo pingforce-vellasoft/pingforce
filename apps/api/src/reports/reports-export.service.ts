@@ -1,0 +1,220 @@
+import { Injectable, Inject } from '@nestjs/common';
+import { ExtendedPrismaClient } from '../prisma/prisma.module';
+import { CurrentUserContext } from '@pingforce-monorepo/shared';
+import { AuditService } from '../audit/audit.service';
+import { ReportsService } from './reports.service';
+import { ExportQueryDto, ExportReportType } from './dto/report-query.dto';
+
+const EXPORT_ROW_LIMIT = 10_000;
+
+/**
+ * Synchronous CSV exports (3.5 EXPORTS.md — CSV only for now; Excel/PDF and
+ * async job processing are a later phase). Every export is audit-logged
+ * (RBAC.md §10 "Report exports").
+ */
+@Injectable()
+export class ReportsExportService {
+  constructor(
+    @Inject('IPrismaService') private readonly prisma: ExtendedPrismaClient,
+    private readonly reportsService: ReportsService,
+    private readonly auditService: AuditService,
+  ) {}
+
+  async exportCsv(
+    tenantId: string,
+    actor: CurrentUserContext,
+    query: ExportQueryDto,
+  ): Promise<{ filename: string; csv: string }> {
+    const csv = await this.buildCsv(tenantId, query);
+    const filename = `${query.type}-report-${new Date().toISOString().slice(0, 10)}.csv`;
+
+    void this.auditService.log({
+      tenantId,
+      actorId: actor.userId,
+      module: 'REPORTS',
+      entityName: 'report_export',
+      entityId: query.type,
+      action: 'EXPORT',
+      newValue: { type: query.type, from: query.from, to: query.to },
+    });
+
+    return { filename, csv };
+  }
+
+  private async buildCsv(
+    tenantId: string,
+    query: ExportQueryDto,
+  ): Promise<string> {
+    switch (query.type as ExportReportType) {
+      case 'attendance': {
+        const report = await this.reportsService.attendanceReport(
+          tenantId,
+          query,
+        );
+        return this.toCsv(
+          [
+            'employeeCode',
+            'firstName',
+            'lastName',
+            'presentDays',
+            'lateDays',
+            'halfDays',
+            'sessions',
+            'totalHours',
+          ],
+          report.rows,
+        );
+      }
+      case 'visits': {
+        const range = this.range(query);
+        const rows = await this.prisma.visit.findMany({
+          where: {
+            tenantId,
+            plannedStartAt: { gte: range.from, lte: range.to },
+            ...(query.employeeId && { employeeId: query.employeeId }),
+            ...(query.customerId && { customerId: query.customerId }),
+          },
+          select: {
+            visitNumber: true,
+            visitType: true,
+            status: true,
+            priority: true,
+            purpose: true,
+            plannedStartAt: true,
+            actualStartAt: true,
+            actualEndAt: true,
+            gpsValidated: true,
+            outcome: true,
+            employee: { select: { employeeCode: true } },
+            customer: { select: { customerCode: true } },
+          },
+          orderBy: { plannedStartAt: 'desc' },
+          take: EXPORT_ROW_LIMIT,
+        });
+        return this.toCsv(
+          [
+            'visitNumber',
+            'visitType',
+            'status',
+            'priority',
+            'purpose',
+            'employeeCode',
+            'customerCode',
+            'plannedStartAt',
+            'actualStartAt',
+            'actualEndAt',
+            'gpsValidated',
+            'outcome',
+          ],
+          rows.map((v) => ({
+            ...v,
+            employeeCode: v.employee?.employeeCode ?? '',
+            customerCode: v.customer?.customerCode ?? '',
+          })),
+        );
+      }
+      case 'faults': {
+        const range = this.range(query);
+        const rows = await this.prisma.fault.findMany({
+          where: {
+            tenantId,
+            createdAt: { gte: range.from, lte: range.to },
+            ...(query.customerId && { customerId: query.customerId }),
+          },
+          select: {
+            faultNumber: true,
+            title: true,
+            status: true,
+            priority: true,
+            createdAt: true,
+            slaDeadline: true,
+            isEscalated: true,
+            escalationLevel: true,
+            customer: { select: { customerCode: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: EXPORT_ROW_LIMIT,
+        });
+        return this.toCsv(
+          [
+            'faultNumber',
+            'title',
+            'status',
+            'priority',
+            'customerCode',
+            'createdAt',
+            'slaDeadline',
+            'isEscalated',
+            'escalationLevel',
+          ],
+          rows.map((f) => ({
+            ...f,
+            customerCode: f.customer?.customerCode ?? '',
+          })),
+        );
+      }
+      case 'leads': {
+        const range = this.range(query);
+        const rows = await this.prisma.lead.findMany({
+          where: {
+            tenantId,
+            createdAt: { gte: range.from, lte: range.to },
+          },
+          select: {
+            leadNumber: true,
+            firstName: true,
+            lastName: true,
+            companyName: true,
+            email: true,
+            mobile: true,
+            expectedValue: true,
+            convertedAt: true,
+            createdAt: true,
+            pipelineStage: { select: { name: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: EXPORT_ROW_LIMIT,
+        });
+        return this.toCsv(
+          [
+            'leadNumber',
+            'firstName',
+            'lastName',
+            'companyName',
+            'email',
+            'mobile',
+            'expectedValue',
+            'stage',
+            'convertedAt',
+            'createdAt',
+          ],
+          rows.map((l) => ({ ...l, stage: l.pipelineStage?.name ?? '' })),
+        );
+      }
+    }
+  }
+
+  private range(query: ExportQueryDto): { from: Date; to: Date } {
+    const to = query.to ? new Date(query.to) : new Date();
+    const from = query.from
+      ? new Date(query.from)
+      : new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return { from, to };
+  }
+
+  private toCsv(
+    headers: readonly string[],
+    rows: readonly Record<string, unknown>[],
+  ): string {
+    const escape = (value: unknown): string => {
+      if (value === null || value === undefined) return '';
+      const str = value instanceof Date ? value.toISOString() : String(value);
+      return /[",\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+    };
+    const lines = [headers.join(',')];
+    for (const row of rows) {
+      lines.push(headers.map((h) => escape(row[h])).join(','));
+    }
+    return lines.join('\r\n');
+  }
+}
