@@ -32,6 +32,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { PlatformSettingsModule } from '../platform-settings/platform-settings.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { AuditModule } from '../audit/audit.module';
+import { ApprovalsModule } from '../approvals/approvals.module';
 
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -96,6 +97,7 @@ import { join } from 'path';
     PlatformSettingsModule,
     TenantsModule,
     AuditModule,
+    ApprovalsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

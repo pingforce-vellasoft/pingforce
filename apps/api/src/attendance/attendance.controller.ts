@@ -9,7 +9,13 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
 import { AttendanceService } from './attendance.service';
+import {
+  PunchCommand,
+  StartBreakCommand,
+  EndBreakCommand,
+} from './commands/impl';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
@@ -31,7 +37,10 @@ interface AuthRequest {
 @Controller('attendance')
 @UseGuards(JwtAuthGuard, RbacGuard)
 export class AttendanceController {
-  constructor(private readonly attendanceService: AttendanceService) {}
+  constructor(
+    private readonly attendanceService: AttendanceService,
+    private readonly commandBus: CommandBus,
+  ) {}
 
   @Post('device/register')
   @RequirePermission('ATTENDANCE', 'CREATE')
@@ -55,7 +64,24 @@ export class AttendanceController {
   @Post('punch')
   @RequirePermission('ATTENDANCE', 'CREATE')
   async punch(@Req() req: AuthRequest, @Body() dto: PunchDto) {
-    return this.attendanceService.punch(req.user, dto);
+    return this.commandBus.execute(new PunchCommand(req.user, dto));
+  }
+
+  @Post('break/start')
+  @RequirePermission('ATTENDANCE', 'CREATE')
+  async startBreak(
+    @Req() req: AuthRequest,
+    @Body('breakType') breakType?: string,
+  ) {
+    return this.commandBus.execute(
+      new StartBreakCommand(req.user, breakType || 'LUNCH'),
+    );
+  }
+
+  @Post('break/end')
+  @RequirePermission('ATTENDANCE', 'CREATE')
+  async endBreak(@Req() req: AuthRequest) {
+    return this.commandBus.execute(new EndBreakCommand(req.user));
   }
 
   @Post('manual-checkout')

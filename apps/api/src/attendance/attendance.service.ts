@@ -5,11 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
-import {
-  RegisterDeviceDto,
-  PunchDto,
-  CreateGeofenceDto,
-} from './dto/attendance.dto';
+import { RegisterDeviceDto, CreateGeofenceDto } from './dto/attendance.dto';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -84,121 +80,6 @@ export class AttendanceService {
     return this.prisma.employeeDevice.updateMany({
       where: { employeeId, deviceId, employee: { tenantId: admin.tenantId } },
       data: { isTrusted: false },
-    });
-  }
-
-  async punch(user: any, dto: PunchDto) {
-    const employee = await this.prisma.employee.findUnique({
-      where: { userId: user.userId },
-    });
-    if (!employee) throw new UnauthorizedException('Not an employee');
-
-    // 1. Check Device Trust
-    const device = await this.prisma.employeeDevice.findUnique({
-      where: { deviceId: dto.deviceId },
-    });
-    if (!device || !device.isTrusted || device.employeeId !== employee.id) {
-      throw new UnauthorizedException('Untrusted device');
-    }
-
-    // 2. Cryptographic Signature Verification (Mock validation for demo)
-    // In production, we'd use crypto.verify with the device.publicKey
-    // const isVerified = crypto.verify('sha256', Buffer.from(dto.timestamp + dto.latitude + dto.longitude), device.publicKey, Buffer.from(dto.signature, 'base64'));
-    const isVerified = true;
-    if (!isVerified)
-      throw new UnauthorizedException('Invalid biometric signature');
-
-    // 3. PostGIS Geofence Validation
-    // Check if the coordinates are within any active geofence for the tenant
-    const geofences = await this.prisma.$queryRaw`
-      SELECT id, name, "radiusMeters", ST_Distance(
-        location,
-        ST_SetSRID(ST_MakePoint(${dto.longitude}, ${dto.latitude}), 4326)
-      ) as distance
-      FROM geofences
-      WHERE "tenantId" = ${employee.tenantId} AND active = true
-      AND ST_DWithin(
-        location,
-        ST_SetSRID(ST_MakePoint(${dto.longitude}, ${dto.latitude}), 4326),
-        "radiusMeters"
-      )
-    `;
-
-    const isValidLocation = Array.isArray(geofences) && geofences.length > 0;
-    if (!isValidLocation) {
-      throw new BadRequestException(
-        'You are outside the authorized geofence area.',
-      );
-    }
-
-    // 4-5. Debounce check + attendance/session writes run in one interactive
-    // transaction so a double-tap can't create two open sessions
-    // (PRISMA_GUIDELINES.md §10).
-    return this.prisma.$transaction(async (tx) => {
-      const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
-      const recentSession = await tx.attendanceSession.findFirst({
-        where: {
-          employeeId: employee.id,
-          punchIn: { gte: fifteenMinsAgo },
-        },
-      });
-
-      if (recentSession) {
-        throw new BadRequestException(
-          'You have already punched recently. Please wait 15 minutes.',
-        );
-      }
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      let attendance = await tx.attendance.findFirst({
-        where: { employeeId: employee.id, attendanceDate: today },
-      });
-
-      if (!attendance) {
-        attendance = await tx.attendance.create({
-          data: {
-            tenantId: employee.tenantId,
-            employeeId: employee.id,
-            attendanceDate: today,
-            status: 'PRESENT',
-          },
-        });
-      }
-
-      // Determine Punch In or Out based on existing open session
-      const openSession = await tx.attendanceSession.findFirst({
-        where: { attendanceId: attendance.id, punchOut: null },
-      });
-
-      if (openSession) {
-        // Punch Out
-        return tx.attendanceSession.update({
-          where: { id: openSession.id },
-          data: {
-            punchOut: new Date(),
-            checkOutLatitude: dto.latitude,
-            checkOutLongitude: dto.longitude,
-            punchOutDevice: dto.deviceId,
-          },
-        });
-      }
-
-      // Punch In
-      return tx.attendanceSession.create({
-        data: {
-          tenantId: employee.tenantId,
-          attendanceId: attendance.id,
-          employeeId: employee.id,
-          punchIn: new Date(),
-          checkInLatitude: dto.latitude,
-          checkInLongitude: dto.longitude,
-          punchInDevice: dto.deviceId,
-          deviceSignature: dto.signature,
-          attendanceMethod: 'BIOMETRIC',
-        },
-      });
     });
   }
 

@@ -7,6 +7,7 @@ import {
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { RbacService } from '../rbac/rbac.service';
+import { ApprovalsService } from '../approvals/approvals.service';
 
 @Injectable()
 export class LeaveService {
@@ -14,6 +15,7 @@ export class LeaveService {
     @Inject('IPrismaService')
     private readonly prisma: IPrismaService,
     private readonly rbacService: RbacService,
+    private readonly approvalsService: ApprovalsService,
   ) {}
 
   async requestLeave(
@@ -169,7 +171,27 @@ export class LeaveService {
     status: 'APPROVED' | 'REJECTED',
     managerId: string,
   ) {
-    return this.prisma.$transaction(async (tx) => {
+    // Approval routing via the shared workflow engine (ApprovalWorkflow.md):
+    // RBAC + data-scope authorization, self-approval block, audit trail.
+    const pending = await this.prisma.leaveRequest.findFirst({
+      where: { id: leaveId, tenantId },
+      select: { employeeId: true },
+    });
+    if (!pending) {
+      throw new NotFoundException('Leave request not found');
+    }
+
+    await this.approvalsService.authorizeDecision({
+      tenantId,
+      module: 'LEAVES',
+      entityName: 'leave_request',
+      entityId: leaveId,
+      ownerEmployeeId: pending.employeeId,
+      actorUserId: managerId,
+      decision: status,
+    });
+
+    const decided = await this.prisma.$transaction(async (tx) => {
       const leave = await tx.leaveRequest.findUnique({
         where: { id: leaveId },
       });
@@ -223,5 +245,17 @@ export class LeaveService {
 
       return updatedLeave;
     });
+
+    await this.approvalsService.recordDecision({
+      tenantId,
+      module: 'LEAVES',
+      entityName: 'leave_request',
+      entityId: leaveId,
+      ownerEmployeeId: pending.employeeId,
+      actorUserId: managerId,
+      decision: status,
+    });
+
+    return decided;
   }
 }

@@ -9,6 +9,7 @@ import { IPrismaService } from '@pingforce-monorepo/shared';
 import { ClaimsRepository } from './claims.repository';
 import { CreateClaimDto } from './dto/create-claim.dto';
 import { RbacService } from '../rbac/rbac.service';
+import { ApprovalsService } from '../approvals/approvals.service';
 
 @Injectable()
 export class ClaimsService {
@@ -16,6 +17,7 @@ export class ClaimsService {
     private readonly claimsRepository: ClaimsRepository,
     @Inject('IPrismaService') private readonly prisma: IPrismaService,
     private readonly rbacService: RbacService,
+    private readonly approvalsService: ApprovalsService,
   ) {}
 
   async submitClaim(tenantId: string, userId: string, dto: CreateClaimDto) {
@@ -80,12 +82,6 @@ export class ClaimsService {
       throw new BadRequestException('Invalid status transition');
     }
 
-    // Block self-approval: an approver may not process their own claim
-    const approverEmployee = await this.prisma.employee.findFirst({
-      where: { tenantId, userId: approverId, deletedAt: null },
-      select: { id: true },
-    });
-
     const claim = await this.prisma.expenseClaim.findFirst({
       where: { id: claimId, tenantId },
       select: { employeeId: true },
@@ -95,16 +91,27 @@ export class ClaimsService {
       throw new NotFoundException('Expense claim not found');
     }
 
-    if (approverEmployee && claim.employeeId === approverEmployee.id) {
-      throw new ForbiddenException('You cannot approve your own claim');
-    }
-
-    return this.claimsRepository.processClaim(
-      tenantId,
-      claimId,
-      approverId,
-      status,
-      notes,
+    // Shared approval engine (ApprovalWorkflow.md): RBAC + scope checks,
+    // self-approval block, audited decision.
+    return this.approvalsService.process(
+      {
+        tenantId,
+        module: 'CLAIMS',
+        entityName: 'expense_claim',
+        entityId: claimId,
+        ownerEmployeeId: claim.employeeId,
+        actorUserId: approverId,
+        decision: status,
+        notes,
+      },
+      () =>
+        this.claimsRepository.processClaim(
+          tenantId,
+          claimId,
+          approverId,
+          status,
+          notes,
+        ),
     );
   }
 }
