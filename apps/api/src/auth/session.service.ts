@@ -1,6 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import { AuditService } from '../audit/audit.service';
+import { LoginHistoryService } from './login-history.service';
 
 const SESSION_TTL_DAYS = 7; // matches refresh-token lifetime
 
@@ -21,6 +22,7 @@ export class SessionService {
   constructor(
     @Inject('IPrismaService') private readonly prisma: IPrismaService,
     private readonly auditService: AuditService,
+    private readonly loginHistory: LoginHistoryService,
   ) {}
 
   async create(
@@ -123,6 +125,8 @@ export class SessionService {
       }),
     ]);
 
+    this.loginHistory.markLogout(sessionId);
+
     void this.auditService.log({
       tenantId,
       actorId: userId,
@@ -151,6 +155,8 @@ export class SessionService {
         data: { revokedAt: now, revokeReason: reason },
       }),
     ]);
+
+    this.loginHistory.markLogoutAll(tenantId, userId);
 
     void this.auditService.log({
       tenantId,

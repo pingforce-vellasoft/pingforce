@@ -355,6 +355,12 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
     action: 'READ',
     description: 'View and search the tenant audit trail',
   },
+  // Notification engine configuration (Email.md §5)
+  {
+    module: 'NOTIFICATIONS',
+    action: 'MANAGE',
+    description: 'Configure tenant notification providers (email/SMTP)',
+  },
 ];
 
 /** Modules that platform (super-admin) roles own; tenant roles never receive these. */

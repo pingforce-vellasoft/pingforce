@@ -56,14 +56,20 @@ function makeService(stored: StoredToken | null) {
     revokeAllForUser: jest.fn().mockResolvedValue(undefined),
   };
   const auditService = { log: jest.fn().mockResolvedValue(undefined) };
+  const loginHistory = {
+    record: jest.fn(),
+    markLogout: jest.fn(),
+    markLogoutAll: jest.fn(),
+  };
 
   const service = new AuthService(
     prisma as unknown as ConstructorParameters<typeof AuthService>[0],
     jwtService as unknown as ConstructorParameters<typeof AuthService>[1],
     sessionService as unknown as ConstructorParameters<typeof AuthService>[2],
     auditService as unknown as ConstructorParameters<typeof AuthService>[3],
+    loginHistory as unknown as ConstructorParameters<typeof AuthService>[4],
   );
-  return { service, prisma, sessionService };
+  return { service, prisma, sessionService, loginHistory };
 }
 
 describe('AuthService.refreshToken', () => {

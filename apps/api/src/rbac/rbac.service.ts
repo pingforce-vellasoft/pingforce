@@ -169,6 +169,31 @@ export class RbacService {
     module: string,
     actions: readonly string[],
   ): Promise<ResolvedDataScope> {
+    // Scope resolution costs up to 2 extra queries per request (employee +
+    // team/branch members) — cache the resolved id sets alongside the grants
+    // with the same short TTL so role/team changes propagate within seconds.
+    const cacheKey = `rbac_scope_${tenantId}_${userId}_${module}_${[...actions]
+      .sort()
+      .join('+')}`;
+    const cached = await this.cacheManager.get<ResolvedDataScope>(cacheKey);
+    if (cached) return cached;
+
+    const resolved = await this.resolveScopeIdsUncached(
+      tenantId,
+      userId,
+      module,
+      actions,
+    );
+    await this.cacheManager.set(cacheKey, resolved, GRANTS_CACHE_TTL_MS);
+    return resolved;
+  }
+
+  private async resolveScopeIdsUncached(
+    tenantId: string,
+    userId: string,
+    module: string,
+    actions: readonly string[],
+  ): Promise<ResolvedDataScope> {
     let scope: 'OWN' | 'TEAM' | 'BRANCH' | 'ALL' | null = null;
     for (const action of actions) {
       const s = await this.getDataScope(userId, module, action);

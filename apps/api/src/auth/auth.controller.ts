@@ -36,6 +36,7 @@ import { SessionService } from './session.service';
 import { OtpService } from './otp.service';
 import { RequestOtpDto, VerifyOtpDto } from './dto/otp.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { LoginHistoryService } from './login-history.service';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -46,11 +47,16 @@ export class AuthController {
     private readonly sessionService: SessionService,
     private readonly otpService: OtpService,
     private readonly notifications: NotificationsService,
+    private readonly loginHistoryService: LoginHistoryService,
   ) {}
 
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({ status: 200, description: 'User successfully logged in.' })
   @ApiResponse({ status: 401, description: 'Invalid credentials.' })
+  @Throttle({
+    burst: { limit: 10, ttl: 60000 },
+    sustained: { limit: 10, ttl: 60000 },
+  })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto, @Request() req: any) {
@@ -75,7 +81,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Request password reset (sends OTP by email)' })
   @ApiResponse({ status: 200, description: 'Generic acknowledgement.' })
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ burst: { limit: 5, ttl: 60000 }, sustained: { limit: 5, ttl: 60000 } })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() resetDto: ResetPasswordDto, @Request() req: any) {
@@ -89,7 +95,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Confirm password reset with OTP' })
   @ApiResponse({ status: 200, description: 'Password reset.' })
   @ApiResponse({ status: 401, description: 'Invalid or expired code.' })
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ burst: { limit: 5, ttl: 60000 }, sustained: { limit: 5, ttl: 60000 } })
   @Post('reset-password/confirm')
   @HttpCode(HttpStatus.OK)
   async confirmResetPassword(
@@ -109,7 +115,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request an OTP for the authenticated user (OTP.md §11)',
   })
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Throttle({ burst: { limit: 3, ttl: 60000 }, sustained: { limit: 3, ttl: 60000 } })
   @UseGuards(JwtAuthGuard)
   @Post('otp/request')
   @HttpCode(HttpStatus.OK)
@@ -142,7 +148,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Verify an OTP for the authenticated user (OTP.md §11)',
   })
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ burst: { limit: 5, ttl: 60000 }, sustained: { limit: 5, ttl: 60000 } })
   @UseGuards(JwtAuthGuard)
   @Post('otp/verify')
   @HttpCode(HttpStatus.OK)
@@ -167,6 +173,25 @@ export class AuthController {
   @Get('sessions')
   async listSessions(@Request() req: any) {
     return this.sessionService.listForUser(req.user.tenantId, req.user.userId);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List own login history (LoginHistory.md §14)' })
+  @UseGuards(JwtAuthGuard)
+  @Get('login-history')
+  async listLoginHistory(@Request() req: any) {
+    if (req.user.tenantId === 'SYSTEM') {
+      // Login history references tenant users; platform accounts have none
+      return { items: [], total: 0, page: 1, pageSize: 20 };
+    }
+    const page = parseInt(req.query?.page ?? '1', 10) || 1;
+    const pageSize = parseInt(req.query?.pageSize ?? '20', 10) || 20;
+    return this.loginHistoryService.listForUser(
+      req.user.tenantId,
+      req.user.userId,
+      page,
+      pageSize,
+    );
   }
 
   @ApiBearerAuth()

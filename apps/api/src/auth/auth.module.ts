@@ -10,6 +10,7 @@ import { JwtConfigService } from './jwt-config.service';
 import { OtpService } from './otp.service';
 import { PasswordResetService } from './password-reset.service';
 import { SessionService } from './session.service';
+import { LoginHistoryService } from './login-history.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
@@ -44,6 +45,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     OtpService,
     PasswordResetService,
     SessionService,
+    LoginHistoryService,
   ],
   exports: [
     AuthService,

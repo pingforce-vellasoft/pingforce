@@ -22,6 +22,7 @@ import { syncSystemRolePermissions } from '../rbac/permission-catalog';
 import { seedDefaultNotificationTemplates } from '../notifications/default-templates';
 import { SessionService, SessionMeta } from './session.service';
 import { AuditService } from '../audit/audit.service';
+import { LoginHistoryService } from './login-history.service';
 
 const googleClient = new OAuth2Client();
 
@@ -32,6 +33,7 @@ export class AuthService implements IAuthService {
     private readonly jwtService: JwtService,
     private readonly sessionService: SessionService,
     private readonly auditService: AuditService,
+    private readonly loginHistory: LoginHistoryService,
   ) {}
 
   async login(loginDto: LoginDto, meta: SessionMeta = {}) {
@@ -102,6 +104,14 @@ export class AuthService implements IAuthService {
         ipAddress: meta.ip,
         userAgent: meta.userAgent,
       });
+      this.loginHistory.record({
+        tenantId: tenant.id,
+        username: loginDto.email ?? loginDto.phone ?? '-',
+        outcome: 'UNKNOWN_ACCOUNT',
+        deviceId: meta.deviceId,
+        ipAddress: meta.ip,
+        userAgent: meta.userAgent,
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -122,6 +132,15 @@ export class AuthService implements IAuthService {
         ipAddress: meta.ip,
         userAgent: meta.userAgent,
       });
+      this.loginHistory.record({
+        tenantId: tenant.id,
+        userId: user.id,
+        username: loginDto.email ?? loginDto.phone ?? '-',
+        outcome: 'INVALID_PASSWORD',
+        deviceId: meta.deviceId,
+        ipAddress: meta.ip,
+        userAgent: meta.userAgent,
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -139,6 +158,15 @@ export class AuthService implements IAuthService {
         ipAddress: meta.ip,
         userAgent: meta.userAgent,
       });
+      this.loginHistory.record({
+        tenantId: tenant.id,
+        userId: user.id,
+        username: loginDto.email ?? loginDto.phone ?? '-',
+        outcome: 'ACCOUNT_INACTIVE',
+        deviceId: meta.deviceId,
+        ipAddress: meta.ip,
+        userAgent: meta.userAgent,
+      });
       throw new UnauthorizedException('Account is inactive or suspended');
     }
 
@@ -148,14 +176,27 @@ export class AuthService implements IAuthService {
       (user.clientCode === 'SYS_ADMIN' ? 'SUPER_ADMIN' : 'UNKNOWN');
     const portalType = (loginDto as any).portalType; // using any to bypass strict type if DTO didn't rebuild yet
 
+    const recordPortalRestricted = () =>
+      this.loginHistory.record({
+        tenantId: tenant.id,
+        userId: user.id,
+        username: loginDto.email ?? loginDto.phone ?? '-',
+        outcome: 'PORTAL_RESTRICTED',
+        deviceId: meta.deviceId,
+        ipAddress: meta.ip,
+        userAgent: meta.userAgent,
+      });
+
     if (portalType === 'ADMIN_PORTAL') {
       if (roleCode === 'EMPLOYEE_FIELD_STAFF' || roleCode === 'CUSTOMER') {
+        recordPortalRestricted();
         throw new UnauthorizedException(
           'This account is restricted to the mobile app only',
         );
       }
     } else if (portalType === 'MOBILE_APP') {
       if (roleCode === 'SUPER_ADMIN') {
+        recordPortalRestricted();
         throw new UnauthorizedException(
           'Super admins can only login via the admin portal',
         );
@@ -176,6 +217,17 @@ export class AuthService implements IAuthService {
       entityName: 'user',
       entityId: user.id,
       action: 'LOGIN',
+      ipAddress: meta.ip,
+      userAgent: meta.userAgent,
+    });
+
+    this.loginHistory.record({
+      tenantId: tenant.id,
+      userId: user.id,
+      username: loginDto.email ?? loginDto.phone ?? '-',
+      outcome: 'SUCCESS',
+      sessionId,
+      deviceId: meta.deviceId,
       ipAddress: meta.ip,
       userAgent: meta.userAgent,
     });
@@ -296,6 +348,16 @@ export class AuthService implements IAuthService {
           storedToken.userId,
           'TOKEN_REPLAY',
         );
+        // Routine rotations are not recorded (too noisy — session
+        // lastActivityAt already tracks them); replay is security-relevant.
+        this.loginHistory.record({
+          tenantId: storedToken.tenantId,
+          userId: storedToken.userId,
+          username: storedToken.userId,
+          authMethod: 'REFRESH_TOKEN',
+          outcome: 'TOKEN_REPLAY',
+          sessionId: storedToken.sessionId ?? undefined,
+        });
       } else if (storedToken.superAdminId) {
         await this.prisma.superAdmin.update({
           where: { id: storedToken.superAdminId },
@@ -453,14 +515,35 @@ export class AuthService implements IAuthService {
       // accounts. A tenant code is guessable, so auto-registration would let
       // anyone with a Google account join any tenant. Users must be invited
       // or registered by their tenant admin first.
+      this.loginHistory.record({
+        tenantId: tenant.id,
+        username: payload.email,
+        authMethod: 'GOOGLE',
+        outcome: 'UNKNOWN_ACCOUNT',
+      });
       throw new UnauthorizedException(
         'No account exists for this email in the selected workspace. Contact your administrator for an invitation.',
       );
     }
 
     if (user!.status !== 'ACTIVE' || tenant.status !== 'ACTIVE') {
+      this.loginHistory.record({
+        tenantId: tenant.id,
+        userId: user!.id,
+        username: payload.email,
+        authMethod: 'GOOGLE',
+        outcome: 'ACCOUNT_INACTIVE',
+      });
       throw new UnauthorizedException('Account is inactive or suspended');
     }
+
+    this.loginHistory.record({
+      tenantId: tenant.id,
+      userId: user!.id,
+      username: payload.email,
+      authMethod: 'GOOGLE',
+      outcome: 'SUCCESS',
+    });
 
     const roleCode = user!.role?.code || 'UNKNOWN';
     return this.generateTokens(

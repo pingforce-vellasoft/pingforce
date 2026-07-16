@@ -178,3 +178,26 @@ Nothing here regresses the green build state; these are additive fixes.
   detection, offline punch sync idempotency, CSV export hardening.
   Remaining toward the 90% DoD: controller/e2e coverage, leave/claims/
   corrections services, sync services for faults/leads/visits.
+- ✅ **C2 (Phase 2b)** — all four deferred items delivered
+  (migration `20260716150000_phase2b_login_history_email_storage`; suite now
+  12 suites / 78 tests):
+  - **FCM push** — `PushService` (firebase-admin, env-gated via
+    `FIREBASE_SERVICE_ACCOUNT_PATH`/`_JSON`, simulated when unset), stale
+    token pruning, `POST/DELETE /notifications/device-tokens` lifecycle,
+    dedicated `notifications-push` queue.
+  - **Login history (LoginHistory.md)** — `login_history` table +
+    `LoginHistoryService`; fire-and-forget records on every login branch
+    (SUCCESS, UNKNOWN_ACCOUNT, INVALID_PASSWORD, ACCOUNT_INACTIVE,
+    PORTAL_RESTRICTED, Google auth) + TOKEN_REPLAY on refresh; logoutAt
+    stamped via session revoke; self-service `GET /auth/login-history`.
+  - **Per-tenant email providers (Email.md §5)** — `tenant_email_configs`
+    table, SMTP passwords sealed AES-256-GCM under
+    `EMAIL_CONFIG_ENCRYPTION_KEY`, per-tenant transporter cache with global
+    SMTP fallback, `GET/PUT/DELETE /notifications/email-config` behind new
+    `NOTIFICATIONS:MANAGE` permission (catalog + seed backfill).
+  - **File storage (Upload.md/Storage.md)** — `StorageService` env-gated:
+    S3-compatible object storage via minio client (local MinIO dev / OCI
+    Object Storage S3-compat endpoint) when `OBJECT_STORAGE_ENDPOINT` set,
+    local `uploads/` otherwise; `POST /files/upload` with extension+MIME
+    allowlist, per-category size caps, SHA-256 checksum, tenant-prefixed
+    keys; download streams any provider; delete removes physical bytes.
