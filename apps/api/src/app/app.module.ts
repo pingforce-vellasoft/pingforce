@@ -35,6 +35,8 @@ import { AuditModule } from '../audit/audit.module';
 import { ApprovalsModule } from '../approvals/approvals.module';
 import { VisitsModule } from '../visits/visits.module';
 import { ReportsModule } from '../reports/reports.module';
+import { SchedulerModule } from '../scheduler/scheduler.module';
+import { MonitoringModule } from '../monitoring/monitoring.module';
 
 @Module({
   imports: [
@@ -47,11 +49,13 @@ import { ReportsModule } from '../reports/reports.module';
     // FilesController instead (security audit B4).
     EventEmitterModule.forRoot(),
     TerminusModule,
+    // Tiered limits (SCALABILITY_AUDIT): the old single 100/min-per-IP limit
+    // false-blocked offices behind NAT during the morning punch rush. Burst
+    // absorbs spikes, sustained caps abuse; auth endpoints carry stricter
+    // per-route @Throttle overrides.
     ThrottlerModule.forRoot([
-      {
-        ttl: 60000,
-        limit: 100,
-      },
+      { name: 'burst', ttl: 10_000, limit: 60 },
+      { name: 'sustained', ttl: 60_000, limit: 600 },
     ]),
     LoggerModule.forRoot({
       pinoHttp: {
@@ -99,6 +103,8 @@ import { ReportsModule } from '../reports/reports.module';
     ApprovalsModule,
     VisitsModule,
     ReportsModule,
+    SchedulerModule,
+    MonitoringModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

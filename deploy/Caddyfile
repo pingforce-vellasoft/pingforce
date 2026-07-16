@@ -1,0 +1,22 @@
+# Caddy auto-provisions Let's Encrypt certificates for every domain below.
+# DNS A records for all these must point at this server first.
+
+# Mobile-facing API
+api.pingforce.in {
+	reverse_proxy api:3000
+}
+
+# Admin-portal-facing API (same backend, separate hostname)
+admin-api.pingforce.in {
+	reverse_proxy api:3000
+}
+
+# Grafana dashboards (login guarded by GF_SECURITY_ADMIN_* credentials)
+grafana.pingforce.in {
+	reverse_proxy grafana:3000
+}
+
+# MinIO S3 endpoint for file uploads
+files.pingforce.in {
+	reverse_proxy minio:9000
+}

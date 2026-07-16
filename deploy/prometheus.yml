@@ -1,0 +1,14 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  # NestJS API metrics (global prefix api + URI version v1)
+  - job_name: pingforce-api
+    metrics_path: /api/v1/metrics
+    static_configs:
+      - targets: ['api:3000']
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
