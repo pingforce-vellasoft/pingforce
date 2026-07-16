@@ -56,9 +56,17 @@ __screenshots__/
 .env
 .env.local
 .env.*.local
+.env.production
 *.pem
 *.key
 *.p12
 *.pfx
+*.jks
+*.keystore
+key.properties
+# Service-account keys and other credential files live here, never in git
+secrets/
+# Firebase Admin SDK service-account keys (any stray download)
+*firebase-adminsdk*.json
 # Keep the example file committed
 !.env.example
