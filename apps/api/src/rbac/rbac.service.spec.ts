@@ -1,0 +1,286 @@
+import { RbacService } from './rbac.service';
+
+/**
+ * RBAC permission + data-scope resolution (RBAC.md, DataScope.md).
+ * Prisma and the cache are mocked — these tests pin the authorization
+ * decisions, the most security-critical logic in the API.
+ */
+
+type MockFn = jest.Mock;
+
+interface PrismaMock {
+  user: { findUnique: MockFn };
+  employee: { findFirst: MockFn; findMany: MockFn };
+}
+
+const noCache = {
+  get: jest.fn().mockResolvedValue(undefined),
+  set: jest.fn().mockResolvedValue(undefined),
+};
+
+function makeService(prisma: PrismaMock): RbacService {
+  return new RbacService(
+    prisma as unknown as ConstructorParameters<typeof RbacService>[0],
+    noCache as unknown as ConstructorParameters<typeof RbacService>[1],
+  );
+}
+
+function grantsUser(
+  roleCode: string,
+  grants: { module: string; action: string; dataScope: string }[],
+) {
+  return {
+    role: {
+      code: roleCode,
+      permissions: grants.map((g) => ({
+        dataScope: g.dataScope,
+        permission: { module: g.module, action: g.action },
+      })),
+    },
+  };
+}
+
+describe('RbacService.hasPermission', () => {
+  it('grants when the role holds the module:action pair', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('MANAGER', [
+              { module: 'LEAVES', action: 'APPROVE', dataScope: 'TEAM' },
+            ]),
+          ),
+      },
+      employee: { findFirst: jest.fn(), findMany: jest.fn() },
+    };
+    const service = makeService(prisma);
+    await expect(
+      service.hasPermission('u1', 'LEAVES', 'APPROVE'),
+    ).resolves.toBe(true);
+    await expect(service.hasPermission('u1', 'LEAVES', 'DELETE')).resolves.toBe(
+      false,
+    );
+  });
+
+  it('denies users without a role', async () => {
+    const prisma: PrismaMock = {
+      user: { findUnique: jest.fn().mockResolvedValue({ role: null }) },
+      employee: { findFirst: jest.fn(), findMany: jest.fn() },
+    };
+    const service = makeService(prisma);
+    await expect(service.hasPermission('u1', 'LEAVES', 'READ')).resolves.toBe(
+      false,
+    );
+  });
+
+  it('bypasses checks for SUPER_ADMIN', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue(grantsUser('SUPER_ADMIN', [])),
+      },
+      employee: { findFirst: jest.fn(), findMany: jest.fn() },
+    };
+    const service = makeService(prisma);
+    await expect(
+      service.hasPermission('u1', 'ANYTHING', 'DELETE'),
+    ).resolves.toBe(true);
+  });
+});
+
+describe('RbacService.getDataScope', () => {
+  it('returns the granted scope, ALL for super admin and null when missing', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('MANAGER', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'TEAM' },
+            ]),
+          ),
+      },
+      employee: { findFirst: jest.fn(), findMany: jest.fn() },
+    };
+    const service = makeService(prisma);
+    await expect(service.getDataScope('u1', 'FAULTS', 'READ')).resolves.toBe(
+      'TEAM',
+    );
+    await expect(service.getDataScope('u1', 'FAULTS', 'DELETE')).resolves.toBe(
+      null,
+    );
+  });
+});
+
+describe('RbacService.resolveScopeIds (DataScope.md §6)', () => {
+  const tenantId = 't1';
+
+  it('returns NONE (deny by default) when no permission is granted', async () => {
+    const prisma: PrismaMock = {
+      user: { findUnique: jest.fn().mockResolvedValue(grantsUser('EMP', [])) },
+      employee: { findFirst: jest.fn(), findMany: jest.fn() },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u1', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope).toEqual({ kind: 'NONE' });
+  });
+
+  it('returns ALL for ALL-scoped grants without touching employees', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('ADMIN_MANAGER', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'ALL' },
+            ]),
+          ),
+      },
+      employee: { findFirst: jest.fn(), findMany: jest.fn() },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u1', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope).toEqual({ kind: 'ALL' });
+    expect(prisma.employee.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('OWN keeps the caller userId even without an employee record', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('EMPLOYEE', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'OWN' },
+            ]),
+          ),
+      },
+      employee: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn(),
+      },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u1', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope).toEqual({ kind: 'IDS', employeeIds: [], userIds: ['u1'] });
+  });
+
+  it('TEAM includes self plus direct reports (employee + user ids)', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('MANAGER', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'TEAM' },
+            ]),
+          ),
+      },
+      employee: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'e-mgr', branchId: null }),
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'e-a', userId: 'u-a' },
+          { id: 'e-b', userId: null },
+        ]),
+      },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u-mgr', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope.kind).toBe('IDS');
+    if (scope.kind === 'IDS') {
+      expect([...scope.employeeIds].sort()).toEqual(['e-a', 'e-b', 'e-mgr']);
+      expect([...scope.userIds].sort()).toEqual(['u-a', 'u-mgr']);
+    }
+    expect(prisma.employee.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ reportingManagerId: 'e-mgr' }),
+      }),
+    );
+  });
+
+  it('BRANCH without a branch assignment denies', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('MANAGER', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'BRANCH' },
+            ]),
+          ),
+      },
+      employee: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'e1', branchId: null }),
+        findMany: jest.fn(),
+      },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u1', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope).toEqual({ kind: 'NONE' });
+  });
+
+  it('picks the broadest scope across multiple actions', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue(
+          grantsUser('HYBRID', [
+            { module: 'ATTENDANCE', action: 'READ_OWN', dataScope: 'OWN' },
+            { module: 'ATTENDANCE', action: 'READ', dataScope: 'ALL' },
+          ]),
+        ),
+      },
+      employee: { findFirst: jest.fn(), findMany: jest.fn() },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u1', 'ATTENDANCE', [
+      'READ',
+      'READ_OWN',
+    ]);
+    expect(scope).toEqual({ kind: 'ALL' });
+  });
+});
+
+describe('RbacService scope where-builders', () => {
+  const prisma: PrismaMock = {
+    user: { findUnique: jest.fn() },
+    employee: { findFirst: jest.fn(), findMany: jest.fn() },
+  };
+  const service = makeService(prisma);
+
+  it('employeeScopeWhere: ALL → no filter, NONE → null, IDS → in-list', () => {
+    expect(service.employeeScopeWhere({ kind: 'ALL' })).toEqual({});
+    expect(service.employeeScopeWhere({ kind: 'NONE' })).toBeNull();
+    expect(
+      service.employeeScopeWhere(
+        { kind: 'IDS', employeeIds: ['e1'], userIds: ['u1'] },
+        'id',
+      ),
+    ).toEqual({ id: { in: ['e1'] } });
+  });
+
+  it('userScopeWhere: IDS → OR over the given user columns', () => {
+    expect(
+      service.userScopeWhere(
+        { kind: 'IDS', employeeIds: [], userIds: ['u1', 'u2'] },
+        ['assignedToId', 'createdBy'],
+      ),
+    ).toEqual({
+      OR: [
+        { assignedToId: { in: ['u1', 'u2'] } },
+        { createdBy: { in: ['u1', 'u2'] } },
+      ],
+    });
+    expect(service.userScopeWhere({ kind: 'NONE' }, ['createdBy'])).toBeNull();
+    expect(service.userScopeWhere({ kind: 'ALL' }, ['createdBy'])).toEqual({});
+  });
+});

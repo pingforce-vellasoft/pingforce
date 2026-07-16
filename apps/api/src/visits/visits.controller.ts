@@ -52,6 +52,7 @@ export class VisitsController {
   @RequirePermission('VISITS', 'READ')
   findAll(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
     @Query('status') status?: string,
     @Query('employeeId') employeeId?: string,
     @Query('customerId') customerId?: string,
@@ -60,8 +61,9 @@ export class VisitsController {
     @Query('cursor') cursor?: string,
     @Query('take') take?: string,
   ) {
-    return this.visitsService.findAll(
+    return this.visitsService.findAllScoped(
       tenantId,
+      user.userId,
       { status, employeeId, customerId, from, to },
       cursor,
       take ? parseInt(take, 10) : undefined,

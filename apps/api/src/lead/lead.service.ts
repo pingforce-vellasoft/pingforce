@@ -13,6 +13,11 @@ import { UpdateLeadDto } from './dto/update-lead.dto';
 import { ConvertLeadDto } from './dto/convert-lead.dto';
 import { SyncLeadsDto } from './dto/sync-leads.dto';
 import { LeadRepository } from './lead.repository';
+import { RbacService } from '../rbac/rbac.service';
+
+// Leads are visible to their owner and creator within the caller's data
+// scope (DataScope.md §9 "Leads").
+const LEAD_SCOPE_FIELDS = ['ownerUserId', 'createdBy'] as const;
 
 export interface LeadSyncItemResult {
   readonly clientRef: string;
@@ -27,18 +32,51 @@ export class LeadService {
     private readonly leadRepository: LeadRepository,
     @Inject('IPrismaService') private readonly prisma: ExtendedPrismaClient,
     private readonly eventBus: EventBus,
+    private readonly rbacService: RbacService,
   ) {}
 
   async create(tenantId: string, createLeadDto: CreateLeadDto) {
     return await this.leadRepository.create(tenantId, createLeadDto);
   }
 
-  async findAll(tenantId: string, cursor?: string, take?: number) {
-    return await this.leadRepository.findAll(tenantId, cursor, take);
+  private async leadScopeWhere(
+    tenantId: string,
+    requesterUserId: string,
+  ): Promise<Record<string, unknown> | null> {
+    const scope = await this.rbacService.resolveScopeIds(
+      tenantId,
+      requesterUserId,
+      'LEADS',
+      ['READ'],
+    );
+    return this.rbacService.userScopeWhere(scope, LEAD_SCOPE_FIELDS);
   }
 
-  async getPipeline(tenantId: string, cursor?: string, take?: number) {
-    return await this.leadRepository.getPipeline(tenantId, cursor, take);
+  async findAll(
+    tenantId: string,
+    requesterUserId: string,
+    cursor?: string,
+    take?: number,
+  ) {
+    const scopeWhere = await this.leadScopeWhere(tenantId, requesterUserId);
+    if (scopeWhere === null) return [];
+    return await this.leadRepository.findAll(tenantId, cursor, take, scopeWhere);
+  }
+
+  async getPipeline(
+    tenantId: string,
+    requesterUserId: string,
+    cursor?: string,
+    take?: number,
+  ) {
+    const scopeWhere = await this.leadScopeWhere(tenantId, requesterUserId);
+    if (scopeWhere === null) return [];
+    return await this.leadRepository.getPipeline(
+      tenantId,
+      cursor,
+      take,
+      scopeWhere,
+    );
   }
 
   async findOne(tenantId: string, id: string) {

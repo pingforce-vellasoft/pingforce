@@ -8,6 +8,7 @@ import {
   SYSTEM_ROLE_GRANTS,
   syncSystemRolePermissions,
 } from '../apps/api/src/rbac/permission-catalog';
+import { seedDefaultNotificationTemplates } from '../apps/api/src/notifications/default-templates';
 
 dotenv.config();
 
@@ -49,7 +50,21 @@ async function main() {
     `Backfilled grants for ${systemRoles.length} system roles across tenants`,
   );
 
-  // 3. Create Super Admin user — password must come from the environment.
+  // 3. Provision default notification templates for every tenant.
+  //    Idempotent: createMany with skipDuplicates — tenant-customised
+  //    templates (same tenantId+name) are never overwritten.
+  const tenants = await prisma.tenant.findMany({
+    where: { deletedAt: null },
+    select: { id: true },
+  });
+  for (const tenant of tenants) {
+    await seedDefaultNotificationTemplates(prisma, tenant.id);
+  }
+  console.log(
+    `Seeded default notification templates for ${tenants.length} tenants`,
+  );
+
+  // 4. Create Super Admin user — password must come from the environment.
   const superAdminEmail =
     process.env.SEED_SUPER_ADMIN_EMAIL || 'admin@pingforce.in';
   const superAdminPassword = process.env.SEED_SUPER_ADMIN_PASSWORD;

@@ -6,11 +6,15 @@ import {
 } from '@nestjs/common';
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
 import { RegisterDeviceDto, CreateGeofenceDto } from './dto/attendance.dto';
+import { RbacService } from '../rbac/rbac.service';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class AttendanceService {
-  constructor(@Inject('IPrismaService') private prisma: ExtendedPrismaClient) {}
+  constructor(
+    @Inject('IPrismaService') private prisma: ExtendedPrismaClient,
+    private readonly rbacService: RbacService,
+  ) {}
 
   async getDevices(user: any, skip = 0, take = 50) {
     return this.prisma.employeeDevice.findMany({
@@ -147,8 +151,21 @@ export class AttendanceService {
   ) {
     const skip = (page - 1) * limit;
 
-    // Only fetch logs for the admin's tenant
-    const where: any = { tenantId: user.tenantId };
+    // Data scope (DataScope.md §9 "Attendance"): employees see own logs,
+    // managers their team, HR/tenant admins the whole tenant. Broadest of
+    // READ/READ_OWN wins (admins hold both with ALL scope).
+    const scope = await this.rbacService.resolveScopeIds(
+      user.tenantId,
+      user.userId,
+      'ATTENDANCE',
+      ['READ', 'READ_OWN'],
+    );
+    const scopeWhere = this.rbacService.employeeScopeWhere(scope);
+    if (scopeWhere === null) {
+      return { data: [], total: 0, page, limit };
+    }
+
+    const where: any = { tenantId: user.tenantId, ...scopeWhere };
 
     if (search) {
       where.employee = {

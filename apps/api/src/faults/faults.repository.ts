@@ -36,9 +36,10 @@ export class FaultsRepository extends PrismaRepository<
     tenantId: string,
     skip?: number,
     take?: number,
+    scopeWhere: Record<string, unknown> = {},
   ): Promise<any[]> {
     return this.delegate.findMany({
-      where: { tenantId },
+      where: { tenantId, ...scopeWhere },
       include: {
         customer: true,
         assignedToUser: SAFE_USER_SELECT,
@@ -81,10 +82,16 @@ export class FaultsRepository extends PrismaRepository<
     return fault || null;
   }
 
-  async findBreached(tenantId: string, skip?: number, take?: number) {
+  async findBreached(
+    tenantId: string,
+    skip?: number,
+    take?: number,
+    scopeWhere: Record<string, unknown> = {},
+  ) {
     return this.delegate.findMany({
       where: {
         tenantId,
+        ...scopeWhere,
         slaDeadline: { lt: new Date() },
         status: { notIn: [FaultStatus.RESOLVED, FaultStatus.CLOSED] },
       },

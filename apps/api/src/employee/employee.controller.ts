@@ -17,7 +17,11 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
-import { CurrentTenant } from '@pingforce-monorepo/shared';
+import {
+  CurrentTenant,
+  CurrentUser,
+  CurrentUserContext,
+} from '@pingforce-monorepo/shared';
 
 @UseGuards(JwtAuthGuard, RbacGuard)
 @Controller('employees')
@@ -46,11 +50,15 @@ export class EmployeeController {
   @RequirePermission('EMPLOYEES', 'READ')
   findAll(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
     @Query('cursor') cursor?: string,
     @Query('take') take?: string,
   ) {
     const takeVal = take ? parseInt(take, 10) : 50;
-    return this.employeeService.findAll(tenantId, { cursor, take: takeVal });
+    return this.employeeService.findAll(tenantId, user.userId, {
+      cursor,
+      take: takeVal,
+    });
   }
 
   @Get(':id')

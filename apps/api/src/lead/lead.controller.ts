@@ -49,11 +49,13 @@ export class LeadController {
   @RequirePermission('LEADS', 'READ')
   findAll(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
     @Query('cursor') cursor?: string,
     @Query('take') take?: string,
   ) {
     return this.leadService.findAll(
       tenantId,
+      user.userId,
       cursor,
       take ? parseInt(take, 10) : undefined,
     );
@@ -63,11 +65,13 @@ export class LeadController {
   @RequirePermission('LEADS', 'READ')
   getPipeline(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
     @Query('cursor') cursor?: string,
     @Query('take') take?: string,
   ) {
     return this.leadService.getPipeline(
       tenantId,
+      user.userId,
       cursor,
       take ? parseInt(take, 10) : undefined,
     );

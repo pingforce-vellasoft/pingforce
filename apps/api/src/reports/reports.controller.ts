@@ -25,33 +25,49 @@ export class ReportsController {
   @RequirePermission('REPORTS', 'READ')
   attendance(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
     @Query() query: ReportQueryDto,
   ) {
-    return this.reportsService.attendanceReport(tenantId, query);
+    return this.reportsService.attendanceReport(tenantId, user.userId, query);
   }
 
   @Get('visits')
   @RequirePermission('REPORTS', 'READ')
-  visits(@CurrentTenant() tenantId: string, @Query() query: ReportQueryDto) {
-    return this.reportsService.visitsReport(tenantId, query);
+  visits(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportsService.visitsReport(tenantId, user.userId, query);
   }
 
   @Get('faults')
   @RequirePermission('REPORTS', 'READ')
-  faults(@CurrentTenant() tenantId: string, @Query() query: ReportQueryDto) {
-    return this.reportsService.faultsReport(tenantId, query);
+  faults(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportsService.faultsReport(tenantId, user.userId, query);
   }
 
   @Get('leads')
   @RequirePermission('REPORTS', 'READ')
-  leads(@CurrentTenant() tenantId: string, @Query() query: ReportQueryDto) {
-    return this.reportsService.leadsReport(tenantId, query);
+  leads(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportsService.leadsReport(tenantId, user.userId, query);
   }
 
   @Get('kpis')
   @RequirePermission('REPORTS', 'READ')
-  kpis(@CurrentTenant() tenantId: string) {
-    return this.reportsService.kpiSummary(tenantId);
+  kpis(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+  ) {
+    return this.reportsService.kpiSummary(tenantId, user.userId);
   }
 
   @Get('export')

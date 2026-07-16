@@ -7,6 +7,46 @@ import { ExportQueryDto, ExportReportType } from './dto/report-query.dto';
 
 const EXPORT_ROW_LIMIT = 10_000;
 
+const VISITS_HEADERS = [
+  'visitNumber',
+  'visitType',
+  'status',
+  'priority',
+  'purpose',
+  'employeeCode',
+  'customerCode',
+  'plannedStartAt',
+  'actualStartAt',
+  'actualEndAt',
+  'gpsValidated',
+  'outcome',
+] as const;
+
+const FAULTS_HEADERS = [
+  'faultNumber',
+  'title',
+  'status',
+  'priority',
+  'customerCode',
+  'createdAt',
+  'slaDeadline',
+  'isEscalated',
+  'escalationLevel',
+] as const;
+
+const LEADS_HEADERS = [
+  'leadNumber',
+  'firstName',
+  'lastName',
+  'companyName',
+  'email',
+  'mobile',
+  'expectedValue',
+  'stage',
+  'convertedAt',
+  'createdAt',
+] as const;
+
 /**
  * Synchronous CSV exports (3.5 EXPORTS.md — CSV only for now; Excel/PDF and
  * async job processing are a later phase). Every export is audit-logged
@@ -25,7 +65,7 @@ export class ReportsExportService {
     actor: CurrentUserContext,
     query: ExportQueryDto,
   ): Promise<{ filename: string; csv: string }> {
-    const csv = await this.buildCsv(tenantId, query);
+    const csv = await this.buildCsv(tenantId, actor, query);
     const filename = `${query.type}-report-${new Date().toISOString().slice(0, 10)}.csv`;
 
     void this.auditService.log({
@@ -43,12 +83,19 @@ export class ReportsExportService {
 
   private async buildCsv(
     tenantId: string,
+    actor: CurrentUserContext,
     query: ExportQueryDto,
   ): Promise<string> {
+    // Exports inherit the caller's effective data scope (DataScope.md §14).
+    const scope = await this.reportsService.resolveReportScope(
+      tenantId,
+      actor.userId,
+    );
     switch (query.type as ExportReportType) {
       case 'attendance': {
         const report = await this.reportsService.attendanceReport(
           tenantId,
+          actor.userId,
           query,
         );
         return this.toCsv(
@@ -66,10 +113,12 @@ export class ReportsExportService {
         );
       }
       case 'visits': {
+        if (scope.kind === 'NONE') return this.toCsv(VISITS_HEADERS, []);
         const range = this.range(query);
         const rows = await this.prisma.visit.findMany({
           where: {
             tenantId,
+            ...this.reportsService.visitScopeWhere(scope),
             plannedStartAt: { gte: range.from, lte: range.to },
             ...(query.employeeId && { employeeId: query.employeeId }),
             ...(query.customerId && { customerId: query.customerId }),
@@ -92,20 +141,7 @@ export class ReportsExportService {
           take: EXPORT_ROW_LIMIT,
         });
         return this.toCsv(
-          [
-            'visitNumber',
-            'visitType',
-            'status',
-            'priority',
-            'purpose',
-            'employeeCode',
-            'customerCode',
-            'plannedStartAt',
-            'actualStartAt',
-            'actualEndAt',
-            'gpsValidated',
-            'outcome',
-          ],
+          VISITS_HEADERS,
           rows.map((v) => ({
             ...v,
             employeeCode: v.employee?.employeeCode ?? '',
@@ -114,10 +150,12 @@ export class ReportsExportService {
         );
       }
       case 'faults': {
+        if (scope.kind === 'NONE') return this.toCsv(FAULTS_HEADERS, []);
         const range = this.range(query);
         const rows = await this.prisma.fault.findMany({
           where: {
             tenantId,
+            ...this.reportsService.faultScopeWhere(scope),
             createdAt: { gte: range.from, lte: range.to },
             ...(query.customerId && { customerId: query.customerId }),
           },
@@ -136,17 +174,7 @@ export class ReportsExportService {
           take: EXPORT_ROW_LIMIT,
         });
         return this.toCsv(
-          [
-            'faultNumber',
-            'title',
-            'status',
-            'priority',
-            'customerCode',
-            'createdAt',
-            'slaDeadline',
-            'isEscalated',
-            'escalationLevel',
-          ],
+          FAULTS_HEADERS,
           rows.map((f) => ({
             ...f,
             customerCode: f.customer?.customerCode ?? '',
@@ -154,10 +182,12 @@ export class ReportsExportService {
         );
       }
       case 'leads': {
+        if (scope.kind === 'NONE') return this.toCsv(LEADS_HEADERS, []);
         const range = this.range(query);
         const rows = await this.prisma.lead.findMany({
           where: {
             tenantId,
+            ...this.reportsService.leadScopeWhere(scope),
             createdAt: { gte: range.from, lte: range.to },
           },
           select: {
@@ -176,18 +206,7 @@ export class ReportsExportService {
           take: EXPORT_ROW_LIMIT,
         });
         return this.toCsv(
-          [
-            'leadNumber',
-            'firstName',
-            'lastName',
-            'companyName',
-            'email',
-            'mobile',
-            'expectedValue',
-            'stage',
-            'convertedAt',
-            'createdAt',
-          ],
+          LEADS_HEADERS,
           rows.map((l) => ({ ...l, stage: l.pipelineStage?.name ?? '' })),
         );
       }
@@ -208,7 +227,13 @@ export class ReportsExportService {
   ): string {
     const escape = (value: unknown): string => {
       if (value === null || value === undefined) return '';
-      const str = value instanceof Date ? value.toISOString() : String(value);
+      let str = value instanceof Date ? value.toISOString() : String(value);
+      // CSV/formula-injection guard (CWE-1236): a leading = + - @ tab or CR
+      // makes Excel/Sheets evaluate the cell as a formula. Neutralize with a
+      // leading single quote (rendered as text, ignored by spreadsheets).
+      if (/^[=+\-@\t\r]/.test(str)) {
+        str = `'${str}`;
+      }
       return /[",\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
     };
     const lines = [headers.join(',')];

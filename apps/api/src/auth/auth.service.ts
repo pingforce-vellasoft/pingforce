@@ -19,6 +19,7 @@ import { OnboardingEmployeeDto } from './dto/onboarding-employee.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { OAuth2Client } from 'google-auth-library';
 import { syncSystemRolePermissions } from '../rbac/permission-catalog';
+import { seedDefaultNotificationTemplates } from '../notifications/default-templates';
 import { SessionService, SessionMeta } from './session.service';
 import { AuditService } from '../audit/audit.service';
 
@@ -536,6 +537,10 @@ export class AuthService implements IAuthService {
       }
 
       await syncSystemRolePermissions(prisma, adminRole.id, 'ADMIN_MANAGER');
+
+      // Default notification templates — without these every business email
+      // (visits/leads/faults) is silently skipped by NotificationsService.
+      await seedDefaultNotificationTemplates(prisma, tenant.id);
 
       const profileData =
         dto.adminFirstName && dto.adminLastName

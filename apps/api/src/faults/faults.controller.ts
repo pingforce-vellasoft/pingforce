@@ -74,12 +74,14 @@ export class FaultsController {
   @RequirePermission('FAULTS', 'READ')
   findAll(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() currentUser: CurrentUserContext,
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
     return this.queryBus.execute(
       new GetFaultsQuery(
         tenantId,
+        currentUser.userId,
         skip ? parseInt(skip, 10) : undefined,
         take ? parseInt(take, 10) : undefined,
       ),
@@ -90,12 +92,14 @@ export class FaultsController {
   @RequirePermission('FAULTS', 'READ')
   findBreached(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() currentUser: CurrentUserContext,
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
     return this.queryBus.execute(
       new GetBreachedFaultsQuery(
         tenantId,
+        currentUser.userId,
         skip ? parseInt(skip, 10) : undefined,
         take ? parseInt(take, 10) : undefined,
       ),

@@ -25,6 +25,7 @@ import {
   ACTIVE_STATES,
   READ_ONLY_STATES,
 } from './domain/visit-state';
+import { RbacService } from '../rbac/rbac.service';
 
 export interface VisitListFilters {
   readonly status?: string;
@@ -62,20 +63,53 @@ export class VisitsService {
   constructor(
     @Inject('IPrismaService') private readonly prisma: ExtendedPrismaClient,
     private readonly eventBus: EventBus,
+    private readonly rbacService: RbacService,
   ) {}
 
   // ---------------------------------------------------------------- queries
+
+  /**
+   * Scoped list for GET /visits (DataScope.md §9 "Assignment"): callers see
+   * visits assigned to employees in their scope or created by users in it.
+   */
+  async findAllScoped(
+    tenantId: string,
+    requesterUserId: string,
+    filters: VisitListFilters,
+    cursor?: string,
+    take?: number,
+  ) {
+    const scope = await this.rbacService.resolveScopeIds(
+      tenantId,
+      requesterUserId,
+      'VISITS',
+      ['READ'],
+    );
+    if (scope.kind === 'NONE') return [];
+    const scopeWhere: Record<string, unknown> =
+      scope.kind === 'ALL'
+        ? {}
+        : {
+            OR: [
+              { employeeId: { in: [...scope.employeeIds] } },
+              { createdBy: { in: [...scope.userIds] } },
+            ],
+          };
+    return this.findAll(tenantId, filters, cursor, take, scopeWhere);
+  }
 
   async findAll(
     tenantId: string,
     filters: VisitListFilters,
     cursor?: string,
     take?: number,
+    scopeWhere: Record<string, unknown> = {},
   ) {
     const limit = Math.min(take ? Number(take) : 50, 100);
     return this.prisma.visit.findMany({
       where: {
         tenantId,
+        ...scopeWhere,
         ...(filters.status && { status: filters.status }),
         ...(filters.employeeId && { employeeId: filters.employeeId }),
         ...(filters.customerId && { customerId: filters.customerId }),

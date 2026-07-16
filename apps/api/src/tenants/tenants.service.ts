@@ -2,6 +2,7 @@ import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import * as argon2 from 'argon2';
 import { syncSystemRolePermissions } from '../rbac/permission-catalog';
+import { seedDefaultNotificationTemplates } from '../notifications/default-templates';
 
 @Injectable()
 export class TenantsService {
@@ -99,6 +100,10 @@ export class TenantsService {
       // Grant the standard permission sets from the shared catalog
       await syncSystemRolePermissions(prisma, adminRole.id, 'ADMIN_MANAGER');
       await syncSystemRolePermissions(prisma, employeeRole.id, 'EMPLOYEE');
+
+      // Default notification templates — without these every business email
+      // (visits/leads/faults) is silently skipped by NotificationsService.
+      await seedDefaultNotificationTemplates(prisma, tenant.id);
 
       await prisma.user.create({
         data: {

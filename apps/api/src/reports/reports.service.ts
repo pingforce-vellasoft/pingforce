@@ -4,6 +4,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
 import { ReportQueryDto } from './dto/report-query.dto';
+import { RbacService, ResolvedDataScope } from '../rbac/rbac.service';
 
 interface DateRange {
   readonly from: Date;
@@ -26,11 +27,43 @@ export class ReportsService {
   constructor(
     @Inject('IPrismaService') private readonly prisma: ExtendedPrismaClient,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly rbacService: RbacService,
   ) {}
 
+  /**
+   * Reports are generated with the caller's effective data scope
+   * (DataScope.md §9 "Reports", §15 dashboards).
+   */
+  async resolveReportScope(
+    tenantId: string,
+    requesterUserId: string,
+  ): Promise<ResolvedDataScope> {
+    return this.rbacService.resolveScopeIds(
+      tenantId,
+      requesterUserId,
+      'REPORTS',
+      ['READ'],
+    );
+  }
+
   /** Attendance summary per employee (KPI_LIBRARY.md §4). */
-  async attendanceReport(tenantId: string, query: ReportQueryDto) {
+  async attendanceReport(
+    tenantId: string,
+    requesterUserId: string,
+    query: ReportQueryDto,
+  ) {
     const range = this.resolveRange(query);
+    const scope = await this.resolveReportScope(tenantId, requesterUserId);
+    if (
+      scope.kind === 'NONE' ||
+      (scope.kind === 'IDS' && scope.employeeIds.length === 0)
+    ) {
+      return { range, rows: [] };
+    }
+    const scopeFilter =
+      scope.kind === 'IDS'
+        ? Prisma.sql`AND e."id" IN (${Prisma.join([...scope.employeeIds])})`
+        : Prisma.empty;
     const employeeFilter = query.employeeId
       ? Prisma.sql`AND e."id" = ${query.employeeId}`
       : Prisma.empty;
@@ -68,7 +101,7 @@ export class ReportsService {
         ON s."attendanceId" = a."id"
         AND s."deletedAt" IS NULL
         AND s."punchOut" IS NOT NULL
-      WHERE e."tenantId" = ${tenantId} AND e."deletedAt" IS NULL ${employeeFilter}
+      WHERE e."tenantId" = ${tenantId} AND e."deletedAt" IS NULL ${scopeFilter} ${employeeFilter}
       GROUP BY e."id", e."employeeCode", e."firstName", e."lastName"
       ORDER BY e."employeeCode";
     `;
@@ -77,10 +110,28 @@ export class ReportsService {
   }
 
   /** Visit status/completion/GPS-compliance rollup (KPI_LIBRARY.md §5). */
-  async visitsReport(tenantId: string, query: ReportQueryDto) {
+  async visitsReport(
+    tenantId: string,
+    requesterUserId: string,
+    query: ReportQueryDto,
+  ) {
     const range = this.resolveRange(query);
+    const scope = await this.resolveReportScope(tenantId, requesterUserId);
+    if (scope.kind === 'NONE') {
+      return {
+        range,
+        total: 0,
+        byStatus: {},
+        completed: 0,
+        completionRate: null,
+        gpsComplianceRate: null,
+        executedWithDuration: 0,
+        avgDurationMinutes: null,
+      };
+    }
     const where = {
       tenantId,
+      ...this.visitScopeWhere(scope),
       plannedStartAt: { gte: range.from, lte: range.to },
       ...(query.employeeId && { employeeId: query.employeeId }),
       ...(query.customerId && { customerId: query.customerId }),
@@ -119,13 +170,21 @@ export class ReportsService {
     const customerFilter = query.customerId
       ? Prisma.sql`AND "customerId" = ${query.customerId}`
       : Prisma.empty;
+    const scopeFilter =
+      scope.kind === 'IDS'
+        ? Prisma.sql`AND (${
+            scope.employeeIds.length
+              ? Prisma.sql`"employeeId" IN (${Prisma.join([...scope.employeeIds])})`
+              : Prisma.sql`FALSE`
+          } OR "createdBy" IN (${Prisma.join([...scope.userIds])}))`
+        : Prisma.empty;
     const avg = await this.prisma.$queryRaw<{ avgMinutes: number | null }[]>`
       SELECT ROUND((AVG(EXTRACT(EPOCH FROM ("actualEndAt" - "actualStartAt"))) / 60)::numeric, 1)::float AS "avgMinutes"
       FROM "visits"
       WHERE "tenantId" = ${tenantId} AND "deletedAt" IS NULL
         AND "actualStartAt" IS NOT NULL AND "actualEndAt" IS NOT NULL
         AND "plannedStartAt" >= ${range.from} AND "plannedStartAt" <= ${range.to}
-        ${employeeFilter} ${customerFilter};
+        ${scopeFilter} ${employeeFilter} ${customerFilter};
     `;
 
     return {
@@ -143,10 +202,28 @@ export class ReportsService {
   }
 
   /** Fault volume, SLA compliance and resolution time (KPI_LIBRARY.md §6). */
-  async faultsReport(tenantId: string, query: ReportQueryDto) {
+  async faultsReport(
+    tenantId: string,
+    requesterUserId: string,
+    query: ReportQueryDto,
+  ) {
     const range = this.resolveRange(query);
+    const scope = await this.resolveReportScope(tenantId, requesterUserId);
+    if (scope.kind === 'NONE') {
+      return {
+        range,
+        total: 0,
+        byStatus: {},
+        open: 0,
+        closed: 0,
+        slaBreached: 0,
+        slaComplianceRate: null,
+        avgResolutionHours: null,
+      };
+    }
     const where = {
       tenantId,
+      ...this.faultScopeWhere(scope),
       createdAt: { gte: range.from, lte: range.to },
       ...(query.customerId && { customerId: query.customerId }),
     };
@@ -164,6 +241,10 @@ export class ReportsService {
     const customerFilter = query.customerId
       ? Prisma.sql`AND "customerId" = ${query.customerId}`
       : Prisma.empty;
+    const scopeFilter =
+      scope.kind === 'IDS'
+        ? Prisma.sql`AND ("assignedToId" IN (${Prisma.join([...scope.userIds])}) OR "createdBy" IN (${Prisma.join([...scope.userIds])}))`
+        : Prisma.empty;
     const resolution = await this.prisma.$queryRaw<
       { avgHours: number | null }[]
     >`
@@ -172,7 +253,7 @@ export class ReportsService {
       WHERE "tenantId" = ${tenantId} AND "deletedAt" IS NULL
         AND "status" IN ('RESOLVED', 'CLOSED')
         AND "createdAt" >= ${range.from} AND "createdAt" <= ${range.to}
-        ${customerFilter};
+        ${scopeFilter} ${customerFilter};
     `;
 
     const statusMap = Object.fromEntries(
@@ -194,17 +275,37 @@ export class ReportsService {
   }
 
   /** Lead funnel + conversion + pipeline value (KPI_LIBRARY.md §7). */
-  async leadsReport(tenantId: string, query: ReportQueryDto) {
+  async leadsReport(
+    tenantId: string,
+    requesterUserId: string,
+    query: ReportQueryDto,
+  ) {
     const range = this.resolveRange(query);
+    const scope = await this.resolveReportScope(tenantId, requesterUserId);
+    if (scope.kind === 'NONE') {
+      return {
+        range,
+        newLeads: 0,
+        convertedLeads: 0,
+        conversionRate: null,
+        pipeline: [],
+      };
+    }
+    const leadScope = this.leadScopeWhere(scope);
     const where = {
       tenantId,
+      ...leadScope,
       createdAt: { gte: range.from, lte: range.to },
     };
 
     const [total, converted, pipeline, stages] = await Promise.all([
       this.prisma.lead.count({ where }),
       this.prisma.lead.count({
-        where: { tenantId, convertedAt: { gte: range.from, lte: range.to } },
+        where: {
+          tenantId,
+          ...leadScope,
+          convertedAt: { gte: range.from, lte: range.to },
+        },
       }),
       this.prisma.lead.groupBy({
         by: ['pipelineStageId'],
@@ -241,10 +342,39 @@ export class ReportsService {
    * Cross-module KPI snapshot for dashboard cards
    * (KPI_LIBRARY.md §12 manager dashboard). Cached per tenant for 60s.
    */
-  async kpiSummary(tenantId: string) {
-    const cacheKey = `reports_kpis_${tenantId}`;
+  async kpiSummary(tenantId: string, requesterUserId: string) {
+    const scope = await this.resolveReportScope(tenantId, requesterUserId);
+    if (scope.kind === 'NONE') {
+      return {
+        generatedAt: new Date().toISOString(),
+        workforce: { activeEmployees: 0, presentToday: 0, attendanceRate: null },
+        visits: { active: 0, completedToday: 0 },
+        faults: { open: 0, slaBreached: 0 },
+        leads: {
+          newLast30Days: 0,
+          convertedLast30Days: 0,
+          conversionRate: null,
+        },
+      };
+    }
+    // Scoped snapshots are cached per caller so one user's view never leaks
+    // to another (DataScope.md §15).
+    const cacheKey =
+      scope.kind === 'ALL'
+        ? `reports_kpis_${tenantId}`
+        : `reports_kpis_${tenantId}_${requesterUserId}`;
     const cached = await this.cacheManager.get(cacheKey);
     if (cached) return cached;
+
+    const employeeScope =
+      scope.kind === 'IDS' ? { id: { in: [...scope.employeeIds] } } : {};
+    const employeeIdScope =
+      scope.kind === 'IDS'
+        ? { employeeId: { in: [...scope.employeeIds] } }
+        : {};
+    const visitScope = this.visitScopeWhere(scope);
+    const faultScope = this.faultScopeWhere(scope);
+    const leadScope = this.leadScopeWhere(scope);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -261,36 +391,43 @@ export class ReportsService {
       converted30d,
     ] = await Promise.all([
       this.prisma.employee.count({
-        where: { tenantId, employmentStatus: 'ACTIVE' },
+        where: { tenantId, ...employeeScope, employmentStatus: 'ACTIVE' },
       }),
       this.prisma.attendance.count({
         where: {
           tenantId,
+          ...employeeIdScope,
           attendanceDate: today,
           status: { in: ['PRESENT', 'LATE', 'HALF_DAY'] },
         },
       }),
       this.prisma.visit.count({
-        where: { tenantId, status: { in: ['STARTED', 'PAUSED'] } },
+        where: { tenantId, ...visitScope, status: { in: ['STARTED', 'PAUSED'] } },
       }),
       this.prisma.visit.count({
-        where: { tenantId, status: 'COMPLETED', actualEndAt: { gte: today } },
+        where: {
+          tenantId,
+          ...visitScope,
+          status: 'COMPLETED',
+          actualEndAt: { gte: today },
+        },
       }),
       this.prisma.fault.count({
-        where: { tenantId, status: { in: ['OPEN', 'IN_PROGRESS'] } },
+        where: { tenantId, ...faultScope, status: { in: ['OPEN', 'IN_PROGRESS'] } },
       }),
       this.prisma.fault.count({
         where: {
           tenantId,
+          ...faultScope,
           isEscalated: true,
           status: { in: ['OPEN', 'IN_PROGRESS'] },
         },
       }),
       this.prisma.lead.count({
-        where: { tenantId, createdAt: { gte: last30 } },
+        where: { tenantId, ...leadScope, createdAt: { gte: last30 } },
       }),
       this.prisma.lead.count({
-        where: { tenantId, convertedAt: { gte: last30 } },
+        where: { tenantId, ...leadScope, convertedAt: { gte: last30 } },
       }),
     ]);
 
@@ -315,6 +452,39 @@ export class ReportsService {
   }
 
   // --------------------------------------------------------------- helpers
+
+  /** Visits: assigned employee in scope OR created by a user in scope. */
+  visitScopeWhere(scope: ResolvedDataScope): Record<string, unknown> {
+    if (scope.kind !== 'IDS') return {};
+    return {
+      OR: [
+        { employeeId: { in: [...scope.employeeIds] } },
+        { createdBy: { in: [...scope.userIds] } },
+      ],
+    };
+  }
+
+  /** Faults: assignee or creator in scope (DataScope.md §9). */
+  faultScopeWhere(scope: ResolvedDataScope): Record<string, unknown> {
+    if (scope.kind !== 'IDS') return {};
+    return {
+      OR: [
+        { assignedToId: { in: [...scope.userIds] } },
+        { createdBy: { in: [...scope.userIds] } },
+      ],
+    };
+  }
+
+  /** Leads: owner or creator in scope (DataScope.md §9). */
+  leadScopeWhere(scope: ResolvedDataScope): Record<string, unknown> {
+    if (scope.kind !== 'IDS') return {};
+    return {
+      OR: [
+        { ownerUserId: { in: [...scope.userIds] } },
+        { createdBy: { in: [...scope.userIds] } },
+      ],
+    };
+  }
 
   private resolveRange(query: ReportQueryDto): DateRange {
     const to = query.to ? new Date(query.to) : new Date();

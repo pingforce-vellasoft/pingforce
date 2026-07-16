@@ -1,6 +1,7 @@
 export class GetFaultsQuery {
   constructor(
     public readonly tenantId: string,
+    public readonly requesterUserId: string,
     public readonly skip?: number,
     public readonly take?: number,
   ) {}
@@ -22,6 +23,7 @@ export class GetFaultByIdQuery {
 export class GetBreachedFaultsQuery {
   constructor(
     public readonly tenantId: string,
+    public readonly requesterUserId: string,
     public readonly skip?: number,
     public readonly take?: number,
   ) {}

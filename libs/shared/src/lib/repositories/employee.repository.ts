@@ -22,9 +22,14 @@ export class EmployeeRepository extends PrismaRepository<
   }
 
   // Extend base repository with specialized methods
-  async findAllWithRelations(tenantId: string, limit: number, cursor?: string) {
+  async findAllWithRelations(
+    tenantId: string,
+    limit: number,
+    cursor?: string,
+    scopeWhere: Record<string, unknown> = {},
+  ) {
     return this.prismaService.employee.findMany({
-      where: { tenantId },
+      where: { tenantId, ...scopeWhere },
       take: limit,
       ...(cursor && { skip: 1, cursor: { id: cursor } }),
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],

@@ -36,18 +36,15 @@ import { ApprovalsModule } from '../approvals/approvals.module';
 import { VisitsModule } from '../visits/visits.module';
 import { ReportsModule } from '../reports/reports.module';
 
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
-
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'uploads'),
-      serveRoot: '/api/v1/uploads',
-    }),
+    // NOTE: uploads are deliberately NOT served via ServeStaticModule —
+    // static serving bypasses Nest guards and exposed /api/v1/uploads to
+    // anyone with the URL. Files are streamed through the guarded
+    // FilesController instead (security audit B4).
     EventEmitterModule.forRoot(),
     TerminusModule,
     ThrottlerModule.forRoot([

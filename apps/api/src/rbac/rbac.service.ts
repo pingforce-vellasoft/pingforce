@@ -24,6 +24,25 @@ interface CachedUserGrants {
 // stops hitting the database on every request.
 const GRANTS_CACHE_TTL_MS = 30_000;
 
+/**
+ * Data scope resolved to concrete record-id sets (DataScope.md §6-§7).
+ *
+ * - ALL:  no additional filtering (tenant admins / super admin)
+ * - NONE: deny — caller has no visibility, return empty results
+ * - IDS:  restrict to these employee ids (employee-linked records) and/or
+ *         user ids (owner/assignee/creator-linked records)
+ */
+export type ResolvedDataScope =
+  | { readonly kind: 'ALL' }
+  | { readonly kind: 'NONE' }
+  | {
+      readonly kind: 'IDS';
+      readonly employeeIds: readonly string[];
+      readonly userIds: readonly string[];
+    };
+
+const SCOPE_RANK = { OWN: 1, TEAM: 2, BRANCH: 3, ALL: 4 } as const;
+
 @Injectable()
 export class RbacService {
   constructor(
@@ -136,6 +155,95 @@ export class RbacService {
       default:
         return null;
     }
+  }
+
+  /**
+   * Resolves the caller's effective data scope for a module into concrete
+   * id sets usable as query filters (DataScope.md §6-§7, §13). When several
+   * actions are passed (e.g. READ + READ_OWN) the broadest granted scope
+   * wins. Default outcome: NONE (deny).
+   */
+  async resolveScopeIds(
+    tenantId: string,
+    userId: string,
+    module: string,
+    actions: readonly string[],
+  ): Promise<ResolvedDataScope> {
+    let scope: 'OWN' | 'TEAM' | 'BRANCH' | 'ALL' | null = null;
+    for (const action of actions) {
+      const s = await this.getDataScope(userId, module, action);
+      if (s && (scope === null || SCOPE_RANK[s] > SCOPE_RANK[scope])) {
+        scope = s;
+      }
+    }
+    if (scope === null) return { kind: 'NONE' };
+    if (scope === 'ALL') return { kind: 'ALL' };
+
+    const employee = await this.prisma.employee.findFirst({
+      where: { tenantId, userId, deletedAt: null },
+      select: { id: true, branchId: true },
+    });
+
+    if (scope === 'OWN') {
+      // A user without an employee record still owns user-linked records
+      // (created faults/leads), so OWN keeps the caller's userId visible.
+      return {
+        kind: 'IDS',
+        employeeIds: employee ? [employee.id] : [],
+        userIds: [userId],
+      };
+    }
+
+    if (!employee) return { kind: 'NONE' };
+    if (scope === 'BRANCH' && !employee.branchId) return { kind: 'NONE' };
+
+    const members = await this.prisma.employee.findMany({
+      where:
+        scope === 'TEAM'
+          ? { tenantId, reportingManagerId: employee.id, deletedAt: null }
+          : { tenantId, branchId: employee.branchId, deletedAt: null },
+      select: { id: true, userId: true },
+    });
+
+    const employeeIds = new Set<string>([employee.id]);
+    const userIds = new Set<string>([userId]);
+    for (const m of members) {
+      employeeIds.add(m.id);
+      if (m.userId) userIds.add(m.userId);
+    }
+    return {
+      kind: 'IDS',
+      employeeIds: [...employeeIds],
+      userIds: [...userIds],
+    };
+  }
+
+  /**
+   * Prisma `where` fragment for records linked to an employee id column.
+   * Returns null when the caller has no visibility (deny).
+   */
+  employeeScopeWhere(
+    scope: ResolvedDataScope,
+    field = 'employeeId',
+  ): Record<string, unknown> | null {
+    if (scope.kind === 'NONE') return null;
+    if (scope.kind === 'ALL') return {};
+    return { [field]: { in: [...scope.employeeIds] } };
+  }
+
+  /**
+   * Prisma `where` fragment for records linked to user id columns
+   * (owner/assignee/creator). Returns null when the caller has no visibility.
+   */
+  userScopeWhere(
+    scope: ResolvedDataScope,
+    fields: readonly string[],
+  ): Record<string, unknown> | null {
+    if (scope.kind === 'NONE') return null;
+    if (scope.kind === 'ALL') return {};
+    return {
+      OR: fields.map((f) => ({ [f]: { in: [...scope.userIds] } })),
+    };
   }
 
   async findAllRoles(tenantId: string) {

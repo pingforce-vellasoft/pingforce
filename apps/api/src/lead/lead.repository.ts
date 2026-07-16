@@ -37,13 +37,14 @@ export class LeadRepository extends PrismaRepository<
     tenantId: string,
     cursor?: string | number,
     take?: number,
+    scopeWhere: Record<string, unknown> = {},
   ): Promise<any[]> {
     const takeNum = take ? Number(take) : 50;
     const limit = Math.min(takeNum, 100);
     const cursorStr = cursor as string;
 
     return this.delegate.findMany({
-      where: { tenantId },
+      where: { tenantId, ...scopeWhere },
       include: {
         ownerUser: SAFE_USER_SELECT,
       },
@@ -72,12 +73,13 @@ export class LeadRepository extends PrismaRepository<
     tenantId: string,
     cursor?: string,
     take?: number,
+    scopeWhere: Record<string, unknown> = {},
   ): Promise<any[]> {
     const takeNum = take ? Number(take) : 50;
     const limit = Math.min(takeNum, 100);
 
     return this.delegate.findMany({
-      where: { tenantId },
+      where: { tenantId, ...scopeWhere },
       include: {
         pipelineStage: true,
         ownerUser: SAFE_USER_SELECT,
