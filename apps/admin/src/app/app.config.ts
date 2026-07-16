@@ -8,6 +8,7 @@ import { provideRouter, withViewTransitions } from '@angular/router';
 import { appRoutes } from './app.routes';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { apiUrlInterceptor } from './core/interceptors/api-url.interceptor';
 import { jwtInterceptor } from './core/interceptors/jwt.interceptor';
 import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
@@ -30,7 +31,12 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(appRoutes, withViewTransitions()),
     provideHttpClient(
-      withInterceptors([jwtInterceptor, errorInterceptor, loadingInterceptor]),
+      withInterceptors([
+        apiUrlInterceptor,
+        jwtInterceptor,
+        errorInterceptor,
+        loadingInterceptor,
+      ]),
     ),
     provideAnimationsAsync(),
     {

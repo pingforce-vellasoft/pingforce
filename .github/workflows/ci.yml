@@ -5,13 +5,20 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
 
 permissions:
   actions: read
   contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
 
 jobs:
-  main:
+  # ── 1. Lint / Test / Build (NX affected) ──────────────────────────────────
+  quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,3 +36,142 @@ jobs:
 
       - run: npx nx format:check
       - run: npx nx affected -t lint test build
+
+  # ── 2. Security scan ──────────────────────────────────────────────────────
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      # Fail on high/critical vulnerabilities in production dependencies
+      - run: npm audit --omit=dev --audit-level=high
+
+      # Filesystem scan: vulnerable deps, IaC misconfig, leaked secrets
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+
+  # ── 3. Package: API Docker image → GHCR (main only) ───────────────────────
+  # Frontends do NOT get Docker images — they deploy to Firebase Hosting.
+  package:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [quality, security]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push api image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:${{ github.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+  # ── 3b. Frontends → Firebase Hosting (main only; needs
+  #       FIREBASE_SERVICE_ACCOUNT repo secret — skips gracefully until set) ──
+  deploy-frontends:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [quality, security]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Firebase secret
+        id: creds
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SA" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::FIREBASE_SERVICE_ACCOUNT not set — skipping frontend deploy"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.creds.outputs.configured == 'true'
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - if: steps.creds.outputs.configured == 'true'
+        run: npm install --no-fund --no-audit
+
+      - name: Build frontends
+        if: steps.creds.outputs.configured == 'true'
+        run: |
+          npx nx build website --configuration=production
+          npx nx build admin --configuration=production
+
+      - name: Deploy to Firebase Hosting
+        if: steps.creds.outputs.configured == 'true'
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          echo "$FIREBASE_SA" > "$RUNNER_TEMP/firebase-sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
+          npx firebase-tools deploy --only hosting --project pingforce-db47a --non-interactive
+          rm -f "$RUNNER_TEMP/firebase-sa.json"
+
+  # ── 4. Deploy to OCI (main only; needs OCI_HOST/OCI_SSH_USER/OCI_SSH_KEY
+  #      repo secrets — skips gracefully until they are configured) ──────────
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: package
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check deploy secrets
+        id: creds
+        env:
+          OCI_HOST: ${{ secrets.OCI_HOST }}
+        run: |
+          if [ -z "$OCI_HOST" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::OCI deploy secrets not set — skipping deploy stage"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy via SSH
+        if: steps.creds.outputs.configured == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ${{ secrets.OCI_SSH_USER }}
+          key: ${{ secrets.OCI_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/pingforce
+            docker compose pull api
+            docker compose up -d api
+            docker system prune -f
+
+      - name: Smoke test
+        if: steps.creds.outputs.configured == 'true'
+        run: |
+          sleep 15
+          curl -fsS "https://admin-api.pingforce.in/api/v1/health" > /dev/null

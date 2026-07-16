@@ -1,0 +1,62 @@
+<header class="nav">
+  <div class="container nav-inner">
+    <span class="brand">Ping<span class="accent">Force</span></span>
+    <nav class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#contact">Contact</a>
+      <a class="btn btn-outline" href="https://admin.pingforce.in">Sign in</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container">
+      <h1>Your field workforce,<br />fully visible.</h1>
+      <p class="lead">
+        PingForce is a workforce management platform built for ISPs, field
+        service, facility management and security agencies — GPS attendance,
+        visit tracking, fault management, leave and payroll in one system.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#contact">Request a demo</a>
+        <a class="btn btn-outline" href="#features">See features</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="features">
+    <div class="container">
+      <h2>Everything a field team needs</h2>
+      <div class="grid">
+        @for (f of features; track f.title) {
+          <div class="card">
+            <div class="card-icon">{{ f.icon }}</div>
+            <h3>{{ f.title }}</h3>
+            <p>{{ f.text }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="contact">
+    <div class="container">
+      <h2>Get started</h2>
+      <p>
+        We onboard new organizations personally. Write to us and we will set up
+        your workspace and walk your team through the app.
+      </p>
+      <a class="btn btn-primary" href="mailto:hello@pingforce.in"
+        >hello&#64;pingforce.in</a
+      >
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>© {{ year }} PingForce · A Vellasoft product</span>
+    <a href="https://admin.pingforce.in">Admin portal</a>
+  </div>
+</footer>
