@@ -105,6 +105,8 @@ model Tenant {
   fileAttachments       FileAttachment[]
   notificationTemplates NotificationTemplate[]
   notificationLogs      NotificationLog[]
+  loginHistory          LoginHistory[]
+  emailConfig           TenantEmailConfig?
 
   @@map("tenants")
 }
@@ -278,6 +280,31 @@ model DeviceToken {
 
   @@unique([userId, deviceId])
   @@map("device_tokens")
+}
+
+// Immutable authentication-activity trail (LoginHistory.md §5/§13). Tenant
+// users only — SYSTEM (super-admin) logins have no Tenant row to reference.
+model LoginHistory {
+  id            String    @id @default(uuid())
+  tenantId      String
+  userId        String?
+  username      String // identifier as presented (email or phone)
+  authMethod    String    @default("PASSWORD") // PASSWORD, REFRESH_TOKEN, GOOGLE
+  outcome       String // SUCCESS, UNKNOWN_ACCOUNT, INVALID_PASSWORD, ACCOUNT_INACTIVE, PORTAL_RESTRICTED, TOKEN_REPLAY
+  sessionId     String?
+  deviceId      String?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime  @default(now())
+  logoutAt      DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, userId, createdAt])
+  @@index([tenantId, outcome])
+  @@index([sessionId])
+  @@map("login_history")
 }
 
 // -----------------------------------------------------------------------------
@@ -803,6 +830,9 @@ model AttendanceSession {
   @@index([tenantId])
   @@index([attendanceId])
   @@index([tenantId, employeeId, punchIn])
+  @@index([tenantId, punchIn])
+  @@index([employeeId, punchOut])
+  @@index([tenantId, punchOut])
   @@map("attendance_sessions")
 }
 
@@ -922,6 +952,7 @@ model Geofence {
 
   @@unique([id, tenantId])
   @@index([tenantId])
+  @@index([tenantId, active])
   @@map("geofences")
 }
 
@@ -983,6 +1014,8 @@ model OfflineQueue {
 
   @@unique([id, tenantId])
   @@index([tenantId])
+  @@index([tenantId, syncStatus, createdAt])
+  @@index([employeeId, syncStatus])
   @@map("offline_queue")
 }
 
@@ -1451,23 +1484,26 @@ model TenantSetting {
 }
 
 model FileAttachment {
-  id         String   @id @default(uuid())
-  tenantId   String
-  entityType String
-  entityId   String
-  fileName   String
-  fileSize   Int
-  mimeType   String
-  fileUrl    String
-  storageKey String
-  uploadedBy String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String   @id @default(uuid())
+  tenantId        String
+  entityType      String
+  entityId        String
+  fileName        String
+  fileSize        Int
+  mimeType        String
+  fileUrl         String
+  storageKey      String
+  checksum        String? // SHA-256 of the stored bytes (Upload.md §11)
+  storageProvider String   @default("LOCAL") // LOCAL, OBJECT_STORAGE
+  uploadedBy      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([id, tenantId])
   @@index([tenantId, entityType, entityId])
+  @@index([tenantId, checksum])
   @@map("file_attachments")
 }
 
@@ -1512,6 +1548,28 @@ model NotificationLog {
   @@index([tenantId, recipientId])
   @@index([tenantId, status])
   @@map("notification_logs")
+}
+
+// Per-tenant SMTP provider (Email.md §5 — "Providers are configurable per
+// tenant"). passwordEnc is AES-256-GCM sealed with EMAIL_CONFIG_ENCRYPTION_KEY;
+// tenants without a row fall back to the global SMTP transport.
+model TenantEmailConfig {
+  id          String   @id @default(uuid())
+  tenantId    String   @unique
+  host        String
+  port        Int      @default(587)
+  secure      Boolean  @default(false)
+  username    String?
+  passwordEnc String?
+  fromAddress String
+  status      String   @default("ACTIVE") // ACTIVE, DISABLED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_email_configs")
 }
 
 // -----------------------------------------------------------------------------

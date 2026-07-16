@@ -37,7 +37,22 @@ const softDeleteModels = [
 
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL!;
-  const pool = new Pool({ connectionString });
+  // Bounded pool so a burst (morning check-in rush) queues instead of
+  // exhausting PostgreSQL's max_connections. Tune via env per instance.
+  const pool = new Pool({
+    connectionString,
+    max: parseInt(process.env.DB_POOL_MAX ?? '30', 10),
+    idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT ?? '30000', 10),
+    connectionTimeoutMillis: parseInt(
+      process.env.DB_POOL_CONNECTION_TIMEOUT ?? '5000',
+      10,
+    ),
+  });
+  // Prevent one bad connection (network blip, server restart) from
+  // crashing the process via an unhandled 'error' event.
+  pool.on('error', (err) => {
+    console.error('pg pool idle client error', err);
+  });
   const adapter = new PrismaPg(pool);
   const client = new PrismaClient({ adapter });
 

@@ -17,6 +17,8 @@ import {
   assertTransition,
   resolveState,
 } from '../domain/session-state';
+import { creditWorkedMinutes } from '../domain/work-minutes';
+import { GeofenceCacheService } from '../geofence-cache.service';
 
 /**
  * Check-in / check-out (STATE_MACHINE.md §3): the punch decides direction
@@ -28,6 +30,7 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
   constructor(
     @Inject('IPrismaService') private readonly prisma: ExtendedPrismaClient,
     private readonly eventBus: EventBus,
+    private readonly geofenceCache: GeofenceCacheService,
   ) {}
 
   async execute({ user, dto }: PunchCommand) {
@@ -44,17 +47,14 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
       throw new UnauthorizedException('Untrusted device');
     }
 
-    // Geofence validation (PostGIS)
-    const geofences = await this.prisma.$queryRaw`
-      SELECT id FROM geofences
-      WHERE "tenantId" = ${employee.tenantId} AND active = true
-      AND ST_DWithin(
-        location,
-        ST_SetSRID(ST_MakePoint(${dto.longitude}, ${dto.latitude}), 4326),
-        "radiusMeters"
-      )
-    `;
-    if (!Array.isArray(geofences) || geofences.length === 0) {
+    // Geofence validation — Redis-cached tenant geofences + in-process
+    // haversine, no DB round-trip on the punch hot path (SCALABILITY_AUDIT)
+    const insideGeofence = await this.geofenceCache.isInsideAny(
+      employee.tenantId,
+      dto.latitude,
+      dto.longitude,
+    );
+    if (!insideGeofence) {
       throw new BadRequestException(
         'You are outside the authorized geofence area.',
       );
@@ -102,16 +102,18 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
           SessionState.CHECKED_OUT,
         );
 
+        const punchOut = new Date();
         const session = await tx.attendanceSession.update({
           where: { id: openSession.id },
           data: {
-            punchOut: new Date(),
+            punchOut,
             checkOutLatitude: dto.latitude,
             checkOutLongitude: dto.longitude,
             punchOutDevice: dto.deviceId,
             sessionStatus: SessionState.CHECKED_OUT,
           },
         });
+        await creditWorkedMinutes(tx, openSession, punchOut);
         return { session, direction: 'OUT' as const };
       }
 

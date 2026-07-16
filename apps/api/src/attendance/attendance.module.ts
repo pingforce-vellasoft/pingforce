@@ -4,6 +4,7 @@ import { AttendanceController } from './attendance.controller';
 import { AttendanceService } from './attendance.service';
 import { CorrectionsService } from './corrections.service';
 import { OfflineSyncService } from './offline-sync.service';
+import { GeofenceCacheService } from './geofence-cache.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AttendanceCommandHandlers } from './commands/handlers';
 import { AttendanceEventHandlers } from './events/handlers';
@@ -15,9 +16,10 @@ import { AttendanceEventHandlers } from './events/handlers';
     AttendanceService,
     CorrectionsService,
     OfflineSyncService,
+    GeofenceCacheService,
     ...AttendanceCommandHandlers,
     ...AttendanceEventHandlers,
   ],
-  exports: [AttendanceService],
+  exports: [AttendanceService, GeofenceCacheService],
 })
 export class AttendanceModule {}
