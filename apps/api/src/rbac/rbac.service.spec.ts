@@ -11,6 +11,7 @@ type MockFn = jest.Mock;
 interface PrismaMock {
   user: { findUnique: MockFn };
   employee: { findFirst: MockFn; findMany: MockFn };
+  userScopeOverride?: { findMany: MockFn };
 }
 
 const noCache = {
@@ -201,9 +202,272 @@ describe('RbacService.resolveScopeIds (DataScope.md §6)', () => {
     }
     expect(prisma.employee.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ reportingManagerId: 'e-mgr' }),
+        where: expect.objectContaining({
+          reportingManagerId: { in: ['e-mgr'] },
+        }),
       }),
     );
+  });
+
+  it('TEAM walks indirect reports through the hierarchy (DataScope.md §8)', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('MANAGER', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'TEAM' },
+            ]),
+          ),
+      },
+      employee: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'e-mgr', branchId: null }),
+        findMany: jest
+          .fn()
+          // level 1: direct report (a supervisor)
+          .mockResolvedValueOnce([{ id: 'e-sup', userId: 'u-sup' }])
+          // level 2: the supervisor's own report
+          .mockResolvedValueOnce([{ id: 'e-worker', userId: 'u-worker' }])
+          .mockResolvedValue([]),
+      },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u-mgr', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope.kind).toBe('IDS');
+    if (scope.kind === 'IDS') {
+      expect([...scope.employeeIds].sort()).toEqual([
+        'e-mgr',
+        'e-sup',
+        'e-worker',
+      ]);
+      expect([...scope.userIds].sort()).toEqual(['u-mgr', 'u-sup', 'u-worker']);
+    }
+  });
+
+  it('TEAM hierarchy walk is cycle-safe', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('MANAGER', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'TEAM' },
+            ]),
+          ),
+      },
+      employee: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'e-mgr', branchId: null }),
+        // Corrupted data: the report "manages" the manager (a cycle)
+        findMany: jest
+          .fn()
+          .mockResolvedValueOnce([{ id: 'e-a', userId: 'u-a' }])
+          .mockResolvedValue([{ id: 'e-mgr', userId: 'u-mgr' }]),
+      },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u-mgr', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope.kind).toBe('IDS');
+    if (scope.kind === 'IDS') {
+      expect([...scope.employeeIds].sort()).toEqual(['e-a', 'e-mgr']);
+    }
+  });
+
+  it('DEPARTMENT resolves to the members of the caller department', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('DEPT_HEAD', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'DEPARTMENT' },
+            ]),
+          ),
+      },
+      employee: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValue({ id: 'e-head', departmentId: 'dep-1' }),
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'e-head', userId: 'u-head' },
+          { id: 'e-x', userId: 'u-x' },
+        ]),
+      },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u-head', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope.kind).toBe('IDS');
+    if (scope.kind === 'IDS') {
+      expect([...scope.employeeIds].sort()).toEqual(['e-head', 'e-x']);
+    }
+    expect(prisma.employee.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ departmentId: 'dep-1' }),
+      }),
+    );
+  });
+
+  it('REGION without a region assignment denies', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('RM', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'REGION' },
+            ]),
+          ),
+      },
+      employee: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'e1', regionId: null }),
+        findMany: jest.fn(),
+      },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u1', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope).toEqual({ kind: 'NONE' });
+  });
+
+  it('BUSINESS_UNIT resolves to the members of the caller business unit', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('BU_HEAD', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'BUSINESS_UNIT' },
+            ]),
+          ),
+      },
+      employee: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValue({ id: 'e-bu', businessUnitId: 'bu-1' }),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ id: 'e-member', userId: 'u-member' }]),
+      },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u-bu', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope.kind).toBe('IDS');
+    expect(prisma.employee.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ businessUnitId: 'bu-1' }),
+      }),
+    );
+  });
+
+  it('CUSTOM unions the caller with active override targets', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('AUDITOR', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'CUSTOM' },
+            ]),
+          ),
+      },
+      employee: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'e-self' }),
+        findMany: jest
+          .fn()
+          // EMPLOYEE targets
+          .mockResolvedValueOnce([{ id: 'e-granted', userId: 'u-granted' }])
+          // BRANCH targets
+          .mockResolvedValueOnce([{ id: 'e-branch', userId: 'u-branch' }]),
+      },
+      userScopeOverride: {
+        findMany: jest.fn().mockResolvedValue([
+          { scopeType: 'EMPLOYEE', targetId: 'e-granted' },
+          { scopeType: 'BRANCH', targetId: 'br-1' },
+        ]),
+      },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u-self', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope.kind).toBe('IDS');
+    if (scope.kind === 'IDS') {
+      expect([...scope.employeeIds].sort()).toEqual([
+        'e-branch',
+        'e-granted',
+        'e-self',
+      ]);
+      expect([...scope.userIds].sort()).toEqual([
+        'u-branch',
+        'u-granted',
+        'u-self',
+      ]);
+    }
+    expect(prisma.userScopeOverride?.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ tenantId, userId: 'u-self' }),
+      }),
+    );
+  });
+
+  it('CUSTOM with no override rules keeps only the caller visible', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('AUDITOR', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'CUSTOM' },
+            ]),
+          ),
+      },
+      employee: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'e-self' }),
+        findMany: jest.fn(),
+      },
+      userScopeOverride: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const service = makeService(prisma);
+    const scope = await service.resolveScopeIds(tenantId, 'u-self', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope).toEqual({
+      kind: 'IDS',
+      employeeIds: ['e-self'],
+      userIds: ['u-self'],
+    });
+    expect(prisma.employee.findMany).not.toHaveBeenCalled();
+  });
+
+  it('denies unknown stored scope levels (deny by default)', async () => {
+    const prisma: PrismaMock = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            grantsUser('LEGACY', [
+              { module: 'FAULTS', action: 'READ', dataScope: 'EVERYTHING' },
+            ]),
+          ),
+      },
+      employee: { findFirst: jest.fn(), findMany: jest.fn() },
+    };
+    const service = makeService(prisma);
+    await expect(service.getDataScope('u1', 'FAULTS', 'READ')).resolves.toBe(
+      null,
+    );
+    const scope = await service.resolveScopeIds(tenantId, 'u1', 'FAULTS', [
+      'READ',
+    ]);
+    expect(scope).toEqual({ kind: 'NONE' });
   });
 
   it('BRANCH without a branch assignment denies', async () => {

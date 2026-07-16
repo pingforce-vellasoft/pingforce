@@ -16,6 +16,8 @@ const MODEL_MAP: Record<string, string> = {
   designations: 'designation',
   branches: 'branch',
   teams: 'team',
+  regions: 'region',
+  'business-units': 'businessUnit',
   'leave-types': 'leaveType',
   'lead-sources': 'leadSource',
   campaigns: 'campaign',

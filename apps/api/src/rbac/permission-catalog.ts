@@ -355,6 +355,27 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
     action: 'READ',
     description: 'View and search the tenant audit trail',
   },
+  {
+    module: 'AUDIT',
+    action: 'EXPORT',
+    description: 'Export the audit trail (CSV)',
+  },
+  {
+    module: 'AUDIT',
+    action: 'MANAGE',
+    description: 'Configure audit retention and archive policies',
+  },
+  // Workflow engine (ApprovalWorkflow.md)
+  {
+    module: 'WORKFLOWS',
+    action: 'READ',
+    description: 'View workflow definitions, delegations and instance history',
+  },
+  {
+    module: 'WORKFLOWS',
+    action: 'MANAGE',
+    description: 'Configure approval workflows and delegations',
+  },
   // Notification engine configuration (Email.md §5)
   {
     module: 'NOTIFICATIONS',
@@ -366,10 +387,22 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
 /** Modules that platform (super-admin) roles own; tenant roles never receive these. */
 const PLATFORM_MODULES = ['TENANTS', 'BILLING', 'SETTINGS'] as const;
 
+// Kept as an inline union (not imported from rbac.service) so prisma/seed.ts
+// can consume this catalog without dragging in NestJS dependencies.
+type GrantScope =
+  | 'OWN'
+  | 'CUSTOM'
+  | 'TEAM'
+  | 'DEPARTMENT'
+  | 'BRANCH'
+  | 'REGION'
+  | 'BUSINESS_UNIT'
+  | 'ALL';
+
 interface GrantDef {
   readonly module: string;
   readonly action: string;
-  readonly dataScope: 'OWN' | 'TEAM' | 'BRANCH' | 'ALL';
+  readonly dataScope: GrantScope;
 }
 
 /** Every tenant-scope permission in the catalog, granted with ALL scope. */

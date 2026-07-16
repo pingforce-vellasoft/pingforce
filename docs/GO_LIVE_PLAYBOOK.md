@@ -215,8 +215,19 @@ docker compose run --rm -e SEED_SUPER_ADMIN_PASSWORD='<strong-password>' migrate
 ```bash
 docker compose exec postgres psql -U pingforce_user -d pingforce_db \
   -c "select count(*) from _prisma_migrations;"
+# expect 10 rows, all finished_at NOT NULL
 # then log into admin portal with the seeded super admin
 ```
+
+> ✅ **Staging dry-run passed 2026-07-16** (see gap review §D/§F): all 10
+> migrations + seed verified end-to-end on `postgis/postgis:16-3.4-alpine`,
+> including Decimal `USING ::numeric` casts and the `employee_devices.tenantId`
+> backfill against populated tables. Do NOT swap the DB image for plain
+> `postgres` — the init migration requires the PostGIS extension.
+>
+> 📣 **User comms:** this deploy switches JWTs to iss/aud claims + opaque
+> refresh tokens — every existing session is invalidated and all users must
+> log in again ONCE. Announce before deploying.
 
 ---
 

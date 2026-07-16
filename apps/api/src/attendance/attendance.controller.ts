@@ -102,6 +102,16 @@ export class AttendanceController {
     );
   }
 
+  @Post('corrections/:id/cancel')
+  @RequirePermission('ATTENDANCE', 'CREATE')
+  async cancelCorrection(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.correctionsService.cancel(
+      req.user.tenantId,
+      id,
+      req.user.userId,
+    );
+  }
+
   @Post('corrections/:id/reject')
   @RequirePermission('ATTENDANCE', 'APPROVE')
   async rejectCorrection(

@@ -125,15 +125,19 @@ append-only logging + search works.
 
 ## D. Deploy blockers (operational, not code)
 
-- 🔴 **All 6 migrations are hand-written and UNAPPLIED** (local DB creds invalid,
-  P1000). Before any deploy: `prisma migrate deploy` against a real DB, then
-  `prisma db seed`. Untested against a live Postgres — the hand-written SQL
-  (esp. Decimal `USING ::numeric` casts, backfills, Phase 6 tables) needs a
-  staging dry-run.
-- 🔴 **Seed must set** `SEED_SUPER_ADMIN_PASSWORD` env or no admin account is
-  created. Add notification-template seeding here too (B3).
+- ✅ ~~🔴 **All 6 migrations are hand-written and UNAPPLIED**~~ — **staging
+  dry-run PASSED 2026-07-16** (see §F below). All 10 migrations apply cleanly
+  on `postgis/postgis:16-3.4-alpine` (the prod compose image); data backfills
+  verified against populated tables. Remaining prod step is just
+  `docker compose run --rm migrate` per GO_LIVE_PLAYBOOK Step 5. Note: plain
+  `postgres:16` FAILS — `init_auth` requires the PostGIS extension.
+- ✅ ~~🔴 **Seed must set** `SEED_SUPER_ADMIN_PASSWORD`~~ — seed dry-run PASSED
+  (see §F). Warns-and-skips admin creation when unset (no crash); creates
+  `super_admins` row when set; notification-template seeding (B3) confirmed
+  in the same run. Idempotent on re-run.
 - 🟠 Existing JWTs invalidate on deploy (iss/aud claims + opaque refresh switch)
-  → all users re-login once. Expected, communicate it.
+  → all users re-login once. Expected, communicate it — announcement note added
+  to GO_LIVE_PLAYBOOK Step 5.
 
 ---
 
@@ -201,3 +205,104 @@ Nothing here regresses the green build state; these are additive fixes.
     local `uploads/` otherwise; `POST /files/upload` with extension+MIME
     allowlist, per-category size caps, SHA-256 checksum, tenant-prefixed
     keys; download streams any provider; delete removes physical bytes.
+- ✅ **C3** — full DataScope.md §4 level set (suite now 12 suites / 87 tests;
+  migration `20260716180000_c3_data_scope_levels`):
+  - **Levels** — `RbacService` now resolves OWN / CUSTOM / TEAM / DEPARTMENT /
+    BRANCH / REGION / BUSINESS_UNIT / ALL (rank order for multi-action
+    grants); unknown stored levels deny by default.
+  - **TEAM hierarchy walk** — direct **and indirect** reports via cycle-safe
+    BFS over `reportingManagerId` (depth cap 10, DataScope.md §8).
+  - **Org units** — `regions` + `business_units` masters (exposed through
+    `/master-data/regions|business-units`), `employees.regionId/
+    businessUnitId`; DEPARTMENT/REGION/BUSINESS_UNIT scope = members of the
+    caller's unit, deny when unassigned.
+  - **CUSTOM (§12)** — `user_scope_overrides` table (per-user rules targeting
+    EMPLOYEE/TEAM/DEPARTMENT/BRANCH/REGION/BUSINESS_UNIT, optional module +
+    validity window), managed via `GET/POST/DELETE /rbac/scope-overrides`
+    (ROLES:READ/UPDATE); resolution unions caller + rule targets.
+  - **Approval engine** — scope check generalized from direct-reports-only to
+    membership in the actor's resolved scope (all levels, deny on NONE).
+  - **Role grants** — `PUT /rbac/roles/:id/permissions` accepts optional
+    per-permission `grants[{permissionId, dataScope}]` (previously everything
+    reset to OWN).
+- ✅ **C4** — multi-stage workflow engine (ApprovalWorkflow.md; migration
+  `20260716210000_c4c5c6_workflow_engine_audit_hardening`; suite now
+  14 suites / 109 tests):
+  - **Definitions (§7/§8)** — `workflow_definitions` + `workflow_stages`
+    (SEQUENTIAL / PARALLEL with `minimumApprovals`, per-stage
+    `requiredAction`, static user/role approver constraints, `slaHours`),
+    managed via `GET/POST/PUT/DELETE /workflows` +
+    `/:id/activate|deactivate` behind new `WORKFLOWS:READ/MANAGE`
+    permissions. Stage numbering validated contiguous; stage replacement
+    blocked while instances are in flight.
+  - **Runtime (§6/§10/§19)** — `workflow_instances` + immutable
+    `workflow_actions`; `ApprovalsService.process` is engine-aware: tenants
+    with an active definition for (module, entityName) route through stages
+    (the module state change runs only on the finalizing decision —
+    rejection at any stage, or final-stage approval); tenants without one
+    keep the original single-stage path (zero regression — leave, claims,
+    corrections unchanged by default). One vote per approver per stage;
+    every stage action audited; instance history at
+    `GET /workflows/instances/:id/history`.
+  - **Conditional routing (§11)** — `conditions` JSON rules
+    (`eq/neq/gt/gte/lt/lte/in`) evaluated against decision context (claims
+    pass `amount`/`expenseCategoryId`, leave passes `leaveTypeId`/`days`);
+    malformed rules fail closed; conditional definitions win over
+    unconditional fallbacks.
+  - **Delegation (§13)** — time-boxed `workflow_delegations`
+    (optionally module-scoped) via `GET/POST/DELETE /workflows/delegations`;
+    delegates act with the delegator's RBAC+scope authority, recorded as
+    `actedAsDelegateOf`; self-approval block still applies to the actor.
+  - **SLA (§12)** — per-stage `slaDueAt`; 15-min cron flags overdue
+    instances (`escalatedAt`) and audits `WORKFLOW_ESCALATED` (MEDIUM).
+- ✅ **C5** — attendance correction multi-tier review
+  (ATTENDANCE_CORRECTION.md §7/§8): corrections ride the C4 engine —
+  configuring an active `attendance_correction` workflow moves requests
+  through `PENDING → UNDER_MANAGER_REVIEW → UNDER_HR_REVIEW →
+  UNDER_EMPLOYER_REVIEW`; final approval sets `APPROVED` and, when the
+  session was actually updated, `APPLIED` (spec FSM APPROVED → APPLIED).
+  Employees can withdraw open requests via
+  `POST /attendance/corrections/:id/cancel` (→ `CANCELLED`, engine instance
+  cancelled). Duplicate check + approver queue now cover all open review
+  statuses. No configured workflow = single-approver flow as before.
+- ✅ **C6** — audit hardening (AuditLogs.md §7/§10/§12/§13/§16):
+  - **Hash chain (§10)** — every audit write carries a gapless per-tenant
+    `sequence` + SHA-256 `chainHash` over (prevHash + canonical payload),
+    advanced via optimistic claim on `audit_chain_heads` in the same
+    transaction (contention falls back to an unchained write rather than
+    dropping the event). Canonical JSON (recursively sorted keys) keeps
+    hashes stable across jsonb round-trips. `GET /audit/integrity`
+    recomputes the chain (AUD-006: content tamper, splice, sequence gap).
+  - **Export (§13/§16)** — `GET /audit/export` (new `AUDIT:EXPORT`
+    permission) streams CSV (10k cap, CWE-1236 formula guard), records
+    `audit_exports` and audits `AUDIT_EXPORTED`.
+  - **Retention/archive (§7/§12)** — per-tenant `audit_retention_policies`
+    (`GET/PUT /audit/retention`, new `AUDIT:MANAGE`); nightly 01:30 sweep
+    moves rows past `archiveAfterDays` into `audit_archive` (searchable via
+    `?includeArchived=true`, exports included) and purges archives past
+    `retentionDays`. Retention is opt-in per tenant.
+  - **Deferred** — monthly partitioning and WORM object storage remain
+    future work (need raw DDL/OCI setup; hash chain covers integrity
+    meanwhile). BigInt sequences serialize as strings via a `toJSON`
+    shim in `main.ts`.
+- ✅ **D (deploy blockers) — staging dry-run 2026-07-16**, disposable Docker
+  Postgres matching prod image (`postgis/postgis:16-3.4-alpine`):
+  - **Migrations** — all 10 apply cleanly via `prisma migrate deploy` on a
+    fresh DB (74 tables, 10/10 finished in `_prisma_migrations`). Confirmed
+    plain `postgres:16` fails (`init_auth` needs PostGIS) — prod compose
+    already uses the postgis image, so no change needed.
+  - **Data backfills** — second pass applied migrations ≤ phase2 first,
+    inserted populated rows (tenant, employee, device, salary structure,
+    payslip, expense claim with fractional float money), then applied the
+    remaining 7: Float→`DECIMAL(12,2)` `USING ::numeric` casts round
+    correctly (45123.4567→45123.46 etc.), `employee_devices.tenantId`
+    backfilled from owning employee before `SET NOT NULL`.
+  - **Drift check** — `prisma migrate diff` DB↔schema shows only expected
+    noise: GiST indexes on `geography` columns (unrepresentable in Prisma)
+    and SQL-side `DEFAULT now()` on `updatedAt` (client-managed `@updatedAt`).
+  - **Seed** — with `SEED_SUPER_ADMIN_PASSWORD`: 81 permissions upserted,
+    `super_admins` row created (argon2 hash), all 6 default notification
+    templates backfilled for existing tenants (B3); without the env var it
+    warns and skips (no crash). Re-run idempotent.
+  - Remaining for go-live: run GO_LIVE_PLAYBOOK Step 5 against the live OCI
+    DB and announce the one-time forced re-login (JWT iss/aud change).

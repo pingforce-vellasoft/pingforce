@@ -134,6 +134,7 @@ export class LeaveService {
       tenantId,
       requesterUserId,
       scope,
+      'LEAVES',
     );
     if (scopeFilter === null) return [];
 
@@ -175,25 +176,24 @@ export class LeaveService {
   ) {
     // Approval routing via the shared workflow engine (ApprovalWorkflow.md):
     // RBAC + data-scope authorization, self-approval block, audit trail.
+    // Tenants with an active leave_request workflow route through its
+    // stages; the leave record only changes on the finalizing decision.
     const pending = await this.prisma.leaveRequest.findFirst({
       where: { id: leaveId, tenantId },
-      select: { employeeId: true },
+      select: { employeeId: true, leaveTypeId: true, startDate: true, endDate: true },
     });
     if (!pending) {
       throw new NotFoundException('Leave request not found');
     }
 
-    await this.approvalsService.authorizeDecision({
-      tenantId,
-      module: 'LEAVES',
-      entityName: 'leave_request',
-      entityId: leaveId,
-      ownerEmployeeId: pending.employeeId,
-      actorUserId: managerId,
-      decision: status,
-    });
+    const requestedDays =
+      Math.floor(
+        (new Date(pending.endDate).getTime() -
+          new Date(pending.startDate).getTime()) /
+          (1000 * 3600 * 24),
+      ) + 1;
 
-    const decided = await this.prisma.$transaction(async (tx) => {
+    const applyDecision = () => this.prisma.$transaction(async (tx) => {
       const leave = await tx.leaveRequest.findUnique({
         where: { id: leaveId },
       });
@@ -248,15 +248,36 @@ export class LeaveService {
       return updatedLeave;
     });
 
-    await this.approvalsService.recordDecision({
-      tenantId,
-      module: 'LEAVES',
-      entityName: 'leave_request',
-      entityId: leaveId,
-      ownerEmployeeId: pending.employeeId,
-      actorUserId: managerId,
-      decision: status,
-    });
+    const outcome = await this.approvalsService.process(
+      {
+        tenantId,
+        module: 'LEAVES',
+        entityName: 'leave_request',
+        entityId: leaveId,
+        ownerEmployeeId: pending.employeeId,
+        actorUserId: managerId,
+        decision: status,
+        context: { leaveTypeId: pending.leaveTypeId, days: requestedDays },
+      },
+      applyDecision,
+    );
+
+    // Intermediate stage approval — leave stays PENDING for the next
+    // approver; no balance change, no employee notification yet.
+    if (!outcome.finalized || !outcome.result) {
+      return {
+        id: leaveId,
+        status: 'PENDING',
+        workflow: {
+          instanceId: outcome.instanceId,
+          approvedStage: outcome.stageNumber,
+          nextStage: outcome.nextStageNumber,
+          nextStageName: outcome.nextStageName,
+          totalStages: outcome.totalStages,
+        },
+      };
+    }
+    const decided = outcome.result;
 
     // Notify the employee (ApprovalWorkflow.md — notification on decision)
     const owner = await this.prisma.employee.findFirst({

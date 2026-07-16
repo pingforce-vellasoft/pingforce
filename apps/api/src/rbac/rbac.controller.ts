@@ -7,15 +7,21 @@ import {
   Param,
   UseGuards,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { RbacService } from './rbac.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentTenant } from '@pingforce-monorepo/shared';
+import {
+  CurrentTenant,
+  CurrentUser,
+  CurrentUserContext,
+} from '@pingforce-monorepo/shared';
 import { RbacGuard } from './guards/rbac.guard';
 import { RequirePermission } from './decorators/require-permission.decorator';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateRolePermissionsDto } from './dto/update-role-permissions.dto';
+import { CreateScopeOverrideDto } from './dto/create-scope-override.dto';
 
 @Controller('rbac')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -61,6 +67,10 @@ export class RbacController {
       tenantId,
       roleId,
       body.permissionIds,
+      body.grants &&
+        Object.fromEntries(
+          body.grants.map((g) => [g.permissionId, g.dataScope]),
+        ),
     );
   }
 
@@ -68,5 +78,40 @@ export class RbacController {
   @RequirePermission('ROLES', 'DELETE')
   deleteRole(@CurrentTenant() tenantId: string, @Param('id') roleId: string) {
     return this.rbacService.deleteRole(tenantId, roleId);
+  }
+
+  // CUSTOM data-scope rules (DataScope.md §12)
+
+  @Get('scope-overrides')
+  @RequirePermission('ROLES', 'READ')
+  listScopeOverrides(
+    @CurrentTenant() tenantId: string,
+    @Query('userId') userId?: string,
+  ) {
+    return this.rbacService.listScopeOverrides(tenantId, userId);
+  }
+
+  @Post('scope-overrides')
+  @RequirePermission('ROLES', 'UPDATE')
+  createScopeOverride(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Body() body: CreateScopeOverrideDto,
+  ) {
+    return this.rbacService.createScopeOverride(tenantId, user.userId, body);
+  }
+
+  @Delete('scope-overrides/:id')
+  @RequirePermission('ROLES', 'UPDATE')
+  deleteScopeOverride(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Param('id') overrideId: string,
+  ) {
+    return this.rbacService.deleteScopeOverride(
+      tenantId,
+      user.userId,
+      overrideId,
+    );
   }
 }

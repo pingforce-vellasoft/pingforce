@@ -41,7 +41,59 @@ export type ResolvedDataScope =
       readonly userIds: readonly string[];
     };
 
-const SCOPE_RANK = { OWN: 1, TEAM: 2, BRANCH: 3, ALL: 4 } as const;
+/** Every grantable data-scope level (DataScope.md §4). */
+export const DATA_SCOPE_LEVELS = [
+  'OWN',
+  'CUSTOM',
+  'TEAM',
+  'DEPARTMENT',
+  'BRANCH',
+  'REGION',
+  'BUSINESS_UNIT',
+  'ALL',
+] as const;
+
+export type DataScopeLevel = (typeof DATA_SCOPE_LEVELS)[number];
+
+/** Org-unit targets a CUSTOM override row may grant (DataScope.md §12). */
+export const SCOPE_OVERRIDE_TYPES = [
+  'EMPLOYEE',
+  'TEAM',
+  'DEPARTMENT',
+  'BRANCH',
+  'REGION',
+  'BUSINESS_UNIT',
+] as const;
+
+export type ScopeOverrideType = (typeof SCOPE_OVERRIDE_TYPES)[number];
+
+// When a role grants several actions, the broadest scope wins. CUSTOM has no
+// natural rank (its breadth depends on the override rules), so it sits just
+// above OWN — any hierarchical grant supersedes it.
+const SCOPE_RANK: Record<DataScopeLevel, number> = {
+  OWN: 1,
+  CUSTOM: 2,
+  TEAM: 3,
+  DEPARTMENT: 4,
+  BRANCH: 5,
+  REGION: 6,
+  BUSINESS_UNIT: 7,
+  ALL: 8,
+};
+
+// TEAM walks the reporting hierarchy (direct + indirect reports —
+// DataScope.md §8 "Reporting Hierarchy"). Depth cap keeps a corrupted
+// (cyclic) hierarchy from looping; 10 levels covers any real org.
+const TEAM_HIERARCHY_MAX_DEPTH = 10;
+
+interface EmployeeRef {
+  readonly id: string;
+  readonly userId: string | null;
+}
+
+function isDataScopeLevel(value: string): value is DataScopeLevel {
+  return (DATA_SCOPE_LEVELS as readonly string[]).includes(value);
+}
 
 @Injectable()
 export class RbacService {
@@ -104,14 +156,15 @@ export class RbacService {
   }
 
   /**
-   * Resolves the data scope granted for a module/action (DataScope.md).
-   * SUPER_ADMIN → 'ALL'. No matching permission → null (deny).
+   * Resolves the data scope granted for a module/action (DataScope.md §4).
+   * SUPER_ADMIN → 'ALL'. No matching permission or an unknown stored level →
+   * null (deny by default).
    */
   async getDataScope(
     userId: string,
     module: string,
     action: string,
-  ): Promise<'OWN' | 'TEAM' | 'BRANCH' | 'ALL' | null> {
+  ): Promise<DataScopeLevel | null> {
     const { roleCode, grants } = await this.getUserGrants(userId);
 
     if (!roleCode) return null;
@@ -121,40 +174,30 @@ export class RbacService {
       (g) => g.module === module && g.action === action,
     );
 
-    return (match?.dataScope as 'OWN' | 'TEAM' | 'BRANCH' | 'ALL') ?? null;
+    if (!match || !isDataScopeLevel(match.dataScope)) return null;
+    return match.dataScope;
   }
 
   /**
    * Builds a Prisma `where` fragment restricting employee-linked records to
    * the caller's data scope. Returns `null` when the caller has no visibility
-   * (deny by default — DataScope.md §6).
+   * (deny by default — DataScope.md §6). `module` is only consulted by the
+   * CUSTOM level to pick the matching override rules.
    */
   async buildEmployeeScopeFilter(
     tenantId: string,
     userId: string,
-    scope: 'OWN' | 'TEAM' | 'BRANCH' | 'ALL' | null,
+    scope: DataScopeLevel | null,
+    module: string | null = null,
   ): Promise<Record<string, unknown> | null> {
     if (scope === null) return null;
-    if (scope === 'ALL') return {};
-
-    const employee = await this.prisma.employee.findFirst({
-      where: { tenantId, userId, deletedAt: null },
-      select: { id: true, branchId: true },
-    });
-    if (!employee) return null;
-
-    switch (scope) {
-      case 'OWN':
-        return { employeeId: employee.id };
-      case 'TEAM':
-        return { employee: { reportingManagerId: employee.id } };
-      case 'BRANCH':
-        return employee.branchId
-          ? { employee: { branchId: employee.branchId } }
-          : null;
-      default:
-        return null;
-    }
+    const resolved = await this.resolveIdsForLevel(
+      tenantId,
+      userId,
+      scope,
+      module,
+    );
+    return this.employeeScopeWhere(resolved);
   }
 
   /**
@@ -194,7 +237,7 @@ export class RbacService {
     module: string,
     actions: readonly string[],
   ): Promise<ResolvedDataScope> {
-    let scope: 'OWN' | 'TEAM' | 'BRANCH' | 'ALL' | null = null;
+    let scope: DataScopeLevel | null = null;
     for (const action of actions) {
       const s = await this.getDataScope(userId, module, action);
       if (s && (scope === null || SCOPE_RANK[s] > SCOPE_RANK[scope])) {
@@ -202,11 +245,27 @@ export class RbacService {
       }
     }
     if (scope === null) return { kind: 'NONE' };
+    return this.resolveIdsForLevel(tenantId, userId, scope, module);
+  }
+
+  /** Turns one granted scope level into concrete id sets (DataScope.md §6). */
+  private async resolveIdsForLevel(
+    tenantId: string,
+    userId: string,
+    scope: DataScopeLevel,
+    module: string | null,
+  ): Promise<ResolvedDataScope> {
     if (scope === 'ALL') return { kind: 'ALL' };
 
     const employee = await this.prisma.employee.findFirst({
       where: { tenantId, userId, deletedAt: null },
-      select: { id: true, branchId: true },
+      select: {
+        id: true,
+        branchId: true,
+        departmentId: true,
+        regionId: true,
+        businessUnitId: true,
+      },
     });
 
     if (scope === 'OWN') {
@@ -219,19 +278,162 @@ export class RbacService {
       };
     }
 
-    if (!employee) return { kind: 'NONE' };
-    if (scope === 'BRANCH' && !employee.branchId) return { kind: 'NONE' };
+    if (scope === 'CUSTOM') {
+      return this.resolveCustomScope(tenantId, userId, module, employee);
+    }
 
-    const members = await this.prisma.employee.findMany({
-      where:
-        scope === 'TEAM'
-          ? { tenantId, reportingManagerId: employee.id, deletedAt: null }
-          : { tenantId, branchId: employee.branchId, deletedAt: null },
+    if (!employee) return { kind: 'NONE' };
+
+    if (scope === 'TEAM') {
+      const members = await this.walkReportingHierarchy(tenantId, [
+        employee.id,
+      ]);
+      return this.toIdsScope(userId, [{ id: employee.id, userId }, ...members]);
+    }
+
+    // Org-unit scopes: the caller must belong to the unit, otherwise deny.
+    const unitField = {
+      DEPARTMENT: 'departmentId',
+      BRANCH: 'branchId',
+      REGION: 'regionId',
+      BUSINESS_UNIT: 'businessUnitId',
+    }[scope];
+    const unitId = employee[unitField as keyof typeof employee] as
+      | string
+      | null;
+    if (!unitId) return { kind: 'NONE' };
+
+    const members: EmployeeRef[] = await this.prisma.employee.findMany({
+      where: { tenantId, [unitField]: unitId, deletedAt: null },
       select: { id: true, userId: true },
     });
+    return this.toIdsScope(userId, [{ id: employee.id, userId }, ...members]);
+  }
 
-    const employeeIds = new Set<string>([employee.id]);
-    const userIds = new Set<string>([userId]);
+  /**
+   * CUSTOM scope (DataScope.md §4/§12): the caller sees their own records
+   * plus everything granted by their active user_scope_overrides rows for
+   * this module (rows with a NULL module apply everywhere).
+   */
+  private async resolveCustomScope(
+    tenantId: string,
+    userId: string,
+    module: string | null,
+    employee: { id: string } | null,
+  ): Promise<ResolvedDataScope> {
+    const now = new Date();
+    const overrides = await this.prisma.userScopeOverride.findMany({
+      where: {
+        tenantId,
+        userId,
+        deletedAt: null,
+        OR: [{ module: null }, ...(module ? [{ module }] : [])],
+        AND: [
+          { OR: [{ validFrom: null }, { validFrom: { lte: now } }] },
+          { OR: [{ validUntil: null }, { validUntil: { gte: now } }] },
+        ],
+      },
+      select: { scopeType: true, targetId: true },
+    });
+
+    const targetsByType = new Map<string, string[]>();
+    for (const o of overrides) {
+      const list = targetsByType.get(o.scopeType) ?? [];
+      list.push(o.targetId);
+      targetsByType.set(o.scopeType, list);
+    }
+
+    const members: EmployeeRef[] = employee
+      ? [{ id: employee.id, userId }]
+      : [];
+
+    const employeeTargets = targetsByType.get('EMPLOYEE');
+    if (employeeTargets?.length) {
+      members.push(
+        ...(await this.prisma.employee.findMany({
+          where: { tenantId, id: { in: employeeTargets }, deletedAt: null },
+          select: { id: true, userId: true },
+        })),
+      );
+    }
+
+    // TEAM targets grant the target manager plus their whole reporting subtree
+    const teamTargets = targetsByType.get('TEAM');
+    if (teamTargets?.length) {
+      members.push(
+        ...(await this.prisma.employee.findMany({
+          where: { tenantId, id: { in: teamTargets }, deletedAt: null },
+          select: { id: true, userId: true },
+        })),
+        ...(await this.walkReportingHierarchy(tenantId, teamTargets)),
+      );
+    }
+
+    const unitFields: readonly (readonly [ScopeOverrideType, string])[] = [
+      ['DEPARTMENT', 'departmentId'],
+      ['BRANCH', 'branchId'],
+      ['REGION', 'regionId'],
+      ['BUSINESS_UNIT', 'businessUnitId'],
+    ];
+    for (const [type, field] of unitFields) {
+      const targets = targetsByType.get(type);
+      if (targets?.length) {
+        members.push(
+          ...(await this.prisma.employee.findMany({
+            where: { tenantId, [field]: { in: targets }, deletedAt: null },
+            select: { id: true, userId: true },
+          })),
+        );
+      }
+    }
+
+    return this.toIdsScope(userId, members);
+  }
+
+  /**
+   * Collects direct AND indirect reports of the given root employees via a
+   * breadth-first walk over reportingManagerId (DataScope.md §8). Cycle-safe;
+   * bounded by TEAM_HIERARCHY_MAX_DEPTH levels.
+   */
+  private async walkReportingHierarchy(
+    tenantId: string,
+    rootEmployeeIds: readonly string[],
+  ): Promise<EmployeeRef[]> {
+    const seen = new Set<string>(rootEmployeeIds);
+    let frontier = [...rootEmployeeIds];
+    const members: EmployeeRef[] = [];
+
+    for (
+      let depth = 0;
+      depth < TEAM_HIERARCHY_MAX_DEPTH && frontier.length > 0;
+      depth++
+    ) {
+      const rows: EmployeeRef[] = await this.prisma.employee.findMany({
+        where: {
+          tenantId,
+          reportingManagerId: { in: frontier },
+          deletedAt: null,
+        },
+        select: { id: true, userId: true },
+      });
+      frontier = [];
+      for (const row of rows) {
+        if (!seen.has(row.id)) {
+          seen.add(row.id);
+          members.push(row);
+          frontier.push(row.id);
+        }
+      }
+    }
+    return members;
+  }
+
+  private toIdsScope(
+    callerUserId: string,
+    members: readonly EmployeeRef[],
+  ): ResolvedDataScope {
+    const employeeIds = new Set<string>();
+    const userIds = new Set<string>([callerUserId]);
     for (const m of members) {
       employeeIds.add(m.id);
       if (m.userId) userIds.add(m.userId);
@@ -360,6 +562,7 @@ export class RbacService {
     tenantId: string,
     roleId: string,
     permissionIds: string[],
+    dataScopes?: Record<string, DataScopeLevel>,
   ) {
     // First, verify the role belongs to the tenant
     const role = await this.prisma.role.findFirst({
@@ -382,7 +585,7 @@ export class RbacService {
               data: permissionIds.map((permissionId) => ({
                 roleId,
                 permissionId,
-                dataScope: 'OWN', // Default scope
+                dataScope: dataScopes?.[permissionId] ?? 'OWN',
               })),
             }),
           ]
@@ -428,6 +631,69 @@ export class RbacService {
 
     return this.prisma.role.delete({
       where: { id: roleId },
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // CUSTOM scope overrides (DataScope.md §12 — user_scope_overrides)
+  // Changes propagate within GRANTS_CACHE_TTL_MS via the resolved-scope cache.
+  // ---------------------------------------------------------------------------
+
+  async listScopeOverrides(tenantId: string, userId?: string) {
+    return this.prisma.userScopeOverride.findMany({
+      where: { tenantId, deletedAt: null, ...(userId && { userId }) },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createScopeOverride(
+    tenantId: string,
+    actorUserId: string,
+    data: {
+      userId: string;
+      module?: string;
+      scopeType: ScopeOverrideType;
+      targetId: string;
+      validFrom?: Date;
+      validUntil?: Date;
+    },
+  ) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: data.userId, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found in this tenant');
+    }
+
+    return this.prisma.userScopeOverride.create({
+      data: {
+        tenantId,
+        userId: data.userId,
+        module: data.module ?? null,
+        scopeType: data.scopeType,
+        targetId: data.targetId,
+        validFrom: data.validFrom ?? null,
+        validUntil: data.validUntil ?? null,
+        createdBy: actorUserId,
+      },
+    });
+  }
+
+  async deleteScopeOverride(
+    tenantId: string,
+    actorUserId: string,
+    overrideId: string,
+  ) {
+    const override = await this.prisma.userScopeOverride.findFirst({
+      where: { id: overrideId, tenantId, deletedAt: null },
+    });
+    if (!override) {
+      throw new NotFoundException('Scope override not found');
+    }
+    return this.prisma.userScopeOverride.update({
+      where: { id: overrideId },
+      data: { deletedAt: new Date(), updatedBy: actorUserId },
     });
   }
 }

@@ -60,6 +60,7 @@ export class ClaimsService {
       tenantId,
       requesterUserId,
       scope,
+      'CLAIMS',
     );
     if (scopeFilter === null) return [];
 
@@ -84,7 +85,7 @@ export class ClaimsService {
 
     const claim = await this.prisma.expenseClaim.findFirst({
       where: { id: claimId, tenantId },
-      select: { employeeId: true },
+      select: { employeeId: true, amount: true, expenseCategoryId: true },
     });
 
     if (!claim) {
@@ -92,8 +93,11 @@ export class ClaimsService {
     }
 
     // Shared approval engine (ApprovalWorkflow.md): RBAC + scope checks,
-    // self-approval block, audited decision.
-    return this.approvalsService.process(
+    // self-approval block, audited decision. Tenants with an active
+    // expense_claim workflow route through its stages (amount/category are
+    // available for conditional routing §11); the claim state only changes
+    // on the finalizing decision.
+    const outcome = await this.approvalsService.process(
       {
         tenantId,
         module: 'CLAIMS',
@@ -103,6 +107,10 @@ export class ClaimsService {
         actorUserId: approverId,
         decision: status,
         notes,
+        context: {
+          amount: Number(claim.amount),
+          expenseCategoryId: claim.expenseCategoryId,
+        },
       },
       () =>
         this.claimsRepository.processClaim(
@@ -113,5 +121,20 @@ export class ClaimsService {
           notes,
         ),
     );
+
+    if (outcome.finalized) {
+      return outcome.result;
+    }
+    return {
+      id: claimId,
+      status: 'PENDING',
+      workflow: {
+        instanceId: outcome.instanceId,
+        approvedStage: outcome.stageNumber,
+        nextStage: outcome.nextStageNumber,
+        nextStageName: outcome.nextStageName,
+        totalStages: outcome.totalStages,
+      },
+    };
   }
 }

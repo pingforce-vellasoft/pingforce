@@ -62,6 +62,8 @@ model Tenant {
   departments           Department[]
   designations          Designation[]
   branches              Branch[]
+  regions               Region[]
+  businessUnits         BusinessUnit[]
   leaveTypes            LeaveType[]
   employees             Employee[]
   customers             Customer[]
@@ -107,6 +109,16 @@ model Tenant {
   notificationLogs      NotificationLog[]
   loginHistory          LoginHistory[]
   emailConfig           TenantEmailConfig?
+  userScopeOverrides    UserScopeOverride[]
+  workflowDefinitions   WorkflowDefinition[]
+  workflowStages        WorkflowStage[]
+  workflowInstances     WorkflowInstance[]
+  workflowActions       WorkflowAction[]
+  workflowDelegations   WorkflowDelegation[]
+  auditChainHead        AuditChainHead?
+  auditRetentionPolicy  AuditRetentionPolicy?
+  auditArchive          AuditArchive[]
+  auditExports          AuditExport[]
 
   @@map("tenants")
 }
@@ -164,6 +176,7 @@ model User {
   approvedCorrections  AttendanceCorrection[]
   assignedFaults       Fault[]                @relation("FaultAssignee")
   escalatedSlaPolicies SlaPolicy[]            @relation("SlaEscalationUser")
+  scopeOverrides       UserScopeOverride[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, phone])
@@ -388,6 +401,44 @@ model Branch {
   @@map("branches")
 }
 
+model Region {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employees Employee[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("regions")
+}
+
+model BusinessUnit {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employees Employee[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@map("business_units")
+}
+
 model LeaveType {
   id          String    @id @default(uuid())
   tenantId    String
@@ -443,6 +494,8 @@ model Employee {
   designationId          String?
   branchId               String?
   teamId                 String?
+  regionId               String?
+  businessUnitId         String?
   firstName              String
   middleName             String?
   lastName               String
@@ -479,6 +532,8 @@ model Employee {
   designation           Designation?           @relation(fields: [designationId], references: [id])
   branch                Branch?                @relation(fields: [branchId], references: [id])
   team                  Team?                  @relation(fields: [teamId], references: [id])
+  region                Region?                @relation(fields: [regionId], references: [id])
+  businessUnit          BusinessUnit?          @relation(fields: [businessUnitId], references: [id])
   reportingManager      Employee?              @relation("EmployeeToManager", fields: [reportingManagerId], references: [id])
   subordinates          Employee[]             @relation("EmployeeToManager")
   attendances           Attendance[]
@@ -505,6 +560,8 @@ model Employee {
   @@index([tenantId, designationId])
   @@index([tenantId, teamId])
   @@index([tenantId, reportingManagerId])
+  @@index([tenantId, regionId])
+  @@index([tenantId, businessUnitId])
   @@map("employees")
 }
 
@@ -1051,11 +1108,18 @@ model AuditLog {
   ipAddress  String?
   userAgent  String?
   deviceId   String?
+  // Hash-chain integrity (AuditLogs.md §10): per-tenant sequence + SHA-256
+  // chained over the previous record's hash. Nullable — legacy rows and
+  // writes that lost the optimistic chain race stay unchained.
+  sequence   BigInt?
+  prevHash   String?
+  chainHash  String?
   createdAt  DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([id, tenantId])
+  @@unique([tenantId, sequence])
   @@index([tenantId])
   @@index([entityName])
   @@index([tenantId, createdAt])
@@ -1063,6 +1127,219 @@ model AuditLog {
   @@index([tenantId, severity])
   @@index([requestId])
   @@map("audit_logs")
+}
+
+// Per-tenant head of the audit hash chain (AuditLogs.md §10). Advanced with
+// an optimistic-concurrency claim inside the same transaction that writes
+// the audit row, so sequence numbers are gapless per tenant.
+model AuditChainHead {
+  tenantId     String   @id
+  lastSequence BigInt   @default(0)
+  lastHash     String   @default("GENESIS")
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("audit_chain_heads")
+}
+
+// Configurable retention (AuditLogs.md §7): rows older than archiveAfterDays
+// move to audit_archive (still searchable); archived rows older than
+// retentionDays are purged.
+model AuditRetentionPolicy {
+  id               String   @id @default(uuid())
+  tenantId         String   @unique
+  retentionDays    Int      @default(365)
+  archiveAfterDays Int      @default(180)
+  updatedBy        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("audit_retention_policies")
+}
+
+// Archive table (AuditLogs.md §12) — same shape as audit_logs, keeps the
+// original row id so exports/correlation remain stable after archival.
+model AuditArchive {
+  id         String   @id
+  tenantId   String
+  actorId    String?
+  module     String?
+  entityName String
+  entityId   String
+  action     String
+  outcome    String   @default("SUCCESS")
+  severity   String   @default("INFO")
+  oldValue   Json?
+  newValue   Json?
+  requestId  String?
+  ipAddress  String?
+  userAgent  String?
+  deviceId   String?
+  sequence   BigInt?
+  prevHash   String?
+  chainHash  String?
+  createdAt  DateTime
+  archivedAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, module])
+  @@map("audit_archive")
+}
+
+// Export history (AuditLogs.md §12/§16) — every audit export is itself
+// recorded and audited.
+model AuditExport {
+  id          String   @id @default(uuid())
+  tenantId    String
+  requestedBy String?
+  filters     Json?
+  format      String   @default("CSV")
+  rowCount    Int      @default(0)
+  status      String   @default("COMPLETED") // COMPLETED, FAILED
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@map("audit_exports")
+}
+
+// -----------------------------------------------------------------------------
+// WORKFLOW ENGINE (2.11_WorkflowEngine/ApprovalWorkflow.md)
+// -----------------------------------------------------------------------------
+
+// Tenant-configurable approval workflow definition (§7). One active
+// definition per (module, entityName) is matched at decision time; entities
+// without a matching definition fall back to the single-stage engine.
+model WorkflowDefinition {
+  id         String    @id @default(uuid())
+  tenantId   String
+  code       String
+  name       String
+  module     String // RBAC module the workflow authorizes against (LEAVES, CLAIMS, ATTENDANCE, ...)
+  entityName String // entity the workflow routes (leave_request, expense_claim, attendance_correction, ...)
+  active     Boolean   @default(false)
+  version    Int       @default(1)
+  // Conditional routing rules (§11): [{ field, op, value }] — all must match
+  // the decision context for this definition to apply.
+  conditions Json?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+  createdBy  String?
+  updatedBy  String?
+
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stages    WorkflowStage[]
+  instances WorkflowInstance[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@index([tenantId, module, entityName, active])
+  @@map("workflow_definitions")
+}
+
+// Ordered approval stage (§8). SEQUENTIAL advances on one approval;
+// PARALLEL advances once minimumApprovals distinct approvers have approved.
+model WorkflowStage {
+  id               String   @id @default(uuid())
+  tenantId         String
+  workflowId       String
+  stageNumber      Int
+  stageName        String
+  approvalMode     String   @default("SEQUENTIAL") // SEQUENTIAL, PARALLEL
+  minimumApprovals Int      @default(1)
+  requiredAction   String   @default("APPROVE") // RBAC action that authorizes this stage
+  approverRoleId   String? // restrict stage to holders of this role (§9)
+  approverUserId   String? // restrict stage to a static user (§9)
+  slaHours         Int? // stage SLA (§12); breach marks the instance escalated
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workflow WorkflowDefinition @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, stageNumber])
+  @@index([tenantId])
+  @@map("workflow_stages")
+}
+
+// Running approval for one business entity (§6). At most one IN_PROGRESS
+// instance per (entityName, entityId) — enforced by the engine.
+model WorkflowInstance {
+  id              String    @id @default(uuid())
+  tenantId        String
+  workflowId      String
+  module          String
+  entityName      String
+  entityId        String
+  ownerEmployeeId String
+  status          String    @default("IN_PROGRESS") // IN_PROGRESS, APPROVED, REJECTED, CANCELLED
+  currentStage    Int       @default(1)
+  context         Json?
+  slaDueAt        DateTime?
+  escalatedAt     DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workflow WorkflowDefinition @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  actions  WorkflowAction[]
+
+  @@unique([id, tenantId])
+  @@index([tenantId, entityName, entityId])
+  @@index([tenantId, status, slaDueAt])
+  @@map("workflow_instances")
+}
+
+// Immutable per-stage action history (§10/§19).
+model WorkflowAction {
+  id                 String   @id @default(uuid())
+  tenantId           String
+  instanceId         String
+  stageNumber        Int
+  actorUserId        String
+  decision           String // APPROVED, REJECTED, ESCALATED
+  notes              String?
+  actedAsDelegateOf  String? // delegator userId when acting under a delegation (§13)
+  createdAt          DateTime @default(now())
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  instance WorkflowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId, stageNumber])
+  @@index([tenantId])
+  @@map("workflow_actions")
+}
+
+// Time-boxed approval delegation (§13): delegate may act with the
+// delegator's authority for the module (NULL module = all modules).
+model WorkflowDelegation {
+  id              String    @id @default(uuid())
+  tenantId        String
+  delegatorUserId String
+  delegateUserId  String
+  module          String?
+  reason          String?
+  startsAt        DateTime
+  endsAt          DateTime
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  createdBy       String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId, delegateUserId])
+  @@index([tenantId, delegatorUserId])
+  @@map("workflow_delegations")
 }
 
 // -----------------------------------------------------------------------------
@@ -1455,7 +1732,7 @@ model RolePermission {
   id           String   @id @default(uuid())
   roleId       String
   permissionId String
-  dataScope    String   @default("OWN") // OWN, TEAM, BRANCH, ALL
+  dataScope    String   @default("OWN") // OWN, CUSTOM, TEAM, DEPARTMENT, BRANCH, REGION, BUSINESS_UNIT, ALL (DataScope.md §4)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -1464,6 +1741,32 @@ model RolePermission {
 
   @@unique([roleId, permissionId])
   @@map("role_permissions")
+}
+
+// CUSTOM data-scope rules (DataScope.md §4/§12 — user_scope_overrides).
+// Each row grants a user visibility over one target: a specific employee or
+// every employee in an org unit. `module` NULL applies to all modules.
+model UserScopeOverride {
+  id         String    @id @default(uuid())
+  tenantId   String
+  userId     String
+  module     String? // e.g. FAULTS; NULL = every module
+  scopeType  String // EMPLOYEE, TEAM, DEPARTMENT, BRANCH, REGION, BUSINESS_UNIT
+  targetId   String // employee id or org-unit id, per scopeType
+  validFrom  DateTime?
+  validUntil DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+  createdBy  String?
+  updatedBy  String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId, userId])
+  @@map("user_scope_overrides")
 }
 
 model TenantSetting {
