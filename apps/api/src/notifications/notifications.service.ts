@@ -5,6 +5,7 @@ import { Queue } from 'bull';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import { TenantEmailConfigService } from './tenant-email-config.service';
 
 @Injectable()
 export class NotificationsService {
@@ -15,7 +16,11 @@ export class NotificationsService {
   constructor(
     @Inject('IPrismaService') private readonly prisma: IPrismaService,
     private readonly config: ConfigService,
-    @InjectQueue('notifications') private readonly notificationsQueue: Queue,
+    @InjectQueue('notifications-email') private readonly emailQueue: Queue,
+    @InjectQueue('notifications-whatsapp')
+    private readonly whatsappQueue: Queue,
+    @InjectQueue('notifications-push') private readonly pushQueue: Queue,
+    private readonly tenantEmailConfig: TenantEmailConfigService,
   ) {
     const host = this.config.get<string>('SMTP_HOST');
     this.fromAddress = this.config.get<string>(
@@ -51,22 +56,33 @@ export class NotificationsService {
   }
 
   /**
-   * Low-level delivery: sends via SMTP when configured, otherwise logs.
-   * Returns true when the message was handed to the transport successfully.
+   * Low-level delivery. When tenantId is given and the tenant has an ACTIVE
+   * email provider config, that transport is used (Email.md §5); otherwise
+   * the global SMTP transport, and when neither is configured the send is
+   * logged. Returns true when handed to a transport successfully.
    */
   async sendRawEmail(
     to: string,
     subject: string,
     body: string,
+    tenantId?: string,
   ): Promise<boolean> {
-    if (!this.transporter) {
+    const tenantTransport =
+      tenantId && tenantId !== 'SYSTEM'
+        ? await this.tenantEmailConfig.getTransport(tenantId)
+        : null;
+
+    const transporter = tenantTransport?.transporter ?? this.transporter;
+    const from = tenantTransport?.fromAddress ?? this.fromAddress;
+
+    if (!transporter) {
       this.logger.log(`[EMAIL:simulated] To: ${to}, Subject: ${subject}`);
       return true;
     }
 
     try {
-      await this.transporter.sendMail({
-        from: this.fromAddress,
+      await transporter.sendMail({
+        from,
         to,
         subject,
         html: body,
@@ -134,7 +150,7 @@ export class NotificationsService {
     }
 
     // Durable dispatch via queue: retries with exponential backoff (Email.md §4)
-    await this.notificationsQueue.add(
+    await this.emailQueue.add(
       'send-email',
       {
         notificationLogId: log.id,
@@ -143,14 +159,25 @@ export class NotificationsService {
         subject: compiledSubject,
         body: compiledBody,
       },
-      {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000 },
-        removeOnComplete: true,
-      },
+      NotificationsService.jobOpts,
     );
   }
 
+  // Failed jobs stay on the queue (bounded) as the dead-letter set — visible
+  // and retryable from Bull Board, instead of vanishing silently.
+  private static readonly jobOpts = {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 5000 },
+    removeOnComplete: true,
+    removeOnFail: 1000,
+  } as const;
+
+  /**
+   * Text-channel notification. Delivered over WhatsApp Cloud API when
+   * configured (Master Plan Phase 2 — replaces the SMS gateway); otherwise
+   * simulated. Accepts SMS or WHATSAPP template types so existing SMS
+   * templates keep working.
+   */
   async sendSms(
     tenantId: string,
     recipientId: string,
@@ -161,9 +188,13 @@ export class NotificationsService {
       where: { tenantId_name: { tenantId, name: templateName } },
     });
 
-    if (!template || template.status !== 'ACTIVE' || template.type !== 'SMS') {
+    if (
+      !template ||
+      template.status !== 'ACTIVE' ||
+      (template.type !== 'SMS' && template.type !== 'WHATSAPP')
+    ) {
       this.logger.warn(
-        `SMS template ${templateName} not found or inactive for tenant ${tenantId}`,
+        `SMS/WhatsApp template ${templateName} not found or inactive for tenant ${tenantId}`,
       );
       return;
     }
@@ -174,27 +205,84 @@ export class NotificationsService {
       data: {
         tenantId,
         recipientId,
-        type: 'SMS',
+        type: 'WHATSAPP',
         body: compiledBody,
         status: 'PENDING',
       },
     });
 
-    try {
-      // TODO(phase-2b): integrate SMS gateway (Twilio/SNS). Log-only for now.
-      this.logger.log(
-        `[SMS:simulated] To: ${recipientId}, Body: ${compiledBody}`,
-      );
+    const recipient = await this.prisma.user.findFirst({
+      where: { id: recipientId, tenantId },
+      select: { phone: true },
+    });
 
+    if (!recipient?.phone) {
       await this.prisma.notificationLog.update({
         where: { id: log.id },
-        data: { status: 'SENT', sentAt: new Date() },
+        data: { status: 'FAILED', error: 'Recipient has no phone number' },
       });
-    } catch (error: any) {
-      await this.prisma.notificationLog.update({
-        where: { id: log.id },
-        data: { status: 'FAILED', error: error.message },
-      });
+      return;
     }
+
+    await this.whatsappQueue.add(
+      'send-whatsapp',
+      {
+        notificationLogId: log.id,
+        tenantId,
+        to: recipient.phone,
+        body: compiledBody,
+      },
+      NotificationsService.jobOpts,
+    );
+  }
+
+  /**
+   * Push notification via FCM (Master Plan Phase 2). Template type PUSH;
+   * subject → notification title, body → notification body.
+   */
+  async sendPush(
+    tenantId: string,
+    recipientId: string,
+    templateName: string,
+    payload: any,
+  ): Promise<void> {
+    const template = await this.prisma.notificationTemplate.findUnique({
+      where: { tenantId_name: { tenantId, name: templateName } },
+    });
+
+    if (!template || template.status !== 'ACTIVE' || template.type !== 'PUSH') {
+      this.logger.warn(
+        `Push template ${templateName} not found or inactive for tenant ${tenantId}`,
+      );
+      return;
+    }
+
+    const compiledBody = this.compileTemplate(template.body, payload);
+    const compiledTitle = template.subject
+      ? this.compileTemplate(template.subject, payload)
+      : 'PingForce';
+
+    const log = await this.prisma.notificationLog.create({
+      data: {
+        tenantId,
+        recipientId,
+        type: 'PUSH',
+        subject: compiledTitle,
+        body: compiledBody,
+        status: 'PENDING',
+      },
+    });
+
+    await this.pushQueue.add(
+      'send-push',
+      {
+        notificationLogId: log.id,
+        tenantId,
+        userId: recipientId,
+        title: compiledTitle,
+        body: compiledBody,
+      },
+      NotificationsService.jobOpts,
+    );
   }
 }
