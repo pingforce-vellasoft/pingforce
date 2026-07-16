@@ -1,12 +1,14 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
+    // Google services plugin reads google-services.json for Firebase (FCM)
+    id("com.google.gms.google-services")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    namespace = "com.pingforce.mobile"
+    namespace = "com.vellasoft.pingforce"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,8 +22,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.pingforce.mobile"
+        // Must match the Firebase Android app registration (pingforce-db47a)
+        applicationId = "com.vellasoft.pingforce"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

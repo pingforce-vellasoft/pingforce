@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_session.dart';
+import '../../core/notifications/push_notifications_service.dart';
 import '../../core/theme/theme.dart';
 import '../../core/tenant/tenant_provider.dart';
 import '../../injection_container.dart' as di;
@@ -158,6 +161,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     ref.read(appLaunchProvider.notifier).runLaunchSequence();
 
     if (AuthSession.instance.isAuthenticated) {
+      // Re-sync FCM token on every authenticated launch (may have rotated
+      // while the app was dead) — fire-and-forget
+      unawaited(di.sl<PushNotificationsService>().registerToken());
       context.go('/home');
     } else {
       context.go('/tenant-resolution');

@@ -50,8 +50,20 @@ class HardwareServiceImpl implements HardwareService {
       throw Exception('Location permissions are permanently denied, we cannot request permissions.');
     }
 
-    return await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-    );
+    try {
+      // Bounded fix: an unbounded high-accuracy request keeps the GPS radio
+      // hunting indefinitely indoors — battery drain + a hung UI
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+    } on Exception {
+      // Timed out — a recent cached fix beats failing the whole flow
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) return lastKnown;
+      rethrow;
+    }
   }
 }

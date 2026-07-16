@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 
 import '../../../core/auth/auth_session.dart';
+import '../../../core/notifications/push_notifications_service.dart';
 import '../../../injection_container.dart';
 import '../domain/repositories/auth_repository.dart';
 import '../domain/usecases/login_command.dart';
@@ -137,6 +138,9 @@ class LoginNotifier extends Notifier<LoginState> {
       },
       (user) async {
         AuthSession.instance.signIn(roleCode: user.role);
+        // Register this device for push now that we're authenticated
+        // (fire-and-forget — login must not wait on FCM)
+        unawaited(sl<PushNotificationsService>().registerToken());
         if (state.rememberDevice) {
           // Enable biometric quick-unlock on this device next launch
           try {

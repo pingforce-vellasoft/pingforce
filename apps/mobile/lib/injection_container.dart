@@ -19,6 +19,7 @@ import 'core/network/token_interceptor.dart';
 import 'core/hardware/hardware_service.dart';
 import 'core/hardware/hardware_service_impl.dart';
 import 'core/hardware/device_identity.dart';
+import 'core/notifications/push_notifications_service.dart';
 import 'features/faults/data/faults_remote_data_source.dart';
 import 'features/visits/data/visits_remote_data_source.dart';
 
@@ -39,6 +40,10 @@ Future<void> init() async {
     dio.interceptors.add(TokenInterceptor(secureStorage: sl()));
     return dio;
   });
+
+  sl.registerLazySingleton(
+    () => PushNotificationsService(dio: sl(), deviceIdentity: sl()),
+  );
 
   // --- Features: Auth ---
   sl.registerLazySingleton(() => LoginCommand(sl()));

@@ -1,4 +1,4 @@
-package com.pingforce.mobile
+package com.vellasoft.pingforce
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

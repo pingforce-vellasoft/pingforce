@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "197609565214",
+    "project_id": "pingforce-db47a",
+    "storage_bucket": "pingforce-db47a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:197609565214:android:c30952d5a0d3d726cb120f",
+        "android_client_info": {
+          "package_name": "com.vellasoft.pingforce"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUlHIpdQRXrQHdXMTJSAqXaEVd3MhrXTY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

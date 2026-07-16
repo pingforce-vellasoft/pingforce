@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -44,14 +46,29 @@ class SyncNotifier extends Notifier<SyncState> {
 
   static const _boxName = 'sync_queue';
 
+  /// Items are sent to the idempotent /sync endpoints in chunks of this size
+  /// — one HTTP round-trip per chunk instead of per item.
+  static const _batchSize = 25;
+
+  /// Items failing this many times stop auto-syncing (manual retry only) so
+  /// a poison item can't burn battery and bandwidth forever.
+  static const _maxAutoRetries = 5;
+
+  final _random = Random();
+
+  /// Randomized delay before flushing after reconnect. When office WiFi
+  /// returns, every device regains connectivity in the same instant — a
+  /// fixed delay would stampede the server (SCALABILITY_AUDIT).
+  Duration _reconnectJitter() =>
+      Duration(milliseconds: 1000 + _random.nextInt(7000));
+
   @override
   SyncState build() {
     // Auto-sync when connectivity comes back online
     ref.listen(isOnlineProvider, (previous, next) {
       if (previous == false && next == true) {
-        // Just recovered: debounce 1s then flush queue
         _syncDebounce?.cancel();
-        _syncDebounce = Timer(const Duration(seconds: 1), _flushQueue);
+        _syncDebounce = Timer(_reconnectJitter(), _flushQueue);
       }
     });
 
@@ -75,7 +92,7 @@ class SyncNotifier extends Notifier<SyncState> {
         );
         if (ref.read(isOnlineProvider)) {
           _syncDebounce?.cancel();
-          _syncDebounce = Timer(const Duration(seconds: 1), _flushQueue);
+          _syncDebounce = Timer(_reconnectJitter(), _flushQueue);
         }
       }
     } catch (_) {
@@ -166,6 +183,8 @@ class SyncNotifier extends Notifier<SyncState> {
       status: SyncQueueStatus.failed,
       lastErrorMessage: errorMessage,
     );
+    // Persist so retry counts survive restarts (max-retry cap stays honest)
+    unawaited(_persistQueue());
   }
 
   /// Mark an item as having a server conflict
@@ -234,10 +253,18 @@ class SyncNotifier extends Notifier<SyncState> {
   }
 
   // ── Internal sync engine ───────────────────────────────────────────────
+  //
+  // Items are grouped by module and shipped to the idempotent /sync
+  // endpoints in chunks (_batchSize per HTTP call); modules run in parallel.
+  // Items past _maxAutoRetries are skipped — visible in the Sync Monitor
+  // for a manual retry, never auto-hammered again.
 
   Future<void> _flushQueue() async {
     final pendingItems = state.queue
-        .where((i) => !i.hasConflict && i.errorMessage == null)
+        .where((i) =>
+            !i.hasConflict &&
+            i.errorMessage == null &&
+            i.retryCount < _maxAutoRetries)
         .toList();
 
     if (pendingItems.isEmpty) {
@@ -255,27 +282,17 @@ class SyncNotifier extends Notifier<SyncState> {
       currentProgress: 0,
     );
 
-    for (var i = 0; i < pendingItems.length; i++) {
-      final item = pendingItems[i];
-
-      // Check connectivity mid-sync
-      if (!ref.read(isOnlineProvider)) {
-        state = state.copyWith(status: SyncQueueStatus.pending);
-        return;
-      }
-
-      try {
-        await _syncItem(item);
-        dequeue(item.id);
-        state = state.copyWith(
-          currentProgress: ((i + 1) / pendingItems.length * 100).round(),
-        );
-      } catch (e) {
-        markFailed(item.id, e.toString());
-      }
+    final byModule = <SyncItemModule, List<SyncQueueItem>>{};
+    for (final item in pendingItems) {
+      byModule.putIfAbsent(item.module, () => []).add(item);
     }
 
-    final hasRemaining = state.queue.isNotEmpty;
+    await Future.wait(
+      byModule.entries.map((e) => _syncModuleBatches(e.key, e.value)),
+    );
+
+    final hasRemaining =
+        state.queue.any((i) => !i.hasConflict && i.errorMessage != null);
     state = state.copyWith(
       status: hasRemaining ? SyncQueueStatus.failed : SyncQueueStatus.completed,
       lastSyncedAt: DateTime.now(),
@@ -283,17 +300,60 @@ class SyncNotifier extends Notifier<SyncState> {
     );
   }
 
-  Future<void> _syncItem(SyncQueueItem item) async {
-    switch (item.module) {
+  Future<void> _syncModuleBatches(
+    SyncItemModule module,
+    List<SyncQueueItem> items,
+  ) async {
+    for (var offset = 0; offset < items.length; offset += _batchSize) {
+      // Connectivity can drop mid-flush — stop, leave the rest queued
+      if (!ref.read(isOnlineProvider)) {
+        state = state.copyWith(status: SyncQueueStatus.pending);
+        return;
+      }
+
+      final chunk = items.sublist(
+        offset,
+        min(offset + _batchSize, items.length),
+      );
+      final withPayload =
+          chunk.where((i) => i.payload != null).toList(growable: false);
+
+      try {
+        await _syncBatch(
+          module,
+          withPayload.map((i) => i.payload!).toList(growable: false),
+        );
+        // Server endpoints are idempotent (signature/clientRef dedupe), so a
+        // whole-chunk success dequeues everything in it. Payload-less items
+        // have nothing to send — drop them too.
+        for (final item in chunk) {
+          dequeue(item.id);
+        }
+      } catch (e) {
+        for (final item in chunk) {
+          markFailed(item.id, e.toString());
+        }
+      }
+
+      state = state.copyWith(
+        currentProgress: state.totalInBatch == 0
+            ? 100
+            : ((state.completedInBatch / state.totalInBatch) * 100).round(),
+      );
+    }
+  }
+
+  Future<void> _syncBatch(
+    SyncItemModule module,
+    List<Map<String, dynamic>> payloads,
+  ) async {
+    if (payloads.isEmpty) return;
+    switch (module) {
       case SyncItemModule.attendance:
-        final payload = item.payload;
-        if (payload == null) return; // nothing to send — drop silently
-        await sl<AttendanceRemoteDataSource>().syncPunches([payload]);
+        await sl<AttendanceRemoteDataSource>().syncPunches(payloads);
       case SyncItemModule.visits:
-        final payload = item.payload;
-        if (payload == null) return;
         // Idempotent replay via clientRef (POST /visits/sync)
-        await sl<VisitsRemoteDataSource>().syncActions([payload]);
+        await sl<VisitsRemoteDataSource>().syncActions(payloads);
       // Remaining modules gain client sync flows in a later phase
       case SyncItemModule.faults:
       case SyncItemModule.leads:
