@@ -4,10 +4,11 @@
 #   1. Copy this directory's contents to /opt/pingforce
 #   2. cp .env.example .env  and fill in real values
 #   3. Put the Firebase service-account JSON at /opt/pingforce/secrets/
-#   4. docker login ghcr.io (PAT with read:packages)
+#   4. Build the api image locally on the VM:  docker build -t pingforce_api:latest -f apps/api/Dockerfile .
 #   5. docker compose up -d
 #
-# CI (deploy job) afterwards only runs: docker compose pull api && up -d api
+# NOTE: api runs the locally-built pingforce_api:latest image — no ghcr pull.
+# postgres reuses the external volume pingforce_postgres_prod_data (kartoza image).
 
 name: pingforce
 
@@ -27,7 +28,8 @@ services:
       - api
 
   api:
-    image: ghcr.io/${GITHUB_REPO}-api:latest
+    # Local image built on the VM (no ghcr image pushed for this repo yet).
+    image: pingforce_api:latest
     restart: unless-stopped
     env_file: .env
     environment:
@@ -46,10 +48,10 @@ services:
       - '3000'
 
   # One-shot: apply pending Prisma migrations, then exit.
-  # Run manually after image updates that ship migrations:
+  # Uses the same local image as api.
   #   docker compose run --rm migrate
   migrate:
-    image: ghcr.io/${GITHUB_REPO}-api:latest
+    image: pingforce_api:latest
     profiles: ['tools']
     env_file: .env
     environment:
@@ -60,16 +62,18 @@ services:
         condition: service_healthy
 
   # ── Data stores ───────────────────────────────────────────────────────────
-  # postgis image: schema uses geography columns + ST_DWithin
+  # kartoza/postgis: matches the image the live data volume was initialised with.
+  # Env vars use kartoza's names (POSTGRES_PASS / POSTGRES_DBNAME); ignored on an
+  # already-initialised volume but kept correct in case of first init.
   postgres:
-    image: postgis/postgis:16-3.4-alpine
+    image: kartoza/postgis:16-3.4
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_PASS: ${DB_PASSWORD}
+      POSTGRES_DBNAME: ${DB_NAME}
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - postgres_prod_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
       interval: 10s
@@ -134,7 +138,11 @@ services:
 volumes:
   caddy_data:
   caddy_config:
-  pg_data:
+  # Reuse the EXISTING live data volume (created by the old root compose).
+  # external: true => compose never creates/wipes it, only mounts it.
+  postgres_prod_data:
+    external: true
+    name: pingforce_postgres_prod_data
   redis_data:
   minio_data:
   prom_data:

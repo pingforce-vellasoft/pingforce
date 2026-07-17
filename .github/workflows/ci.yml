@@ -166,8 +166,15 @@ jobs:
           script: |
             set -e
             cd /opt/pingforce
-            docker compose pull api
-            docker compose up -d api
+            # Pull latest source, rebuild the local api image (no registry image
+            # is published for this repo — see deploy/docker-compose.yml).
+            git pull --ff-only
+            docker build -t pingforce_api:latest -f apps/api/Dockerfile .
+            # Pull only the third-party images that actually live in a registry.
+            docker compose pull postgres redis minio prometheus grafana caddy
+            # Apply any pending Prisma migrations before restarting the api.
+            docker compose run --rm migrate
+            docker compose up -d
             docker system prune -f
 
       - name: Smoke test

@@ -5,8 +5,8 @@
   "targets": {
     "pingforce-db47a": {
       "hosting": {
-        "website": ["pingforce-website"],
-        "admin": ["pingforce-admin"]
+        "website": ["pingforce-db47a"],
+        "admin": ["admin-pingforce"]
       }
     }
   }
