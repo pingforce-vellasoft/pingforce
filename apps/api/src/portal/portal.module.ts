@@ -14,6 +14,13 @@ import { PortalFaultsService } from './faults/portal-faults.service';
 import { PortalFeatureGuard } from './guards/portal-feature.guard';
 import { PortalUserGuard } from './guards/portal-user.guard';
 import { PortalAccessController } from './portal-access.controller';
+import { CatalogService } from './catalog/catalog.service';
+import { CatalogController } from './catalog/catalog.controller';
+import { CatalogPortalController } from './catalog/catalog-portal.controller';
+import { ServiceRequestsService } from './service-requests/service-requests.service';
+import { PortalSettingsService } from './service-requests/portal-settings.service';
+import { ServiceRequestsPortalController } from './service-requests/service-requests-portal.controller';
+import { ServiceRequestsStaffController } from './service-requests/service-requests-staff.controller';
 
 /**
  * Customer Portal module (3.8_CustomerPortal): end-user identity, invites,
@@ -29,6 +36,10 @@ import { PortalAccessController } from './portal-access.controller';
     PortalMeController,
     PortalFaultsController,
     PortalAccessController,
+    CatalogController,
+    CatalogPortalController,
+    ServiceRequestsPortalController,
+    ServiceRequestsStaffController,
   ],
   providers: [
     PortalAuthService,
@@ -39,6 +50,9 @@ import { PortalAccessController } from './portal-access.controller';
     SlaComputationService,
     PortalFeatureGuard,
     PortalUserGuard,
+    CatalogService,
+    ServiceRequestsService,
+    PortalSettingsService,
   ],
   exports: [PortalFeatureGuard],
 })

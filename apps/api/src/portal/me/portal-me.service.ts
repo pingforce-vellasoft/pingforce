@@ -91,7 +91,7 @@ export class PortalMeService {
    * employee assignment (BR-9.5).
    */
   async getConnections(tenantId: string, customerId: string) {
-    return this.prisma.networkConnection.findMany({
+    const connections = await this.prisma.networkConnection.findMany({
       where: { tenantId, customerId, deletedAt: null },
       select: {
         id: true,
@@ -99,10 +99,53 @@ export class PortalMeService {
         status: true,
         connectionType: true,
         installationDate: true,
+        installationAddress: true,
         latitude: true,
         longitude: true,
+        servicePlan: {
+          select: {
+            id: true,
+            name: true,
+            speedSpec: true,
+            price: true,
+            currency: true,
+            billingCycle: true,
+          },
+        },
+        connectionAddOns: {
+          where: { status: 'ACTIVE', deletedAt: null },
+          select: {
+            id: true,
+            activatedAt: true,
+            addOn: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                currency: true,
+                billingCycle: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'asc' },
+    });
+
+    // Flatten add-ons to a customer-friendly shape (no join-row internals).
+    return connections.map((c) => {
+      const { connectionAddOns, ...rest } = c;
+      return {
+        ...rest,
+        addOns: connectionAddOns.map((ca) => ({
+          id: ca.addOn.id,
+          name: ca.addOn.name,
+          price: ca.addOn.price,
+          currency: ca.addOn.currency,
+          billingCycle: ca.addOn.billingCycle,
+          activatedAt: ca.activatedAt,
+        })),
+      };
     });
   }
 }

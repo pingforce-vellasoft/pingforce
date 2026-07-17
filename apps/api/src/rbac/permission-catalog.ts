@@ -422,6 +422,29 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
     action: 'DELETE',
     description: 'Remove portal users and revoke invites',
   },
+  // Customer Portal service catalog — plans & add-ons (3.8_CustomerPortal P3)
+  {
+    module: 'PORTAL_CATALOG',
+    action: 'READ',
+    description: 'View the service plan and add-on catalog',
+  },
+  {
+    module: 'PORTAL_CATALOG',
+    action: 'MANAGE',
+    description: 'Create, update and archive service plans and add-ons',
+  },
+  // Customer Portal service requests — self-service request queue (3.8 P4)
+  {
+    module: 'SERVICE_REQUESTS',
+    action: 'READ',
+    description: 'View the customer service-request queue',
+  },
+  {
+    module: 'SERVICE_REQUESTS',
+    action: 'MANAGE',
+    description:
+      'Assign, progress, approve, reject and configure service requests and portal settings',
+  },
   // Workflow engine (ApprovalWorkflow.md)
   {
     module: 'WORKFLOWS',

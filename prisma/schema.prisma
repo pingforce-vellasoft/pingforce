@@ -126,6 +126,13 @@ model Tenant {
   paymentTransactions   PaymentTransaction[]
   portalUsers           CustomerPortalUser[]
   portalInvites         CustomerPortalInvite[]
+  servicePlans          ServicePlan[]
+  addOns                AddOn[]
+  connectionAddOns      ConnectionAddOn[]
+  serviceRequests       ServiceRequest[]
+  serviceRequestTimelines ServiceRequestTimeline[]
+  portalSettings        PortalSettings?
+  serviceRequestPolicies  ServiceRequestPolicy[]
 
   @@map("tenants")
 }
@@ -358,6 +365,181 @@ model CustomerPortalOtp {
   @@index([portalUserId, purpose])
   @@index([tenantId])
   @@map("customer_portal_otps")
+}
+
+// -----------------------------------------------------------------------------
+// CUSTOMER PORTAL — SERVICE CATALOG & REQUESTS (3.8 P3/P4)
+// -----------------------------------------------------------------------------
+
+// Tenant-defined plan catalog (3.8 P3, spec §4.1). Read-only shop window for the
+// portal; staff CRUD from admin.
+model ServicePlan {
+  id           String    @id @default(uuid())
+  tenantId     String
+  name         String
+  description  String?
+  speedSpec    String? // "100 Mbps", "1 Gbps symmetric", etc.
+  price        Decimal   @db.Decimal(12, 2)
+  currency     String    @default("INR")
+  billingCycle String    @default("MONTHLY") // MONTHLY, QUARTERLY, ANNUAL
+  isActive     Boolean   @default(true)
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  createdBy    String?
+  updatedBy    String?
+  deletedAt    DateTime?
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  connections NetworkConnection[]
+
+  @@unique([id, tenantId])
+  @@index([tenantId, isActive])
+  @@map("service_plans")
+}
+
+// Tenant-defined add-on catalog (3.8 P3, spec §4.1): static IP, OTT bundle,
+// extra data, router rental, etc.
+model AddOn {
+  id           String    @id @default(uuid())
+  tenantId     String
+  name         String
+  description  String?
+  price        Decimal   @db.Decimal(12, 2)
+  currency     String    @default("INR")
+  billingCycle String    @default("MONTHLY") // MONTHLY, QUARTERLY, ANNUAL, ONE_TIME
+  isActive     Boolean   @default(true)
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  createdBy    String?
+  updatedBy    String?
+  deletedAt    DateTime?
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  connectionAddOns ConnectionAddOn[]
+
+  @@unique([id, tenantId])
+  @@index([tenantId, isActive])
+  @@map("addons")
+}
+
+// Join: add-ons active on a connection (3.8 P3, spec §4.1).
+model ConnectionAddOn {
+  id           String    @id @default(uuid())
+  tenantId     String
+  connectionId String
+  addOnId      String
+  status       String    @default("ACTIVE") // ACTIVE, REMOVED
+  activatedAt  DateTime  @default(now())
+  removedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  createdBy    String?
+  updatedBy    String?
+  deletedAt    DateTime?
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  connection NetworkConnection @relation(fields: [connectionId], references: [id])
+  addOn      AddOn             @relation(fields: [addOnId], references: [id])
+
+  @@unique([id, tenantId])
+  @@index([tenantId, connectionId])
+  @@index([tenantId, addOnId])
+  @@index([tenantId, status])
+  @@map("connection_addons")
+}
+
+// Generic self-service request engine (3.8 P4, spec §4.2). One model covers
+// plan change, add-on add/remove, relocation, suspension, termination, upgrade.
+model ServiceRequest {
+  id            String    @id @default(uuid())
+  tenantId      String
+  customerId    String
+  connectionId  String?
+  requestNumber String // per-tenant sequence, like faultNumber
+  type          String // PLAN_CHANGE, ADDON_ADD, ADDON_REMOVE, RELOCATION, SUSPENSION, RESUMPTION, TERMINATION, SPEED_UPGRADE, OTHER
+  status        String    @default("SUBMITTED") // SUBMITTED, UNDER_REVIEW, APPROVED, SCHEDULED, IN_PROGRESS, COMPLETED, REJECTED, CANCELLED
+  payload       Json // type-specific detail (target planId, addOnId, new address…)
+  requestedById String // CustomerPortalUser id
+  assignedToId  String? // staff User id
+  scheduledAt   DateTime?
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  createdBy     String?
+  updatedBy     String?
+
+  tenant     Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer   Customer                  @relation(fields: [customerId], references: [id])
+  connection NetworkConnection?        @relation(fields: [connectionId], references: [id])
+  timeline   ServiceRequestTimeline[]
+
+  @@unique([tenantId, requestNumber])
+  @@unique([id, tenantId])
+  @@index([tenantId, customerId])
+  @@index([tenantId, status])
+  @@index([tenantId, assignedToId])
+  @@map("service_requests")
+}
+
+// Status history visible to the customer (mirror of FaultTimeline).
+model ServiceRequestTimeline {
+  id               String   @id @default(uuid())
+  tenantId         String
+  serviceRequestId String
+  fromStatus       String?
+  toStatus         String
+  note             String?
+  actorType        String // CUSTOMER, STAFF, SYSTEM
+  actorId          String?
+  createdAt        DateTime @default(now())
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, serviceRequestId])
+  @@map("service_request_timelines")
+}
+
+// One row per tenant — portal commercial behavior (3.8 §9.2, decisions 3/4/6).
+model PortalSettings {
+  id                    String   @id @default(uuid())
+  tenantId              String   @unique
+  planChangeEffect      String   @default("HYBRID") // IMMEDIATE, NEXT_CYCLE, HYBRID
+  prorationMode         String   @default("NONE") // NONE, FULL, UPFRONT_DIFFERENCE
+  billingDisplayMode    String   @default("NONE") // NONE, READ_ONLY, FULL
+  duesBlockAutoApproval Boolean  @default(false)
+  approverQueueMode     String   @default("ACCOUNT_MANAGER") // ACCOUNT_MANAGER, SHARED_QUEUE
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  createdBy             String?
+  updatedBy             String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("portal_settings")
+}
+
+// One row per tenant per request type — approval routing (3.8 §9.2, decision 4).
+model ServiceRequestPolicy {
+  id          String    @id @default(uuid())
+  tenantId    String
+  requestType String // PLAN_CHANGE_UPGRADE, PLAN_CHANGE_DOWNGRADE, ADDON_ADD, ...
+  mode        String    @default("APPROVAL") // AUTO, APPROVAL, AUTO_WITH_LIMITS
+  limits      Json? // e.g. { "maxSuspensionDaysPerYear": 30 }
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, requestType])
+  @@index([tenantId])
+  @@map("service_request_policies")
 }
 
 model OtpCode {
@@ -703,6 +885,7 @@ model Customer {
   portalUsers        CustomerPortalUser[]
   portalInvites      CustomerPortalInvite[]
   networkConnections NetworkConnection[]
+  serviceRequests    ServiceRequest[]
 
   @@unique([tenantId, customerCode])
   @@unique([id, tenantId])
@@ -1951,6 +2134,8 @@ model NetworkConnection {
   depth              Int       @default(0)
   nodeType           String    @default("CUSTOMER") // CUSTOMER, JUNCTION, SPLITTER
   status             String    @default("ACTIVE") // ACTIVE, PENDING_INSTALLATION, SUSPENDED, DISCONNECTED, FAULTY, MAINTENANCE
+  servicePlanId      String? // commercial plan (3.8 portal); null on non-CUSTOMER nodes
+  installationAddress String? // subscriber install address (3.8 portal)
   connectionType     String? // FIBER, COPPER, WIRELESS
   cableType          String?
   fiberCoreDetails   String?
@@ -1972,6 +2157,9 @@ model NetworkConnection {
   customer         Customer?           @relation(fields: [customerId], references: [id])
   parentConnection NetworkConnection?  @relation("ConnectionTree", fields: [parentConnectionId], references: [id])
   childConnections NetworkConnection[] @relation("ConnectionTree")
+  servicePlan      ServicePlan?        @relation(fields: [servicePlanId], references: [id])
+  connectionAddOns ConnectionAddOn[]
+  serviceRequests  ServiceRequest[]
 
   @@unique([tenantId, connectionCode])
   @@unique([id, tenantId])
@@ -1982,6 +2170,7 @@ model NetworkConnection {
   @@index([tenantId, path])
   @@index([tenantId, assignedEmployeeId])
   @@index([tenantId, latitude, longitude])
+  @@index([tenantId, servicePlanId])
   @@map("network_connections")
 }
 
