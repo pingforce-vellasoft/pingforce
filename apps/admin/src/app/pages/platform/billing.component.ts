@@ -49,7 +49,8 @@ interface PlanMixRow {
         <div>
           <h2 class="page-title">Billing & Subscriptions</h2>
           <p class="page-subtitle">
-            Platform revenue, plan mix and every tenant subscription in one view.
+            Platform revenue, plan mix and every tenant subscription in one
+            view.
           </p>
         </div>
       </div>
@@ -82,7 +83,9 @@ interface PlanMixRow {
           </div>
           <div class="stat-content">
             <span class="stat-label">Revenue (30 days)</span>
-            <span class="stat-value">{{ rupees(summary().revenueLast30d) }}</span>
+            <span class="stat-value">{{
+              rupees(summary().revenueLast30d)
+            }}</span>
           </div>
         </mat-card>
 
@@ -125,7 +128,11 @@ interface PlanMixRow {
       <!-- ── Subscriptions table ── -->
       <mat-card class="table-card">
         <h3 class="panel-title in-table">Subscriptions</h3>
-        <table mat-table [dataSource]="subscriptions()" class="full-width-table">
+        <table
+          mat-table
+          [dataSource]="subscriptions()"
+          class="full-width-table"
+        >
           <ng-container matColumnDef="tenant">
             <th mat-header-cell *matHeaderCellDef>Tenant</th>
             <td mat-cell *matCellDef="let s">

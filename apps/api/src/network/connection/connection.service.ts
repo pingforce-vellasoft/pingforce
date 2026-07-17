@@ -5,10 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  IPrismaService,
-  CurrentUserContext,
-} from '@pingforce-monorepo/shared';
+import { IPrismaService, CurrentUserContext } from '@pingforce-monorepo/shared';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../../audit/audit.service';
 import { TopologyService, ImpactResult } from './topology.service';
@@ -282,7 +279,13 @@ export class ConnectionService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      await this.topology.reparentSubtree(tx, tenantId, node, newParent, newOlteId);
+      await this.topology.reparentSubtree(
+        tx,
+        tenantId,
+        node,
+        newParent,
+        newOlteId,
+      );
       await this.writeHistory(tx, tenantId, currentUser.userId, {
         connectionId: id,
         action: 'MOVED',
@@ -296,13 +299,20 @@ export class ConnectionService {
         newOlteId,
       ]);
     });
-    this.audit(tenantId, currentUser, id, 'MOVE', {
-      parentConnectionId: node.parentConnectionId,
-      olteId: node.olteId,
-    }, {
-      parentConnectionId: newParent ? newParent.id : null,
-      olteId: newOlteId,
-    });
+    this.audit(
+      tenantId,
+      currentUser,
+      id,
+      'MOVE',
+      {
+        parentConnectionId: node.parentConnectionId,
+        olteId: node.olteId,
+      },
+      {
+        parentConnectionId: newParent ? newParent.id : null,
+        olteId: newOlteId,
+      },
+    );
     return this.findOne(tenantId, id);
   }
 

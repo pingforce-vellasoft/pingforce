@@ -30,7 +30,10 @@ export class PortalFaultsController {
   constructor(private readonly faultsService: PortalFaultsService) {}
 
   @ApiOperation({ summary: 'Raise a complaint' })
-  @Throttle({ burst: { limit: 5, ttl: 60000 }, sustained: { limit: 20, ttl: 60000 } })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 20, ttl: 60000 },
+  })
   @Post()
   async create(@Request() req: any, @Body() dto: PortalCreateFaultDto) {
     return this.faultsService.create(
@@ -53,10 +56,7 @@ export class PortalFaultsController {
 
   @ApiOperation({ summary: 'Complaint detail with customer-visible timeline' })
   @Get(':id')
-  async findOne(
-    @Request() req: any,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
+  async findOne(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
     return this.faultsService.findOne(
       req.user.tenantId,
       req.user.customerId,
@@ -65,7 +65,10 @@ export class PortalFaultsController {
   }
 
   @ApiOperation({ summary: 'Add a comment to an open complaint' })
-  @Throttle({ burst: { limit: 10, ttl: 60000 }, sustained: { limit: 30, ttl: 60000 } })
+  @Throttle({
+    burst: { limit: 10, ttl: 60000 },
+    sustained: { limit: 30, ttl: 60000 },
+  })
   @Post(':id/comments')
   async comment(
     @Request() req: any,

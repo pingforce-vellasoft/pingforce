@@ -84,7 +84,11 @@ export class PlansService {
     await this.ensureExists(id);
     return this.prisma.plan.update({
       where: { id },
-      data: { deletedAt: new Date(), isActive: false, updatedBy: userId ?? null },
+      data: {
+        deletedAt: new Date(),
+        isActive: false,
+        updatedBy: userId ?? null,
+      },
     });
   }
 

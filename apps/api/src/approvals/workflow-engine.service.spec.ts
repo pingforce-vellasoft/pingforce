@@ -71,11 +71,13 @@ function makeEngine(state: TxState) {
         state.priorActions.push(data as never);
         return Promise.resolve(data);
       }),
-      count: jest.fn().mockImplementation(() =>
-        Promise.resolve(
-          state.priorActions.filter((a) => a.decision === 'APPROVED').length,
+      count: jest
+        .fn()
+        .mockImplementation(() =>
+          Promise.resolve(
+            state.priorActions.filter((a) => a.decision === 'APPROVED').length,
+          ),
         ),
-      ),
     },
   };
 
@@ -110,29 +112,68 @@ describe('WorkflowEngineService.findActiveWorkflow (conditional routing §11)', 
       },
     };
     const auditService = { log: jest.fn() };
-    return new WorkflowEngineService(
-      prisma as never,
-      auditService as never,
-    );
+    return new WorkflowEngineService(prisma as never, auditService as never);
   }
 
   const stage = makeStage(1);
 
   it('conditional definitions win over unconditional fallbacks when they match', async () => {
     const engine = makeRoutingEngine([
-      { id: 'fallback', tenantId: 't1', code: 'FB', module: 'CLAIMS', entityName: 'expense_claim', conditions: null, stages: [stage] },
-      { id: 'high-value', tenantId: 't1', code: 'HV', module: 'CLAIMS', entityName: 'expense_claim', conditions: [{ field: 'amount', op: 'gte', value: 1000 }], stages: [stage] },
+      {
+        id: 'fallback',
+        tenantId: 't1',
+        code: 'FB',
+        module: 'CLAIMS',
+        entityName: 'expense_claim',
+        conditions: null,
+        stages: [stage],
+      },
+      {
+        id: 'high-value',
+        tenantId: 't1',
+        code: 'HV',
+        module: 'CLAIMS',
+        entityName: 'expense_claim',
+        conditions: [{ field: 'amount', op: 'gte', value: 1000 }],
+        stages: [stage],
+      },
     ]);
-    const matched = await engine.findActiveWorkflow('t1', 'CLAIMS', 'expense_claim', { amount: 5000 });
+    const matched = await engine.findActiveWorkflow(
+      't1',
+      'CLAIMS',
+      'expense_claim',
+      { amount: 5000 },
+    );
     expect(matched?.id).toBe('high-value');
   });
 
   it('falls back to the unconditional definition when conditions do not match', async () => {
     const engine = makeRoutingEngine([
-      { id: 'fallback', tenantId: 't1', code: 'FB', module: 'CLAIMS', entityName: 'expense_claim', conditions: null, stages: [stage] },
-      { id: 'high-value', tenantId: 't1', code: 'HV', module: 'CLAIMS', entityName: 'expense_claim', conditions: [{ field: 'amount', op: 'gte', value: 1000 }], stages: [stage] },
+      {
+        id: 'fallback',
+        tenantId: 't1',
+        code: 'FB',
+        module: 'CLAIMS',
+        entityName: 'expense_claim',
+        conditions: null,
+        stages: [stage],
+      },
+      {
+        id: 'high-value',
+        tenantId: 't1',
+        code: 'HV',
+        module: 'CLAIMS',
+        entityName: 'expense_claim',
+        conditions: [{ field: 'amount', op: 'gte', value: 1000 }],
+        stages: [stage],
+      },
     ]);
-    const matched = await engine.findActiveWorkflow('t1', 'CLAIMS', 'expense_claim', { amount: 50 });
+    const matched = await engine.findActiveWorkflow(
+      't1',
+      'CLAIMS',
+      'expense_claim',
+      { amount: 50 },
+    );
     expect(matched?.id).toBe('fallback');
   });
 
@@ -145,7 +186,15 @@ describe('WorkflowEngineService.findActiveWorkflow (conditional routing §11)', 
 
   it('malformed condition rules fail closed (definition skipped)', async () => {
     const engine = makeRoutingEngine([
-      { id: 'bad', tenantId: 't1', code: 'BAD', module: 'CLAIMS', entityName: 'expense_claim', conditions: [{ op: 'gte', value: 1 }], stages: [stage] },
+      {
+        id: 'bad',
+        tenantId: 't1',
+        code: 'BAD',
+        module: 'CLAIMS',
+        entityName: 'expense_claim',
+        conditions: [{ op: 'gte', value: 1 }],
+        stages: [stage],
+      },
     ]);
     await expect(
       engine.findActiveWorkflow('t1', 'CLAIMS', 'expense_claim', { amount: 9 }),
@@ -156,7 +205,12 @@ describe('WorkflowEngineService.findActiveWorkflow (conditional routing §11)', 
 describe('WorkflowEngineService.applyAction (stage advancement §8)', () => {
   it('sequential approval advances to the next stage without finalizing', async () => {
     const { engine, instanceUpdates } = makeEngine({
-      instance: { id: 'i1', tenantId: 't1', status: 'IN_PROGRESS', currentStage: 1 },
+      instance: {
+        id: 'i1',
+        tenantId: 't1',
+        status: 'IN_PROGRESS',
+        currentStage: 1,
+      },
       priorActions: [],
     });
     const outcome = await engine.applyAction(twoStageWorkflow, 'i1', {
@@ -171,7 +225,12 @@ describe('WorkflowEngineService.applyAction (stage advancement §8)', () => {
 
   it('final-stage approval finalizes the instance as APPROVED', async () => {
     const { engine, instanceUpdates } = makeEngine({
-      instance: { id: 'i1', tenantId: 't1', status: 'IN_PROGRESS', currentStage: 2 },
+      instance: {
+        id: 'i1',
+        tenantId: 't1',
+        status: 'IN_PROGRESS',
+        currentStage: 2,
+      },
       priorActions: [],
     });
     const outcome = await engine.applyAction(twoStageWorkflow, 'i1', {
@@ -186,7 +245,12 @@ describe('WorkflowEngineService.applyAction (stage advancement §8)', () => {
 
   it('rejection is terminal at any stage', async () => {
     const { engine, instanceUpdates } = makeEngine({
-      instance: { id: 'i1', tenantId: 't1', status: 'IN_PROGRESS', currentStage: 1 },
+      instance: {
+        id: 'i1',
+        tenantId: 't1',
+        status: 'IN_PROGRESS',
+        currentStage: 1,
+      },
       priorActions: [],
     });
     const outcome = await engine.applyAction(twoStageWorkflow, 'i1', {
@@ -208,7 +272,12 @@ describe('WorkflowEngineService.applyAction (stage advancement §8)', () => {
       ],
     };
     const { engine } = makeEngine({
-      instance: { id: 'i1', tenantId: 't1', status: 'IN_PROGRESS', currentStage: 1 },
+      instance: {
+        id: 'i1',
+        tenantId: 't1',
+        status: 'IN_PROGRESS',
+        currentStage: 1,
+      },
       priorActions: [],
     });
     const first = await engine.applyAction(parallel, 'i1', {
@@ -230,7 +299,12 @@ describe('WorkflowEngineService.applyAction (stage advancement §8)', () => {
       ],
     };
     const { engine } = makeEngine({
-      instance: { id: 'i1', tenantId: 't1', status: 'IN_PROGRESS', currentStage: 1 },
+      instance: {
+        id: 'i1',
+        tenantId: 't1',
+        status: 'IN_PROGRESS',
+        currentStage: 1,
+      },
       priorActions: [{ actorUserId: 'u-a', decision: 'APPROVED' }],
     });
     const second = await engine.applyAction(parallel, 'i1', {
@@ -243,7 +317,12 @@ describe('WorkflowEngineService.applyAction (stage advancement §8)', () => {
 
   it('blocks a second vote by the same approver on one stage', async () => {
     const { engine } = makeEngine({
-      instance: { id: 'i1', tenantId: 't1', status: 'IN_PROGRESS', currentStage: 1 },
+      instance: {
+        id: 'i1',
+        tenantId: 't1',
+        status: 'IN_PROGRESS',
+        currentStage: 1,
+      },
       priorActions: [{ actorUserId: 'u-a', decision: 'APPROVED' }],
     });
     await expect(
@@ -257,7 +336,12 @@ describe('WorkflowEngineService.applyAction (stage advancement §8)', () => {
 
   it('rejects actions on instances that are not in progress', async () => {
     const { engine } = makeEngine({
-      instance: { id: 'i1', tenantId: 't1', status: 'APPROVED', currentStage: 2 },
+      instance: {
+        id: 'i1',
+        tenantId: 't1',
+        status: 'APPROVED',
+        currentStage: 2,
+      },
       priorActions: [],
     });
     await expect(

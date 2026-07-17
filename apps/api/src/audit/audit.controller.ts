@@ -162,9 +162,7 @@ export class AuditController {
     return this.auditService.findById(tenantId, id);
   }
 
-  private toFilters(
-    q: Partial<Record<string, string>>,
-  ): AuditSearchFilters {
+  private toFilters(q: Partial<Record<string, string>>): AuditSearchFilters {
     return {
       module: q.module,
       entityName: q.entityName,

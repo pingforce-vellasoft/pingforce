@@ -214,7 +214,7 @@ Nothing here regresses the green build state; these are additive fixes.
     BFS over `reportingManagerId` (depth cap 10, DataScope.md §8).
   - **Org units** — `regions` + `business_units` masters (exposed through
     `/master-data/regions|business-units`), `employees.regionId/
-    businessUnitId`; DEPARTMENT/REGION/BUSINESS_UNIT scope = members of the
+businessUnitId`; DEPARTMENT/REGION/BUSINESS_UNIT scope = members of the
     caller's unit, deny when unassigned.
   - **CUSTOM (§12)** — `user_scope_overrides` table (per-user rules targeting
     EMPLOYEE/TEAM/DEPARTMENT/BRANCH/REGION/BUSINESS_UNIT, optional module +
@@ -259,7 +259,7 @@ Nothing here regresses the green build state; these are additive fixes.
   (ATTENDANCE_CORRECTION.md §7/§8): corrections ride the C4 engine —
   configuring an active `attendance_correction` workflow moves requests
   through `PENDING → UNDER_MANAGER_REVIEW → UNDER_HR_REVIEW →
-  UNDER_EMPLOYER_REVIEW`; final approval sets `APPROVED` and, when the
+UNDER_EMPLOYER_REVIEW`; final approval sets `APPROVED` and, when the
   session was actually updated, `APPLIED` (spec FSM APPROVED → APPLIED).
   Employees can withdraw open requests via
   `POST /attendance/corrections/:id/cancel` (→ `CANCELLED`, engine instance

@@ -20,10 +20,16 @@ function makeService(over: any = {}) {
   const prisma: any = {
     serviceRequest: {
       count: jest.fn().mockResolvedValue(over.openCount ?? 0),
-      create: jest.fn().mockImplementation((args: { data: Record<string, unknown> }) => {
-        created.data = args.data;
-        return Promise.resolve({ id: 'sr1', requestNumber: 'SR-X', ...args.data });
-      }),
+      create: jest
+        .fn()
+        .mockImplementation((args: { data: Record<string, unknown> }) => {
+          created.data = args.data;
+          return Promise.resolve({
+            id: 'sr1',
+            requestNumber: 'SR-X',
+            ...args.data,
+          });
+        }),
       findFirst: jest.fn().mockResolvedValue(over.existingSr ?? null),
       findMany: jest.fn().mockResolvedValue(over.priorSuspensions ?? []),
       update: jest.fn().mockResolvedValue({ id: 'sr1' }),
@@ -33,14 +39,16 @@ function makeService(over: any = {}) {
       findFirst: jest.fn().mockResolvedValue(over.policy ?? null),
     },
     servicePlan: {
-      findFirst: jest.fn().mockImplementation((args: { where: { id: string } }) => {
-        const plans: Record<string, unknown> = {
-          planA: { id: 'planA', price: 600 },
-          planUp: { id: 'planUp', price: 900 },
-          planDown: { id: 'planDown', price: 300 },
-        };
-        return Promise.resolve(plans[args.where.id] ?? null);
-      }),
+      findFirst: jest
+        .fn()
+        .mockImplementation((args: { where: { id: string } }) => {
+          const plans: Record<string, unknown> = {
+            planA: { id: 'planA', price: 600 },
+            planUp: { id: 'planUp', price: 900 },
+            planDown: { id: 'planDown', price: 300 },
+          };
+          return Promise.resolve(plans[args.where.id] ?? null);
+        }),
     },
     addOn: { findFirst: jest.fn().mockResolvedValue({ id: 'addon1' }) },
     networkConnection: {
@@ -52,7 +60,9 @@ function makeService(over: any = {}) {
   };
   const audit = { log: jest.fn().mockResolvedValue(undefined) };
   const service = new ServiceRequestsService(
-    prisma as unknown as ConstructorParameters<typeof ServiceRequestsService>[0],
+    prisma as unknown as ConstructorParameters<
+      typeof ServiceRequestsService
+    >[0],
     audit as unknown as ConstructorParameters<typeof ServiceRequestsService>[1],
   );
   return { service, prisma, created };
@@ -91,7 +101,9 @@ describe('ServiceRequestsService — policy routing', () => {
     });
     expect(prisma.serviceRequestPolicy.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ requestType: 'PLAN_CHANGE_DOWNGRADE' }),
+        where: expect.objectContaining({
+          requestType: 'PLAN_CHANGE_DOWNGRADE',
+        }),
       }),
     );
   });
@@ -112,7 +124,10 @@ describe('ServiceRequestsService — policy routing', () => {
 
   it('AUTO_WITH_LIMITS approves suspension within the yearly cap', async () => {
     const { service } = makeService({
-      policy: { mode: 'AUTO_WITH_LIMITS', limits: { maxSuspensionDaysPerYear: 30 } },
+      policy: {
+        mode: 'AUTO_WITH_LIMITS',
+        limits: { maxSuspensionDaysPerYear: 30 },
+      },
       priorSuspensions: [{ payload: { days: 10 } }],
     });
     const sr = await service.submit('t1', 'c1', 'pu1', {
@@ -124,7 +139,10 @@ describe('ServiceRequestsService — policy routing', () => {
 
   it('AUTO_WITH_LIMITS routes to review when the cap is exceeded', async () => {
     const { service } = makeService({
-      policy: { mode: 'AUTO_WITH_LIMITS', limits: { maxSuspensionDaysPerYear: 30 } },
+      policy: {
+        mode: 'AUTO_WITH_LIMITS',
+        limits: { maxSuspensionDaysPerYear: 30 },
+      },
       priorSuspensions: [{ payload: { days: 20 } }],
     });
     const sr = await service.submit('t1', 'c1', 'pu1', {

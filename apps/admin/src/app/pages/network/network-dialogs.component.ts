@@ -1,10 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   MAT_DIALOG_DATA,
   MatDialogModule,
@@ -200,7 +196,11 @@ export class OlteFormDialogComponent {
     <mat-dialog-content [formGroup]="form" class="dialog-form">
       <mat-form-field appearance="outline">
         <mat-label>Connection Code</mat-label>
-        <input matInput formControlName="connectionCode" placeholder="CONN-1001" />
+        <input
+          matInput
+          formControlName="connectionCode"
+          placeholder="CONN-1001"
+        />
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>OLTE</mat-label>
@@ -211,7 +211,9 @@ export class OlteFormDialogComponent {
         </mat-select>
       </mat-form-field>
       <mat-form-field appearance="outline">
-        <mat-label>Parent Connection (optional — blank = direct to OLTE)</mat-label>
+        <mat-label
+          >Parent Connection (optional — blank = direct to OLTE)</mat-label
+        >
         <input
           matInput
           formControlName="parentConnectionId"
@@ -234,7 +236,9 @@ export class OlteFormDialogComponent {
         <mat-form-field appearance="outline">
           <mat-label>Status</mat-label>
           <mat-select formControlName="status">
-            <mat-option *ngFor="let s of statuses" [value]="s">{{ s }}</mat-option>
+            <mat-option *ngFor="let s of statuses" [value]="s">{{
+              s
+            }}</mat-option>
           </mat-select>
         </mat-form-field>
       </div>

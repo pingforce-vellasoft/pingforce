@@ -73,7 +73,12 @@ describe('LoginHistoryService', () => {
     service.markLogoutAll('t1', 'u1');
     await flush();
     expect(prisma.loginHistory.updateMany).toHaveBeenCalledWith({
-      where: { tenantId: 't1', userId: 'u1', outcome: 'SUCCESS', logoutAt: null },
+      where: {
+        tenantId: 't1',
+        userId: 'u1',
+        outcome: 'SUCCESS',
+        logoutAt: null,
+      },
       data: { logoutAt: expect.any(Date) },
     });
   });

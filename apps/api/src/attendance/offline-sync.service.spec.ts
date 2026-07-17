@@ -39,17 +39,15 @@ function makeService(opts: {
       findUnique: jest.fn().mockResolvedValue({ id: 'e1', tenantId: 't1' }),
     },
     employeeDevice: {
-      findMany: jest
-        .fn()
-        .mockResolvedValue(
-          (opts.trustedDevices ?? ['d1']).map((deviceId) => ({
-            deviceId,
-            isTrusted: true,
-          })),
-        ),
+      findMany: jest.fn().mockResolvedValue(
+        (opts.trustedDevices ?? ['d1']).map((deviceId) => ({
+          deviceId,
+          isTrusted: true,
+        })),
+      ),
     },
-    $transaction: jest.fn(
-      async (cb: (t: TxMock) => Promise<unknown>) => cb(tx),
+    $transaction: jest.fn(async (cb: (t: TxMock) => Promise<unknown>) =>
+      cb(tx),
     ),
   };
   const auditService = { log: jest.fn().mockResolvedValue(undefined) };

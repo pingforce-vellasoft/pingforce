@@ -60,7 +60,12 @@ export class LeadService {
   ) {
     const scopeWhere = await this.leadScopeWhere(tenantId, requesterUserId);
     if (scopeWhere === null) return [];
-    return await this.leadRepository.findAll(tenantId, cursor, take, scopeWhere);
+    return await this.leadRepository.findAll(
+      tenantId,
+      cursor,
+      take,
+      scopeWhere,
+    );
   }
 
   async getPipeline(

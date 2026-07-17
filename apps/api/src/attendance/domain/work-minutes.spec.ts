@@ -41,9 +41,7 @@ describe('creditWorkedMinutes', () => {
     const tx = makeTx(null);
     const punchOut = new Date('2026-07-16T17:00:00Z'); // 480 min span
 
-    await expect(creditWorkedMinutes(tx, session, punchOut)).resolves.toBe(
-      480,
-    );
+    await expect(creditWorkedMinutes(tx, session, punchOut)).resolves.toBe(480);
   });
 
   it('never credits negative minutes', async () => {

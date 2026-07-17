@@ -347,7 +347,11 @@ export class ReportsService {
     if (scope.kind === 'NONE') {
       return {
         generatedAt: new Date().toISOString(),
-        workforce: { activeEmployees: 0, presentToday: 0, attendanceRate: null },
+        workforce: {
+          activeEmployees: 0,
+          presentToday: 0,
+          attendanceRate: null,
+        },
         visits: { active: 0, completedToday: 0 },
         faults: { open: 0, slaBreached: 0 },
         leads: {
@@ -402,7 +406,11 @@ export class ReportsService {
         },
       }),
       this.prisma.visit.count({
-        where: { tenantId, ...visitScope, status: { in: ['STARTED', 'PAUSED'] } },
+        where: {
+          tenantId,
+          ...visitScope,
+          status: { in: ['STARTED', 'PAUSED'] },
+        },
       }),
       this.prisma.visit.count({
         where: {
@@ -413,7 +421,11 @@ export class ReportsService {
         },
       }),
       this.prisma.fault.count({
-        where: { tenantId, ...faultScope, status: { in: ['OPEN', 'IN_PROGRESS'] } },
+        where: {
+          tenantId,
+          ...faultScope,
+          status: { in: ['OPEN', 'IN_PROGRESS'] },
+        },
       }),
       this.prisma.fault.count({
         where: {

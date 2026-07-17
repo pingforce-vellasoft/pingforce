@@ -7,10 +7,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import {
-  SCOPE_OVERRIDE_TYPES,
-  ScopeOverrideType,
-} from '../rbac.service';
+import { SCOPE_OVERRIDE_TYPES, ScopeOverrideType } from '../rbac.service';
 
 /** One CUSTOM data-scope rule (DataScope.md §12 — user_scope_overrides). */
 export class CreateScopeOverrideDto {

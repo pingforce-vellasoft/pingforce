@@ -1,6 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
-import { ProviderRegistry, GatewayName } from './providers/provider-registry.service';
+import {
+  ProviderRegistry,
+  GatewayName,
+} from './providers/provider-registry.service';
 
 /**
  * Consumes verified gateway webhooks and drives subscription/transaction state.
@@ -73,7 +76,8 @@ export class WebhooksService {
       case 'subscription.activated':
       case 'subscription.charged':
         await this.markActive(subEntity);
-        if (payEntity) await this.recordPayment(gateway, subEntity, payEntity, 'CAPTURED');
+        if (payEntity)
+          await this.recordPayment(gateway, subEntity, payEntity, 'CAPTURED');
         break;
       case 'subscription.pending':
       case 'subscription.halted':
@@ -86,7 +90,8 @@ export class WebhooksService {
         await this.setStatus(subEntity, 'EXPIRED');
         break;
       case 'payment.failed':
-        if (payEntity) await this.recordPayment(gateway, subEntity, payEntity, 'FAILED');
+        if (payEntity)
+          await this.recordPayment(gateway, subEntity, payEntity, 'FAILED');
         break;
       default:
         this.logger.debug(`Unhandled webhook event: ${eventType}`);

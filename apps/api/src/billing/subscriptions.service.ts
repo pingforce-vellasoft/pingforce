@@ -7,7 +7,10 @@ import {
 } from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
-import { ProviderRegistry, GatewayName } from './providers/provider-registry.service';
+import {
+  ProviderRegistry,
+  GatewayName,
+} from './providers/provider-registry.service';
 
 export interface CheckoutResult {
   readonly mode: 'checkout' | 'contact_sales';
@@ -52,7 +55,8 @@ export class SubscriptionsService {
     }
 
     const gatewayName =
-      (dto.gateway as GatewayName | undefined) ?? this.registry.defaultGateway();
+      (dto.gateway as GatewayName | undefined) ??
+      this.registry.defaultGateway();
     if (!gatewayName) {
       return {
         mode: 'contact_sales',
@@ -126,7 +130,9 @@ export class SubscriptionsService {
     planId: string,
     gateway: GatewayName,
   ): Promise<string> {
-    const plan = await this.prisma.plan.findUniqueOrThrow({ where: { id: planId } });
+    const plan = await this.prisma.plan.findUniqueOrThrow({
+      where: { id: planId },
+    });
     const cached =
       gateway === 'RAZORPAY' ? plan.razorpayPlanId : plan.stripePriceId;
     if (cached) return cached;

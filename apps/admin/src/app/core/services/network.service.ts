@@ -180,13 +180,15 @@ export class NetworkService {
 
   // --- Map / tree / search / stats ---
 
-  getMap(filters: {
-    olteId?: string;
-    status?: string;
-    area?: string;
-    district?: string;
-    bbox?: string;
-  } = {}): Observable<NetworkGeoJson> {
+  getMap(
+    filters: {
+      olteId?: string;
+      status?: string;
+      area?: string;
+      district?: string;
+      bbox?: string;
+    } = {},
+  ): Observable<NetworkGeoJson> {
     let params = new HttpParams();
     for (const [key, value] of Object.entries(filters)) {
       if (value) params = params.set(key, value);
@@ -256,9 +258,7 @@ export class NetworkService {
   }
 
   getImpact(id: string): Observable<ImpactResult> {
-    return this.http.get<ImpactResult>(
-      `${this.api}/connections/${id}/impact`,
-    );
+    return this.http.get<ImpactResult>(`${this.api}/connections/${id}/impact`);
   }
 
   disconnect(id: string): Observable<unknown> {

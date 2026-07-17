@@ -37,8 +37,7 @@ export class WebhooksController {
     if (!rawBody) {
       throw new BadRequestException('Missing raw request body');
     }
-    const signature =
-      name === 'RAZORPAY' ? razorpaySignature : stripeSignature;
+    const signature = name === 'RAZORPAY' ? razorpaySignature : stripeSignature;
     if (!signature) {
       throw new BadRequestException('Missing webhook signature');
     }

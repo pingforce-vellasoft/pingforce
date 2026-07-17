@@ -48,7 +48,9 @@ export class FilesController {
   // Multer cap slightly above the largest per-category cap so FilesService
   // returns the descriptive FILE-002 error instead of a bare 413.
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 501 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 501 * 1024 * 1024 } }),
+  )
   async upload(
     @CurrentTenant() tenantId: string,
     @Req() req: AuthRequest,

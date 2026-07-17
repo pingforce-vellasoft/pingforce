@@ -86,9 +86,7 @@ export class NetworkMapService {
       where: {
         tenantId,
         deletedAt: null,
-        ...(locationFiltered
-          ? { olteId: { in: oltes.map((o) => o.id) } }
-          : {}),
+        ...(locationFiltered ? { olteId: { in: oltes.map((o) => o.id) } } : {}),
         ...(query.status ? { status: query.status } : {}),
         ...geoFilter,
       },
@@ -141,9 +139,11 @@ export class NetworkMapService {
       }),
     ]);
 
-    return this.toFeatureCollection(oltes, connections, new Set(
-      assigned.map((a) => a.id),
-    ));
+    return this.toFeatureCollection(
+      oltes,
+      connections,
+      new Set(assigned.map((a) => a.id)),
+    );
   }
 
   private toFeatureCollection(
@@ -157,7 +157,7 @@ export class NetworkMapService {
       latitude: number | null;
       longitude: number | null;
     }[],
-    connections: ({
+    connections: {
       id: string;
       connectionCode: string;
       nodeType: string;
@@ -175,11 +175,13 @@ export class NetworkMapService {
         longitude: number | null;
         olteId: string;
       } | null;
-    })[],
+    }[],
     assignedIds?: Set<string>,
   ): unknown {
     const truncated = connections.length > MAP_NODE_CAP;
-    const visible = truncated ? connections.slice(0, MAP_NODE_CAP) : connections;
+    const visible = truncated
+      ? connections.slice(0, MAP_NODE_CAP)
+      : connections;
     const olteById = new Map(oltes.map((o) => [o.id, o]));
 
     const features: unknown[] = [];
@@ -405,7 +407,9 @@ export class NetworkMapService {
   async search(tenantId: string, term: string): Promise<unknown> {
     const q = term.trim();
     if (q.length < 2) {
-      throw new BadRequestException('Search term must be at least 2 characters');
+      throw new BadRequestException(
+        'Search term must be at least 2 characters',
+      );
     }
     const contains = { contains: q, mode: 'insensitive' as const };
 

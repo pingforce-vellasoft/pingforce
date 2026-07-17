@@ -16,10 +16,12 @@ function makeContext(user: unknown, method = 'GET'): ExecutionContext {
   } as unknown as ExecutionContext;
 }
 
-function makeGuard(settings: {
-  connectionMapEnabled: boolean;
-  connectionMapEmployeeAccess: string;
-} | null) {
+function makeGuard(
+  settings: {
+    connectionMapEnabled: boolean;
+    connectionMapEmployeeAccess: string;
+  } | null,
+) {
   const prisma = {
     tenantSetting: {
       findUnique: jest.fn().mockResolvedValue(settings),
@@ -39,7 +41,11 @@ function makeGuard(settings: {
 
 const admin = { userId: 'u1', tenantId: 't1', roleCode: 'ADMIN_MANAGER' };
 const employee = { userId: 'u2', tenantId: 't1', roleCode: 'EMPLOYEE' };
-const superAdmin = { userId: 's1', tenantId: 'SYSTEM', roleCode: 'SUPER_ADMIN' };
+const superAdmin = {
+  userId: 's1',
+  tenantId: 'SYSTEM',
+  roleCode: 'SUPER_ADMIN',
+};
 
 describe('NetworkFeatureGuard', () => {
   it('throws 403 when the user context is missing', async () => {
@@ -79,9 +85,9 @@ describe('NetworkFeatureGuard', () => {
       connectionMapEnabled: true,
       connectionMapEmployeeAccess: 'NONE',
     });
-    await expect(
-      guard.canActivate(makeContext(admin, 'POST')),
-    ).resolves.toBe(true);
+    await expect(guard.canActivate(makeContext(admin, 'POST'))).resolves.toBe(
+      true,
+    );
   });
 
   it('blocks employees when employeeAccess is NONE', async () => {

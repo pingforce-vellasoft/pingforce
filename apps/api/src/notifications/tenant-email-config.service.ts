@@ -1,11 +1,12 @@
-import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IPrismaService } from '@pingforce-monorepo/shared';
-import {
-  createCipheriv,
-  createDecipheriv,
-  randomBytes,
-} from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 

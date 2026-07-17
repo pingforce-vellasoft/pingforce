@@ -5,10 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  IPrismaService,
-  CurrentUserContext,
-} from '@pingforce-monorepo/shared';
+import { IPrismaService, CurrentUserContext } from '@pingforce-monorepo/shared';
 import { AuditService } from '../../audit/audit.service';
 import { CreateOlteDto } from './dto/create-olte.dto';
 import { UpdateOlteDto } from './dto/update-olte.dto';

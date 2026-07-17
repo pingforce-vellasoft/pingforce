@@ -8,16 +8,16 @@
 
 ## 1. Current State (What Exists Today)
 
-| Area | Current Implementation | Relevance to Customer Portal |
-| --- | --- | --- |
-| **Identity — platform** | `SuperAdmin` model (`super_admins` table), authenticated via JWT with `tenantId: 'SYSTEM'` sentinel in `jwt.strategy.ts` | Proves the codebase already supports **multiple identity types** in one JWT strategy — same pattern extends to customers |
-| **Identity — tenant staff** | `User` model (`users` table) with `roleId` → DB-driven `Role` + `RolePermission`; staff-centric relations (`employee`, `scopeOverrides`, `assignedFaults`) | **Not suitable to reuse directly** for customers — it carries staff semantics (employee link, RBAC scope overrides, session/device policies tuned for staff) |
-| **Customer entity** | `Customer` model exists (`customers` table) with `customerCode`, `primaryEmail`, `primaryMobile`, `accountManagerId`, parent/child hierarchy; full CRUD module at `apps/api/src/customer/` | Ready-made **account/organization anchor** for portal users — no schema rework needed |
-| **Fault management** | `Fault` model already has optional `customerId` FK; `faults` module with SLA policies, escalation, timelines (Spec 3.3) | Fault register for customers is largely a **new entry channel** onto an existing engine, not a new engine |
-| **RBAC** | `PERMISSION_CATALOG` (single source of truth), `RbacGuard`, `@RequirePermission('MODULE:ACTION')` | Catalog is extensible; customer-facing permissions can be added, but staff RBAC should **not** govern portal users (see §3.2) |
-| **Auth plumbing** | JWT access + refresh rotation, `tokenVersion` invalidation, OTP service, password reset, session tracking, login history | All reusable for the customer audience |
-| **Connections / plans** | **Do not exist yet.** No `Connection`, `Plan`, or `Subscription` models in `prisma/schema.prisma`. Spec 3.7 (ConnectionMap) is newly drafted | Plan-change / add-on features **depend on a Connection domain model** — must be built first or in parallel with 3.7 |
-| **Frontends** | Angular 21 admin portal (staff), Flutter mobile (employees) | Neither is customer-facing; a portal surface is needed (see §6) |
+| Area                        | Current Implementation                                                                                                                                                                     | Relevance to Customer Portal                                                                                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Identity — platform**     | `SuperAdmin` model (`super_admins` table), authenticated via JWT with `tenantId: 'SYSTEM'` sentinel in `jwt.strategy.ts`                                                                   | Proves the codebase already supports **multiple identity types** in one JWT strategy — same pattern extends to customers                                     |
+| **Identity — tenant staff** | `User` model (`users` table) with `roleId` → DB-driven `Role` + `RolePermission`; staff-centric relations (`employee`, `scopeOverrides`, `assignedFaults`)                                 | **Not suitable to reuse directly** for customers — it carries staff semantics (employee link, RBAC scope overrides, session/device policies tuned for staff) |
+| **Customer entity**         | `Customer` model exists (`customers` table) with `customerCode`, `primaryEmail`, `primaryMobile`, `accountManagerId`, parent/child hierarchy; full CRUD module at `apps/api/src/customer/` | Ready-made **account/organization anchor** for portal users — no schema rework needed                                                                        |
+| **Fault management**        | `Fault` model already has optional `customerId` FK; `faults` module with SLA policies, escalation, timelines (Spec 3.3)                                                                    | Fault register for customers is largely a **new entry channel** onto an existing engine, not a new engine                                                    |
+| **RBAC**                    | `PERMISSION_CATALOG` (single source of truth), `RbacGuard`, `@RequirePermission('MODULE:ACTION')`                                                                                          | Catalog is extensible; customer-facing permissions can be added, but staff RBAC should **not** govern portal users (see §3.2)                                |
+| **Auth plumbing**           | JWT access + refresh rotation, `tokenVersion` invalidation, OTP service, password reset, session tracking, login history                                                                   | All reusable for the customer audience                                                                                                                       |
+| **Connections / plans**     | **Do not exist yet.** No `Connection`, `Plan`, or `Subscription` models in `prisma/schema.prisma`. Spec 3.7 (ConnectionMap) is newly drafted                                               | Plan-change / add-on features **depend on a Connection domain model** — must be built first or in parallel with 3.7                                          |
+| **Frontends**               | Angular 21 admin portal (staff), Flutter mobile (employees)                                                                                                                                | Neither is customer-facing; a portal surface is needed (see §6)                                                                                              |
 
 ### Gap Summary
 
@@ -66,13 +66,13 @@ model CustomerPortalUser {
 
 ### Why a separate model (and not a `CUSTOMER` role on `User`)
 
-| Concern | Separate model | `User` + CUSTOMER role |
-| --- | --- | --- |
-| Staff RBAC bleed-through (scope overrides, role assignment UI, user provisioning flows all assume staff) | ✅ Isolated | ❌ Every staff-user query/screen must now exclude customers |
-| One customer account, many contacts (enterprise ISP customer with 5 authorized contacts) | ✅ Natural (`customerId` FK, `isPrimary`) | ❌ Awkward |
-| Different auth policies (OTP-first login, self-registration, weaker session limits) | ✅ Per-audience config | ❌ Conditional logic everywhere |
-| Blast radius of a portal-user compromise | Limited to customer-scoped endpoints | Potentially staff endpoints if a guard is missed |
-| Precedent in codebase | Matches existing `SuperAdmin` vs `User` split — **three identity tables, one JWT strategy** | — |
+| Concern                                                                                                  | Separate model                                                                              | `User` + CUSTOMER role                                      |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Staff RBAC bleed-through (scope overrides, role assignment UI, user provisioning flows all assume staff) | ✅ Isolated                                                                                 | ❌ Every staff-user query/screen must now exclude customers |
+| One customer account, many contacts (enterprise ISP customer with 5 authorized contacts)                 | ✅ Natural (`customerId` FK, `isPrimary`)                                                   | ❌ Awkward                                                  |
+| Different auth policies (OTP-first login, self-registration, weaker session limits)                      | ✅ Per-audience config                                                                      | ❌ Conditional logic everywhere                             |
+| Blast radius of a portal-user compromise                                                                 | Limited to customer-scoped endpoints                                                        | Potentially staff endpoints if a guard is missed            |
+| Precedent in codebase                                                                                    | Matches existing `SuperAdmin` vs `User` split — **three identity tables, one JWT strategy** | —                                                           |
 
 ### JWT / auth integration
 
@@ -147,11 +147,11 @@ This is the customer-portal analogue of the existing tenant-isolation rule and m
 
 Do **not** put portal users into the tenant `Role`/`RolePermission` system. Use a small fixed enum on `CustomerPortalUser.portalRole`:
 
-| Portal role | Capabilities |
-| --- | --- |
-| `OWNER` | Everything below + manage portal users on the account, approve billing-impacting requests |
-| `MEMBER` | Raise faults, raise service requests, view invoices/usage |
-| `VIEWER` | Read-only (dashboards, invoices, request status) |
+| Portal role | Capabilities                                                                              |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| `OWNER`     | Everything below + manage portal users on the account, approve billing-impacting requests |
+| `MEMBER`    | Raise faults, raise service requests, view invoices/usage                                 |
+| `VIEWER`    | Read-only (dashboards, invoices, request status)                                          |
 
 Rationale: portal permissions are product-defined and uniform across tenants; tenant-configurable RBAC adds complexity with no user value here. If per-tenant portal customization is later required, this enum can migrate into the catalog.
 
@@ -230,14 +230,14 @@ New NestJS module: `apps/api/src/portal/` (own module per feature convention), a
 
 ### Phase 1 — MVP
 
-| Feature | Endpoints (indicative) |
-| --- | --- |
-| Auth: login (password/OTP), refresh, logout, forgot password, invite-acceptance | `POST /portal/auth/login`, `/otp/request`, `/otp/verify`, `/refresh`, `/logout` |
-| My profile & account | `GET/PATCH /portal/me`, `GET /portal/account` |
-| My connections & current plan/add-ons | `GET /portal/connections`, `GET /portal/connections/:id` |
-| **Fault register** (create, track, comment, reopen) | `POST /portal/faults`, `GET /portal/faults`, `GET /portal/faults/:id`, `POST /portal/faults/:id/comments` |
-| **Service requests** (plan change, add-on add/remove) | `GET /portal/plans`, `GET /portal/addons`, `POST /portal/service-requests`, `GET /portal/service-requests`, `POST /portal/service-requests/:id/cancel` |
-| Notifications | Reuse 3.6 business-notifications: request/fault status changes → email/SMS/push to portal user |
+| Feature                                                                         | Endpoints (indicative)                                                                                                                                 |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Auth: login (password/OTP), refresh, logout, forgot password, invite-acceptance | `POST /portal/auth/login`, `/otp/request`, `/otp/verify`, `/refresh`, `/logout`                                                                        |
+| My profile & account                                                            | `GET/PATCH /portal/me`, `GET /portal/account`                                                                                                          |
+| My connections & current plan/add-ons                                           | `GET /portal/connections`, `GET /portal/connections/:id`                                                                                               |
+| **Fault register** (create, track, comment, reopen)                             | `POST /portal/faults`, `GET /portal/faults`, `GET /portal/faults/:id`, `POST /portal/faults/:id/comments`                                              |
+| **Service requests** (plan change, add-on add/remove)                           | `GET /portal/plans`, `GET /portal/addons`, `POST /portal/service-requests`, `GET /portal/service-requests`, `POST /portal/service-requests/:id/cancel` |
+| Notifications                                                                   | Reuse 3.6 business-notifications: request/fault status changes → email/SMS/push to portal user                                                         |
 
 ### Phase 2 — Self-service expansion
 
@@ -265,10 +265,10 @@ New NestJS module: `apps/api/src/portal/` (own module per feature convention), a
 
 **Decision:** customer gets **both** surfaces. Mobile app first; web portal alongside because the mobile build is Android-only today and iOS customers need access from day one.
 
-| Priority | Surface | Notes |
-| --- | --- | --- |
-| 1 | **New Flutter customer app** (`apps/customer_mobile/`) — separate app, **not** a mode inside the employee app | Android first (matches current build pipeline). Same Clean Architecture + Riverpod conventions as `apps/mobile/`. Handles invite deep link / QR, stores tenant context in `flutter_secure_storage`. iOS build later from the same codebase. |
-| 2 | **Angular customer web portal** (`apps/portal/`) in the NX workspace | Covers iOS/desktop users until the iOS app ships, and remains the fallback surface permanently. Deploy on Firebase Hosting like admin. Same invite links open here when the app is not installed (universal-link fallback). |
+| Priority | Surface                                                                                                       | Notes                                                                                                                                                                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1        | **New Flutter customer app** (`apps/customer_mobile/`) — separate app, **not** a mode inside the employee app | Android first (matches current build pipeline). Same Clean Architecture + Riverpod conventions as `apps/mobile/`. Handles invite deep link / QR, stores tenant context in `flutter_secure_storage`. iOS build later from the same codebase. |
+| 2        | **Angular customer web portal** (`apps/portal/`) in the NX workspace                                          | Covers iOS/desktop users until the iOS app ships, and remains the fallback surface permanently. Deploy on Firebase Hosting like admin. Same invite links open here when the app is not installed (universal-link fallback).                 |
 
 Keep the employee app untouched — it is deeply employee-centric (attendance, GPS visits, offline sync); mixing personas complicates sync and increases blast radius.
 
@@ -292,14 +292,14 @@ Both surfaces consume the same `/api/v1/portal/**` API; feature parity tracked p
 
 ## 8. Implementation Phases
 
-| Phase | Deliverables | Depends on |
-| --- | --- | --- |
-| **P1 — Identity** | `CustomerPortalUser` migration, portal auth (login/OTP/refresh/invite), `CustomerAuthGuard`, `userType` claim, staff screens to invite portal users | — |
-| **P2 — Fault register** | Fault channel/reporter fields, `isCustomerVisible` timeline flag, portal fault endpoints, notifications | P1, existing 3.3 |
-| **P3 — Catalog + connections** | `ServicePlan`, `AddOn`, `Connection`, `ConnectionAddOn` models + staff CRUD | Coordinate with Spec 3.7 |
-| **P4 — Service requests** | `ServiceRequest` + timeline, portal endpoints, staff queue UI, approvals integration, `PortalSettings` + `ServiceRequestPolicy` config models + Portal Settings admin screen (§9.2) | P3 |
-| **P5 — Portal frontends** | Flutter customer app `apps/customer_mobile/` (Android first) + Angular `apps/portal/` web (iOS/desktop coverage); both can start against P1/P2 APIs in parallel | P1 |
-| **P6 — Phase-2 features** | Payments, usage, visit scheduling, CSAT | P4, billing domain |
+| Phase                          | Deliverables                                                                                                                                                                        | Depends on               |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| **P1 — Identity**              | `CustomerPortalUser` migration, portal auth (login/OTP/refresh/invite), `CustomerAuthGuard`, `userType` claim, staff screens to invite portal users                                 | —                        |
+| **P2 — Fault register**        | Fault channel/reporter fields, `isCustomerVisible` timeline flag, portal fault endpoints, notifications                                                                             | P1, existing 3.3         |
+| **P3 — Catalog + connections** | `ServicePlan`, `AddOn`, `Connection`, `ConnectionAddOn` models + staff CRUD                                                                                                         | Coordinate with Spec 3.7 |
+| **P4 — Service requests**      | `ServiceRequest` + timeline, portal endpoints, staff queue UI, approvals integration, `PortalSettings` + `ServiceRequestPolicy` config models + Portal Settings admin screen (§9.2) | P3                       |
+| **P5 — Portal frontends**      | Flutter customer app `apps/customer_mobile/` (Android first) + Angular `apps/portal/` web (iOS/desktop coverage); both can start against P1/P2 APIs in parallel                     | P1                       |
+| **P6 — Phase-2 features**      | Payments, usage, visit scheduling, CSAT                                                                                                                                             | P4, billing domain       |
 
 ---
 
@@ -307,11 +307,11 @@ Both surfaces consume the same `/api/v1/portal/**` API; feature parity tracked p
 
 ### 9.1 Resolved
 
-| # | Decision | Resolution |
-| --- | --- | --- |
-| 1 | Tenant resolution at login | **Invite-based** — invite carries tenant code; client stores it after activation (§2) |
-| 2 | Self-registration | **Invite-only** — no open signup |
-| 5 | Portal channel priority | **Mobile-first (Flutter customer app, Android) + web portal in parallel** for iOS/desktop users (§6) |
+| #   | Decision                   | Resolution                                                                                           |
+| --- | -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| 1   | Tenant resolution at login | **Invite-based** — invite carries tenant code; client stores it after activation (§2)                |
+| 2   | Self-registration          | **Invite-only** — no open signup                                                                     |
+| 5   | Portal channel priority    | **Mobile-first (Flutter customer app, Android) + web portal in parallel** for iOS/desktop users (§6) |
 
 ### 9.2 Resolved — decisions 3, 4, 6: tenant-configurable
 
@@ -376,15 +376,15 @@ The detailed option analysis below is retained as reference for what each config
 
 #### Decision 3 — Plan-change commercial rules
 
-**What this is about:** when a customer submits a plan change (e.g., 50 Mbps ₹600/mo → 100 Mbps ₹900/mo), the system must know *when* the new plan takes effect and *how the money is adjusted* for the partial period. This decision shapes the `ServiceRequest` payload, the `Connection` state machine, and any billing integration — it blocks Phase 4 design.
+**What this is about:** when a customer submits a plan change (e.g., 50 Mbps ₹600/mo → 100 Mbps ₹900/mo), the system must know _when_ the new plan takes effect and _how the money is adjusted_ for the partial period. This decision shapes the `ServiceRequest` payload, the `Connection` state machine, and any billing integration — it blocks Phase 4 design.
 
 **Sub-decision 3a — When does the change take effect?**
 
-| Option | How it works | Pros | Cons |
-| --- | --- | --- | --- |
-| **Immediate** | Plan switches as soon as the request is approved/provisioned | Customer sees instant value (esp. upgrades); fewer pending states | Requires proration math; mid-cycle billing adjustments; harder to explain on invoice |
-| **Next billing cycle** | Change is queued; connection carries `pendingPlanId` + `effectiveFrom`; switches on cycle date | No proration at all; clean invoices; simplest to build | Customer waits (bad for urgent upgrades); need UI showing "change scheduled for <date>" |
-| **Hybrid (common ISP practice)** | **Upgrades immediate, downgrades at next cycle** | Revenue-friendly; matches customer expectation (want more speed now, don't care when downgrade lands) | Two code paths; still needs proration for upgrades |
+| Option                           | How it works                                                                                   | Pros                                                                                                  | Cons                                                                                    |
+| -------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Immediate**                    | Plan switches as soon as the request is approved/provisioned                                   | Customer sees instant value (esp. upgrades); fewer pending states                                     | Requires proration math; mid-cycle billing adjustments; harder to explain on invoice    |
+| **Next billing cycle**           | Change is queued; connection carries `pendingPlanId` + `effectiveFrom`; switches on cycle date | No proration at all; clean invoices; simplest to build                                                | Customer waits (bad for urgent upgrades); need UI showing "change scheduled for <date>" |
+| **Hybrid (common ISP practice)** | **Upgrades immediate, downgrades at next cycle**                                               | Revenue-friendly; matches customer expectation (want more speed now, don't care when downgrade lands) | Two code paths; still needs proration for upgrades                                      |
 
 **Sub-decision 3b — Proration (only if anything is immediate):**
 
@@ -404,16 +404,16 @@ The detailed option analysis below is retained as reference for what each config
 
 Per-type analysis with recommendation:
 
-| Request type | Risk if auto-approved | Recommendation |
-| --- | --- | --- |
-| `PLAN_CHANGE` (upgrade) | Low — more revenue; only risk is capacity in customer's area | **Auto-approve**, but block if connection status isn't `ACTIVE` or dues pending |
-| `PLAN_CHANGE` (downgrade) | Revenue loss; retention opportunity missed | **Staff approval** — gives account manager a retention touchpoint |
-| `ADDON_ADD` | Low — more revenue | **Auto-approve** (stock-limited add-ons like router rental → approval) |
-| `ADDON_REMOVE` | Small revenue loss; may be contract-bound (e.g., 6-month OTT bundle) | **Auto-approve unless add-on has a lock-in flag** → then approval |
-| `RELOCATION` | Needs feasibility check (coverage at new address) + technician visit | **Always staff approval** → then visit scheduling |
-| `SUSPENSION` (temporary, e.g., travel) | Revenue pause; usually policy-bound (max N days/year) | **Auto-approve within policy limits**, approval beyond |
-| `RESUMPTION` | None | **Auto-approve** |
-| `TERMINATION` | Churn; equipment recovery; final settlement | **Always staff approval** — retention call + equipment-return workflow |
+| Request type                           | Risk if auto-approved                                                | Recommendation                                                                  |
+| -------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `PLAN_CHANGE` (upgrade)                | Low — more revenue; only risk is capacity in customer's area         | **Auto-approve**, but block if connection status isn't `ACTIVE` or dues pending |
+| `PLAN_CHANGE` (downgrade)              | Revenue loss; retention opportunity missed                           | **Staff approval** — gives account manager a retention touchpoint               |
+| `ADDON_ADD`                            | Low — more revenue                                                   | **Auto-approve** (stock-limited add-ons like router rental → approval)          |
+| `ADDON_REMOVE`                         | Small revenue loss; may be contract-bound (e.g., 6-month OTT bundle) | **Auto-approve unless add-on has a lock-in flag** → then approval               |
+| `RELOCATION`                           | Needs feasibility check (coverage at new address) + technician visit | **Always staff approval** → then visit scheduling                               |
+| `SUSPENSION` (temporary, e.g., travel) | Revenue pause; usually policy-bound (max N days/year)                | **Auto-approve within policy limits**, approval beyond                          |
+| `RESUMPTION`                           | None                                                                 | **Auto-approve**                                                                |
+| `TERMINATION`                          | Churn; equipment recovery; final settlement                          | **Always staff approval** — retention call + equipment-return workflow          |
 
 **Design implication:** make this **per-tenant configurable**, not hard-coded — a `ServiceRequestPolicy` config (per type: `AUTO`, `APPROVAL`, `AUTO_WITH_LIMITS` + limit params) that the tenant admin edits. The approvals module (`approverRoleId` stages) already supports routing; the policy just decides whether to invoke it. MVP can ship with the recommended defaults above as seed data.
 
@@ -427,10 +427,10 @@ Per-type analysis with recommendation:
 
 Options, smallest to largest:
 
-| Option | What ships in portal | What must be built | Effort |
-| --- | --- | --- | --- |
-| **A. No billing in MVP** | Nothing money-related; portal is faults + service requests + connection info | Nothing | None — **fastest MVP** |
-| **B. Read-only invoice display** | "My invoices" list + PDF download; no payment | `Invoice` model + staff upload/generation OR import from tenant's existing billing system (CSV/API) | Medium |
+| Option                               | What ships in portal                                                                     | What must be built                                                                                      | Effort                         |
+| ------------------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| **A. No billing in MVP**             | Nothing money-related; portal is faults + service requests + connection info             | Nothing                                                                                                 | None — **fastest MVP**         |
+| **B. Read-only invoice display**     | "My invoices" list + PDF download; no payment                                            | `Invoice` model + staff upload/generation OR import from tenant's existing billing system (CSV/API)     | Medium                         |
 | **C. Full billing + online payment** | Invoices, dues, payment gateway (Razorpay/Stripe), receipts, auto-suspend on non-payment | Entire billing module: invoicing engine, payment gateway integration, reconciliation, webhooks, refunds | Large — a milestone of its own |
 
 **Key consideration:** most target tenants (ISPs, facility management) **already run a billing system** (Tally, dedicated ISP billing like Jazenet/Hyperms, or spreadsheets). Two very different strategies follow:

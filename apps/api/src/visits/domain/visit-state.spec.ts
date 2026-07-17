@@ -14,9 +14,7 @@ describe('visit-state machine (VISIT_MANAGEMENT.md §4)', () => {
     expect(canTransition(VisitState.ASSIGNED, VisitState.ACCEPTED)).toBe(true);
     expect(canTransition(VisitState.ACCEPTED, VisitState.STARTED)).toBe(true);
     expect(canTransition(VisitState.STARTED, VisitState.COMPLETED)).toBe(true);
-    expect(canTransition(VisitState.COMPLETED, VisitState.APPROVED)).toBe(
-      true,
-    );
+    expect(canTransition(VisitState.COMPLETED, VisitState.APPROVED)).toBe(true);
     expect(canTransition(VisitState.APPROVED, VisitState.CLOSED)).toBe(true);
   });
 
@@ -34,15 +32,11 @@ describe('visit-state machine (VISIT_MANAGEMENT.md §4)', () => {
 
   it('rejects skipping lifecycle stages', () => {
     expect(canTransition(VisitState.PLANNED, VisitState.STARTED)).toBe(false);
-    expect(canTransition(VisitState.PLANNED, VisitState.COMPLETED)).toBe(
-      false,
-    );
+    expect(canTransition(VisitState.PLANNED, VisitState.COMPLETED)).toBe(false);
     expect(canTransition(VisitState.ASSIGNED, VisitState.COMPLETED)).toBe(
       false,
     );
-    expect(canTransition(VisitState.ACCEPTED, VisitState.APPROVED)).toBe(
-      false,
-    );
+    expect(canTransition(VisitState.ACCEPTED, VisitState.APPROVED)).toBe(false);
   });
 
   it('treats CLOSED / CANCELLED / ABORTED as terminal', () => {

@@ -180,7 +180,12 @@ export class LeaveService {
     // stages; the leave record only changes on the finalizing decision.
     const pending = await this.prisma.leaveRequest.findFirst({
       where: { id: leaveId, tenantId },
-      select: { employeeId: true, leaveTypeId: true, startDate: true, endDate: true },
+      select: {
+        employeeId: true,
+        leaveTypeId: true,
+        startDate: true,
+        endDate: true,
+      },
     });
     if (!pending) {
       throw new NotFoundException('Leave request not found');
@@ -193,60 +198,61 @@ export class LeaveService {
           (1000 * 3600 * 24),
       ) + 1;
 
-    const applyDecision = () => this.prisma.$transaction(async (tx) => {
-      const leave = await tx.leaveRequest.findUnique({
-        where: { id: leaveId },
-      });
-
-      if (!leave || leave.tenantId !== tenantId) {
-        throw new NotFoundException('Leave request not found');
-      }
-
-      if (leave.status !== 'PENDING') {
-        throw new ConflictException(
-          'Can only approve/reject pending leave requests',
-        );
-      }
-
-      const updatedLeave = await tx.leaveRequest.update({
-        where: { id: leaveId },
-        data: { status, approvedBy: managerId },
-      });
-
-      // If rejected, refund the days to the balance
-      if (status === 'REJECTED') {
-        const startDate = new Date(leave.startDate);
-        const endDate = new Date(leave.endDate);
-        const daysRequested =
-          Math.floor(
-            (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24),
-          ) + 1;
-        const year = startDate.getFullYear();
-
-        const balance = await tx.leaveBalance.findUnique({
-          where: {
-            tenantId_employeeId_leaveTypeId_year: {
-              tenantId,
-              employeeId: leave.employeeId,
-              leaveTypeId: leave.leaveTypeId,
-              year,
-            },
-          },
+    const applyDecision = () =>
+      this.prisma.$transaction(async (tx) => {
+        const leave = await tx.leaveRequest.findUnique({
+          where: { id: leaveId },
         });
 
-        if (balance) {
-          await tx.leaveBalance.update({
-            where: { id: balance.id },
-            data: {
-              usedDays: { decrement: daysRequested },
-              availableDays: { increment: daysRequested },
+        if (!leave || leave.tenantId !== tenantId) {
+          throw new NotFoundException('Leave request not found');
+        }
+
+        if (leave.status !== 'PENDING') {
+          throw new ConflictException(
+            'Can only approve/reject pending leave requests',
+          );
+        }
+
+        const updatedLeave = await tx.leaveRequest.update({
+          where: { id: leaveId },
+          data: { status, approvedBy: managerId },
+        });
+
+        // If rejected, refund the days to the balance
+        if (status === 'REJECTED') {
+          const startDate = new Date(leave.startDate);
+          const endDate = new Date(leave.endDate);
+          const daysRequested =
+            Math.floor(
+              (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24),
+            ) + 1;
+          const year = startDate.getFullYear();
+
+          const balance = await tx.leaveBalance.findUnique({
+            where: {
+              tenantId_employeeId_leaveTypeId_year: {
+                tenantId,
+                employeeId: leave.employeeId,
+                leaveTypeId: leave.leaveTypeId,
+                year,
+              },
             },
           });
-        }
-      }
 
-      return updatedLeave;
-    });
+          if (balance) {
+            await tx.leaveBalance.update({
+              where: { id: balance.id },
+              data: {
+                usedDays: { decrement: daysRequested },
+                availableDays: { increment: daysRequested },
+              },
+            });
+          }
+        }
+
+        return updatedLeave;
+      });
 
     const outcome = await this.approvalsService.process(
       {

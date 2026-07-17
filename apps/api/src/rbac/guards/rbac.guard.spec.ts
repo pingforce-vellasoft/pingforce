@@ -35,9 +35,7 @@ function makeGuard(
 describe('RbacGuard', () => {
   it('allows routes without a @RequirePermission decorator', async () => {
     const { guard } = makeGuard(undefined, false);
-    await expect(guard.canActivate(makeContext(undefined))).resolves.toBe(
-      true,
-    );
+    await expect(guard.canActivate(makeContext(undefined))).resolves.toBe(true);
   });
 
   it('throws 403 when the user context is missing', async () => {

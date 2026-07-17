@@ -22,32 +22,32 @@ optional, subscription-gated feature.
 
 ## 2. Scope Summary
 
-| In Scope (this plan)                          | Out of Scope (future)                     |
-| --------------------------------------------- | ----------------------------------------- |
-| OLTE CRUD + archive                            | Live signal/OLT telemetry integration     |
-| Connection tree (create/move/split/merge/etc.) | AI route optimization, fault prediction   |
-| Geographic map view (Leaflet + OSM)            | GIS/KML import, fiber duct modeling       |
-| Logical tree view (Angular CDK tree)           | Heat maps, revenue analytics              |
-| Pin details, connection details, navigation    | Real-time OLT polling (SNMP/TR-069)       |
-| Feature flag + 3-level RBAC                    | Customer-facing map                       |
-| Impact analysis (downstream count)             | Version history / config restore (Phase 3)|
-| Mobile (Flutter) read + field updates          | Offline map tiles (Phase 4)               |
+| In Scope (this plan)                           | Out of Scope (future)                      |
+| ---------------------------------------------- | ------------------------------------------ |
+| OLTE CRUD + archive                            | Live signal/OLT telemetry integration      |
+| Connection tree (create/move/split/merge/etc.) | AI route optimization, fault prediction    |
+| Geographic map view (Leaflet + OSM)            | GIS/KML import, fiber duct modeling        |
+| Logical tree view (Angular CDK tree)           | Heat maps, revenue analytics               |
+| Pin details, connection details, navigation    | Real-time OLT polling (SNMP/TR-069)        |
+| Feature flag + 3-level RBAC                    | Customer-facing map                        |
+| Impact analysis (downstream count)             | Version history / config restore (Phase 3) |
+| Mobile (Flutter) read + field updates          | Offline map tiles (Phase 4)                |
 
 ---
 
 ## 3. Architecture Decisions
 
-| Decision                | Choice                                                        | Rationale                                                                 |
-| ----------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Map library (Admin)     | **Leaflet.js + OpenStreetMap**                                | Free, no per-tenant licensing cost; SaaS-friendly. Provider abstraction layer so premium tenants can switch to Google Maps later. |
-| Map library (Mobile)    | **flutter_map + OSM tiles**                                   | Same tile source, consistent behavior, no Google Maps SDK billing.        |
-| Spatial storage         | **PostGIS `geography(Point, 4326)`** via Prisma `Unsupported` | Already used by `Geofence` and `AttendanceSession`; proven pattern in this repo. |
-| Topology storage        | **Adjacency list (`parentConnectionId`) + materialized `path` column** | Adjacency list = simple writes; `path` (ltree-style string, e.g. `root.a.b`) = fast subtree reads without recursive CTE on every request. Recursive CTE used only on writes to rebuild paths. |
-| Tree vs. graph          | **Strict tree** (one parent per connection)                   | FTTH splitter topology is a tree. Merge/split are modeled as re-parenting operations, not multi-parent edges. |
-| New module vs. extend   | **New `network` NestJS module** (`apps/api/src/network/`)     | Own controllers/services/repos per CLAUDE.md module pattern; references existing `Customer`. |
-| Customer linkage        | **Reuse existing `Customer` model**, do NOT duplicate         | `Customer` already has `parentCustomerId`; connection topology lives on the new `NetworkConnection` model, keyed to `customerId`. |
-| Feature gating          | **`TenantSetting` key `network.connection_map.enabled`** + module permissions | Matches existing platform-setting/tenant-setting pattern; Super Admin toggles. |
-| Realtime updates        | **Deferred to Phase 3** (WebSocket gateway)                   | MVP uses standard REST + client refresh; avoids premature Socket.IO infra. |
+| Decision              | Choice                                                                        | Rationale                                                                                                                                                                                     |
+| --------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Map library (Admin)   | **Leaflet.js + OpenStreetMap**                                                | Free, no per-tenant licensing cost; SaaS-friendly. Provider abstraction layer so premium tenants can switch to Google Maps later.                                                             |
+| Map library (Mobile)  | **flutter_map + OSM tiles**                                                   | Same tile source, consistent behavior, no Google Maps SDK billing.                                                                                                                            |
+| Spatial storage       | **PostGIS `geography(Point, 4326)`** via Prisma `Unsupported`                 | Already used by `Geofence` and `AttendanceSession`; proven pattern in this repo.                                                                                                              |
+| Topology storage      | **Adjacency list (`parentConnectionId`) + materialized `path` column**        | Adjacency list = simple writes; `path` (ltree-style string, e.g. `root.a.b`) = fast subtree reads without recursive CTE on every request. Recursive CTE used only on writes to rebuild paths. |
+| Tree vs. graph        | **Strict tree** (one parent per connection)                                   | FTTH splitter topology is a tree. Merge/split are modeled as re-parenting operations, not multi-parent edges.                                                                                 |
+| New module vs. extend | **New `network` NestJS module** (`apps/api/src/network/`)                     | Own controllers/services/repos per CLAUDE.md module pattern; references existing `Customer`.                                                                                                  |
+| Customer linkage      | **Reuse existing `Customer` model**, do NOT duplicate                         | `Customer` already has `parentCustomerId`; connection topology lives on the new `NetworkConnection` model, keyed to `customerId`.                                                             |
+| Feature gating        | **`TenantSetting` key `network.connection_map.enabled`** + module permissions | Matches existing platform-setting/tenant-setting pattern; Super Admin toggles.                                                                                                                |
+| Realtime updates      | **Deferred to Phase 3** (WebSocket gateway)                                   | MVP uses standard REST + client refresh; avoids premature Socket.IO infra.                                                                                                                    |
 
 ---
 
@@ -190,27 +190,27 @@ src/network/
 
 ### 5.2 API endpoints (`/api/v1/network/...`)
 
-| Method | Path                                   | Permission                  | Notes |
-| ------ | -------------------------------------- | --------------------------- | ----- |
-| GET    | `/network/oltes`                       | `network:read`              | Paginated, filter by status/area |
-| POST   | `/network/oltes`                       | `network:olte:create`       | |
-| GET    | `/network/oltes/:id`                   | `network:read`              | Includes capacity stats |
-| PATCH  | `/network/oltes/:id`                   | `network:olte:update`       | |
-| DELETE | `/network/oltes/:id`                   | `network:olte:archive`      | Soft delete; blocked if active connections exist |
-| GET    | `/network/oltes/:id/tree`              | `network:read`              | Full subtree (nested JSON), depth-limited param |
-| GET    | `/network/map`                         | `network:read`              | GeoJSON FeatureCollection: OLTEs + connections + edges within bbox; `?bbox=`, `?olteId=`, `?status=` |
-| GET    | `/network/connections/:id`             | `network:read`              | Detail incl. parent, children, customer summary |
-| POST   | `/network/connections`                 | `network:connection:create` | |
-| PATCH  | `/network/connections/:id`             | `network:connection:update` | Metadata/status/cable fields |
-| POST   | `/network/connections/:id/move`        | `network:connection:move`   | Re-parent; transactional path rebuild |
-| POST   | `/network/connections/:id/split`       | `network:connection:move`   | Insert junction node between parent and selected children |
-| POST   | `/network/connections/:id/merge`       | `network:connection:move`   | Re-parent children to target, archive source node |
-| POST   | `/network/connections/:id/disconnect`  | `network:connection:update` | Status → DISCONNECTED; returns downstream impact |
-| POST   | `/network/connections/:id/reconnect`   | `network:connection:update` | |
-| GET    | `/network/connections/:id/impact`      | `network:read`              | Downstream customer count + list ("12 customers will lose connectivity") |
-| GET    | `/network/connections/:id/history`     | `network:read`              | ConnectionHistory timeline |
-| GET    | `/network/search`                      | `network:read`              | Unified search: customer name/ID/mobile, connection code, OLTE, area/village/mandal/district, employee |
-| GET    | `/network/stats`                       | `network:read`              | Health dashboard counts (total/active/faulty/pending/suspended, today's installs/faults) |
+| Method | Path                                  | Permission                  | Notes                                                                                                  |
+| ------ | ------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
+| GET    | `/network/oltes`                      | `network:read`              | Paginated, filter by status/area                                                                       |
+| POST   | `/network/oltes`                      | `network:olte:create`       |                                                                                                        |
+| GET    | `/network/oltes/:id`                  | `network:read`              | Includes capacity stats                                                                                |
+| PATCH  | `/network/oltes/:id`                  | `network:olte:update`       |                                                                                                        |
+| DELETE | `/network/oltes/:id`                  | `network:olte:archive`      | Soft delete; blocked if active connections exist                                                       |
+| GET    | `/network/oltes/:id/tree`             | `network:read`              | Full subtree (nested JSON), depth-limited param                                                        |
+| GET    | `/network/map`                        | `network:read`              | GeoJSON FeatureCollection: OLTEs + connections + edges within bbox; `?bbox=`, `?olteId=`, `?status=`   |
+| GET    | `/network/connections/:id`            | `network:read`              | Detail incl. parent, children, customer summary                                                        |
+| POST   | `/network/connections`                | `network:connection:create` |                                                                                                        |
+| PATCH  | `/network/connections/:id`            | `network:connection:update` | Metadata/status/cable fields                                                                           |
+| POST   | `/network/connections/:id/move`       | `network:connection:move`   | Re-parent; transactional path rebuild                                                                  |
+| POST   | `/network/connections/:id/split`      | `network:connection:move`   | Insert junction node between parent and selected children                                              |
+| POST   | `/network/connections/:id/merge`      | `network:connection:move`   | Re-parent children to target, archive source node                                                      |
+| POST   | `/network/connections/:id/disconnect` | `network:connection:update` | Status → DISCONNECTED; returns downstream impact                                                       |
+| POST   | `/network/connections/:id/reconnect`  | `network:connection:update` |                                                                                                        |
+| GET    | `/network/connections/:id/impact`     | `network:read`              | Downstream customer count + list ("12 customers will lose connectivity")                               |
+| GET    | `/network/connections/:id/history`    | `network:read`              | ConnectionHistory timeline                                                                             |
+| GET    | `/network/search`                     | `network:read`              | Unified search: customer name/ID/mobile, connection code, OLTE, area/village/mandal/district, employee |
+| GET    | `/network/stats`                      | `network:read`              | Health dashboard counts (total/active/faulty/pending/suspended, today's installs/faults)               |
 
 ### 5.3 Topology service — invariants (unit-test targets)
 
@@ -350,19 +350,19 @@ features/network_map/
 
 ### M1 — Core Network Management (MVP) — ~3 sprints
 
-| # | Task | Est. |
-| - | ---- | ---- |
-| 1.1 | Prisma models + migration + GIST indexes + seed tree | 2d |
-| 1.2 | Olte CRUD (controller/service/repo/DTOs) + tests | 2d |
-| 1.3 | TopologyService (path rebuild, cycle detection, impact) + tests | 3d |
-| 1.4 | Connection CRUD + move/split/merge/disconnect/reconnect + history | 4d |
-| 1.5 | Map + tree + search + stats endpoints (GeoJSON, bbox, caching) | 3d |
-| 1.6 | Feature flag guard + permissions seed + employee-ceiling enforcement | 2d |
-| 1.7 | Admin: map view (Leaflet, markers, polylines, clustering, legend, popup) | 4d |
-| 1.8 | Admin: tree view + search + breadcrumbs + view toggle | 3d |
-| 1.9 | Admin: OLTE + connection management forms, move/impact dialogs | 3d |
-| 1.10 | Super Admin: tenant feature-flag UI | 1d |
-| 1.11 | E2E tests (api-e2e): topology invariants, RBAC matrix, tenant isolation | 3d |
+| #    | Task                                                                     | Est. |
+| ---- | ------------------------------------------------------------------------ | ---- |
+| 1.1  | Prisma models + migration + GIST indexes + seed tree                     | 2d   |
+| 1.2  | Olte CRUD (controller/service/repo/DTOs) + tests                         | 2d   |
+| 1.3  | TopologyService (path rebuild, cycle detection, impact) + tests          | 3d   |
+| 1.4  | Connection CRUD + move/split/merge/disconnect/reconnect + history        | 4d   |
+| 1.5  | Map + tree + search + stats endpoints (GeoJSON, bbox, caching)           | 3d   |
+| 1.6  | Feature flag guard + permissions seed + employee-ceiling enforcement     | 2d   |
+| 1.7  | Admin: map view (Leaflet, markers, polylines, clustering, legend, popup) | 4d   |
+| 1.8  | Admin: tree view + search + breadcrumbs + view toggle                    | 3d   |
+| 1.9  | Admin: OLTE + connection management forms, move/impact dialogs           | 3d   |
+| 1.10 | Super Admin: tenant feature-flag UI                                      | 1d   |
+| 1.11 | E2E tests (api-e2e): topology invariants, RBAC matrix, tenant isolation  | 3d   |
 
 **Exit criteria:** spec's 12-node example fully creatable/renderable; move/disconnect
 with impact warning works; employee with VIEW-only cannot mutate (e2e-proven); CI green.
@@ -393,27 +393,27 @@ with impact warning works; employee with VIEW-only cannot mutate (e2e-proven); C
 
 ## 10. Testing Strategy
 
-| Layer | Coverage |
-| ----- | -------- |
-| Unit (API) | TopologyService: cycle detection, path rebuild on move/split/merge, impact counts, port accounting — 90%+ business logic |
-| Unit (API) | Feature guard + permission ceiling logic |
-| Integration | Repository queries: bbox GeoJSON, subtree by path prefix, tenant isolation (cross-tenant read must 404) |
-| E2E (api-e2e) | Full RBAC matrix from §6.2; move/disconnect flows; feature-flag off → 403 |
-| Admin | Component tests for tree expand/collapse, popup rendering; service tests for bbox fetch |
-| Mobile | Notifier tests (state transitions), repository impl tests with mocked datasources |
-| Load | Map endpoint with 10k-node tenant: p95 < 500ms with bbox + clustering |
+| Layer         | Coverage                                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Unit (API)    | TopologyService: cycle detection, path rebuild on move/split/merge, impact counts, port accounting — 90%+ business logic |
+| Unit (API)    | Feature guard + permission ceiling logic                                                                                 |
+| Integration   | Repository queries: bbox GeoJSON, subtree by path prefix, tenant isolation (cross-tenant read must 404)                  |
+| E2E (api-e2e) | Full RBAC matrix from §6.2; move/disconnect flows; feature-flag off → 403                                                |
+| Admin         | Component tests for tree expand/collapse, popup rendering; service tests for bbox fetch                                  |
+| Mobile        | Notifier tests (state transitions), repository impl tests with mocked datasources                                        |
+| Load          | Map endpoint with 10k-node tenant: p95 < 500ms with bbox + clustering                                                    |
 
 ---
 
 ## 11. Risks & Mitigations
 
-| Risk | Mitigation |
-| ---- | ---------- |
-| Large tenants (10k+ nodes) slow map render | Bbox-scoped fetch, server cap + clustering, materialized path (no recursive CTE reads) |
-| Path column drift vs. actual parent links | Rebuild inside same transaction as parent change; nightly consistency check job (BullMQ) |
-| OSM tile usage policy at scale | Self-hostable tile proxy noted; provider abstraction allows paid tiles per tenant |
-| Prisma `Unsupported` geography ergonomics | Encapsulate all spatial reads/writes in repositories with typed raw queries (existing geofence pattern) |
-| Merge/split semantics ambiguity | Modeled as re-parent operations with explicit ConnectionHistory records; ADR to be written before 1.3 |
+| Risk                                       | Mitigation                                                                                              |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Large tenants (10k+ nodes) slow map render | Bbox-scoped fetch, server cap + clustering, materialized path (no recursive CTE reads)                  |
+| Path column drift vs. actual parent links  | Rebuild inside same transaction as parent change; nightly consistency check job (BullMQ)                |
+| OSM tile usage policy at scale             | Self-hostable tile proxy noted; provider abstraction allows paid tiles per tenant                       |
+| Prisma `Unsupported` geography ergonomics  | Encapsulate all spatial reads/writes in repositories with typed raw queries (existing geofence pattern) |
+| Merge/split semantics ambiguity            | Modeled as re-parent operations with explicit ConnectionHistory records; ADR to be written before 1.3   |
 
 ---
 
@@ -421,15 +421,15 @@ with impact warning works; employee with VIEW-only cannot mutate (e2e-proven); C
 
 M1 core is implemented. Deviations from the original design above:
 
-| Planned | As built | Why |
-| ------- | -------- | --- |
-| PostGIS `geography(Point,4326)` columns on Olte/NetworkConnection | Plain `latitude`/`longitude` Float columns + btree index; bbox filtering in SQL on floats | Matches Geofence precedent; avoids `Unsupported` ergonomics at MVP scale. GIST/geography can be added later without API changes. |
-| Permissions `network:olte:create/update/archive`, `network:connection:*`, `network:import`, `network:admin` | Catalog module `NETWORK` with actions `READ`, `READ_OWN`, `OLTE_MANAGE`, `CREATE`, `UPDATE`, `MOVE`, `DELETE` | Fits existing MODULE/ACTION catalog format and `@RequirePermission('NETWORK','…')` guard. Split/merge/move all under `MOVE`. |
-| `TenantSetting` key-value keys `network.connection_map.*` | Typed columns `connectionMapEnabled`, `connectionMapEmployeeAccess` on `tenant_settings` | TenantSetting is a single typed row per tenant, not a KV store. |
-| Separate super-admin flag UI page | Toggle card on existing Platform → Tenant Details page; API `GET/PATCH /network/access/:tenantId` guarded by platform-only `TENANTS` permission | Smaller surface, same control. |
-| `leaflet.markercluster` | Plain circle markers + server-side 2 000-node cap with `truncated` flag | No extra dep needed at MVP scale; clustering slots in later. |
-| CDK tree | Lightweight recursive standalone component | Fewer moving parts, same expand/collapse UX. |
-| E2E suite (1.11) | Unit tests only so far: TopologyService (invariants) + NetworkFeatureGuard (access matrix), 21 tests | E2E RBAC matrix still owed before module DoD. |
+| Planned                                                                                                     | As built                                                                                                                                        | Why                                                                                                                              |
+| ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| PostGIS `geography(Point,4326)` columns on Olte/NetworkConnection                                           | Plain `latitude`/`longitude` Float columns + btree index; bbox filtering in SQL on floats                                                       | Matches Geofence precedent; avoids `Unsupported` ergonomics at MVP scale. GIST/geography can be added later without API changes. |
+| Permissions `network:olte:create/update/archive`, `network:connection:*`, `network:import`, `network:admin` | Catalog module `NETWORK` with actions `READ`, `READ_OWN`, `OLTE_MANAGE`, `CREATE`, `UPDATE`, `MOVE`, `DELETE`                                   | Fits existing MODULE/ACTION catalog format and `@RequirePermission('NETWORK','…')` guard. Split/merge/move all under `MOVE`.     |
+| `TenantSetting` key-value keys `network.connection_map.*`                                                   | Typed columns `connectionMapEnabled`, `connectionMapEmployeeAccess` on `tenant_settings`                                                        | TenantSetting is a single typed row per tenant, not a KV store.                                                                  |
+| Separate super-admin flag UI page                                                                           | Toggle card on existing Platform → Tenant Details page; API `GET/PATCH /network/access/:tenantId` guarded by platform-only `TENANTS` permission | Smaller surface, same control.                                                                                                   |
+| `leaflet.markercluster`                                                                                     | Plain circle markers + server-side 2 000-node cap with `truncated` flag                                                                         | No extra dep needed at MVP scale; clustering slots in later.                                                                     |
+| CDK tree                                                                                                    | Lightweight recursive standalone component                                                                                                      | Fewer moving parts, same expand/collapse UX.                                                                                     |
+| E2E suite (1.11)                                                                                            | Unit tests only so far: TopologyService (invariants) + NetworkFeatureGuard (access matrix), 21 tests                                            | E2E RBAC matrix still owed before module DoD.                                                                                    |
 
 Employee-ceiling enforcement inside role assignment (§6.2) and Redis stats caching (§5.4) are also still owed — tracked for M1 hardening.
 

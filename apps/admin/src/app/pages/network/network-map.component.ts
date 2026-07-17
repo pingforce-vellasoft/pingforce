@@ -128,24 +128,36 @@ const JUNCTION_COLOR = '#6a1b9a';
 
       <!-- Toolbar -->
       <div class="toolbar">
-        <mat-form-field appearance="outline" class="area-select" *ngIf="filters() as f">
+        <mat-form-field
+          appearance="outline"
+          class="area-select"
+          *ngIf="filters() as f"
+        >
           <mat-label>District</mat-label>
           <mat-select
             [ngModel]="selectedDistrict()"
             (ngModelChange)="selectDistrict($event)"
           >
             <mat-option [value]="''">All districts</mat-option>
-            <mat-option *ngFor="let d of f.districts" [value]="d">{{ d }}</mat-option>
+            <mat-option *ngFor="let d of f.districts" [value]="d">{{
+              d
+            }}</mat-option>
           </mat-select>
         </mat-form-field>
-        <mat-form-field appearance="outline" class="area-select" *ngIf="filters() as f">
+        <mat-form-field
+          appearance="outline"
+          class="area-select"
+          *ngIf="filters() as f"
+        >
           <mat-label>Area</mat-label>
           <mat-select
             [ngModel]="selectedArea()"
             (ngModelChange)="selectArea($event)"
           >
             <mat-option [value]="''">All areas</mat-option>
-            <mat-option *ngFor="let a of f.areas" [value]="a">{{ a }}</mat-option>
+            <mat-option *ngFor="let a of f.areas" [value]="a">{{
+              a
+            }}</mat-option>
           </mat-select>
         </mat-form-field>
         <mat-form-field appearance="outline" class="olte-select">
@@ -301,7 +313,9 @@ const JUNCTION_COLOR = '#6a1b9a';
           <div class="detail-body">
             <div class="detail-row" *ngIf="conn.customer as c">
               <span class="label">Customer</span>
-              <span>{{ c.displayName || c.legalName }} ({{ c.customerCode }})</span>
+              <span
+                >{{ c.displayName || c.legalName }} ({{ c.customerCode }})</span
+              >
             </div>
             <div class="detail-row">
               <span class="label">Status</span>
@@ -313,7 +327,9 @@ const JUNCTION_COLOR = '#6a1b9a';
             </div>
             <div class="detail-row">
               <span class="label">Type</span>
-              <span>{{ conn.nodeType }} / {{ conn.connectionType || '—' }}</span>
+              <span
+                >{{ conn.nodeType }} / {{ conn.connectionType || '—' }}</span
+              >
             </div>
             <div class="detail-row" *ngIf="conn.parentConnection as p">
               <span class="label">Parent</span>
@@ -425,12 +441,24 @@ const JUNCTION_COLOR = '#6a1b9a';
         min-width: 90px;
         border-left: 4px solid #90a4ae;
       }
-      .stat-tile.green { border-left-color: #2e7d32; }
-      .stat-tile.amber { border-left-color: #f9a825; }
-      .stat-tile.orange { border-left-color: #ef6c00; }
-      .stat-tile.red { border-left-color: #c62828; }
-      .stat-tile.dark { border-left-color: #212121; }
-      .stat-tile.blue { border-left-color: #1565c0; }
+      .stat-tile.green {
+        border-left-color: #2e7d32;
+      }
+      .stat-tile.amber {
+        border-left-color: #f9a825;
+      }
+      .stat-tile.orange {
+        border-left-color: #ef6c00;
+      }
+      .stat-tile.red {
+        border-left-color: #c62828;
+      }
+      .stat-tile.dark {
+        border-left-color: #212121;
+      }
+      .stat-tile.blue {
+        border-left-color: #1565c0;
+      }
       .stat-value {
         font-size: 20px;
         font-weight: 700;
@@ -445,11 +473,22 @@ const JUNCTION_COLOR = '#6a1b9a';
         align-items: center;
         flex-wrap: wrap;
       }
-      .olte-select { width: 280px; }
-      .area-select { width: 170px; }
-      .status-select { width: 160px; }
-      .search-field { flex: 1; min-width: 240px; }
-      .view-toggle { height: 44px; }
+      .olte-select {
+        width: 280px;
+      }
+      .area-select {
+        width: 170px;
+      }
+      .status-select {
+        width: 160px;
+      }
+      .search-field {
+        flex: 1;
+        min-width: 240px;
+      }
+      .view-toggle {
+        height: 44px;
+      }
       .content-area {
         display: flex;
         gap: 14px;
@@ -461,7 +500,9 @@ const JUNCTION_COLOR = '#6a1b9a';
         border-radius: 12px;
         overflow: hidden;
       }
-      .map-panel.hidden { display: none; }
+      .map-panel.hidden {
+        display: none;
+      }
       .map-container {
         height: 560px;
         width: 100%;
@@ -524,7 +565,9 @@ const JUNCTION_COLOR = '#6a1b9a';
         justify-content: space-between;
         align-items: center;
       }
-      .detail-header h3 { margin: 0; }
+      .detail-header h3 {
+        margin: 0;
+      }
       .detail-row {
         display: flex;
         justify-content: space-between;
@@ -544,7 +587,9 @@ const JUNCTION_COLOR = '#6a1b9a';
         font-size: 11px;
         background: #607d8b;
       }
-      .detail-children { margin-top: 8px; }
+      .detail-children {
+        margin-top: 8px;
+      }
       .child-link {
         cursor: pointer;
         color: #1565c0;
@@ -577,10 +622,19 @@ const JUNCTION_COLOR = '#6a1b9a';
         border-radius: 6px;
         font-size: 13px;
       }
-      .search-result-row:hover { background: rgba(0, 0, 0, 0.05); }
-      .search-result-row .code { font-weight: 600; }
-      .muted { color: #999; font-size: 12px; }
-      .no-results { padding: 8px 0; }
+      .search-result-row:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+      .search-result-row .code {
+        font-weight: 600;
+      }
+      .muted {
+        color: #999;
+        font-size: 12px;
+      }
+      .no-results {
+        padding: 8px 0;
+      }
     `,
   ],
 })
@@ -683,9 +737,7 @@ export class NetworkMapComponent implements AfterViewInit, OnDestroy {
       },
       error: (err) => this.toastError(err, 'Failed to load OLTEs'),
     });
-    this.networkService
-      .getStats()
-      .subscribe((stats) => this.stats.set(stats));
+    this.networkService.getStats().subscribe((stats) => this.stats.set(stats));
   }
 
   refreshMap(): void {
@@ -735,7 +787,9 @@ export class NetworkMapComponent implements AfterViewInit, OnDestroy {
           ([lng, lat]) => [lat, lng] as [number, number],
         );
         L.polyline(coords, {
-          color: NODE_STATUS_COLORS[feature.properties['status'] as string] ?? '#78909c',
+          color:
+            NODE_STATUS_COLORS[feature.properties['status'] as string] ??
+            '#78909c',
           weight: 2,
           opacity: 0.75,
           dashArray:

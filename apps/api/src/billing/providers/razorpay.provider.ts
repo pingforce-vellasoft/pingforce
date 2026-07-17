@@ -95,10 +95,7 @@ export class RazorpayProvider implements PaymentProvider {
       .digest('hex');
     const valid =
       signature.length === expected.length &&
-      crypto.timingSafeEqual(
-        Buffer.from(signature),
-        Buffer.from(expected),
-      );
+      crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
     if (!valid) {
       throw new Error('Invalid Razorpay webhook signature');
     }

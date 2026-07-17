@@ -253,7 +253,9 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
           <!-- Connection Map Module Card (3.7_ConnectionMap — Super Admin gating) -->
           <mat-card class="detail-card">
             <mat-card-header>
-              <mat-icon mat-card-avatar class="card-icon">share_location</mat-icon>
+              <mat-icon mat-card-avatar class="card-icon"
+                >share_location</mat-icon
+              >
               <mat-card-title>Connection Map</mat-card-title>
             </mat-card-header>
             <mat-card-content class="card-content">
@@ -271,7 +273,9 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
                 <span class="value">
                   <select
                     [ngModel]="networkAccess.employeeAccess"
-                    (ngModelChange)="updateNetworkAccess({ employeeAccess: $event })"
+                    (ngModelChange)="
+                      updateNetworkAccess({ employeeAccess: $event })
+                    "
                     [disabled]="!networkAccess.enabled"
                   >
                     <option value="NONE">None</option>

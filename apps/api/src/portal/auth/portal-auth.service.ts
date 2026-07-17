@@ -168,9 +168,7 @@ export class PortalAuthService {
       meta,
     );
 
-    const passwordHash = dto.password
-      ? await argon2.hash(dto.password)
-      : null;
+    const passwordHash = dto.password ? await argon2.hash(dto.password) : null;
 
     const [activatedUser] = await this.prisma.$transaction([
       this.prisma.customerPortalUser.update({

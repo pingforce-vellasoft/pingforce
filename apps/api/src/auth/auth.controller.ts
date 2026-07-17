@@ -81,7 +81,10 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Request password reset (sends OTP by email)' })
   @ApiResponse({ status: 200, description: 'Generic acknowledgement.' })
-  @Throttle({ burst: { limit: 5, ttl: 60000 }, sustained: { limit: 5, ttl: 60000 } })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 5, ttl: 60000 },
+  })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() resetDto: ResetPasswordDto, @Request() req: any) {
@@ -95,7 +98,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Confirm password reset with OTP' })
   @ApiResponse({ status: 200, description: 'Password reset.' })
   @ApiResponse({ status: 401, description: 'Invalid or expired code.' })
-  @Throttle({ burst: { limit: 5, ttl: 60000 }, sustained: { limit: 5, ttl: 60000 } })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 5, ttl: 60000 },
+  })
   @Post('reset-password/confirm')
   @HttpCode(HttpStatus.OK)
   async confirmResetPassword(
@@ -115,7 +121,10 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request an OTP for the authenticated user (OTP.md §11)',
   })
-  @Throttle({ burst: { limit: 3, ttl: 60000 }, sustained: { limit: 3, ttl: 60000 } })
+  @Throttle({
+    burst: { limit: 3, ttl: 60000 },
+    sustained: { limit: 3, ttl: 60000 },
+  })
   @UseGuards(JwtAuthGuard)
   @Post('otp/request')
   @HttpCode(HttpStatus.OK)
@@ -148,7 +157,10 @@ export class AuthController {
   @ApiOperation({
     summary: 'Verify an OTP for the authenticated user (OTP.md §11)',
   })
-  @Throttle({ burst: { limit: 5, ttl: 60000 }, sustained: { limit: 5, ttl: 60000 } })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 5, ttl: 60000 },
+  })
   @UseGuards(JwtAuthGuard)
   @Post('otp/verify')
   @HttpCode(HttpStatus.OK)

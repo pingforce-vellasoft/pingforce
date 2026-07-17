@@ -66,14 +66,14 @@ gracefully until secrets exist.)
 
 🌐 At your DNS provider for `pingforce.in`:
 
-| Record | Host | Points to |
-| --- | --- | --- |
-| A | `api` | OCI server public IP |
-| A | `admin-api` | OCI server public IP |
-| A | `grafana` | OCI server public IP |
-| A | `files` | OCI server public IP |
+| Record  | Host               | Points to                           |
+| ------- | ------------------ | ----------------------------------- |
+| A       | `api`              | OCI server public IP                |
+| A       | `admin-api`        | OCI server public IP                |
+| A       | `grafana`          | OCI server public IP                |
+| A       | `files`            | OCI server public IP                |
 | A / TXT | `@` (pingforce.in) | values Firebase gives you in Step 3 |
-| A / TXT | `admin` | values Firebase gives you in Step 3 |
+| A / TXT | `admin`            | values Firebase gives you in Step 3 |
 
 🖥️ Verify propagation:
 
@@ -88,12 +88,12 @@ nslookup admin-api.pingforce.in
 
 🌐 GitHub repo → Settings → Secrets and variables → Actions → New repository secret:
 
-| Secret | Value |
-| --- | --- |
+| Secret                     | Value                                                                       |
+| -------------------------- | --------------------------------------------------------------------------- |
 | `FIREBASE_SERVICE_ACCOUNT` | Full JSON of `secrets/pingforce-db47a-firebase-adminsdk.json` (paste as-is) |
-| `OCI_HOST` | OCI server public IP (or hostname) |
-| `OCI_SSH_USER` | SSH user, e.g. `ubuntu` or `opc` |
-| `OCI_SSH_KEY` | Private SSH key contents (PEM) for that user |
+| `OCI_HOST`                 | OCI server public IP (or hostname)                                          |
+| `OCI_SSH_USER`             | SSH user, e.g. `ubuntu` or `opc`                                            |
+| `OCI_SSH_KEY`              | Private SSH key contents (PEM) for that user                                |
 
 **Verification:** next push to main — `deploy-frontends` and `deploy` jobs stop
 skipping.
@@ -325,19 +325,19 @@ internal testing track first.
 
 ## Step 9 — Final end-to-end verification
 
-| # | Check | How |
-| --- | --- | --- |
-| 1 | API healthy | `curl https://api.pingforce.in/api/v1/health` |
-| 2 | Admin portal live | open `https://admin.pingforce.in`, log in with seeded admin |
-| 3 | Website live | open `https://pingforce.in` |
-| 4 | CORS correct | admin portal network tab — no CORS errors |
-| 5 | Mobile app → API | install APK/AAB build, log in |
-| 6 | FCM end-to-end | log in on device → Firebase console → Cloud Messaging → send test message to the token; or trigger a real event |
-| 7 | Push token registered | check `device_tokens` table has a row after mobile login |
-| 8 | Offline sync | airplane mode → punch → back online → check Bull Board / attendance logs |
-| 9 | Metrics flowing | Grafana explore query returns data |
-| 10 | Queues healthy | Bull Board shows completed jobs, empty failed lists |
-| 11 | CI full green | GitHub Actions run: quality, security, package, deploy-frontends, deploy all pass |
+| #   | Check                 | How                                                                                                             |
+| --- | --------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 1   | API healthy           | `curl https://api.pingforce.in/api/v1/health`                                                                   |
+| 2   | Admin portal live     | open `https://admin.pingforce.in`, log in with seeded admin                                                     |
+| 3   | Website live          | open `https://pingforce.in`                                                                                     |
+| 4   | CORS correct          | admin portal network tab — no CORS errors                                                                       |
+| 5   | Mobile app → API      | install APK/AAB build, log in                                                                                   |
+| 6   | FCM end-to-end        | log in on device → Firebase console → Cloud Messaging → send test message to the token; or trigger a real event |
+| 7   | Push token registered | check `device_tokens` table has a row after mobile login                                                        |
+| 8   | Offline sync          | airplane mode → punch → back online → check Bull Board / attendance logs                                        |
+| 9   | Metrics flowing       | Grafana explore query returns data                                                                              |
+| 10  | Queues healthy        | Bull Board shows completed jobs, empty failed lists                                                             |
+| 11  | CI full green         | GitHub Actions run: quality, security, package, deploy-frontends, deploy all pass                               |
 
 ---
 

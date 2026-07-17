@@ -30,16 +30,19 @@ interface StoredRow {
 
 /** Minimal in-memory prisma double for the chain head + audit rows. */
 function makeService() {
-  let head: { tenantId: string; lastSequence: bigint; lastHash: string } | null =
-    null;
+  let head: {
+    tenantId: string;
+    lastSequence: bigint;
+    lastHash: string;
+  } | null = null;
   const rows: StoredRow[] = [];
   let nextId = 1;
 
   const client = {
     auditChainHead: {
-      findUnique: jest.fn().mockImplementation(() =>
-        Promise.resolve(head ? { ...head } : null),
-      ),
+      findUnique: jest
+        .fn()
+        .mockImplementation(() => Promise.resolve(head ? { ...head } : null)),
       create: jest.fn().mockImplementation(({ data }) => {
         head = {
           tenantId: data.tenantId,
@@ -80,13 +83,15 @@ function makeService() {
         rows.push(row);
         return Promise.resolve(row);
       }),
-      findMany: jest.fn().mockImplementation(() =>
-        Promise.resolve(
-          rows
-            .filter((r) => r.sequence !== null)
-            .sort((a, b) => Number((a.sequence ?? 0n) - (b.sequence ?? 0n))),
+      findMany: jest
+        .fn()
+        .mockImplementation(() =>
+          Promise.resolve(
+            rows
+              .filter((r) => r.sequence !== null)
+              .sort((a, b) => Number((a.sequence ?? 0n) - (b.sequence ?? 0n))),
+          ),
         ),
-      ),
     },
     $transaction: jest.fn().mockImplementation((fn) => fn(client)),
   };

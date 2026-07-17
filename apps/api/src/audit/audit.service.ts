@@ -189,7 +189,10 @@ export class AuditService {
    * to the previous row, sequence is gapless. Rows archived out of the live
    * table anchor the chain at the first remaining row's stored prevHash.
    */
-  async verifyChain(tenantId: string, limit = 10_000): Promise<ChainVerification> {
+  async verifyChain(
+    tenantId: string,
+    limit = 10_000,
+  ): Promise<ChainVerification> {
     const rows = await this.prisma.auditLog.findMany({
       where: { tenantId, sequence: { not: null } },
       orderBy: { sequence: 'asc' },
@@ -213,7 +216,10 @@ export class AuditService {
         };
       }
       if (previous) {
-        if ((row.sequence as bigint) !== (previous.sequence as bigint) + BigInt(1)) {
+        if (
+          (row.sequence as bigint) !==
+          (previous.sequence as bigint) + BigInt(1)
+        ) {
           return {
             checked: rows.length,
             valid: false,
@@ -430,7 +436,10 @@ export class AuditService {
       // Bounded batches so one tenant's backlog can't hold connections
       for (let batch = 0; batch < 20; batch++) {
         const rows = await this.prisma.auditLog.findMany({
-          where: { tenantId: policy.tenantId, createdAt: { lt: archiveCutoff } },
+          where: {
+            tenantId: policy.tenantId,
+            createdAt: { lt: archiveCutoff },
+          },
           take: RETENTION_BATCH,
         });
         if (rows.length === 0) break;

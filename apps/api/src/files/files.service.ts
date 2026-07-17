@@ -24,7 +24,9 @@ const ALLOWED_TYPES: Readonly<
     maxBytes: 100 * MB,
   },
   '.xlsx': {
-    mimes: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+    mimes: [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ],
     maxBytes: 100 * MB,
   },
   '.pptx': {
@@ -34,7 +36,10 @@ const ALLOWED_TYPES: Readonly<
     maxBytes: 100 * MB,
   },
   '.txt': { mimes: ['text/plain'], maxBytes: 100 * MB },
-  '.csv': { mimes: ['text/csv', 'application/vnd.ms-excel'], maxBytes: 100 * MB },
+  '.csv': {
+    mimes: ['text/csv', 'application/vnd.ms-excel'],
+    maxBytes: 100 * MB,
+  },
   // Images — 20 MB
   '.jpg': { mimes: ['image/jpeg'], maxBytes: 20 * MB },
   '.jpeg': { mimes: ['image/jpeg'], maxBytes: 20 * MB },
@@ -82,7 +87,9 @@ export class FilesService {
     const ext = extname(input.originalName).toLowerCase();
     const rule = ALLOWED_TYPES[ext];
     if (!rule) {
-      throw new BadRequestException(`File type not allowed (FILE-001): ${ext || 'no extension'}`);
+      throw new BadRequestException(
+        `File type not allowed (FILE-001): ${ext || 'no extension'}`,
+      );
     }
     if (!rule.mimes.includes(input.mimeType.toLowerCase())) {
       throw new BadRequestException(

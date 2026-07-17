@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Inject,
-  ConflictException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Inject, ConflictException, Logger } from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import { AuditService } from '../audit/audit.service';
 

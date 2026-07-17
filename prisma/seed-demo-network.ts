@@ -129,7 +129,5 @@ export async function seedDemoNetwork(
     },
   });
 
-  console.log(
-    `Seeded demo network: OLTE-001 with ${nodes.length} connections`,
-  );
+  console.log(`Seeded demo network: OLTE-001 with ${nodes.length} connections`);
 }

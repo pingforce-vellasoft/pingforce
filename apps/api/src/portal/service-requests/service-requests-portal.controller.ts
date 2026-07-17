@@ -32,7 +32,10 @@ export class ServiceRequestsPortalController {
   constructor(private readonly service: ServiceRequestsService) {}
 
   @ApiOperation({ summary: 'Submit a service request' })
-  @Throttle({ burst: { limit: 5, ttl: 60000 }, sustained: { limit: 20, ttl: 60000 } })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 20, ttl: 60000 },
+  })
   @Post()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   submit(@Request() req: any, @Body() dto: PortalCreateServiceRequestDto) {

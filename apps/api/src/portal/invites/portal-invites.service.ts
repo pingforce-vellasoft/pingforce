@@ -10,7 +10,10 @@ import { createHash, randomBytes } from 'crypto';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import { AuditService } from '../../audit/audit.service';
 import { NotificationsService } from '../../notifications/notifications.service';
-import { InviteContactDto, UpdatePortalUserDto } from '../auth/dto/portal-auth.dto';
+import {
+  InviteContactDto,
+  UpdatePortalUserDto,
+} from '../auth/dto/portal-auth.dto';
 
 const INVITE_TTL_DAYS = 7;
 
@@ -57,7 +60,12 @@ export class PortalInvitesService {
 
     const [activeUsers, pendingInvites] = await this.prisma.$transaction([
       this.prisma.customerPortalUser.count({
-        where: { tenantId, customerId, deletedAt: null, status: { not: 'SUSPENDED' } },
+        where: {
+          tenantId,
+          customerId,
+          deletedAt: null,
+          status: { not: 'SUSPENDED' },
+        },
       }),
       this.prisma.customerPortalInvite.count({
         where: {
@@ -235,7 +243,10 @@ export class PortalInvitesService {
       entityName: 'customer_portal_user',
       entityId: portalUser.id,
       action: 'PORTAL_USER_UPDATED',
-      oldValue: { status: portalUser.status, portalRole: portalUser.portalRole },
+      oldValue: {
+        status: portalUser.status,
+        portalRole: portalUser.portalRole,
+      },
       newValue: { status: updated.status, portalRole: updated.portalRole },
     });
 
@@ -247,7 +258,11 @@ export class PortalInvitesService {
   }
 
   /** Soft delete (BR-9.7): keeps audit trail, frees the email/phone slot. */
-  async removePortalUser(tenantId: string, portalUserId: string, actorId: string) {
+  async removePortalUser(
+    tenantId: string,
+    portalUserId: string,
+    actorId: string,
+  ) {
     const portalUser = await this.prisma.customerPortalUser.findFirst({
       where: { id: portalUserId, tenantId, deletedAt: null },
     });

@@ -26,9 +26,9 @@ describe('attendance session-state machine (STATE_MACHINE.md §3-§4)', () => {
     expect(
       canTransition(SessionState.CHECKED_IN, SessionState.CHECKED_OUT),
     ).toBe(true);
-    expect(
-      canTransition(SessionState.ON_BREAK, SessionState.CHECKED_OUT),
-    ).toBe(true);
+    expect(canTransition(SessionState.ON_BREAK, SessionState.CHECKED_OUT)).toBe(
+      true,
+    );
   });
 
   it('CHECKED_OUT is terminal — corrections go through the workflow', () => {

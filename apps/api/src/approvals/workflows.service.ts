@@ -80,7 +80,11 @@ export class WorkflowsService {
       entityName: 'workflow_definition',
       entityId: workflow.id,
       action: 'WORKFLOW_CREATED',
-      newValue: { code: dto.code, module: dto.module, stages: dto.stages.length },
+      newValue: {
+        code: dto.code,
+        module: dto.module,
+        stages: dto.stages.length,
+      },
     });
 
     return workflow;

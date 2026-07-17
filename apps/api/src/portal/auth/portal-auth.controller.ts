@@ -32,7 +32,10 @@ export class PortalAuthController {
   constructor(private readonly portalAuthService: PortalAuthService) {}
 
   @ApiOperation({ summary: 'Verify an invite token; sends activation OTP' })
-  @Throttle({ burst: { limit: 5, ttl: 60000 }, sustained: { limit: 10, ttl: 60000 } })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 10, ttl: 60000 },
+  })
   @Post('invite/verify')
   @HttpCode(HttpStatus.OK)
   async verifyInvite(@Body() dto: VerifyInviteDto, @Request() req: any) {
@@ -43,7 +46,10 @@ export class PortalAuthController {
   }
 
   @ApiOperation({ summary: 'Activate account with invite token + OTP' })
-  @Throttle({ burst: { limit: 5, ttl: 60000 }, sustained: { limit: 10, ttl: 60000 } })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 10, ttl: 60000 },
+  })
   @Post('invite/activate')
   @HttpCode(HttpStatus.OK)
   async activate(@Body() dto: ActivateInviteDto, @Request() req: any) {
@@ -54,7 +60,10 @@ export class PortalAuthController {
   }
 
   @ApiOperation({ summary: 'Portal login with password' })
-  @Throttle({ burst: { limit: 5, ttl: 60000 }, sustained: { limit: 10, ttl: 60000 } })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 10, ttl: 60000 },
+  })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: PortalLoginDto, @Request() req: any) {
@@ -66,7 +75,10 @@ export class PortalAuthController {
   }
 
   @ApiOperation({ summary: 'Request a login OTP' })
-  @Throttle({ burst: { limit: 3, ttl: 60000 }, sustained: { limit: 6, ttl: 60000 } })
+  @Throttle({
+    burst: { limit: 3, ttl: 60000 },
+    sustained: { limit: 6, ttl: 60000 },
+  })
   @Post('otp/request')
   @HttpCode(HttpStatus.OK)
   async requestOtp(@Body() dto: PortalOtpRequestDto, @Request() req: any) {
@@ -77,7 +89,10 @@ export class PortalAuthController {
   }
 
   @ApiOperation({ summary: 'Login with OTP' })
-  @Throttle({ burst: { limit: 5, ttl: 60000 }, sustained: { limit: 10, ttl: 60000 } })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 10, ttl: 60000 },
+  })
   @Post('otp/verify')
   @HttpCode(HttpStatus.OK)
   async loginWithOtp(@Body() dto: PortalOtpLoginDto, @Request() req: any) {

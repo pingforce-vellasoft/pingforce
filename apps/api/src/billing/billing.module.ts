@@ -17,11 +17,7 @@ import { StripeProvider } from './providers/stripe.provider';
  * the services remain gateway-agnostic.
  */
 @Module({
-  controllers: [
-    PublicBillingController,
-    BillingController,
-    WebhooksController,
-  ],
+  controllers: [PublicBillingController, BillingController, WebhooksController],
   providers: [
     PlansService,
     SubscriptionsService,

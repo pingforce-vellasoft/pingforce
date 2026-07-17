@@ -1,4 +1,5 @@
 # PingForce — Dedicated Scalability Audit
+
 > Based on deep code inspection of `pingforce_monorepo`  
 > Audit Date: July 16, 2026  
 > Scope: All three layers — NestJS API, Flutter Mobile, Angular Admin + PostgreSQL + Redis + Bull Queue
@@ -7,17 +8,17 @@
 
 ## Executive Scalability Summary
 
-| Layer | Scalability Score | Bottleneck |
-|---|---|---|
-| **Database (PostgreSQL)** | 🟡 55/100 | No pool config, missing composite indexes, no partitioning, no read replica |
-| **API Server (NestJS)** | 🟡 60/100 | Stateless ✅, but RBAC + geofence = 3–4 DB hits per request, no compression |
-| **GPS / Attendance (Punch Flow)** | 🟡 65/100 | Transactional ✅, but geofence is uncached — full scan on every punch |
-| **Background Jobs (Bull/BullMQ)** | 🔴 40/100 | Single queue, concurrency=1, no DLQ, no separate workers |
-| **Mobile Sync Engine (Flutter)** | 🟡 55/100 | Sequential flush (no parallelism), no TTL, sync flood on reconnect |
-| **Redis (Cache + Queue)** | 🟡 60/100 | No cluster config, no eviction policy, no memory limits defined |
-| **Horizontal Pod Scaling** | 🟡 65/100 | Stateless API ✅, but scheduler will dual-fire without locking |
-| **Multi-Tenancy at Scale** | 🟡 60/100 | Shared DB with tenant filters, no partition-per-tenant, hot tenants affect others |
-| **Observability** | 🔴 25/100 | Pino logs only — no metrics, no tracing, no capacity visibility |
+| Layer                             | Scalability Score | Bottleneck                                                                        |
+| --------------------------------- | ----------------- | --------------------------------------------------------------------------------- |
+| **Database (PostgreSQL)**         | 🟡 55/100         | No pool config, missing composite indexes, no partitioning, no read replica       |
+| **API Server (NestJS)**           | 🟡 60/100         | Stateless ✅, but RBAC + geofence = 3–4 DB hits per request, no compression       |
+| **GPS / Attendance (Punch Flow)** | 🟡 65/100         | Transactional ✅, but geofence is uncached — full scan on every punch             |
+| **Background Jobs (Bull/BullMQ)** | 🔴 40/100         | Single queue, concurrency=1, no DLQ, no separate workers                          |
+| **Mobile Sync Engine (Flutter)**  | 🟡 55/100         | Sequential flush (no parallelism), no TTL, sync flood on reconnect                |
+| **Redis (Cache + Queue)**         | 🟡 60/100         | No cluster config, no eviction policy, no memory limits defined                   |
+| **Horizontal Pod Scaling**        | 🟡 65/100         | Stateless API ✅, but scheduler will dual-fire without locking                    |
+| **Multi-Tenancy at Scale**        | 🟡 60/100         | Shared DB with tenant filters, no partition-per-tenant, hot tenants affect others |
+| **Observability**                 | 🔴 25/100         | Pino logs only — no metrics, no tracing, no capacity visibility                   |
 
 **Overall Scalability Rating: 55/100** — Viable for <500 field workers / 10 tenants. Needs work before 10,000+ users.
 
@@ -77,6 +78,7 @@ The `DatabaseRetryInterceptor` handles `P2024` with backoff — so requests won'
 ```
 
 The `EmployeeLocation` table:
+
 - Has an index on `[employeeId, capturedAt]` ✅ — good
 - Has no `TTL` or archival strategy — this table will hit **175M rows/year** per 500-user tenant
 - No partitioning by month/date
@@ -88,6 +90,7 @@ At 10 tenants with 500 employees each = **1.75 billion rows/year** with no clean
 ### 1.3 Report Generation — Aggregation Load
 
 From `reports.service.ts` L84–106, the attendance report is a raw SQL aggregation:
+
 ```sql
 SELECT e.id, COUNT(a.id), SUM(EXTRACT(EPOCH...))
 FROM employees e
@@ -98,6 +101,7 @@ GROUP BY e.id
 ```
 
 For a tenant with 500 employees and 365 days of data:
+
 - `attendances` table: 500 × 365 = **182,500 rows per tenant**
 - `attendance_sessions` table: ~2 sessions/day × 500 × 365 = **365,000 rows per tenant**
 - This JOIN with GROUP BY without a materialized view is an **O(n×m)** operation
@@ -116,7 +120,7 @@ At 10 tenants: 1.8M attendance + 3.65M session rows in a single shared table. Th
 **File:** [`prisma.module.ts` L40](file:///c:/Users/rahee/.gemini/antigravity/scratch/pingforce_monorepo/apps/api/src/prisma/prisma.module.ts#L40)
 
 ```typescript
-const pool = new Pool({ connectionString });  // ← defaults: max=10, no timeout
+const pool = new Pool({ connectionString }); // ← defaults: max=10, no timeout
 ```
 
 `pg.Pool` defaults:
@@ -130,6 +134,7 @@ const pool = new Pool({ connectionString });  // ← defaults: max=10, no timeou
 With 10 connections and 8 DB queries per punch, you get **max ~1.25 concurrent punches** before queuing. At a 9 AM rush of 33 punches/second, the pool queue grows by ~31/second — it will overflow in seconds.
 
 **Fix:**
+
 ```typescript
 const pool = new Pool({
   connectionString,
@@ -142,6 +147,7 @@ const pool = new Pool({
 ```
 
 Also configure Prisma URL params:
+
 ```
 DATABASE_URL=postgresql://...?connection_limit=30&pool_timeout=10&connect_timeout=10
 ```
@@ -153,6 +159,7 @@ DATABASE_URL=postgresql://...?connection_limit=30&pool_timeout=10&connect_timeou
 From the schema, here are indexes that are missing for the most common query patterns:
 
 **`AttendanceSession`** (`schema.prisma` L802–806):
+
 ```prisma
 @@index([tenantId])                        ✅
 @@index([attendanceId])                    ✅
@@ -163,6 +170,7 @@ From the schema, here are indexes that are missing for the most common query pat
 ```
 
 **`Geofence`** (`schema.prisma` L920–925):
+
 ```prisma
 @@index([tenantId])                        ✅ (single column only)
 // MISSING:
@@ -170,6 +178,7 @@ From the schema, here are indexes that are missing for the most common query pat
 ```
 
 **`Visit`** (`schema.prisma` L1100+):
+
 ```prisma
 // MISSING composite indexes on:
 @@index([tenantId, status, employeeId])   ❌  ← every visit list filter
@@ -177,6 +186,7 @@ From the schema, here are indexes that are missing for the most common query pat
 ```
 
 **`OfflineQueue`** (`schema.prisma` L984–986):
+
 ```prisma
 @@index([tenantId])                       ✅
 // MISSING:
@@ -185,6 +195,7 @@ From the schema, here are indexes that are missing for the most common query pat
 ```
 
 **`EmployeeLocation`** — will grow fastest:
+
 ```prisma
 @@index([tenantId])                       ✅ (missing!)
 @@index([employeeId, capturedAt])         ✅
@@ -193,6 +204,7 @@ From the schema, here are indexes that are missing for the most common query pat
 ```
 
 **Fix — add to `schema.prisma`:**
+
 ```prisma
 model AttendanceSession {
   @@index([employeeId, punchOut])
@@ -234,6 +246,7 @@ This is the highest-growth table in the entire system. At 30-second GPS interval
 After 1 year at 10 tenants: **~1.75 billion rows** in a single PostgreSQL table. Even with indexes, queries that cross date ranges will degrade as the table grows.
 
 **Fix:** Add PostgreSQL table partitioning by month:
+
 ```sql
 -- In a migration:
 CREATE TABLE employee_locations (
@@ -242,12 +255,13 @@ CREATE TABLE employee_locations (
   ...
 ) PARTITION BY RANGE (captured_at);
 
-CREATE TABLE employee_locations_2026_07 
+CREATE TABLE employee_locations_2026_07
   PARTITION OF employee_locations
   FOR VALUES FROM ('2026-07-01') TO ('2026-08-01');
 ```
 
 Also add a data retention policy (e.g., keep 90 days of raw pings, archive to cold storage after 1 year):
+
 ```sql
 -- Scheduled cleanup (via cron job):
 DELETE FROM employee_locations WHERE captured_at < NOW() - INTERVAL '90 days';
@@ -260,14 +274,16 @@ DELETE FROM employee_locations WHERE captured_at < NOW() - INTERVAL '90 days';
 Every read query — reports, list endpoints, GPS logs, audit logs — hits the same PostgreSQL primary that handles all writes.
 
 **Impact at scale:**
+
 - Report aggregations (which do full table scans) compete with punch writes for DB I/O
 - A slow report query can block or delay attendance punches
 
 **Fix:** Add a read replica for read-heavy operations:
+
 ```typescript
 // prisma.module.ts — split client
 const writeClient = new PrismaClient({ adapter: new PrismaPg(writePool) });
-const readClient  = new PrismaClient({ adapter: new PrismaPg(readPool) });
+const readClient = new PrismaClient({ adapter: new PrismaPg(readPool) });
 
 // Reports, search, exports use readClient
 // Attendance punches, leave approvals use writeClient
@@ -282,11 +298,13 @@ OCI PostgreSQL supports read replicas out of the box.
 All tenants share the same tables (e.g., `attendances`, `employees`, `visits`). Tenant isolation is enforced at the query level via `WHERE tenantId = ?`.
 
 **Risk at scale:**
+
 - A large tenant (e.g., 5,000 employees) doing a report export runs a long transaction that holds row locks, potentially blocking smaller tenants.
 - A hot tenant with many concurrent punches competes with other tenants for the shared connection pool.
 - PostgreSQL VACUUM and AUTOVACUUM performance degrades as tables grow.
 
 **Mitigation options (in order of effort):**
+
 1. **Short-term:** Ensure every report query has a `LIMIT` and the large exports are done via Bull queue jobs (async background export) — not synchronous HTTP responses
 2. **Medium-term:** Add per-tenant query timeouts via `SET LOCAL statement_timeout = '10s'` in transactions
 3. **Long-term:** Schema-per-tenant using PostgreSQL schemas (very large effort, high isolation)
@@ -310,11 +328,13 @@ const members  = await this.prisma.employee.findMany({ ... });    // DB query (T
 ```
 
 For a TEAM-scoped manager accessing `/attendance/logs`, this means:
+
 1. Redis cache check (fast) ✅
 2. `employee.findFirst()` — DB hit ❌
 3. `employee.findMany()` (team members) — DB hit ❌
 
 **Fix:** Cache the full `ResolvedDataScope` result (not just grants) with a per-user, per-module cache key:
+
 ```typescript
 const scopeCacheKey = `scope:${userId}:${tenantId}:${module}`;
 const cached = await this.cacheManager.get<ResolvedDataScope>(scopeCacheKey);
@@ -342,6 +362,7 @@ Large responses (employee lists, report exports, audit logs) are sent uncompress
 | `GET /audit-logs` (100 rows) | ~120 KB | ~82% → 22 KB |
 
 **Fix:** (2 lines of code)
+
 ```typescript
 // main.ts
 import compression from 'compression';
@@ -355,26 +376,28 @@ app.use(compression({ threshold: 1024 })); // only compress responses > 1KB
 **File:** [`app.module.ts` L50–55](file:///c:/Users/rahee/.gemini/antigravity/scratch/pingforce_monorepo/apps/api/src/app/app.module.ts#L50-L55)
 
 ```typescript
-ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }])
+ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]);
 ```
 
 **Scenario:** Tenant with 500 employees all punching in at 9 AM.
+
 - 500 requests in ~15 minutes = ~0.5 req/sec average — well under 100/min
 - But the throttle is **global across all IP addresses, not per-tenant**
 - If 500 employees all hit from the same NAT gateway IP (common in offices), they collectively share 1 bucket of 100 req/min — **80% of punches get throttled**
 
 **Fix:** Use tenant-scoped throttling keyed on the JWT `tenantId`:
+
 ```typescript
 // Custom ThrottlerStorage using Redis with tenant-based keys:
 ThrottlerModule.forRootAsync({
   useFactory: () => ({
     throttlers: [
-      { name: 'global',  ttl: 60000,    limit: 100  },
-      { name: 'tenant',  ttl: 60000,    limit: 2000 }, // Per tenant
-      { name: 'login',   ttl: 60000,    limit: 10   }, // Per IP on login
+      { name: 'global', ttl: 60000, limit: 100 },
+      { name: 'tenant', ttl: 60000, limit: 2000 }, // Per tenant
+      { name: 'login', ttl: 60000, limit: 10 }, // Per IP on login
     ],
   }),
-})
+});
 ```
 
 ---
@@ -384,6 +407,7 @@ ThrottlerModule.forRootAsync({
 The app is designed for a single Node.js process. Node.js is single-threaded — CPU-intensive operations (JWT verification, PostGIS queries, report generation) block the event loop.
 
 **Fix for horizontal scaling:**
+
 ```yaml
 # docker-compose.prod.yml — 3 API replicas behind NGINX
 api:
@@ -411,11 +435,13 @@ The API is already **stateless** (JWT-based auth, shared Redis, shared PostgreSQ
 ### 3.5 🟡 Punch Handler — 3 Queries Before Transaction
 
 In `handlers.ts` L34–61, three queries run before the main `$transaction`:
+
 1. `employee.findUnique()` — validate employee
 2. `employeeDevice.findUnique()` — validate device trust
 3. `$queryRaw` (PostGIS geofence check) — validate location
 
 None of these are cached. On a high-punch morning:
+
 - Employee record changes rarely → **cache for 5 minutes** (`employees:${userId}`)
 - Device trust changes rarely → **cache for 1 hour** (`device:${deviceId}`)
 - Geofences change rarely → **cache for 5 minutes** (`geofences:${tenantId}`)
@@ -433,7 +459,7 @@ This would reduce the punch from **8 DB queries → 2 DB queries** (the transact
 ```prisma
 model Geofence {
   location Unsupported("geography(Point, 4326)")?
-  
+
   @@index([tenantId])     ← regular B-tree index on tenantId
   // MISSING: GiST spatial index on location!
 }
@@ -442,9 +468,10 @@ model Geofence {
 The punch handler uses `ST_DWithin(location, ...)` which benefits from a **GiST spatial index**. Without it, PostgreSQL does a sequential scan of all geofences per tenant on every punch.
 
 **Fix — add migration:**
+
 ```sql
 CREATE INDEX geofences_location_idx ON geofences USING GIST (location);
-CREATE INDEX geofences_tenant_active_idx ON geofences (tenant_id, active) 
+CREATE INDEX geofences_tenant_active_idx ON geofences (tenant_id, active)
   WHERE active = true AND deleted_at IS NULL;
 ```
 
@@ -455,12 +482,14 @@ The `@@index` annotation in Prisma cannot create GiST indexes — this must be a
 ### 4.2 🟡 GPS Location Write Storm — No Batching
 
 When `EmployeeLocation` tracking fires:
+
 - Each location ping = 1 INSERT to the DB
 - 500 employees × 30-second ping = 33 writes/second continuously throughout the workday
 
 **No batching implemented.** Each mobile app sends individual HTTP requests for each GPS ping. This creates 33 separate DB insertions/second = ~2,000/minute of GPS writes alone, before any other operations.
 
 **Fix — batch GPS writes:**
+
 ```typescript
 // Mobile: accumulate 5 pings, send batch of 5 every 2.5 minutes
 // API: single INSERT ... VALUES (row1), (row2), ... (row5)
@@ -479,6 +508,7 @@ Alternatively, write GPS pings to Redis sorted sets (O(log n)) and flush to Post
 **File:** [`schema.prisma` L950–967](file:///c:/Users/rahee/.gemini/antigravity/scratch/pingforce_monorepo/prisma/schema.prisma#L950-L967)
 
 Every GPS validation (geofence check on punch) writes a `GpsValidationLog` row. For 500 employees doing 2 punches/day:
+
 ```
 500 × 2 × 365 = 365,000 rows/year per tenant
 ```
@@ -486,11 +516,13 @@ Every GPS validation (geofence check on punch) writes a `GpsValidationLog` row. 
 At 10 tenants: **3.65 million rows/year** with no retention policy. Indexes exist only on `tenantId` and `employeeId` — date-range queries will degrade.
 
 **Fix:** Add `capturedAt` index + 90-day retention cron:
+
 ```prisma
 model GpsValidationLog {
   @@index([tenantId, createdAt])
 }
 ```
+
 ```typescript
 @Cron('0 2 * * *') // 2 AM daily
 async pruneGpsLogs() {
@@ -510,17 +542,19 @@ async pruneGpsLogs() {
 **File:** [`notifications.module.ts` L11](file:///c:/Users/rahee/.gemini/antigravity/scratch/pingforce_monorepo/apps/api/src/notifications/notifications.module.ts#L11)
 
 ```typescript
-BullModule.registerQueue({ name: 'notifications' })
+BullModule.registerQueue({ name: 'notifications' });
 // No defaultJobOptions, no concurrency, no separate queues
 ```
 
 **Problems:**
+
 1. `@Processor()` without `concurrency` defaults to **1 concurrent job** — the processor handles one email at a time
 2. Email, SMS, and Push notifications all go to the same `notifications` queue — a slow email (SMTP timeout) blocks an urgent push notification
 3. No `removeOnFail: false` — failed jobs are auto-removed, making debugging impossible
 4. No separate priority lanes
 
 **At scale scenario:** 500 employees, all get a shift reminder notification at 8:45 AM:
+
 ```
 500 emails × 2 seconds each (SMTP) ÷ 1 concurrent = ~16 minutes to deliver all
 ```
@@ -528,6 +562,7 @@ BullModule.registerQueue({ name: 'notifications' })
 Most employees will miss their reminder because delivery takes longer than the pre-shift window.
 
 **Fix:**
+
 ```typescript
 // Split into separate queues with concurrency:
 BullModule.registerQueue({
@@ -558,6 +593,7 @@ export class PushProcessor { ... }
 No `@nestjs/schedule` installed. Zero `@Cron` decorators anywhere in the codebase.
 
 This means:
+
 - No auto-checkout → employees left with open sessions permanently
 - No daily attendance rollup → `Attendance.totalWorkMinutes` never updated by system
 - No SLA breach detection → `SlaPolicy` model is orphaned; violations never flagged
@@ -573,12 +609,7 @@ This means:
 // scheduler.module.ts
 @Module({
   imports: [ScheduleModule.forRoot()],
-  providers: [
-    AttendanceScheduler,
-    SessionCleanupScheduler,
-    SlaBreachScheduler,
-    SubscriptionScheduler,
-  ],
+  providers: [AttendanceScheduler, SessionCleanupScheduler, SlaBreachScheduler, SubscriptionScheduler],
 })
 export class SchedulerModule {}
 ```
@@ -601,6 +632,7 @@ async autoCheckoutOpenSessions() {
 ### 5.3 🟡 No Bull Board — Queue Health Invisible
 
 There is no visibility into:
+
 - How many jobs are waiting
 - Which jobs have failed
 - What the queue depth is over time
@@ -609,6 +641,7 @@ There is no visibility into:
 In production, a backed-up notification queue means customers miss alerts — with no observability, you won't know until customers complain.
 
 **Fix:** Add Bull Board dashboard (protected behind admin auth):
+
 ```typescript
 import { createBullBoard } from '@bull-board/api';
 import { BullAdapter } from '@bull-board/api/bullAdapter';
@@ -618,10 +651,7 @@ const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath('/admin/queues');
 
 createBullBoard({
-  queues: [
-    new BullAdapter(notificationsEmailQueue),
-    new BullAdapter(notificationsPushQueue),
-  ],
+  queues: [new BullAdapter(notificationsEmailQueue), new BullAdapter(notificationsPushQueue)],
   serverAdapter,
 });
 
@@ -644,11 +674,13 @@ for (var i = 0; i < pendingItems.length; i++) {
 ```
 
 **Scenario:** Employee is offline for 8 hours (field work in dead zone), accumulates 20 queued operations. On reconnecting:
+
 - Each sync item takes ~300ms (mobile API latency)
 - Sequential: 20 × 300ms = **6 seconds** before sync completes
 - During this time, the app shows "Syncing..." and the employee may be stuck
 
 **Fix:** Process items in parallel batches (respecting server rate limits):
+
 ```dart
 // Process in batches of 5 concurrently:
 const batchSize = 5;
@@ -665,11 +697,13 @@ for (int i = 0; i < pendingItems.length; i += batchSize) {
 **Scenario:** Office WiFi drops and 500 employees are offline for 10 minutes. WiFi comes back, and all 500 devices trigger sync simultaneously within a 1-second window.
 
 The current debounce is only 1 second (`sync_provider.dart` L54):
+
 ```dart
 _syncDebounce = Timer(const Duration(seconds: 1), _flushQueue);
 ```
 
 This means 500 devices all fire API calls at exactly t+1s:
+
 ```
 500 devices × avg 3 queued items × 2 API calls = ~3,000 concurrent API requests in 1 second
 ```
@@ -677,6 +711,7 @@ This means 500 devices all fire API calls at exactly t+1s:
 The API's rate limiter (100 req/min global) would throttle almost all of these.
 
 **Fix:** Add jitter to the reconnect sync delay:
+
 ```dart
 // Jitter: random delay between 1–30 seconds after reconnect
 final jitterMs = Random().nextInt(30000);
@@ -700,11 +735,13 @@ void clearFailed() {
 ```
 
 `canRetry` is `true` if `retryCount < maxRetries`, but:
+
 - Items that fail are marked with `errorMessage` and kept
 - `retryItem()` just clears the `errorMessage` and re-flushes — **no actual max retry enforcement**
 - If an item has a persistent server-side error (e.g., validation error), it loops indefinitely
 
 **Fix:**
+
 ```dart
 // In SyncQueueItem:
 static const maxRetries = 5;
@@ -730,11 +767,13 @@ If an employee punches offline on Monday, and the app is unable to sync until Th
 
 Currently: **yes**, because there's no TTL check on the Hive queue items.
 
-**Potential impact:** 
+**Potential impact:**
+
 - Attendance data manipulation — an employee could queue up old punches and replay them
 - Data integrity issues — replaying old operations against state that has since changed
 
 **Fix — add TTL validation on server-side sync endpoint:**
+
 ```typescript
 // In offline sync handler:
 const MAX_SYNC_AGE_HOURS = 48;
@@ -744,6 +783,7 @@ if (punch.timestamp < Date.now() - MAX_SYNC_AGE_HOURS * 3600 * 1000) {
 ```
 
 Also add client-side TTL:
+
 ```dart
 // In _restoreQueue — skip items older than 48 hours:
 final items = box.values
@@ -770,12 +810,13 @@ CacheModule.registerAsync({
       // ← No maxMemory, no eviction policy, no TTL defaults
     }),
   }),
-})
+});
 ```
 
 Without an eviction policy, Redis will fill up and then **reject all writes** (default behavior) — causing cache operations to throw errors and cascade to DB.
 
 **Fix:** Configure Redis with eviction policy:
+
 ```
 # redis.conf (or via OCI Redis config):
 maxmemory 512mb
@@ -783,11 +824,12 @@ maxmemory-policy allkeys-lru    # Evict least-recently-used keys when full
 ```
 
 Also add cache TTL defaults and size monitoring:
+
 ```typescript
 redisStore({
   url: config.get('REDIS_URL'),
-  ttl: 300,                // 5 minute default TTL for all keys
-})
+  ttl: 300, // 5 minute default TTL for all keys
+});
 ```
 
 ---
@@ -795,21 +837,24 @@ redisStore({
 ### 7.2 🟡 Single Redis Instance — No Cluster / Sentinel
 
 Both `CacheModule` (application cache) and `BullModule` (job queues) share the same Redis instance:
+
 ```typescript
 // app.module.ts L77:
 BullModule.forRootAsync({
   useFactory: (config) => ({
     redis: config.get('REDIS_URL', 'redis://localhost:6379'),
   }),
-})
+});
 ```
 
 **Risk:** If Redis goes down:
+
 - All RBAC permission caches invalidate → every request hits DB until Redis comes back
 - All Bull job queues stop processing → email/notification delivery halts
 - All throttler state is lost → rate limiting effectively disabled temporarily
 
 **Fix for production:**
+
 - Use **Redis Sentinel** (OCI managed Redis supports this) for automatic failover
 - Or **Redis Cluster** for both HA and horizontal scaling
 - Separate Redis instances for cache vs. Bull queues (different failure domains)
@@ -836,10 +881,12 @@ This means you can run **N identical API pod replicas** behind a load balancer w
 ### 8.2 🔴 Schedulers Will Dual-Fire in Multi-Pod Setup
 
 Without `@nestjs/schedule` + Redis locking:
+
 - If you run 3 API pods and each has a `@Cron` job for auto-checkout
 - All 3 pods will fire the cron at the same time → 3 auto-checkouts for each employee
 
 **Fix:** Use `redlock` (Redis-based distributed lock):
+
 ```typescript
 import Redlock from 'redlock';
 
@@ -855,13 +902,14 @@ async autoCheckoutOpenSessions() {
 ```
 
 Alternatively, run the scheduler as a **dedicated worker pod** (not part of API replicas):
+
 ```yaml
 # docker-compose.prod.yml
 scheduler:
   image: pingforce-api
   command: node dist/apps/api/src/scheduler-worker.js
   deploy:
-    replicas: 1   # ← Always exactly 1 scheduler pod
+    replicas: 1 # ← Always exactly 1 scheduler pod
 ```
 
 ---
@@ -900,11 +948,11 @@ spec:
 # k8s/deployment.yaml
 resources:
   requests:
-    cpu: "250m"
-    memory: "256Mi"
+    cpu: '250m'
+    memory: '256Mi'
   limits:
-    cpu: "1000m"
-    memory: "512Mi"
+    cpu: '1000m'
+    memory: '512Mi'
 ```
 
 At these limits, each pod handles ~50–100 concurrent requests. With HPA, 10 pods = ~500–1,000 concurrent requests.
@@ -917,14 +965,14 @@ At these limits, each pod handles ~50–100 concurrent requests. With HPA, 10 po
 
 ### 9.1 What You Can't See Right Now
 
-| Missing Metric | Impact |
-|---|---|
-| API p95/p99 request latency | Don't know if punch is taking 200ms or 5s |
-| DB connection pool utilization | Don't know when pool will exhaust |
-| Redis memory usage | Don't know when cache will fill up |
-| Bull queue depth | Don't know if emails are backing up |
-| Error rate by endpoint | Can't see which endpoints are failing |
-| GPS punch success rate | Can't see geofence failures at scale |
+| Missing Metric                 | Impact                                    |
+| ------------------------------ | ----------------------------------------- |
+| API p95/p99 request latency    | Don't know if punch is taking 200ms or 5s |
+| DB connection pool utilization | Don't know when pool will exhaust         |
+| Redis memory usage             | Don't know when cache will fill up        |
+| Bull queue depth               | Don't know if emails are backing up       |
+| Error rate by endpoint         | Can't see which endpoints are failing     |
+| GPS punch success rate         | Can't see geofence failures at scale      |
 
 ### 9.2 Minimum Observability Stack
 
@@ -960,60 +1008,60 @@ npm install @opentelemetry/sdk-node @opentelemetry/auto-instrumentations-node
 
 ### 🔥 Sprint 1 — Must Fix Before Any Load (Week 1)
 
-| # | Fix | File | Effort |
-|---|---|---|---|
-| 1 | Configure `pg.Pool` with `max=30`, `idleTimeout`, `connectionTimeout` | `prisma.module.ts` | 15 min |
-| 2 | Add `compression()` middleware | `main.ts` | 5 min |
-| 3 | Add missing composite DB indexes (6 indexes) | `schema.prisma` | 30 min |
-| 4 | Add GiST spatial index on `Geofence.location` via raw migration | new migration | 20 min |
-| 5 | Set Redis `maxmemory` + `allkeys-lru` eviction policy | Redis config | 10 min |
+| #   | Fix                                                                   | File               | Effort |
+| --- | --------------------------------------------------------------------- | ------------------ | ------ |
+| 1   | Configure `pg.Pool` with `max=30`, `idleTimeout`, `connectionTimeout` | `prisma.module.ts` | 15 min |
+| 2   | Add `compression()` middleware                                        | `main.ts`          | 5 min  |
+| 3   | Add missing composite DB indexes (6 indexes)                          | `schema.prisma`    | 30 min |
+| 4   | Add GiST spatial index on `Geofence.location` via raw migration       | new migration      | 20 min |
+| 5   | Set Redis `maxmemory` + `allkeys-lru` eviction policy                 | Redis config       | 10 min |
 
 ### 🚀 Sprint 2 — Before 100 Concurrent Users (Week 2)
 
-| # | Fix | File | Effort |
-|---|---|---|---|
-| 6 | Cache geofences, employee, and device trust in `PunchHandler` | `handlers.ts` | 2 hrs |
-| 7 | Cache `resolveScopeIds()` full result (not just grants) | `rbac.service.ts` | 1 hr |
-| 8 | Split Bull queue into email/push/sms + set `concurrency` | `notifications.module.ts` | 1 hr |
-| 9 | Add `@nestjs/schedule` + auto-checkout + session cleanup crons | new `scheduler.module.ts` | 3 hrs |
-| 10 | Add jitter to mobile sync reconnect delay | `sync_provider.dart` | 15 min |
+| #   | Fix                                                            | File                      | Effort |
+| --- | -------------------------------------------------------------- | ------------------------- | ------ |
+| 6   | Cache geofences, employee, and device trust in `PunchHandler`  | `handlers.ts`             | 2 hrs  |
+| 7   | Cache `resolveScopeIds()` full result (not just grants)        | `rbac.service.ts`         | 1 hr   |
+| 8   | Split Bull queue into email/push/sms + set `concurrency`       | `notifications.module.ts` | 1 hr   |
+| 9   | Add `@nestjs/schedule` + auto-checkout + session cleanup crons | new `scheduler.module.ts` | 3 hrs  |
+| 10  | Add jitter to mobile sync reconnect delay                      | `sync_provider.dart`      | 15 min |
 
 ### 📈 Sprint 3 — Before 1,000 Concurrent Users (Week 3–4)
 
-| # | Fix | File | Effort |
-|---|---|---|---|
-| 11 | `EmployeeLocation` table partitioning by month | new migration | 2 hrs |
-| 12 | GPS location write batching (5 pings/batch) | Mobile + API | 4 hrs |
-| 13 | Add Prometheus metrics instrumentation | new `metrics.module.ts` | 4 hrs |
-| 14 | Add Bull Board dashboard (admin-protected) | `app.module.ts` | 1 hr |
-| 15 | Add GPS/location data retention cron (90-day TTL) | scheduler | 1 hr |
-| 16 | Add sync item TTL (48-hour max age) | Mobile + API | 2 hrs |
-| 17 | Parallel batch sync in Flutter (`Future.wait`) | `sync_provider.dart` | 1 hr |
+| #   | Fix                                               | File                    | Effort |
+| --- | ------------------------------------------------- | ----------------------- | ------ |
+| 11  | `EmployeeLocation` table partitioning by month    | new migration           | 2 hrs  |
+| 12  | GPS location write batching (5 pings/batch)       | Mobile + API            | 4 hrs  |
+| 13  | Add Prometheus metrics instrumentation            | new `metrics.module.ts` | 4 hrs  |
+| 14  | Add Bull Board dashboard (admin-protected)        | `app.module.ts`         | 1 hr   |
+| 15  | Add GPS/location data retention cron (90-day TTL) | scheduler               | 1 hr   |
+| 16  | Add sync item TTL (48-hour max age)               | Mobile + API            | 2 hrs  |
+| 17  | Parallel batch sync in Flutter (`Future.wait`)    | `sync_provider.dart`    | 1 hr   |
 
 ### 🏗️ Month 2 — Production Scale (5,000+ Users)
 
-| # | Fix | Effort |
-|---|---|---|
-| 18 | PostgreSQL read replica for reports/search | Infra (OCI) |
-| 19 | Redis Sentinel or Cluster for HA | Infra |
-| 20 | Kubernetes HPA config (2–10 replicas) | k8s YAML |
-| 21 | Dedicated scheduler pod (separate from API pods) | Docker/k8s |
-| 22 | Async report export via Bull queue (not sync HTTP) | `reports.controller.ts` |
-| 23 | Per-tenant query timeout (`SET LOCAL statement_timeout`) | `prisma.module.ts` |
-| 24 | Tenant-scoped throttling (Redis TTL per tenantId) | `throttler.module.ts` |
-| 25 | Load testing with k6 (500 concurrent GPS punches) | Test scripts |
+| #   | Fix                                                      | Effort                  |
+| --- | -------------------------------------------------------- | ----------------------- |
+| 18  | PostgreSQL read replica for reports/search               | Infra (OCI)             |
+| 19  | Redis Sentinel or Cluster for HA                         | Infra                   |
+| 20  | Kubernetes HPA config (2–10 replicas)                    | k8s YAML                |
+| 21  | Dedicated scheduler pod (separate from API pods)         | Docker/k8s              |
+| 22  | Async report export via Bull queue (not sync HTTP)       | `reports.controller.ts` |
+| 23  | Per-tenant query timeout (`SET LOCAL statement_timeout`) | `prisma.module.ts`      |
+| 24  | Tenant-scoped throttling (Redis TTL per tenantId)        | `throttler.module.ts`   |
+| 25  | Load testing with k6 (500 concurrent GPS punches)        | Test scripts            |
 
 ---
 
 ## Section 11 — Breaking Points Summary
 
-| Load Level | Will Break | Fix Required First |
-|---|---|---|
-| **10 concurrent punches** | DB connection pool exhaustion | Pool config (Fix #1) |
-| **50 req/sec sustained** | Event loop saturation (no compression) | Compression (#2) + Read replica |
-| **100 employees reconnecting** | Sync flood overwhelms rate limiter | Jitter on sync (#10) |
-| **500 employees morning rush** | Pool + throttler + geofence scan | Fixes #1–8 |
-| **1 year of GPS data** | `employee_locations` table scan degrades | Partitioning (#11) |
-| **Multi-pod deployment** | Scheduler dual-fires | Redlock + dedicated scheduler pod (#21) |
-| **Redis fills up** | Cache writes throw errors → DB overload | Eviction policy (#5) |
-| **Report + punch at same time** | DB I/O contention, punch latency spikes | Read replica (#18) |
+| Load Level                      | Will Break                               | Fix Required First                      |
+| ------------------------------- | ---------------------------------------- | --------------------------------------- |
+| **10 concurrent punches**       | DB connection pool exhaustion            | Pool config (Fix #1)                    |
+| **50 req/sec sustained**        | Event loop saturation (no compression)   | Compression (#2) + Read replica         |
+| **100 employees reconnecting**  | Sync flood overwhelms rate limiter       | Jitter on sync (#10)                    |
+| **500 employees morning rush**  | Pool + throttler + geofence scan         | Fixes #1–8                              |
+| **1 year of GPS data**          | `employee_locations` table scan degrades | Partitioning (#11)                      |
+| **Multi-pod deployment**        | Scheduler dual-fires                     | Redlock + dedicated scheduler pod (#21) |
+| **Redis fills up**              | Cache writes throw errors → DB overload  | Eviction policy (#5)                    |
+| **Report + punch at same time** | DB I/O contention, punch latency spikes  | Read replica (#18)                      |

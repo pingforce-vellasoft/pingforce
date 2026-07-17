@@ -146,7 +146,11 @@ export class ServiceRequestsService {
       entityName: 'ServiceRequest',
       entityId: created.id,
       action: 'PORTAL_SR_SUBMITTED',
-      newValue: { type: dto.type, requestNumber: created.requestNumber, status },
+      newValue: {
+        type: dto.type,
+        requestNumber: created.requestNumber,
+        status,
+      },
     });
 
     return created;
@@ -210,7 +214,11 @@ export class ServiceRequestsService {
     await this.prisma.$transaction(async (tx) => {
       await tx.serviceRequest.update({
         where: { id },
-        data: { status: 'CANCELLED', resolvedAt: new Date(), updatedBy: portalUserId },
+        data: {
+          status: 'CANCELLED',
+          resolvedAt: new Date(),
+          updatedBy: portalUserId,
+        },
       });
       await tx.serviceRequestTimeline.create({
         data: {
@@ -231,7 +239,12 @@ export class ServiceRequestsService {
 
   async listQueue(
     tenantId: string,
-    opts: { status?: string; assignedToId?: string; skip?: number; take?: number },
+    opts: {
+      status?: string;
+      assignedToId?: string;
+      skip?: number;
+      take?: number;
+    },
   ) {
     return this.prisma.serviceRequest.findMany({
       where: {
@@ -251,7 +264,9 @@ export class ServiceRequestsService {
       where: { id, tenantId, deletedAt: null },
       include: {
         timeline: { orderBy: { createdAt: 'desc' } },
-        customer: { select: { customerCode: true, displayName: true, legalName: true } },
+        customer: {
+          select: { customerCode: true, displayName: true, legalName: true },
+        },
       },
     });
     if (!sr) throw new NotFoundException('Request not found');
@@ -337,7 +352,12 @@ export class ServiceRequestsService {
           throw new BadRequestException('targetPlanId is required');
         }
         const target = await this.prisma.servicePlan.findFirst({
-          where: { id: targetPlanId, tenantId, deletedAt: null, isActive: true },
+          where: {
+            id: targetPlanId,
+            tenantId,
+            deletedAt: null,
+            isActive: true,
+          },
           select: { id: true, price: true },
         });
         if (!target) throw new BadRequestException('Target plan not found');
@@ -397,7 +417,10 @@ export class ServiceRequestsService {
     const mode = policy?.mode ?? 'APPROVAL';
 
     if (mode === 'AUTO') {
-      return { status: 'APPROVED', assignmentNote: 'Auto-approved by tenant policy' };
+      return {
+        status: 'APPROVED',
+        assignmentNote: 'Auto-approved by tenant policy',
+      };
     }
     if (mode === 'AUTO_WITH_LIMITS') {
       const withinLimit = await this.checkLimits(
@@ -408,13 +431,19 @@ export class ServiceRequestsService {
         policy?.limits ?? null,
       );
       return withinLimit
-        ? { status: 'APPROVED', assignmentNote: 'Auto-approved within policy limits' }
+        ? {
+            status: 'APPROVED',
+            assignmentNote: 'Auto-approved within policy limits',
+          }
         : {
             status: 'UNDER_REVIEW',
             assignmentNote: 'Exceeds auto-approval limits — routed for review',
           };
     }
-    return { status: 'UNDER_REVIEW', assignmentNote: 'Routed for staff review' };
+    return {
+      status: 'UNDER_REVIEW',
+      assignmentNote: 'Routed for staff review',
+    };
   }
 
   /**
@@ -437,9 +466,7 @@ export class ServiceRequestsService {
     ];
     if (typeof maxDays !== 'number') return false;
 
-    const requestedDays = Number(
-      (dto.payload ?? {})['days'] ?? 0,
-    );
+    const requestedDays = Number((dto.payload ?? {})['days'] ?? 0);
     if (!Number.isFinite(requestedDays) || requestedDays <= 0) return false;
 
     const yearStart = new Date();

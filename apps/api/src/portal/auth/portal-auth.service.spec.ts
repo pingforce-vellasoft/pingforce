@@ -28,12 +28,14 @@ const activePortalUser = {
   tenant: { id: 't1', code: 'ACME', status: 'ACTIVE' },
 };
 
-function makeService(overrides: {
-  storedRefresh?: unknown;
-  invite?: unknown;
-  tenant?: unknown;
-  portalUser?: unknown;
-} = {}) {
+function makeService(
+  overrides: {
+    storedRefresh?: unknown;
+    invite?: unknown;
+    tenant?: unknown;
+    portalUser?: unknown;
+  } = {},
+) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const prisma: any = {
     refreshToken: {
@@ -91,7 +93,9 @@ function makeService(overrides: {
     prisma as unknown as ConstructorParameters<typeof PortalAuthService>[0],
     jwtService as unknown as ConstructorParameters<typeof PortalAuthService>[1],
     otpService as unknown as ConstructorParameters<typeof PortalAuthService>[2],
-    auditService as unknown as ConstructorParameters<typeof PortalAuthService>[3],
+    auditService as unknown as ConstructorParameters<
+      typeof PortalAuthService
+    >[3],
     notifications as unknown as ConstructorParameters<
       typeof PortalAuthService
     >[4],
@@ -203,9 +207,7 @@ describe('PortalAuthService — refresh rotation & replay', () => {
       expiresAt: PAST,
     };
     const { service, prisma } = makeService({ storedRefresh: stored });
-    await expect(service.refresh('old')).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(service.refresh('old')).rejects.toThrow(UnauthorizedException);
     expect(prisma.refreshToken.update).not.toHaveBeenCalled();
   });
 
@@ -280,9 +282,8 @@ describe('PortalAuthService — login gating', () => {
       expiresAt: FUTURE,
     };
     const { service, prisma } = makeService({ storedRefresh: stored });
-    const jwtSign = (
-      service as unknown as { jwtService: { sign: jest.Mock } }
-    ).jwtService.sign;
+    const jwtSign = (service as unknown as { jwtService: { sign: jest.Mock } })
+      .jwtService.sign;
 
     await service.refresh('valid');
     expect(jwtSign).toHaveBeenCalledWith(

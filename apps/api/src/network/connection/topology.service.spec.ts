@@ -69,9 +69,7 @@ describe('TopologyService', () => {
       const { service } = makeService();
       // "a.bb" must NOT count as a descendant of "a.b"
       const sibling = node({ id: 'bb', path: 'a.bb', depth: 1 });
-      expect(() =>
-        service.assertNotDescendant(moving, sibling),
-      ).not.toThrow();
+      expect(() => service.assertNotDescendant(moving, sibling)).not.toThrow();
     });
 
     it('allows moving under an unrelated branch', () => {
@@ -115,9 +113,20 @@ describe('TopologyService', () => {
         depth: 1,
         parentConnectionId: 'a',
       });
-      const newParent = node({ id: 'x', path: 'x.y', depth: 1, olteId: 'olte-2' });
+      const newParent = node({
+        id: 'x',
+        path: 'x.y',
+        depth: 1,
+        olteId: 'olte-2',
+      });
 
-      await service.reparentSubtree(tx as never, 't1', moving, newParent, 'olte-2');
+      await service.reparentSubtree(
+        tx as never,
+        't1',
+        moving,
+        newParent,
+        'olte-2',
+      );
 
       expect(tx.networkConnection.update).toHaveBeenCalledWith({
         where: { id_tenantId: { id: 'b', tenantId: 't1' } },
@@ -166,9 +175,24 @@ describe('TopologyService', () => {
         node({ id: 'c2', path: 'c1.c2', depth: 1 }),
       );
       prisma.networkConnection.findMany.mockResolvedValue([
-        { id: 'c5', connectionCode: 'CONN-5', customerId: 'cust-5', status: 'ACTIVE' },
-        { id: 'j1', connectionCode: 'JCT-1', customerId: null, status: 'ACTIVE' },
-        { id: 'c9', connectionCode: 'CONN-9', customerId: 'cust-9', status: 'SUSPENDED' },
+        {
+          id: 'c5',
+          connectionCode: 'CONN-5',
+          customerId: 'cust-5',
+          status: 'ACTIVE',
+        },
+        {
+          id: 'j1',
+          connectionCode: 'JCT-1',
+          customerId: null,
+          status: 'ACTIVE',
+        },
+        {
+          id: 'c9',
+          connectionCode: 'CONN-9',
+          customerId: 'cust-9',
+          status: 'SUSPENDED',
+        },
       ]);
 
       const impact = await service.getImpact('t1', 'c2');
