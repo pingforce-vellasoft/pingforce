@@ -1,0 +1,249 @@
+:host {
+  display: block;
+}
+
+.page-head {
+  padding: 4.5rem 0 2rem;
+  background: linear-gradient(180deg, var(--surface-alt) 0%, var(--surface) 100%);
+  text-align: center;
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 0 0 0.75rem;
+  }
+
+  p {
+    max-width: 620px;
+    margin: 0 auto;
+    color: var(--ink-soft);
+    font-size: 1.1rem;
+  }
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.plan {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 2rem 1.75rem;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.plan--featured {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-pop);
+}
+
+.badge {
+  position: absolute;
+  top: -0.75rem;
+  left: 1.75rem;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+}
+
+.plan-name {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.plan-tagline {
+  margin: -0.5rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  min-height: 2.6em;
+}
+
+.plan-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+
+  .amount {
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .period {
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+  }
+}
+
+.plan-features {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+
+  li {
+    position: relative;
+    padding-left: 1.5rem;
+    font-size: 0.94rem;
+    color: var(--ink);
+
+    &::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+  }
+}
+
+/* ── Custom plan band ───────────────────────────────────────────────────── */
+.custom {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 2rem;
+
+  h3 {
+    margin: 0.25rem 0 0.5rem;
+    font-size: 1.4rem;
+  }
+
+  > .custom-copy > p {
+    margin: 0 0 1rem;
+    color: var(--ink-soft);
+    max-width: 46ch;
+  }
+}
+
+.custom-copy {
+  flex: 1 1 340px;
+}
+
+.custom-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.custom-price {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.fineprint {
+  text-align: center;
+  margin-top: 2.5rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+
+  a {
+    color: var(--accent);
+  }
+}
+
+/* ── Checkout modal ─────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 32, 46, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 50;
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 2rem;
+  box-shadow: var(--shadow-pop);
+
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.4rem;
+  }
+}
+
+.modal-sub {
+  margin: 0 0 1.5rem;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.modal-notice {
+  margin: 0;
+  padding: 1rem;
+  background: var(--accent-wash);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+
+  span {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  input {
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-family: inherit;
+
+    &:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-wash);
+    }
+  }
+}
+
+.modal-submit {
+  width: 100%;
+  margin-top: 0.5rem;
+}

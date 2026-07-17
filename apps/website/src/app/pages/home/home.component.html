@@ -1,0 +1,51 @@
+<section class="hero">
+  <div class="container">
+    <span class="eyebrow">Workforce management for field teams</span>
+    <h1>Your field workforce,<br />fully visible.</h1>
+    <p class="lead">
+      PingForce is a multi-tenant platform built for ISPs, field service,
+      facility management and security agencies — GPS attendance, visit
+      tracking, fault management, leave and payroll in one system.
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary btn-lg" routerLink="/pricing">See pricing</a>
+      <a class="btn btn-outline btn-lg" routerLink="/download"
+        >Download the app</a
+      >
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <h2>Everything a field team needs</h2>
+      <p>One platform from the office to the last mile — no more app sprawl.</p>
+    </div>
+    <div class="grid">
+      @for (f of features; track f.title) {
+        <div class="card">
+          <div class="card-icon">{{ f.icon }}</div>
+          <h3>{{ f.title }}</h3>
+          <p>{{ f.text }}</p>
+        </div>
+      }
+    </div>
+    <div class="see-all">
+      <a class="btn btn-outline" routerLink="/features">See all features →</a>
+    </div>
+  </div>
+</section>
+
+<section class="section section--alt cta-band">
+  <div class="container">
+    <h2>Ready to see it on your operation?</h2>
+    <p>Pick a plan or talk to us — we onboard every new organization personally.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary btn-lg" routerLink="/pricing">View plans</a>
+      <a class="btn btn-outline btn-lg" href="mailto:hello@pingforce.in"
+        >Talk to us</a
+      >
+    </div>
+  </div>
+</section>

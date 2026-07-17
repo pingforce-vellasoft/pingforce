@@ -47,4 +47,33 @@ export class PlatformService {
   updateSettings(payload: unknown): Observable<any> {
     return this.http.put('/api/v1/platform/settings', payload);
   }
+
+  // ── Billing & Subscriptions (Super Admin) ──────────────────────────────────
+
+  getBillingSummary(): Observable<any> {
+    return this.http.get('/api/v1/billing/analytics/summary');
+  }
+
+  getPlanMix(): Observable<any[]> {
+    return this.http.get<any[]>('/api/v1/billing/analytics/plan-mix');
+  }
+
+  getRevenueTrend(months = 6): Observable<any[]> {
+    return this.http.get<any[]>(
+      `/api/v1/billing/analytics/revenue-trend?months=${months}`,
+    );
+  }
+
+  getSubscriptions(status?: string): Observable<any[]> {
+    const query = status ? `?status=${status}` : '';
+    return this.http.get<any[]>(`/api/v1/billing/subscriptions${query}`);
+  }
+
+  cancelSubscription(id: string): Observable<any> {
+    return this.http.post(`/api/v1/billing/subscriptions/${id}/cancel`, {});
+  }
+
+  getPlans(): Observable<any[]> {
+    return this.http.get<any[]>('/api/v1/billing/plans');
+  }
 }

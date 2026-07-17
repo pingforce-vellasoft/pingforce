@@ -1,0 +1,135 @@
+<section class="page-head">
+  <div class="container">
+    <span class="eyebrow">Pricing</span>
+    <h1>Plans that grow with your field team</h1>
+    <p>
+      Simple monthly pricing, no per-feature nickel-and-diming. Every plan
+      includes the mobile app, tenant isolation and free onboarding.
+    </p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="plan-grid">
+      @for (p of plans(); track p.code) {
+        <div class="plan" [class.plan--featured]="p.highlighted">
+          @if (p.highlighted) {
+            <span class="badge">Most popular</span>
+          }
+          <h3 class="plan-name">{{ p.name }}</h3>
+          <p class="plan-tagline">{{ p.tagline }}</p>
+          <div class="plan-price">
+            <span class="amount">{{ p.priceLabel }}</span>
+            <span class="period">{{ p.period }}</span>
+          </div>
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="p.highlighted"
+            [class.btn-outline]="!p.highlighted"
+            (click)="openCheckout(p)"
+          >
+            Subscribe
+          </button>
+          <ul class="plan-features">
+            @for (feat of p.features; track feat) {
+              <li>{{ feat }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <div class="custom card">
+      <div class="custom-copy">
+        <span class="eyebrow">{{ customPlan.period }}</span>
+        <h3>{{ customPlan.name }} plan</h3>
+        <p>{{ customPlan.tagline }}</p>
+        <ul class="plan-features">
+          @for (feat of customPlan.features; track feat) {
+            <li>{{ feat }}</li>
+          }
+        </ul>
+      </div>
+      <div class="custom-cta">
+        <span class="custom-price">{{ customPlan.priceLabel }}</span>
+        <button
+          type="button"
+          class="btn btn-primary btn-lg"
+          (click)="openCheckout(customPlan)"
+        >
+          Contact us
+        </button>
+      </div>
+    </div>
+
+    <p class="fineprint">
+      Prices exclude applicable taxes. Annual billing and volume discounts
+      available — <a href="mailto:hello@pingforce.in">get in touch</a>.
+    </p>
+  </div>
+</section>
+
+<!-- ── Checkout dialog ── -->
+@if (checkoutPlan(); as plan) {
+  <div class="modal-backdrop">
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="checkout-title"
+      tabindex="-1"
+      (keydown.escape)="closeCheckout()"
+    >
+      <button
+        type="button"
+        class="modal-close"
+        aria-label="Close"
+        (click)="closeCheckout()"
+      >
+        ×
+      </button>
+      <h3 id="checkout-title">Subscribe to {{ plan.name }}</h3>
+      <p class="modal-sub">
+        {{ plan.priceLabel }} {{ plan.period }}. Enter your details and we'll
+        take you to secure checkout.
+      </p>
+
+      @if (notice()) {
+        <p class="modal-notice">{{ notice() }}</p>
+      } @else {
+        <form (ngSubmit)="submitCheckout()">
+          <label class="field">
+            <span>Work email</span>
+            <input
+              type="email"
+              name="email"
+              [(ngModel)]="email"
+              required
+              autocomplete="email"
+              placeholder="you@company.com"
+            />
+          </label>
+          <label class="field">
+            <span>Organization (optional)</span>
+            <input
+              type="text"
+              name="orgName"
+              [(ngModel)]="orgName"
+              autocomplete="organization"
+              placeholder="Your company"
+            />
+          </label>
+          <button
+            type="submit"
+            class="btn btn-primary btn-lg modal-submit"
+            [disabled]="submitting() || !email"
+          >
+            {{ submitting() ? 'Starting…' : 'Continue to checkout' }}
+          </button>
+        </form>
+      }
+    </div>
+  </div>
+}

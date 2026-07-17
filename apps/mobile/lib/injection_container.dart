@@ -21,6 +21,7 @@ import 'core/hardware/hardware_service_impl.dart';
 import 'core/hardware/device_identity.dart';
 import 'core/notifications/push_notifications_service.dart';
 import 'features/faults/data/faults_remote_data_source.dart';
+import 'features/network_map/data/network_map_remote_data_source.dart';
 import 'features/visits/data/visits_remote_data_source.dart';
 
 final sl = GetIt.instance;
@@ -80,5 +81,10 @@ Future<void> init() async {
   // --- Features: Visits ---
   sl.registerLazySingleton<VisitsRemoteDataSource>(
     () => VisitsRemoteDataSourceImpl(dio: sl()),
+  );
+
+  // --- Features: Connection Map (3.7) ---
+  sl.registerLazySingleton<NetworkMapRemoteDataSource>(
+    () => NetworkMapRemoteDataSourceImpl(dio: sl()),
   );
 }

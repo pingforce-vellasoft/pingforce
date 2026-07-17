@@ -1,0 +1,32 @@
+<section class="page-head">
+  <div class="container">
+    <span class="eyebrow">Features</span>
+    <h1>One platform, end to end</h1>
+    <p>
+      From the first punch of the day to the last fault resolved — PingForce
+      covers the whole field workflow, online and off.
+    </p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="grid">
+      @for (f of features; track f.title) {
+        <div class="card">
+          <div class="card-icon">{{ f.icon }}</div>
+          <h3>{{ f.title }}</h3>
+          <p>{{ f.text }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="section section--alt cta-band">
+  <div class="container">
+    <h2>Find the plan that fits</h2>
+    <p>Every feature scales with you — from a single crew to a national network.</p>
+    <a class="btn btn-primary btn-lg" routerLink="/pricing">View pricing</a>
+  </div>
+</section>

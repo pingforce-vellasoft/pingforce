@@ -32,6 +32,44 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     const cacheKey = `user_validate_${payload.sub}`;
 
+    // Customer Portal identity (3.8_CustomerPortal) — separate identity type;
+    // returns userType: 'CUSTOMER' so staff guards can reject portal tokens.
+    if (payload.userType === 'CUSTOMER') {
+      const portalCacheKey = `portal_user_validate_${payload.sub}`;
+      let portalUser = await this.cacheManager.get<any>(portalCacheKey);
+      if (!portalUser) {
+        portalUser = await this.prisma.customerPortalUser.findUnique({
+          where: { id: payload.sub },
+          include: { tenant: true },
+        });
+        if (portalUser) {
+          await this.cacheManager.set(portalCacheKey, portalUser, 5000);
+        }
+      }
+
+      if (
+        !portalUser ||
+        portalUser.status !== 'ACTIVE' ||
+        portalUser.deletedAt ||
+        portalUser.tenant.status !== 'ACTIVE'
+      ) {
+        throw new UnauthorizedException();
+      }
+      if (portalUser.tokenVersion !== payload.tokenVersion) {
+        throw new UnauthorizedException('Token revoked');
+      }
+
+      return {
+        userId: payload.sub,
+        tenantId: portalUser.tenantId,
+        customerId: portalUser.customerId,
+        email: portalUser.email,
+        userType: 'CUSTOMER',
+        portalRole: portalUser.portalRole,
+        roleCode: 'PORTAL_CUSTOMER', // never matches any staff role
+      };
+    }
+
     if (payload.tenantId === 'SYSTEM') {
       let superAdmin = await this.cacheManager.get<any>(cacheKey);
       if (!superAdmin) {

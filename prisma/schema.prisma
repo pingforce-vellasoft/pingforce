@@ -119,6 +119,13 @@ model Tenant {
   auditRetentionPolicy  AuditRetentionPolicy?
   auditArchive          AuditArchive[]
   auditExports          AuditExport[]
+  oltes                 Olte[]
+  networkConnections    NetworkConnection[]
+  connectionHistories   ConnectionHistory[]
+  subscriptions         TenantSubscription[]
+  paymentTransactions   PaymentTransaction[]
+  portalUsers           CustomerPortalUser[]
+  portalInvites         CustomerPortalInvite[]
 
   @@map("tenants")
 }
@@ -237,6 +244,7 @@ model RefreshToken {
   id           String    @id @default(uuid())
   userId       String?
   superAdminId String?
+  portalUserId String? // customer portal identity (3.8_CustomerPortal)
   tenantId     String
   sessionId    String?
   tokenHash    String    @unique
@@ -247,15 +255,109 @@ model RefreshToken {
   createdAt    DateTime  @default(now())
 
   // Relations
-  user       User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  superAdmin SuperAdmin? @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
+  user       User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  superAdmin SuperAdmin?         @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
+  portalUser CustomerPortalUser? @relation(fields: [portalUserId], references: [id], onDelete: Cascade)
 
   @@unique([id, tenantId])
   @@index([userId])
   @@index([superAdminId])
+  @@index([portalUserId])
   @@index([tenantId])
   @@index([sessionId])
   @@map("refresh_tokens")
+}
+
+// -----------------------------------------------------------------------------
+// CUSTOMER PORTAL — END-USER IDENTITY (3.8_CustomerPortal)
+// Portal users are a separate identity type from staff Users: they belong to a
+// Customer account, never hold staff RBAC roles, and can never satisfy a staff
+// permission check (BRD 3.8 BR-9.1).
+// -----------------------------------------------------------------------------
+
+model CustomerPortalUser {
+  id           String    @id @default(uuid())
+  tenantId     String
+  customerId   String
+  email        String?
+  phone        String?
+  passwordHash String? // null = OTP-only login
+  firstName    String
+  lastName     String?
+  status       String    @default("ACTIVE") // ACTIVE, INVITED, SUSPENDED
+  isPrimary    Boolean   @default(false)
+  portalRole   String    @default("MEMBER") // OWNER, MEMBER, VIEWER
+  tokenVersion Int       @default(1)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  createdBy    String?
+  updatedBy    String?
+  deletedAt    DateTime?
+
+  tenant        Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer      Customer                 @relation(fields: [customerId], references: [id])
+  refreshTokens RefreshToken[]
+  otpCodes      CustomerPortalOtp[]
+  invites       CustomerPortalInvite[]
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, phone])
+  @@unique([id, tenantId])
+  @@index([tenantId, customerId])
+  @@index([tenantId, status])
+  @@map("customer_portal_users")
+}
+
+model CustomerPortalInvite {
+  id           String    @id @default(uuid())
+  tenantId     String
+  customerId   String
+  email        String?
+  phone        String?
+  firstName    String
+  lastName     String?
+  tokenHash    String    @unique // SHA-256 of the opaque invite token — never plaintext
+  portalRole   String    @default("MEMBER") // OWNER, MEMBER, VIEWER
+  status       String    @default("PENDING") // PENDING, ACCEPTED, EXPIRED, REVOKED
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  invitedById  String // staff User id (or portal OWNER id, prefixed handling in service)
+  portalUserId String? // set once accepted
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  createdBy    String?
+  updatedBy    String?
+  deletedAt    DateTime?
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer   Customer            @relation(fields: [customerId], references: [id])
+  portalUser CustomerPortalUser? @relation(fields: [portalUserId], references: [id])
+
+  @@unique([id, tenantId])
+  @@index([tenantId, customerId])
+  @@index([tenantId, status])
+  @@map("customer_portal_invites")
+}
+
+// Mirrors OtpCode for portal identities (OtpCode is FK-bound to staff Users).
+model CustomerPortalOtp {
+  id             String    @id @default(uuid())
+  tenantId       String
+  portalUserId   String
+  otp            String // SHA-256 hash — never plaintext
+  purpose        String // LOGIN, ACTIVATION, PASSWORD_RESET, CONTACT_CHANGE
+  channel        String    @default("EMAIL") // EMAIL, SMS
+  failedAttempts Int       @default(0)
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  portalUser CustomerPortalUser @relation(fields: [portalUserId], references: [id], onDelete: Cascade)
+
+  @@index([portalUserId, purpose])
+  @@index([tenantId])
+  @@map("customer_portal_otps")
 }
 
 model OtpCode {
@@ -597,7 +699,10 @@ model Customer {
   childCustomers     Customer[] @relation("ParentCustomer")
   faults             Fault[]
   visits             Visit[]
-  convertedFromLeads Lead[]     @relation("LeadConvertedCustomer")
+  convertedFromLeads Lead[]                 @relation("LeadConvertedCustomer")
+  portalUsers        CustomerPortalUser[]
+  portalInvites      CustomerPortalInvite[]
+  networkConnections NetworkConnection[]
 
   @@unique([tenantId, customerCode])
   @@unique([id, tenantId])
@@ -1560,6 +1665,11 @@ model Fault {
   slaDeadline     DateTime?
   escalationLevel Int       @default(0)
   isEscalated     Boolean   @default(false)
+  // Customer Portal (3.8): portal-raised faults + closure rating
+  channel                String  @default("STAFF") // STAFF, PORTAL, MOBILE
+  reportedByPortalUserId String?
+  customerRating         Int? // 1-5, set by customer after closure
+  customerRatingComment  String?
 
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer       Customer?       @relation(fields: [customerId], references: [id])
@@ -1577,14 +1687,15 @@ model Fault {
 }
 
 model FaultTimeline {
-  id        String   @id @default(uuid())
-  tenantId  String
-  faultId   String
-  status    String
-  notes     String?
-  clientRef String? // offline-sync idempotency key
-  createdBy String?
-  createdAt DateTime @default(now())
+  id                String   @id @default(uuid())
+  tenantId          String
+  faultId           String
+  status            String
+  notes             String?
+  clientRef         String? // offline-sync idempotency key
+  isCustomerVisible Boolean  @default(false) // portal users only see flagged entries (BRD 3.8 BR-3.4)
+  createdBy         String?
+  createdAt         DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   fault  Fault  @relation(fields: [faultId], references: [id], onDelete: Cascade)
@@ -1778,12 +1889,121 @@ model TenantSetting {
   timezone     String   @default("UTC")
   dateFormat   String   @default("YYYY-MM-DD")
   metadata     Json?
+  // Connection Map module gating (3.7_ConnectionMap — Super Admin controlled)
+  connectionMapEnabled        Boolean @default(false)
+  connectionMapEmployeeAccess String  @default("NONE") // NONE, VIEW, EDIT, FULL
+  // Customer Portal module gating + policy (3.8_CustomerPortal)
+  customerPortalEnabled       Boolean @default(false) // Super Admin controlled
+  portalMaxContacts           Int     @default(5) // max portal users per customer account
+  portalFaultReopenHours      Int     @default(72) // window to reopen a resolved fault
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("tenant_settings")
+}
+
+// -----------------------------------------------------------------------------
+// NETWORK / CONNECTION MAP MODULE (3.7_ConnectionMap)
+// -----------------------------------------------------------------------------
+
+model Olte {
+  id          String    @id @default(uuid())
+  tenantId    String
+  code        String // e.g. OLTE-001, unique per tenant
+  name        String
+  description String?
+  status      String    @default("ACTIVE") // ACTIVE, MAINTENANCE, ARCHIVED
+  totalPorts  Int       @default(0)
+  usedPorts   Int       @default(0) // denormalized: root-level connections, maintained by service
+  address     String?
+  area        String?
+  village     String?
+  mandal      String?
+  district    String?
+  latitude    Float?
+  longitude   Float?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  connections NetworkConnection[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@index([tenantId, status])
+  @@map("oltes")
+}
+
+model NetworkConnection {
+  id                 String    @id @default(uuid())
+  tenantId           String
+  connectionCode     String // CONN-xxxx, unique per tenant
+  olteId             String
+  customerId         String? // null = junction/splitter node
+  parentConnectionId String? // null = directly off the OLTE
+  path               String // materialized path of connection ids: "rootId.childId....id"
+  depth              Int       @default(0)
+  nodeType           String    @default("CUSTOMER") // CUSTOMER, JUNCTION, SPLITTER
+  status             String    @default("ACTIVE") // ACTIVE, PENDING_INSTALLATION, SUSPENDED, DISCONNECTED, FAULTY, MAINTENANCE
+  connectionType     String? // FIBER, COPPER, WIRELESS
+  cableType          String?
+  fiberCoreDetails   String?
+  distanceMeters     Float? // parent -> this node cable length
+  installationDate   DateTime?
+  assignedEmployeeId String?
+  latitude           Float?
+  longitude          Float?
+  remarks            String?
+  metadata           Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  createdBy          String?
+  updatedBy          String?
+  deletedAt          DateTime?
+
+  tenant           Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  olte             Olte                @relation(fields: [olteId], references: [id])
+  customer         Customer?           @relation(fields: [customerId], references: [id])
+  parentConnection NetworkConnection?  @relation("ConnectionTree", fields: [parentConnectionId], references: [id])
+  childConnections NetworkConnection[] @relation("ConnectionTree")
+
+  @@unique([tenantId, connectionCode])
+  @@unique([id, tenantId])
+  @@index([tenantId, olteId])
+  @@index([tenantId, customerId])
+  @@index([tenantId, parentConnectionId])
+  @@index([tenantId, status])
+  @@index([tenantId, path])
+  @@index([tenantId, assignedEmployeeId])
+  @@index([tenantId, latitude, longitude])
+  @@map("network_connections")
+}
+
+model ConnectionHistory {
+  id             String   @id @default(uuid())
+  tenantId       String
+  connectionId   String
+  action         String // CREATED, MOVED, SPLIT, MERGED, DISCONNECTED, RECONNECTED, UPDATED, ARCHIVED
+  previousParent String?
+  newParent      String?
+  previousOlte   String?
+  newOlte        String?
+  previousStatus String?
+  newStatus      String?
+  performedBy    String
+  performedAt    DateTime @default(now())
+  details        Json?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, connectionId, performedAt])
+  @@map("connection_history")
 }
 
 model FileAttachment {
@@ -1887,4 +2107,166 @@ model PlatformSetting {
   description String?
   updatedAt   DateTime @updatedAt
   updatedBy   String?
+}
+
+// -----------------------------------------------------------------------------
+// BILLING & SUBSCRIPTIONS MODULE (Platform-wide, Super Admin owned)
+// -----------------------------------------------------------------------------
+// Gateway-agnostic: `gateway` + `gateway*Id` fields hold provider references so
+// Razorpay (live) and Stripe (stubbed) can coexist behind one PaymentProvider
+// interface. Amounts are stored in the smallest currency unit (paise/cents) as
+// Int to avoid float rounding.
+
+enum PaymentGateway {
+  RAZORPAY
+  STRIPE
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  CREATED // subscription record made, awaiting first authorization/payment
+  AUTHENTICATED // mandate authorized, not yet active
+  ACTIVE
+  PAST_DUE // a charge failed, in retry/grace window
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+/// Catalog of subscription plans sold on the public website. Seeded and managed
+/// by Super Admin; read publicly by the marketing site.
+model Plan {
+  id            String          @id @default(uuid())
+  /// Stable machine key used by the website/API (e.g. "starter", "growth").
+  code          String          @unique
+  name          String
+  tagline       String?
+  /// Price in smallest currency unit (e.g. paise). 0 = custom/contact-sales.
+  amount        Int
+  currency      String          @default("INR")
+  interval      BillingInterval @default(MONTHLY)
+  /// Feature bullet points shown on the pricing page.
+  features      String[]
+  maxFieldStaff Int?
+  /// Marks the "Most popular" tier on the pricing page.
+  highlighted   Boolean         @default(false)
+  /// Custom/contact-sales plan: no gateway checkout, routes to sales instead.
+  isCustom      Boolean         @default(false)
+  isActive      Boolean         @default(true)
+  sortOrder     Int             @default(0)
+
+  /// Gateway-side plan ids, created lazily when a checkout is first requested.
+  razorpayPlanId String?
+  stripePriceId  String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+
+  subscriptions TenantSubscription[]
+
+  @@index([isActive])
+  @@map("plans")
+}
+
+/// A tenant's subscription to a Plan, backed by a gateway subscription/mandate.
+model TenantSubscription {
+  id       String @id @default(uuid())
+  tenantId String
+  planId   String
+
+  gateway PaymentGateway
+  status  SubscriptionStatus @default(CREATED)
+
+  /// Provider-side identifiers (nullable until checkout completes).
+  gatewaySubscriptionId String? @unique
+  gatewayCustomerId     String?
+
+  amount   Int
+  currency String @default("INR")
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAt           DateTime?
+  cancelledAt        DateTime?
+  trialEnd           DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+
+  tenant       Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan         Plan                 @relation(fields: [planId], references: [id])
+  transactions PaymentTransaction[]
+
+  @@index([tenantId])
+  @@index([planId])
+  @@index([status])
+  @@map("tenant_subscriptions")
+}
+
+/// A single payment attempt/charge against a subscription. Drives revenue
+/// analytics and the audit trail; written from webhook events.
+model PaymentTransaction {
+  id             String  @id @default(uuid())
+  tenantId       String
+  subscriptionId String?
+
+  gateway PaymentGateway
+  status  PaymentStatus  @default(PENDING)
+
+  /// Provider payment id (razorpay_payment_id / stripe payment_intent).
+  gatewayPaymentId String? @unique
+  gatewayInvoiceId String?
+
+  amount   Int
+  currency String @default("INR")
+
+  /// Failure reason surfaced by the gateway, if any.
+  failureReason String?
+  paidAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscription TenantSubscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([tenantId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([paidAt])
+  @@map("payment_transactions")
+}
+
+/// Idempotency + audit log of raw gateway webhook events. A unique eventId stops
+/// duplicate webhook deliveries from being processed twice.
+model WebhookEvent {
+  id        String         @id @default(uuid())
+  gateway   PaymentGateway
+  /// Provider event id (x-razorpay-event-id / stripe event.id).
+  eventId   String         @unique
+  eventType String
+  payload   Json
+  processed Boolean        @default(false)
+  error     String?
+  createdAt DateTime       @default(now())
+
+  @@index([processed])
+  @@map("webhook_events")
 }

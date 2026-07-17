@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { PlatformService } from '../../core/services/platform.service';
+import { NetworkService } from '../../core/services/network.service';
 import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -248,6 +249,39 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
                 </div>
               </mat-card-content>
             }
+          </mat-card>
+          <!-- Connection Map Module Card (3.7_ConnectionMap — Super Admin gating) -->
+          <mat-card class="detail-card">
+            <mat-card-header>
+              <mat-icon mat-card-avatar class="card-icon">share_location</mat-icon>
+              <mat-card-title>Connection Map</mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="card-content">
+              <div class="info-row">
+                <span class="label">Module Enabled</span>
+                <span class="value">
+                  <mat-slide-toggle
+                    [checked]="networkAccess.enabled"
+                    (change)="updateNetworkAccess({ enabled: $event.checked })"
+                  ></mat-slide-toggle>
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="label">Employee Access</span>
+                <span class="value">
+                  <select
+                    [ngModel]="networkAccess.employeeAccess"
+                    (ngModelChange)="updateNetworkAccess({ employeeAccess: $event })"
+                    [disabled]="!networkAccess.enabled"
+                  >
+                    <option value="NONE">None</option>
+                    <option value="VIEW">View only</option>
+                    <option value="EDIT">Edit</option>
+                    <option value="FULL">Full</option>
+                  </select>
+                </span>
+              </div>
+            </mat-card-content>
           </mat-card>
           <!-- White-Label Branding Card -->
           <mat-card class="detail-card">
@@ -687,9 +721,15 @@ export class TenantDetailsComponent implements OnInit {
   editData: any = {};
   tenantId = '';
 
+  networkAccess: { enabled: boolean; employeeAccess: string } = {
+    enabled: false,
+    employeeAccess: 'NONE',
+  };
+
   constructor(
     private route: ActivatedRoute,
     private platformService: PlatformService,
+    private networkService: NetworkService,
     private snackBar: MatSnackBar,
     private location: Location,
   ) {}
@@ -698,7 +738,37 @@ export class TenantDetailsComponent implements OnInit {
     this.tenantId = this.route.snapshot.paramMap.get('id') || '';
     if (this.tenantId) {
       this.loadTenant();
+      this.loadNetworkAccess();
     }
+  }
+
+  loadNetworkAccess() {
+    this.networkService.getTenantAccess(this.tenantId).subscribe({
+      next: (access) => {
+        this.networkAccess = {
+          enabled: access.enabled,
+          employeeAccess: access.employeeAccess,
+        };
+      },
+      error: () => {
+        // Feature endpoints unavailable — leave the defaults (disabled).
+      },
+    });
+  }
+
+  updateNetworkAccess(change: { enabled?: boolean; employeeAccess?: string }) {
+    this.networkService.updateTenantAccess(this.tenantId, change).subscribe({
+      next: () => {
+        this.networkAccess = { ...this.networkAccess, ...change };
+        this.snackBar.open('Connection Map access updated', 'Close', {
+          duration: 3000,
+        });
+      },
+      error: () =>
+        this.snackBar.open('Failed to update Connection Map access', 'Close', {
+          duration: 3000,
+        }),
+    });
   }
 
   loadTenant() {

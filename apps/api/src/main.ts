@@ -25,7 +25,12 @@ import { Logger } from 'nestjs-pino';
 };
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // rawBody: true preserves the untouched request buffer so payment-gateway
+  // webhook signatures (billing module) can be verified against it.
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
   app.useLogger(app.get(Logger));
 
   // Security Headers

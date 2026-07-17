@@ -52,6 +52,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     'IAuthService',
     JwtStrategy,
     PassportModule,
+    JwtModule,
     JwtConfigService,
     SessionService,
   ],

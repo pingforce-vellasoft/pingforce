@@ -19,6 +19,7 @@ import '../../features/faults/presentation/fault_list_screen.dart';
 import '../../features/faults/presentation/fault_detail_screen.dart';
 import '../../features/visits/presentation/visit_list_screen.dart';
 import '../../features/sync/sync_monitor_screen.dart';
+import '../../features/network_map/presentation/network_map_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // APP ROUTER  (AUDIT §17 — GoRouter configuration)
@@ -131,6 +132,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/maintenance',
         name: 'maintenance',
         builder: (context, state) => const MaintenanceModeScreen(),
+      ),
+
+      // ── Connection Map (3.7) — tenant admins and permitted employees ──
+      GoRoute(
+        path: '/network-map',
+        name: 'network-map',
+        builder: (context, state) => const NetworkMapScreen(),
       ),
 
       GoRoute(

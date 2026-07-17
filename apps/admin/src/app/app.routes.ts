@@ -94,6 +94,15 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'network/map',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN_MANAGER'] },
+        loadComponent: () =>
+          import('./pages/network/network-map.component').then(
+            (m) => m.NetworkMapComponent,
+          ),
+      },
+      {
         path: 'reports',
         canActivate: [roleGuard],
         data: { roles: ['ADMIN_MANAGER'] },

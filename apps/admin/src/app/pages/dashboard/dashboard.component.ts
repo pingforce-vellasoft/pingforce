@@ -182,6 +182,17 @@ import { AuthService } from '../../core/auth/auth.service';
               </a>
 
               <mat-divider></mat-divider>
+              <div mat-subheader>Network</div>
+              <a
+                mat-list-item
+                routerLink="/dashboard/network/map"
+                routerLinkActive="active-link"
+              >
+                <mat-icon matListItemIcon>share_location</mat-icon>
+                <span matListItemTitle>Connection Map</span>
+              </a>
+
+              <mat-divider></mat-divider>
               <div mat-subheader>Analytics</div>
               <a
                 mat-list-item

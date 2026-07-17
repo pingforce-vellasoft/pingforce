@@ -21,12 +21,21 @@ export class RbacGuard implements CanActivate {
       action: string;
     }>(PERMISSION_KEY, [context.getHandler(), context.getClass()]);
 
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    // Customer portal identities can never pass a staff-guarded route, even
+    // one without an explicit permission (3.8_CustomerPortal BR-9.1) — they
+    // use PortalUserGuard-protected routes instead.
+    if (user?.userType === 'CUSTOMER') {
+      throw new ForbiddenException(
+        'Customer portal accounts cannot access staff functionality',
+      );
+    }
+
     if (!requiredPermission) {
       return true; // No permission required for this route
     }
-
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
 
     if (!user || !user.userId) {
       throw new ForbiddenException(

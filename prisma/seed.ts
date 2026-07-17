@@ -9,6 +9,8 @@ import {
   syncSystemRolePermissions,
 } from '../apps/api/src/rbac/permission-catalog';
 import { seedDefaultNotificationTemplates } from '../apps/api/src/notifications/default-templates';
+import { seedDemoNetwork } from './seed-demo-network';
+import { seedBillingPlans } from './seed-billing-plans';
 
 dotenv.config();
 
@@ -64,7 +66,13 @@ async function main() {
     `Seeded default notification templates for ${tenants.length} tenants`,
   );
 
-  // 4. Create Super Admin user — password must come from the environment.
+  // 4. Optional demo Connection Map network (3.7_ConnectionMap) — opt-in so
+  //    production seeds never create fixture data.
+  if (process.env.SEED_DEMO_NETWORK === 'true' && tenants.length > 0) {
+    await seedDemoNetwork(prisma, tenants[0].id);
+  }
+
+  // 5. Create Super Admin user — password must come from the environment.
   const superAdminEmail =
     process.env.SEED_SUPER_ADMIN_EMAIL || 'admin@pingforce.in';
   const superAdminPassword = process.env.SEED_SUPER_ADMIN_PASSWORD;
@@ -88,6 +96,9 @@ async function main() {
     });
     console.log(`Upserted super admin user: ${admin.email}`);
   }
+
+  // Subscription plan catalog + billing holding tenant.
+  await seedBillingPlans(prisma);
 
   console.log('Database seeded successfully!');
 }

@@ -365,6 +365,63 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
     action: 'MANAGE',
     description: 'Configure audit retention and archive policies',
   },
+  // Connection Map / network topology (3.7_ConnectionMap)
+  {
+    module: 'NETWORK',
+    action: 'READ',
+    description: 'View the connection map, OLTEs and all connections',
+  },
+  {
+    module: 'NETWORK',
+    action: 'READ_OWN',
+    description: 'View assigned connections on the connection map',
+  },
+  {
+    module: 'NETWORK',
+    action: 'OLTE_MANAGE',
+    description: 'Create, update and archive OLTEs',
+  },
+  {
+    module: 'NETWORK',
+    action: 'CREATE',
+    description: 'Create customer connections',
+  },
+  {
+    module: 'NETWORK',
+    action: 'UPDATE',
+    description: 'Update connection details, disconnect and reconnect',
+  },
+  {
+    module: 'NETWORK',
+    action: 'MOVE',
+    description: 'Move, split and merge connections (topology changes)',
+  },
+  {
+    module: 'NETWORK',
+    action: 'DELETE',
+    description: 'Archive connections',
+  },
+  // Customer Portal user management (3.8_CustomerPortal)
+  {
+    module: 'PORTAL_USERS',
+    action: 'READ',
+    description: 'View customer portal users and invites',
+  },
+  {
+    module: 'PORTAL_USERS',
+    action: 'CREATE',
+    description: 'Invite customer contacts to the portal',
+  },
+  {
+    module: 'PORTAL_USERS',
+    action: 'UPDATE',
+    description: 'Suspend, reactivate or change portal user roles',
+  },
+  {
+    module: 'PORTAL_USERS',
+    action: 'DELETE',
+    description: 'Remove portal users and revoke invites',
+  },
   // Workflow engine (ApprovalWorkflow.md)
   {
     module: 'WORKFLOWS',
@@ -429,6 +486,9 @@ const EMPLOYEE_GRANTS: readonly GrantDef[] = [
   { module: 'SHIFTS', action: 'READ_OWN', dataScope: 'OWN' },
   { module: 'MASTER_DATA', action: 'READ', dataScope: 'OWN' },
   { module: 'GEOFENCES', action: 'READ', dataScope: 'OWN' },
+  // Connection Map: assigned-route visibility only; tenant admin may grant
+  // more, capped by the Super Admin employee-access ceiling (3.7 §6).
+  { module: 'NETWORK', action: 'READ_OWN', dataScope: 'OWN' },
   { module: 'TASKS', action: 'READ_OWN', dataScope: 'OWN' },
   { module: 'TASKS', action: 'UPDATE_STATUS', dataScope: 'OWN' },
   { module: 'TICKETS', action: 'READ_OWN', dataScope: 'OWN' },

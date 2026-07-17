@@ -8,7 +8,9 @@
   "targets": {
     "build": {
       "executor": "@angular/build:application",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "defaultConfiguration": "production",
       "options": {
         "outputPath": "dist/apps/admin",
@@ -21,7 +23,10 @@
             "input": "apps/admin/public"
           }
         ],
-        "styles": ["apps/admin/src/styles.scss"]
+        "styles": [
+          "apps/admin/src/styles.scss",
+          "node_modules/leaflet/dist/leaflet.css"
+        ]
       },
       "configurations": {
         "production": {

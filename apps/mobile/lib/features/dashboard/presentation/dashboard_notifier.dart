@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'dashboard_state.dart';
 
@@ -120,6 +121,12 @@ class DashboardNotifier extends Notifier<DashboardState> {
             iconName: 'person_add',
             route: '/leads/new',
           ),
+          QuickAction(
+            id: 'network-map',
+            label: 'Network Map',
+            iconName: 'share_location',
+            route: '/network-map',
+          ),
         ],
         activityFeed: [
           ActivityFeedItem(
@@ -193,7 +200,7 @@ class DashboardNotifier extends Notifier<DashboardState> {
   }
 
   void onQuickActionTap(BuildContext context, QuickAction action) {
-    // TODO: context.push(action.route);
+    context.push(action.route);
   }
 
   void onActivityItemTap(BuildContext context, ActivityFeedItem item) {

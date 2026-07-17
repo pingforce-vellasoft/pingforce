@@ -82,4 +82,22 @@ describe('RbacGuard', () => {
       guard.canActivate(makeContext({ userId: 'u1', tenantId: 't1' })),
     ).rejects.toThrow(ForbiddenException);
   });
+
+  it('rejects customer portal identities before consulting permissions (3.8 BR-9.1)', async () => {
+    const { guard, rbacService } = makeGuard(
+      { module: 'CUSTOMERS', action: 'READ' },
+      true, // even if the service would grant it
+    );
+    await expect(
+      guard.canActivate(
+        makeContext({
+          userId: 'pu1',
+          tenantId: 't1',
+          customerId: 'c1',
+          userType: 'CUSTOMER',
+        }),
+      ),
+    ).rejects.toThrow(ForbiddenException);
+    expect(rbacService.hasPermission).not.toHaveBeenCalled();
+  });
 });

@@ -37,6 +37,9 @@ import { VisitsModule } from '../visits/visits.module';
 import { ReportsModule } from '../reports/reports.module';
 import { SchedulerModule } from '../scheduler/scheduler.module';
 import { MonitoringModule } from '../monitoring/monitoring.module';
+import { NetworkModule } from '../network/network.module';
+import { PortalModule } from '../portal/portal.module';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
@@ -105,6 +108,9 @@ import { MonitoringModule } from '../monitoring/monitoring.module';
     ReportsModule,
     SchedulerModule,
     MonitoringModule,
+    NetworkModule,
+    BillingModule,
+    PortalModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

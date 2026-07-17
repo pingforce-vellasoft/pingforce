@@ -1,0 +1,140 @@
+:host {
+  display: block;
+}
+
+.page-head {
+  padding: 4.5rem 0 2rem;
+  background: linear-gradient(180deg, var(--surface-alt) 0%, var(--surface) 100%);
+  text-align: center;
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 0 0 0.75rem;
+  }
+
+  p {
+    max-width: 620px;
+    margin: 0 auto;
+    color: var(--ink-soft);
+    font-size: 1.1rem;
+  }
+}
+
+.download-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3rem;
+  justify-content: space-between;
+}
+
+.download-copy {
+  flex: 1 1 360px;
+}
+
+.perks {
+  list-style: none;
+  margin: 0 0 2rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  li {
+    position: relative;
+    padding-left: 1.6rem;
+    font-size: 1.02rem;
+
+    &::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+  }
+}
+
+/* ── Store button (styled as disabled/coming-soon) ──────────────────────── */
+.store-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.4rem;
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  opacity: 0.9;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.store-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.store-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+
+  small {
+    font-size: 0.72rem;
+    opacity: 0.8;
+  }
+
+  strong {
+    font-size: 1.05rem;
+  }
+}
+
+.store-note {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+
+  a {
+    color: var(--accent);
+  }
+}
+
+/* ── Phone mock ─────────────────────────────────────────────────────────── */
+.phone {
+  flex: 0 1 300px;
+  display: flex;
+  justify-content: center;
+}
+
+.phone-screen {
+  width: 260px;
+  border-radius: 28px;
+  border: 10px solid var(--ink);
+  background: var(--surface-alt);
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: var(--shadow-pop);
+}
+
+.phone-top {
+  font-weight: 800;
+  color: var(--accent);
+  text-align: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.phone-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.9rem;
+  font-size: 0.92rem;
+}
