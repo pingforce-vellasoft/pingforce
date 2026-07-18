@@ -341,7 +341,8 @@ class _MoreSheet extends ConsumerWidget {
     final syncPending = ref.watch(syncPendingCountProvider);
 
     final items = NavDestinations.moreSheetItems(
-      hasPermission: (_) => true, // TODO: wire to real RBAC provider
+      hasPermission: (key) =>
+          NavDestinations.roleHasPermission(shellState.role, key),
       notificationBadge: shellState.notificationBadge,
       pendingSyncBadge: syncPending,
     );
@@ -777,7 +778,22 @@ class RouteGuard {
       return '/update-required';
     }
 
-    // 5. No specific redirect needed
+    // 5. Role-based route guard — an authenticated user who deep-links (push
+    // notification, invite link, stale context.go) to a feature route their
+    // role does not carry is bounced home. The bottom nav already hides the
+    // tab; this closes the gap for routes reached without the nav.
+    if (isAuthenticated) {
+      final requiredPermission =
+          NavDestinations.permissionKeyForRoute(state.matchedLocation);
+      if (requiredPermission != null) {
+        final role = AppUserRoleX.fromRoleCode(AuthSession.instance.roleCode);
+        if (!NavDestinations.roleHasPermission(role, requiredPermission)) {
+          return '/home';
+        }
+      }
+    }
+
+    // 6. No specific redirect needed
     return null;
   }
 

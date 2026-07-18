@@ -428,4 +428,82 @@ class NavDestinations {
     ];
     return all.where((d) => hasPermission(d.permissionKey)).toList();
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ROLE → PERMISSION SET  (route-level RBAC)
+  // ─────────────────────────────────────────────────────────────────────────
+  //
+  // The bottom nav and "More" sheet only *hide* items a role should not see.
+  // On their own they do not stop a user reaching a screen via deep link,
+  // push notification, invite link, or a stale `context.go(...)`. The API
+  // enforces per-endpoint RBAC so data stays safe, but the mobile UI must not
+  // let the wrong role land on a screen that then fails or shows empty state.
+  //
+  // `permissionsFor` is the single source of truth for what each role may
+  // reach. It drives both the "More" sheet filter and `RouteGuard`.
+
+  /// Permission keys granted to every authenticated role regardless of type —
+  /// the always-available shell surfaces.
+  static const Set<String> _commonPermissions = {
+    'home.view',
+    'attendance.view',
+    'notifications.view',
+    'profile.view',
+    'settings.view',
+    'sync.view',
+    'leave.view',
+    'documents.view',
+    'announcements.view',
+  };
+
+  /// The full set of RBAC permission keys a role may access.
+  static Set<String> permissionsFor(AppUserRole role) {
+    final roleSpecific = switch (role) {
+      AppUserRole.fieldEmployee => const {'visits.view'},
+      AppUserRole.fieldTechnician => const {'faults.view'},
+      AppUserRole.salesRep => const {'leads.view'},
+      AppUserRole.manager => const {'team.view', 'reports.view'},
+      AppUserRole.admin => const {
+          'team.view',
+          'reports.view',
+          'leads.view',
+          'faults.view',
+          'visits.view',
+        },
+    };
+    return {..._commonPermissions, ...roleSpecific};
+  }
+
+  /// Whether `role` may see the destination behind `permissionKey`. An empty
+  /// key (e.g. the "More" sentinel) is always allowed.
+  static bool roleHasPermission(AppUserRole role, String permissionKey) {
+    if (permissionKey.isEmpty) return true;
+    return permissionsFor(role).contains(permissionKey);
+  }
+
+  // ── Route → permission key mapping (for RouteGuard) ────────────────────────
+  //
+  // Maps a matched GoRouter location to the permission key that gates it. Only
+  // role-gated feature roots appear here; auth/utility/common routes are not
+  // listed and are therefore never bounced by role.
+
+  static const Map<String, String> _routePermissionKeys = {
+    '/visits': 'visits.view',
+    '/faults': 'faults.view',
+    '/leads': 'leads.view',
+    '/team': 'team.view',
+    '/reports': 'reports.view',
+  };
+
+  /// The permission key gating `location`, or null if the route is not
+  /// role-restricted. Matches on path prefix so child routes (`/faults/new`,
+  /// `/faults/:id`) inherit their parent's gate.
+  static String? permissionKeyForRoute(String location) {
+    for (final entry in _routePermissionKeys.entries) {
+      if (location == entry.key || location.startsWith('${entry.key}/')) {
+        return entry.value;
+      }
+    }
+    return null;
+  }
 }

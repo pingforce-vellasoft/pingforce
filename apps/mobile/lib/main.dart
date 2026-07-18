@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/navigation/app_router.dart';
+import 'core/navigation/deep_link_service.dart';
 import 'core/notifications/push_notifications_service.dart';
 import 'core/theme/theme.dart';
 import 'injection_container.dart' as di;
@@ -22,11 +23,27 @@ void main() async {
   runApp(const ProviderScope(child: PingForceApp()));
 }
 
-class PingForceApp extends ConsumerWidget {
+class PingForceApp extends ConsumerStatefulWidget {
   const PingForceApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PingForceApp> createState() => _PingForceAppState();
+}
+
+class _PingForceAppState extends ConsumerState<PingForceApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Start listening for the invite deep link once the router exists. Handled
+    // after the first frame so any launch link routes over a mounted navigator.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final router = ref.read(routerProvider);
+      ref.read(deepLinkServiceProvider(router)).init();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(

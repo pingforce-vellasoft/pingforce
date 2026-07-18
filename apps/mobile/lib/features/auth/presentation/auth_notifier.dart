@@ -33,6 +33,29 @@ class LoginNotifier extends Notifier<LoginState> {
     );
   }
 
+  /// Pre-fill the workspace from an invite deep link
+  /// (`pingforce://invite?workspace=CODE&role=X`) and jump straight to the
+  /// credentials step so the admin only has to type their email + password.
+  ///
+  /// Idempotent: if the workspace already matches (e.g. a rebuild re-delivers
+  /// the same link) it does nothing, so it won't stomp a code the user is
+  /// mid-way through editing.
+  void prefillFromInvite(String workspace, {String? role}) {
+    final code = workspace.trim().toUpperCase();
+    if (code.isEmpty) return;
+    if (state.tenantCode.trim().toUpperCase() == code &&
+        state.step == LoginStep.credentials) {
+      return;
+    }
+    state = state.copyWith(
+      tenantCode: code,
+      tenantCodeError: null,
+      authError: AuthErrorCode.none,
+      resolvedTenantName: code,
+      step: LoginStep.credentials,
+    );
+  }
+
   Future<void> submitTenantCode() async {
     if (!state.canSubmitTenantStep) {
       state = state.copyWith(

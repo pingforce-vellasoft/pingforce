@@ -46,6 +46,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   late final AnimationController _shakeCtrl;
   late final Animation<double> _shakeAnim;
 
+  bool _invitePrefilled = false;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +58,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _shakeAnim = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _shakeCtrl, curve: Curves.elasticOut),
     );
+
+    // Consume an invite deep link (pingforce://invite?workspace=CODE&role=X):
+    // pre-fill the workspace and skip to the credentials step. Runs after the
+    // first frame so GoRouterState is available, and only once per screen.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _consumeInviteLink());
+  }
+
+  void _consumeInviteLink() {
+    if (_invitePrefilled || !mounted) return;
+    final params = GoRouterState.of(context).uri.queryParameters;
+    final workspace = params['workspace'];
+    if (workspace == null || workspace.trim().isEmpty) return;
+    _invitePrefilled = true;
+    _tenantCtrl.text = workspace.trim().toUpperCase();
+    ref.read(loginProvider.notifier).prefillFromInvite(
+          workspace,
+          role: params['role'],
+        );
   }
 
   @override

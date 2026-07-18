@@ -57,6 +57,17 @@
 				<string>com.googleusercontent.apps.YOUR_IOS_CLIENT_ID</string>
 			</array>
 		</dict>
+		<!-- Deep link: pingforce://invite?workspace=CODE&role=X -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.vellasoft.pingforce.invite</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>pingforce</string>
+			</array>
+		</dict>
 	</array>
 	<!-- End of the Google Sign-in Section -->
 </dict>
