@@ -64,7 +64,9 @@ jobs:
   # ── 3. Package: API Docker image → GHCR (main only) ───────────────────────
   # Frontends do NOT get Docker images — they deploy to Firebase Hosting.
   package:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
     needs: [quality, security]
     runs-on: ubuntu-latest
     steps:
@@ -139,7 +141,9 @@ jobs:
   # ── 4. Deploy to OCI (main only; needs OCI_HOST/OCI_SSH_USER/OCI_SSH_KEY
   #      repo secrets — skips gracefully until they are configured) ──────────
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Manual only for now — trigger via Actions tab → Run workflow (workflow_dispatch).
+    # Auto-deploy on push is disabled until the OCI host git/registry auth is fixed.
+    if: github.event_name == 'workflow_dispatch'
     needs: package
     runs-on: ubuntu-latest
     environment: production
@@ -159,16 +163,23 @@ jobs:
       - name: Deploy via SSH
         if: steps.creds.outputs.configured == 'true'
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           host: ${{ secrets.OCI_HOST }}
           username: ${{ secrets.OCI_SSH_USER }}
           key: ${{ secrets.OCI_SSH_KEY }}
+          envs: GH_TOKEN,GITHUB_REPOSITORY
           script: |
             set -e
             cd /opt/pingforce
-            # Pull latest source, rebuild the local api image (no registry image
-            # is published for this repo — see deploy/docker-compose.yml).
-            git pull --ff-only
+            # Pull latest source over HTTPS using the workflow token, so the OCI
+            # host needs no GitHub SSH deploy key. Remote is rewritten each run.
+            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            git fetch origin
+            git reset --hard "origin/main"
+            # Rebuild the local api image (no registry image is published for this
+            # repo — see deploy/docker-compose.yml).
             docker build -t pingforce_api:latest -f apps/api/Dockerfile .
             # Pull only the third-party images that actually live in a registry.
             docker compose pull postgres redis minio prometheus grafana caddy
