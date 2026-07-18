@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AuthContext, DashboardRepository } from './dashboard.repository';
+import { InAppNotificationService } from '../notifications/in-app-notification.service';
 import {
   DashboardActivityDto,
   DashboardAttendanceDto,
@@ -20,7 +21,10 @@ import {
 export class DashboardService {
   private readonly logger = new Logger(DashboardService.name);
 
-  constructor(private readonly repository: DashboardRepository) {}
+  constructor(
+    private readonly repository: DashboardRepository,
+    private readonly inApp: InAppNotificationService,
+  ) {}
 
   async getSummary(ctx: AuthContext): Promise<DashboardSummaryDto> {
     const now = new Date();
@@ -39,7 +43,7 @@ export class DashboardService {
       employee.id,
     );
 
-    const [attendanceRow, faults, visits] = await Promise.all([
+    const [attendanceRow, faults, visits, unread] = await Promise.all([
       this.repository.findTodayAttendance(
         ctx.tenantId,
         employee.id,
@@ -48,6 +52,7 @@ export class DashboardService {
       ),
       this.safeFaultCounts(ctx, now),
       this.safeVisitCounts(ctx.tenantId, employee.id, dayStart, dayEnd),
+      this.safeUnreadCount(ctx),
     ]);
 
     const attendance = this.buildAttendance(attendanceRow, now);
@@ -68,7 +73,7 @@ export class DashboardService {
       attendance,
       kpiCards: this.buildKpis(attendance, faults, visits),
       activityFeed: this.buildActivity(attendanceRow, faults),
-      unreadNotifications: 0, // wired to notifications module in a later phase
+      unreadNotifications: unread,
       generatedAt: now.toISOString(),
     };
   }
@@ -270,6 +275,15 @@ export class DashboardService {
     } catch (err) {
       this.logger.warn(`visit counts failed: ${(err as Error).message}`);
       return { total: 0, completed: 0, remaining: 0 };
+    }
+  }
+
+  private async safeUnreadCount(ctx: AuthContext): Promise<number> {
+    try {
+      return await this.inApp.unreadCount(ctx.tenantId, ctx.userId);
+    } catch (err) {
+      this.logger.warn(`unread count failed: ${(err as Error).message}`);
+      return 0;
     }
   }
 

@@ -30,8 +30,12 @@ function makeService(repoOverrides: Partial<RepoMock> = {}) {
       .mockResolvedValue({ total: 0, completed: 0, remaining: 0 }),
     ...repoOverrides,
   };
+  const inApp = {
+    unreadCount: jest.fn().mockResolvedValue(0),
+  } as never;
   const service = new DashboardService(
     repo as unknown as DashboardRepository,
+    inApp,
   );
   return { service, repo };
 }

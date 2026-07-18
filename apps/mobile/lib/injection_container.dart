@@ -28,6 +28,9 @@ import 'features/attendance/data/datasources/attendance_history_remote_data_sour
 import 'features/dashboard/data/datasources/dashboard_remote_data_source.dart';
 import 'features/dashboard/data/repositories/dashboard_repository_impl.dart';
 import 'features/dashboard/domain/repositories/dashboard_repository.dart';
+import 'features/leave/data/datasources/leave_remote_data_source.dart';
+import 'features/leave/data/repositories/leave_repository_impl.dart';
+import 'features/leave/domain/repositories/leave_repository.dart';
 
 final sl = GetIt.instance;
 
@@ -109,5 +112,13 @@ Future<void> init() async {
   );
   sl.registerLazySingleton<DashboardRepository>(
     () => DashboardRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // --- Features: Leave ---
+  sl.registerLazySingleton<LeaveRemoteDataSource>(
+    () => LeaveRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<LeaveRepository>(
+    () => LeaveRepositoryImpl(remoteDataSource: sl()),
   );
 }

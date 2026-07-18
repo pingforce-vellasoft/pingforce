@@ -9,6 +9,7 @@ import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { RbacService } from '../rbac/rbac.service';
 import { ApprovalsService } from '../approvals/approvals.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { InAppNotificationService } from '../notifications/in-app-notification.service';
 
 @Injectable()
 export class LeaveService {
@@ -18,6 +19,7 @@ export class LeaveService {
     private readonly rbacService: RbacService,
     private readonly approvalsService: ApprovalsService,
     private readonly notifications: NotificationsService,
+    private readonly inApp: InAppNotificationService,
   ) {}
 
   async requestLeave(
@@ -114,6 +116,81 @@ export class LeaveService {
       where: { tenantId, employeeId, year },
       skip,
       take,
+    });
+  }
+
+  /**
+   * Active leave types for the tenant — used to populate the Apply form.
+   * The client needs the real leaveTypeId (not a hard-coded enum) to file.
+   */
+  async getLeaveTypes(tenantId: string) {
+    return this.prisma.leaveType.findMany({
+      where: { tenantId, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        isPaid: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  /**
+   * Resolve the caller's own employee id. Self-service leave endpoints derive
+   * the employee from the JWT so a client can never read or file for someone
+   * else (closes the balance/:employeeId scope hole).
+   */
+  private async resolveEmployeeId(
+    tenantId: string,
+    userId: string,
+  ): Promise<string> {
+    const employee = await this.prisma.employee.findFirst({
+      where: { tenantId, userId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!employee) {
+      throw new NotFoundException(
+        'No employee record is linked to this user account',
+      );
+    }
+    return employee.id;
+  }
+
+  /** The caller's own leave balances for a year, with the type joined in. */
+  async getMyBalances(tenantId: string, userId: string, year: number) {
+    const employeeId = await this.resolveEmployeeId(tenantId, userId);
+    return this.prisma.leaveBalance.findMany({
+      where: { tenantId, employeeId, year, deletedAt: null },
+      include: {
+        leaveType: { select: { id: true, name: true, code: true } },
+      },
+      orderBy: { leaveType: { name: 'asc' } },
+    });
+  }
+
+  /** The caller's own leave requests (history), newest first. */
+  async getMyRequests(
+    tenantId: string,
+    userId: string,
+    status?: string,
+    skip = 0,
+    take = 50,
+  ) {
+    const employeeId = await this.resolveEmployeeId(tenantId, userId);
+    return this.prisma.leaveRequest.findMany({
+      where: {
+        tenantId,
+        employeeId,
+        deletedAt: null,
+        ...(status ? { status } : {}),
+      },
+      include: {
+        leaveType: { select: { id: true, name: true, code: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: Math.min(take, 100),
     });
   }
 
@@ -288,16 +365,30 @@ export class LeaveService {
     // Notify the employee (ApprovalWorkflow.md — notification on decision)
     const owner = await this.prisma.employee.findFirst({
       where: { id: pending.employeeId, tenantId },
-      select: { firstName: true, user: { select: { email: true } } },
+      select: {
+        firstName: true,
+        user: { select: { id: true, email: true } },
+      },
     });
+    const verb = status === 'APPROVED' ? 'approved' : 'rejected';
     if (owner?.user?.email) {
-      const verb = status === 'APPROVED' ? 'approved' : 'rejected';
       void this.notifications.sendRawEmail(
         owner.user.email,
         `Your leave request has been ${verb}`,
         `<p>Hi ${owner.firstName},</p>
          <p>Your leave request from ${decided.startDate.toDateString()} to ${decided.endDate.toDateString()} has been <b>${verb}</b>.</p>`,
       );
+    }
+    // In-app feed (mobile Home bell) — mirror the email decision.
+    if (owner?.user?.id) {
+      await this.inApp.create({
+        tenantId,
+        recipientId: owner.user.id,
+        category: 'LEAVE',
+        title: `Leave request ${verb}`,
+        body: `Your leave from ${decided.startDate.toDateString()} to ${decided.endDate.toDateString()} was ${verb}.`,
+        deepLinkRoute: '/leave',
+      });
     }
 
     return decided;

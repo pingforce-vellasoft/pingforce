@@ -35,6 +35,48 @@ export class LeaveController {
     return this.leaveService.requestLeave(tenantId, currentUser.userId, dto);
   }
 
+  // ── Self-service (mobile Leave screen) ────────────────────────────────────
+  // employeeId is always derived from the JWT — a client can never read or
+  // file leave for another employee.
+
+  @Get('types')
+  @RequirePermission('LEAVES', 'READ_OWN')
+  async getLeaveTypes(@CurrentTenant() tenantId: string) {
+    return this.leaveService.getLeaveTypes(tenantId);
+  }
+
+  @Get('my-balance')
+  @RequirePermission('LEAVES', 'READ_OWN')
+  async getMyBalances(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() currentUser: CurrentUserContext,
+    @Query('year') year?: string,
+  ) {
+    return this.leaveService.getMyBalances(
+      tenantId,
+      currentUser.userId,
+      year ? parseInt(year, 10) : new Date().getFullYear(),
+    );
+  }
+
+  @Get('my')
+  @RequirePermission('LEAVES', 'READ_OWN')
+  async getMyRequests(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() currentUser: CurrentUserContext,
+    @Query('status') status?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.leaveService.getMyRequests(
+      tenantId,
+      currentUser.userId,
+      status,
+      skip ? parseInt(skip, 10) : undefined,
+      take ? parseInt(take, 10) : undefined,
+    );
+  }
+
   @Get('balance/:employeeId')
   @RequirePermission('LEAVES', 'READ_OWN')
   async getLeaveBalances(

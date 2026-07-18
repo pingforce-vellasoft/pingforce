@@ -4,6 +4,8 @@ import { BullModule } from '@nestjs/bull';
 import { NotificationsService } from './notifications.service';
 import { NotificationsProcessors } from './notifications.processor';
 import { NotificationsController } from './notifications.controller';
+import { InAppNotificationController } from './in-app-notification.controller';
+import { InAppNotificationService } from './in-app-notification.service';
 import { PushService } from './push.service';
 import { WhatsAppService } from './whatsapp.service';
 import { TenantEmailConfigService } from './tenant-email-config.service';
@@ -21,9 +23,10 @@ import { LeadEventsHandler } from './handlers/lead-events.handler';
       { name: 'notifications-push' },
     ),
   ],
-  controllers: [NotificationsController],
+  controllers: [NotificationsController, InAppNotificationController],
   providers: [
     NotificationsService,
+    InAppNotificationService,
     ...NotificationsProcessors,
     PushService,
     WhatsAppService,
@@ -34,6 +37,7 @@ import { LeadEventsHandler } from './handlers/lead-events.handler';
   ],
   exports: [
     NotificationsService,
+    InAppNotificationService,
     PushService,
     WhatsAppService,
     TenantEmailConfigService,

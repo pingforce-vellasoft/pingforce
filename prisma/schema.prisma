@@ -107,6 +107,7 @@ model Tenant {
   fileAttachments       FileAttachment[]
   notificationTemplates NotificationTemplate[]
   notificationLogs      NotificationLog[]
+  notifications         Notification[]
   loginHistory          LoginHistory[]
   emailConfig           TenantEmailConfig?
   userScopeOverrides    UserScopeOverride[]
@@ -2239,6 +2240,31 @@ model NotificationTemplate {
   @@unique([tenantId, name])
   @@index([tenantId])
   @@map("notification_templates")
+}
+
+// In-app notification feed (distinct from NotificationLog, which records
+// outbound email/SMS/push deliveries). One row per recipient, with read state
+// and an optional deep-link the mobile client opens on tap.
+model Notification {
+  id            String    @id @default(uuid())
+  tenantId      String
+  recipientId   String // userId of the target user
+  category      String // ATTENDANCE, FAULT, LEAVE, VISIT, LEAD, SYSTEM
+  title         String
+  body          String?   @db.Text
+  deepLinkRoute String? // e.g. "/faults/123" — client-side route
+  isRead        Boolean   @default(false)
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, recipientId, isRead])
+  @@index([tenantId, recipientId, createdAt])
+  @@map("notifications")
 }
 
 model NotificationLog {

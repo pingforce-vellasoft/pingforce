@@ -4,6 +4,7 @@ import {
   FaultStatusUpdatedEvent,
 } from '../../faults/events/impl';
 import { NotificationsService } from '../notifications.service';
+import { InAppNotificationService } from '../in-app-notification.service';
 import { Logger } from '@nestjs/common';
 
 @EventsHandler(FaultEscalatedEvent)
@@ -12,7 +13,10 @@ export class FaultEscalatedHandler
 {
   private readonly logger = new Logger(FaultEscalatedHandler.name);
 
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly inApp: InAppNotificationService,
+  ) {}
 
   async handle(event: FaultEscalatedEvent) {
     this.logger.log(`Handling FaultEscalatedEvent for fault ${event.faultId}`);
@@ -24,6 +28,14 @@ export class FaultEscalatedHandler
         'FAULT_ESCALATED',
         { id: event.faultId },
       );
+      await this.inApp.create({
+        tenantId: event.tenantId,
+        recipientId: event.escalatedToId,
+        category: 'FAULT',
+        title: 'Fault escalated to you',
+        body: `Fault #${event.faultId} has been escalated and needs attention.`,
+        deepLinkRoute: `/faults/${event.faultId}`,
+      });
     }
   }
 }
