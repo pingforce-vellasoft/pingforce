@@ -20,6 +20,10 @@ import '../../features/faults/presentation/fault_detail_screen.dart';
 import '../../features/visits/presentation/visit_list_screen.dart';
 import '../../features/sync/sync_monitor_screen.dart';
 import '../../features/network_map/presentation/network_map_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/profile/presentation/active_sessions_screen.dart';
+import '../../features/profile/presentation/login_history_screen.dart';
+import '../../features/attendance/presentation/history/attendance_history_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // APP ROUTER  (AUDIT §17 — GoRouter configuration)
@@ -174,7 +178,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'history',
                     name: 'attendance-history',
                     builder: (context, state) =>
-                        const _PlaceholderScreen(name: 'Attendance History'),
+                        const AttendanceHistoryScreen(),
                   ),
                   GoRoute(
                     path: 'check-in',
@@ -331,8 +335,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile',
         name: 'profile',
-        builder: (context, state) =>
-            const _PlaceholderScreen(name: 'Profile'),
+        builder: (context, state) => const ProfileScreen(),
         routes: [
           GoRoute(
             path: 'change-password',
@@ -343,14 +346,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'sessions',
             name: 'active-sessions',
-            builder: (context, state) =>
-                const _PlaceholderScreen(name: 'Active Sessions'),
+            builder: (context, state) => const ActiveSessionsScreen(),
           ),
           GoRoute(
             path: 'login-history',
             name: 'login-history',
-            builder: (context, state) =>
-                const _PlaceholderScreen(name: 'Login History'),
+            builder: (context, state) => const LoginHistoryScreen(),
           ),
         ],
       ),
