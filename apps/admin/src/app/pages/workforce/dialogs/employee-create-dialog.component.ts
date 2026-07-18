@@ -1,14 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  MatDialogRef,
-  MatDialogModule,
-} from '@angular/material/dialog';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
@@ -25,12 +18,7 @@ import { RbacService, Role } from '../../../core/services/rbac.service';
 @Component({
   selector: 'app-employee-create-dialog',
   standalone: true,
-  imports: [
-    CommonModule,
-    MatDialogModule,
-    ReactiveFormsModule,
-    MatIconModule,
-  ],
+  imports: [CommonModule, MatDialogModule, ReactiveFormsModule, MatIconModule],
   template: `
     <div class="premium-dialog">
       <div class="glow-effect glow-purple"></div>
@@ -106,7 +94,9 @@ import { RbacService, Role } from '../../../core/services/rbac.service';
               </div>
             </div>
 
-            @if (form.get('roleId')?.value && !form.get('primaryEmail')?.value) {
+            @if (
+              form.get('roleId')?.value && !form.get('primaryEmail')?.value
+            ) {
               <p class="hint warn">
                 <mat-icon>info</mat-icon> An email is required to create a login
                 account.
@@ -135,8 +125,11 @@ import { RbacService, Role } from '../../../core/services/rbac.service';
         <div class="dialog-content">
           <div class="success-banner">
             <mat-icon>check_circle</mat-icon>
-            <span>Employee <strong>{{ emp.firstName }} {{ emp.lastName }}</strong>
-              created.</span>
+            <span
+              >Employee
+              <strong>{{ emp.firstName }} {{ emp.lastName }}</strong>
+              created.</span
+            >
           </div>
 
           @if (emp.tempPassword) {
@@ -158,9 +151,7 @@ import { RbacService, Role } from '../../../core/services/rbac.service';
               </p>
             </div>
           } @else {
-            <p class="hint">
-              No login account was created (no role selected).
-            </p>
+            <p class="hint">No login account was created (no role selected).</p>
           }
         </div>
 
@@ -190,9 +181,7 @@ export class EmployeeCreateDialogComponent implements OnInit {
   private employeeService = inject(EmployeeService);
   private rbacService = inject(RbacService);
   private snack = inject(MatSnackBar);
-  private dialogRef = inject(
-    MatDialogRef<EmployeeCreateDialogComponent>,
-  );
+  private dialogRef = inject(MatDialogRef<EmployeeCreateDialogComponent>);
 
   roles = signal<Role[]>([]);
   saving = signal(false);

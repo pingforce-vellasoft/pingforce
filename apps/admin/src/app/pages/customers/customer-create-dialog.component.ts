@@ -1,11 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
@@ -21,12 +17,7 @@ import {
 @Component({
   selector: 'app-customer-create-dialog',
   standalone: true,
-  imports: [
-    CommonModule,
-    MatDialogModule,
-    ReactiveFormsModule,
-    MatIconModule,
-  ],
+  imports: [CommonModule, MatDialogModule, ReactiveFormsModule, MatIconModule],
   template: `
     <div class="premium-dialog">
       <div class="glow-effect glow-purple"></div>
@@ -123,12 +114,18 @@ import {
         <div class="dialog-content">
           <div class="success-banner">
             <mat-icon>check_circle</mat-icon>
-            <span>Customer <strong>{{ cust.legalName }}</strong> created.</span>
+            <span
+              >Customer <strong>{{ cust.legalName }}</strong> created.</span
+            >
           </div>
 
           <div class="cred-panel">
             <label>Invite a portal contact (optional)</label>
-            <form [formGroup]="inviteForm" class="grid-2" style="margin-top:8px">
+            <form
+              [formGroup]="inviteForm"
+              class="grid-2"
+              style="margin-top:8px"
+            >
               <div class="input-group">
                 <label>First Name</label>
                 <input formControlName="firstName" placeholder="Jane" />
@@ -155,8 +152,8 @@ import {
               </div>
             </form>
             <p class="hint">
-              The contact receives an activation link (valid 7 days). No password
-              is set.
+              The contact receives an activation link (valid 7 days). No
+              password is set.
             </p>
           </div>
         </div>
@@ -184,9 +181,7 @@ export class CustomerCreateDialogComponent {
   private fb = inject(FormBuilder);
   private customerService = inject(CustomerService);
   private snack = inject(MatSnackBar);
-  private dialogRef = inject(
-    MatDialogRef<CustomerCreateDialogComponent>,
-  );
+  private dialogRef = inject(MatDialogRef<CustomerCreateDialogComponent>);
 
   saving = signal(false);
   inviting = signal(false);

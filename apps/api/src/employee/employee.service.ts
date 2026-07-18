@@ -180,8 +180,7 @@ export class EmployeeService {
     workspaceName: string,
     tempPassword: string,
   ): Promise<void> {
-    const baseUrl =
-      process.env.ADMIN_WEB_URL ?? 'https://admin.pingforce.in';
+    const baseUrl = process.env.ADMIN_WEB_URL ?? 'https://admin.pingforce.in';
     await this.notifications.sendRawEmail(
       email,
       `You have been invited to ${workspaceName} on PingForce`,

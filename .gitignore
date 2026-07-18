@@ -5,6 +5,11 @@ dist
 tmp
 out-tsc
 
+# Local test credentials / helper scripts — never commit
+PROD_TEST_LOGIN_SETUP.md
+TEST_LOGINS.md
+get-test-ids.js
+
 # dependencies
 node_modules
 

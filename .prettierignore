@@ -4,3 +4,11 @@
 /.nx/cache
 /.nx/workspace-data
 .angular
+
+# Local test credentials / helper scripts (also gitignored)
+PROD_TEST_LOGIN_SETUP.md
+TEST_LOGINS.md
+get-test-ids.js
+
+# Long-form project docs — kept in git, not auto-formatted
+/docs
