@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../../core/theme/theme.dart';
 import '../check_in_state.dart';
@@ -34,7 +35,7 @@ class GpsMapPanel extends StatefulWidget {
 
 class _GpsMapPanelState extends State<GpsMapPanel>
     with TickerProviderStateMixin {
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
 
   // Pulsing animation for GPS acquiring / outside geofence ring
   late final AnimationController _pulseController;
@@ -42,9 +43,6 @@ class _GpsMapPanelState extends State<GpsMapPanel>
 
   // Geofence color transition animation
   late final AnimationController _geofenceColorController;
-
-  Set<Circle> _circles = {};
-  Set<Marker> _markers = {};
 
   @override
   void initState() {
@@ -78,15 +76,8 @@ class _GpsMapPanelState extends State<GpsMapPanel>
       _geofenceColorController.forward();
     }
 
-    // Update map overlays
-    if (oldWidget.location != widget.location ||
-        oldWidget.geofence != widget.geofence ||
-        oldWidget.geofenceStatus != widget.geofenceStatus ||
-        oldWidget.gpsAccuracy != widget.gpsAccuracy) {
-      _updateMapOverlays();
-    }
-
-    // Move camera to new location
+    // Recenter camera when location changes. Layers (marker + circles) are
+    // rebuilt from widget props in build(), so no overlay bookkeeping needed.
     if (widget.location != null &&
         oldWidget.location?.latitude != widget.location?.latitude) {
       _animateCameraToLocation();
@@ -97,83 +88,80 @@ class _GpsMapPanelState extends State<GpsMapPanel>
   void dispose() {
     _pulseController.dispose();
     _geofenceColorController.dispose();
-    _mapController?.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
   // ── Map overlay builders ───────────────────────────────────────────────────
 
-  void _updateMapOverlays() {
+  List<CircleMarker> _buildCircles() {
     final loc = widget.location;
     final geo = widget.geofence;
-
-    final Set<Marker> markers = {};
-    final Set<Circle> circles = {};
+    final circles = <CircleMarker>[];
 
     if (loc != null) {
-      // User location pin
-      markers.add(
-        Marker(
-          markerId: const MarkerId('user_location'),
-          position: LatLng(loc.latitude, loc.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            _markerHueForAccuracy(widget.gpsAccuracy),
-          ),
-          anchor: const Offset(0.5, 0.5),
-        ),
-      );
-
-      // GPS accuracy ring around user
+      // GPS accuracy ring around user (radius in real meters)
       circles.add(
-        Circle(
-          circleId: const CircleId('gps_accuracy'),
-          center: LatLng(loc.latitude, loc.longitude),
+        CircleMarker(
+          point: LatLng(loc.latitude, loc.longitude),
           radius: loc.accuracyMeters,
-          strokeWidth: 1,
-          strokeColor: _gpsRingColor(widget.gpsAccuracy).withValues(alpha: 0.6),
-          fillColor: _gpsRingColor(widget.gpsAccuracy).withValues(alpha: 0.12),
+          useRadiusInMeter: true,
+          borderStrokeWidth: 1,
+          borderColor: _gpsRingColor(widget.gpsAccuracy).withValues(alpha: 0.6),
+          color: _gpsRingColor(widget.gpsAccuracy).withValues(alpha: 0.12),
         ),
       );
     }
 
     // Geofence circle
-    if (geo != null) {
+    if (geo != null && geo.radiusMeters > 0) {
       final isSafe = widget.geofenceStatus == GeofenceStatus.inside;
       circles.add(
-        Circle(
-          circleId: const CircleId('geofence'),
-          center: geo.center,
+        CircleMarker(
+          point: geo.center,
           radius: geo.radiusMeters,
-          strokeWidth: 2,
-          strokeColor: isSafe
+          useRadiusInMeter: true,
+          borderStrokeWidth: 2,
+          borderColor: isSafe
               ? PingForceColors.gpsGeofenceInsideBorder
               : PingForceColors.gpsGeofenceOutsideBorder,
-          fillColor: isSafe
+          color: isSafe
               ? PingForceColors.gpsGeofenceInside
               : PingForceColors.gpsGeofenceOutside,
         ),
       );
     }
 
-    if (mounted) {
-      setState(() {
-        _markers = markers;
-        _circles = circles;
-      });
-    }
+    return circles;
+  }
+
+  List<Marker> _buildMarkers() {
+    final loc = widget.location;
+    if (loc == null) return const [];
+    return [
+      Marker(
+        point: LatLng(loc.latitude, loc.longitude),
+        width: 24,
+        height: 24,
+        alignment: Alignment.center,
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _gpsRingColor(widget.gpsAccuracy),
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: const [
+              BoxShadow(color: Color(0x40000000), blurRadius: 4),
+            ],
+          ),
+        ),
+      ),
+    ];
   }
 
   void _animateCameraToLocation() {
     final loc = widget.location;
-    if (loc == null || _mapController == null) return;
-    _mapController!.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(loc.latitude, loc.longitude),
-          zoom: 17,
-        ),
-      ),
-    );
+    if (loc == null) return;
+    _mapController.move(LatLng(loc.latitude, loc.longitude), 17);
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -229,30 +217,35 @@ class _GpsMapPanelState extends State<GpsMapPanel>
       return _buildShimmerSkeleton(context);
     }
 
-    return GoogleMap(
-      onMapCreated: (controller) {
-        _mapController = controller;
-        _updateMapOverlays();
-        if (widget.location != null) _animateCameraToLocation();
-      },
-      initialCameraPosition: CameraPosition(
-        target: widget.location != null
-            ? LatLng(widget.location!.latitude, widget.location!.longitude)
+    final loc = widget.location;
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: loc != null
+            ? LatLng(loc.latitude, loc.longitude)
             : const LatLng(0, 0),
-        zoom: widget.location != null ? 17 : 14,
+        initialZoom: loc != null ? 17 : 14,
+        // Match previous UX: no rotation, pan/zoom only.
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.pinchZoom |
+              InteractiveFlag.drag |
+              InteractiveFlag.doubleTapZoom,
+        ),
       ),
-      markers: _markers,
-      circles: _circles,
-      myLocationEnabled: false,       // We render our own marker
-      myLocationButtonEnabled: false,
-      zoomControlsEnabled: false,
-      mapToolbarEnabled: false,
-      compassEnabled: false,
-      tiltGesturesEnabled: false,
-      rotateGesturesEnabled: false,
-      mapType: MapType.normal,
-      buildingsEnabled: true,
-      trafficEnabled: false,
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.vellasoft.pingforce',
+        ),
+        CircleLayer(circles: _buildCircles()),
+        MarkerLayer(markers: _buildMarkers()),
+        const Align(
+          alignment: Alignment.bottomRight,
+          child: SimpleAttributionWidget(
+            source: Text('© OpenStreetMap'),
+          ),
+        ),
+      ],
     );
   }
 
@@ -399,14 +392,6 @@ class _GpsMapPanelState extends State<GpsMapPanel>
         GpsAccuracyLevel.fair => PingForceColors.gpsFair,
         GpsAccuracyLevel.poor => PingForceColors.gpsPoor,
         GpsAccuracyLevel.unavailable => PingForceColors.gpsUnavailable,
-      };
-
-  double _markerHueForAccuracy(GpsAccuracyLevel level) => switch (level) {
-        GpsAccuracyLevel.excellent => BitmapDescriptor.hueGreen,
-        GpsAccuracyLevel.good => BitmapDescriptor.hueGreen,
-        GpsAccuracyLevel.fair => BitmapDescriptor.hueOrange,
-        GpsAccuracyLevel.poor => BitmapDescriptor.hueRed,
-        GpsAccuracyLevel.unavailable => BitmapDescriptor.hueViolet,
       };
 
   String get _semanticLabel => switch (widget.geofenceStatus) {

@@ -148,7 +148,7 @@ abstract class _$$ShiftInfoImplCopyWith<$Res>
   factory _$$ShiftInfoImplCopyWith(
     _$ShiftInfoImpl value,
     $Res Function(_$ShiftInfoImpl) then,
-  ) = _$$ShiftInfoImplCopyWithImpl<$Res>;
+  ) = __$$ShiftInfoImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -168,10 +168,10 @@ abstract class _$$ShiftInfoImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$ShiftInfoImplCopyWithImpl<$Res>
+class __$$ShiftInfoImplCopyWithImpl<$Res>
     extends _$ShiftInfoCopyWithImpl<$Res, _$ShiftInfoImpl>
     implements _$$ShiftInfoImplCopyWith<$Res> {
-  _$$ShiftInfoImplCopyWithImpl(
+  __$$ShiftInfoImplCopyWithImpl(
     _$ShiftInfoImpl _value,
     $Res Function(_$ShiftInfoImpl) _then,
   ) : super(_value, _then);
@@ -355,7 +355,7 @@ class _$ShiftInfoImpl implements _ShiftInfo {
   @override
   @pragma('vm:prefer-inline')
   _$$ShiftInfoImplCopyWith<_$ShiftInfoImpl> get copyWith =>
-      _$$ShiftInfoImplCopyWithImpl<_$ShiftInfoImpl>(this, _$identity);
+      __$$ShiftInfoImplCopyWithImpl<_$ShiftInfoImpl>(this, _$identity);
 }
 
 abstract class _ShiftInfo implements ShiftInfo {
@@ -500,7 +500,7 @@ abstract class _$$GeofenceInfoImplCopyWith<$Res>
   factory _$$GeofenceInfoImplCopyWith(
     _$GeofenceInfoImpl value,
     $Res Function(_$GeofenceInfoImpl) then,
-  ) = _$$GeofenceInfoImplCopyWithImpl<$Res>;
+  ) = __$$GeofenceInfoImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -514,10 +514,10 @@ abstract class _$$GeofenceInfoImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$GeofenceInfoImplCopyWithImpl<$Res>
+class __$$GeofenceInfoImplCopyWithImpl<$Res>
     extends _$GeofenceInfoCopyWithImpl<$Res, _$GeofenceInfoImpl>
     implements _$$GeofenceInfoImplCopyWith<$Res> {
-  _$$GeofenceInfoImplCopyWithImpl(
+  __$$GeofenceInfoImplCopyWithImpl(
     _$GeofenceInfoImpl _value,
     $Res Function(_$GeofenceInfoImpl) _then,
   ) : super(_value, _then);
@@ -628,7 +628,7 @@ class _$GeofenceInfoImpl implements _GeofenceInfo {
   @override
   @pragma('vm:prefer-inline')
   _$$GeofenceInfoImplCopyWith<_$GeofenceInfoImpl> get copyWith =>
-      _$$GeofenceInfoImplCopyWithImpl<_$GeofenceInfoImpl>(this, _$identity);
+      __$$GeofenceInfoImplCopyWithImpl<_$GeofenceInfoImpl>(this, _$identity);
 }
 
 abstract class _GeofenceInfo implements GeofenceInfo {
@@ -762,7 +762,7 @@ abstract class _$$GpsLocationImplCopyWith<$Res>
   factory _$$GpsLocationImplCopyWith(
     _$GpsLocationImpl value,
     $Res Function(_$GpsLocationImpl) then,
-  ) = _$$GpsLocationImplCopyWithImpl<$Res>;
+  ) = __$$GpsLocationImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -777,10 +777,10 @@ abstract class _$$GpsLocationImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$GpsLocationImplCopyWithImpl<$Res>
+class __$$GpsLocationImplCopyWithImpl<$Res>
     extends _$GpsLocationCopyWithImpl<$Res, _$GpsLocationImpl>
     implements _$$GpsLocationImplCopyWith<$Res> {
-  _$$GpsLocationImplCopyWithImpl(
+  __$$GpsLocationImplCopyWithImpl(
     _$GpsLocationImpl _value,
     $Res Function(_$GpsLocationImpl) _then,
   ) : super(_value, _then);
@@ -905,7 +905,7 @@ class _$GpsLocationImpl implements _GpsLocation {
   @override
   @pragma('vm:prefer-inline')
   _$$GpsLocationImplCopyWith<_$GpsLocationImpl> get copyWith =>
-      _$$GpsLocationImplCopyWithImpl<_$GpsLocationImpl>(this, _$identity);
+      __$$GpsLocationImplCopyWithImpl<_$GpsLocationImpl>(this, _$identity);
 }
 
 abstract class _GpsLocation implements GpsLocation {
@@ -1035,7 +1035,7 @@ abstract class _$$ActiveSessionImplCopyWith<$Res>
   factory _$$ActiveSessionImplCopyWith(
     _$ActiveSessionImpl value,
     $Res Function(_$ActiveSessionImpl) then,
-  ) = _$$ActiveSessionImplCopyWithImpl<$Res>;
+  ) = __$$ActiveSessionImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -1049,10 +1049,10 @@ abstract class _$$ActiveSessionImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$ActiveSessionImplCopyWithImpl<$Res>
+class __$$ActiveSessionImplCopyWithImpl<$Res>
     extends _$ActiveSessionCopyWithImpl<$Res, _$ActiveSessionImpl>
     implements _$$ActiveSessionImplCopyWith<$Res> {
-  _$$ActiveSessionImplCopyWithImpl(
+  __$$ActiveSessionImplCopyWithImpl(
     _$ActiveSessionImpl _value,
     $Res Function(_$ActiveSessionImpl) _then,
   ) : super(_value, _then);
@@ -1167,7 +1167,7 @@ class _$ActiveSessionImpl implements _ActiveSession {
   @override
   @pragma('vm:prefer-inline')
   _$$ActiveSessionImplCopyWith<_$ActiveSessionImpl> get copyWith =>
-      _$$ActiveSessionImplCopyWithImpl<_$ActiveSessionImpl>(this, _$identity);
+      __$$ActiveSessionImplCopyWithImpl<_$ActiveSessionImpl>(this, _$identity);
 }
 
 abstract class _ActiveSession implements ActiveSession {
@@ -1301,7 +1301,7 @@ abstract class _$$CheckInResultImplCopyWith<$Res>
   factory _$$CheckInResultImplCopyWith(
     _$CheckInResultImpl value,
     $Res Function(_$CheckInResultImpl) then,
-  ) = _$$CheckInResultImplCopyWithImpl<$Res>;
+  ) = __$$CheckInResultImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -1316,10 +1316,10 @@ abstract class _$$CheckInResultImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$CheckInResultImplCopyWithImpl<$Res>
+class __$$CheckInResultImplCopyWithImpl<$Res>
     extends _$CheckInResultCopyWithImpl<$Res, _$CheckInResultImpl>
     implements _$$CheckInResultImplCopyWith<$Res> {
-  _$$CheckInResultImplCopyWithImpl(
+  __$$CheckInResultImplCopyWithImpl(
     _$CheckInResultImpl _value,
     $Res Function(_$CheckInResultImpl) _then,
   ) : super(_value, _then);
@@ -1444,7 +1444,7 @@ class _$CheckInResultImpl implements _CheckInResult {
   @override
   @pragma('vm:prefer-inline')
   _$$CheckInResultImplCopyWith<_$CheckInResultImpl> get copyWith =>
-      _$$CheckInResultImplCopyWithImpl<_$CheckInResultImpl>(this, _$identity);
+      __$$CheckInResultImplCopyWithImpl<_$CheckInResultImpl>(this, _$identity);
 }
 
 abstract class _CheckInResult implements CheckInResult {
@@ -1603,7 +1603,7 @@ abstract class _$$TenantCheckInPolicyImplCopyWith<$Res>
   factory _$$TenantCheckInPolicyImplCopyWith(
     _$TenantCheckInPolicyImpl value,
     $Res Function(_$TenantCheckInPolicyImpl) then,
-  ) = _$$TenantCheckInPolicyImplCopyWithImpl<$Res>;
+  ) = __$$TenantCheckInPolicyImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -1621,10 +1621,10 @@ abstract class _$$TenantCheckInPolicyImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$TenantCheckInPolicyImplCopyWithImpl<$Res>
+class __$$TenantCheckInPolicyImplCopyWithImpl<$Res>
     extends _$TenantCheckInPolicyCopyWithImpl<$Res, _$TenantCheckInPolicyImpl>
     implements _$$TenantCheckInPolicyImplCopyWith<$Res> {
-  _$$TenantCheckInPolicyImplCopyWithImpl(
+  __$$TenantCheckInPolicyImplCopyWithImpl(
     _$TenantCheckInPolicyImpl _value,
     $Res Function(_$TenantCheckInPolicyImpl) _then,
   ) : super(_value, _then);
@@ -1804,7 +1804,7 @@ class _$TenantCheckInPolicyImpl implements _TenantCheckInPolicy {
   @override
   @pragma('vm:prefer-inline')
   _$$TenantCheckInPolicyImplCopyWith<_$TenantCheckInPolicyImpl> get copyWith =>
-      _$$TenantCheckInPolicyImplCopyWithImpl<_$TenantCheckInPolicyImpl>(
+      __$$TenantCheckInPolicyImplCopyWithImpl<_$TenantCheckInPolicyImpl>(
         this,
         _$identity,
       );
@@ -2114,7 +2114,7 @@ abstract class _$$CheckInStateImplCopyWith<$Res>
   factory _$$CheckInStateImplCopyWith(
     _$CheckInStateImpl value,
     $Res Function(_$CheckInStateImpl) then,
-  ) = _$$CheckInStateImplCopyWithImpl<$Res>;
+  ) = __$$CheckInStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -2152,10 +2152,10 @@ abstract class _$$CheckInStateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class _$$CheckInStateImplCopyWithImpl<$Res>
+class __$$CheckInStateImplCopyWithImpl<$Res>
     extends _$CheckInStateCopyWithImpl<$Res, _$CheckInStateImpl>
     implements _$$CheckInStateImplCopyWith<$Res> {
-  _$$CheckInStateImplCopyWithImpl(
+  __$$CheckInStateImplCopyWithImpl(
     _$CheckInStateImpl _value,
     $Res Function(_$CheckInStateImpl) _then,
   ) : super(_value, _then);
@@ -2400,7 +2400,7 @@ class _$CheckInStateImpl extends _CheckInState {
   @override
   @pragma('vm:prefer-inline')
   _$$CheckInStateImplCopyWith<_$CheckInStateImpl> get copyWith =>
-      _$$CheckInStateImplCopyWithImpl<_$CheckInStateImpl>(this, _$identity);
+      __$$CheckInStateImplCopyWithImpl<_$CheckInStateImpl>(this, _$identity);
 }
 
 abstract class _CheckInState extends CheckInState {

@@ -184,19 +184,22 @@ class DashboardNotifier extends Notifier<DashboardState> {
   // ── Navigation helpers ─────────────────────────────────────────────────────
 
   void goToAttendance(BuildContext context) {
-    // TODO: context.push('/attendance');
+    context.go('/attendance');
   }
 
   void goToAttendanceHistory(BuildContext context) {
-    // TODO: context.push('/attendance/history');
+    context.push('/attendance/history');
   }
 
   void goToTeam(BuildContext context) {
-    // TODO: context.push('/team');
+    context.push('/team');
   }
 
   void onKpiCardTap(BuildContext context, KpiCard card) {
-    // TODO: context.push(card.route ?? '/');
+    final route = card.route;
+    if (route != null && route.isNotEmpty) {
+      context.push(route);
+    }
   }
 
   void onQuickActionTap(BuildContext context, QuickAction action) {
@@ -204,16 +207,17 @@ class DashboardNotifier extends Notifier<DashboardState> {
   }
 
   void onActivityItemTap(BuildContext context, ActivityFeedItem item) {
-    if (item.route != null) {
-      // TODO: context.push(item.route!);
+    final route = item.route;
+    if (route != null && route.isNotEmpty) {
+      context.push(route);
     }
   }
 
   void openNotifications(BuildContext context) {
-    // TODO: context.push('/notifications');
+    context.push('/notifications');
   }
 
   void goToActivityFeed(BuildContext context) {
-    // TODO: context.push('/activity');
+    context.push('/notifications');
   }
 }
