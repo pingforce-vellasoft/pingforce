@@ -39,6 +39,11 @@ COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 # Copy the built API application from the builder stage
 COPY --from=builder /app/dist/apps/api ./dist/apps/api
 
+# prisma/seed.ts imports the pure-constant permission catalog by source path
+# (../apps/api/src/rbac/permission-catalog). It has no Nest/Prisma deps, so
+# ship just that file to keep `prisma db seed` runnable in the prod image.
+COPY --from=builder /app/apps/api/src/rbac/permission-catalog.ts ./apps/api/src/rbac/permission-catalog.ts
+
 # Create a non-root user and group for better security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 RUN chown -R appuser:appgroup /app
