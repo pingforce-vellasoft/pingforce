@@ -75,7 +75,6 @@ import { CustomerCreateDialogComponent } from './customer-create-dialog.componen
         font-weight: 600;
       }
       .table-wrap {
-        background: white;
         border-radius: 8px;
         overflow: hidden;
       }

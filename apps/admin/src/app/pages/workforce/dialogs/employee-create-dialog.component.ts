@@ -1,12 +1,17 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import {
+  MatDialogRef,
+  MatDialogModule,
+  MAT_DIALOG_DATA,
+} from '@angular/material/dialog';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   EmployeeService,
   CreateEmployeeResult,
+  Employee,
 } from '../../../core/services/employee.service';
 import { RbacService, Role } from '../../../core/services/rbac.service';
 
@@ -27,12 +32,20 @@ import { RbacService, Role } from '../../../core/services/rbac.service';
       <div class="dialog-header">
         <div class="header-content">
           <div class="icon-container">
-            <mat-icon class="header-icon">person_add</mat-icon>
+            <mat-icon class="header-icon">{{
+              isEdit ? 'edit' : 'person_add'
+            }}</mat-icon>
           </div>
           <div>
-            <h2 class="dialog-title">New Employee</h2>
+            <h2 class="dialog-title">
+              {{ isEdit ? 'Edit Employee' : 'New Employee' }}
+            </h2>
             <p class="dialog-subtitle">
-              Add a team member and optionally give them portal access
+              {{
+                isEdit
+                  ? 'Update this team member’s details'
+                  : 'Add a team member and optionally give them portal access'
+              }}
             </p>
           </div>
         </div>
@@ -83,19 +96,23 @@ import { RbacService, Role } from '../../../core/services/rbac.service';
                 <label>Joining Date</label>
                 <input formControlName="joiningDate" type="date" />
               </div>
-              <div class="input-group">
-                <label>Role (grants login access)</label>
-                <select formControlName="roleId">
-                  <option value="">No login account</option>
-                  @for (role of roles(); track role.id) {
-                    <option [value]="role.id">{{ role.name }}</option>
-                  }
-                </select>
-              </div>
+              @if (!isEdit) {
+                <div class="input-group">
+                  <label>Role (grants login access)</label>
+                  <select formControlName="roleId">
+                    <option value="">No login account</option>
+                    @for (role of roles(); track role.id) {
+                      <option [value]="role.id">{{ role.name }}</option>
+                    }
+                  </select>
+                </div>
+              }
             </div>
 
             @if (
-              form.get('roleId')?.value && !form.get('primaryEmail')?.value
+              !isEdit &&
+              form.get('roleId')?.value &&
+              !form.get('primaryEmail')?.value
             ) {
               <p class="hint warn">
                 <mat-icon>info</mat-icon> An email is required to create a login
@@ -113,8 +130,16 @@ import { RbacService, Role } from '../../../core/services/rbac.service';
               [disabled]="form.invalid || saving()"
               class="btn-confirm"
             >
-              <span>{{ saving() ? 'Creating…' : 'Create Employee' }}</span>
-              <mat-icon>arrow_forward</mat-icon>
+              <span>{{
+                saving()
+                  ? isEdit
+                    ? 'Saving…'
+                    : 'Creating…'
+                  : isEdit
+                    ? 'Save Changes'
+                    : 'Create Employee'
+              }}</span>
+              <mat-icon>{{ isEdit ? 'check' : 'arrow_forward' }}</mat-icon>
             </button>
           </div>
         </form>
@@ -182,6 +207,11 @@ export class EmployeeCreateDialogComponent implements OnInit {
   private rbacService = inject(RbacService);
   private snack = inject(MatSnackBar);
   private dialogRef = inject(MatDialogRef<EmployeeCreateDialogComponent>);
+  private data = inject<{ employee?: Employee } | null>(MAT_DIALOG_DATA, {
+    optional: true,
+  });
+
+  readonly isEdit = !!this.data?.employee;
 
   roles = signal<Role[]>([]);
   saving = signal(false);
@@ -200,6 +230,22 @@ export class EmployeeCreateDialogComponent implements OnInit {
   });
 
   ngOnInit() {
+    const emp = this.data?.employee;
+    if (emp) {
+      this.form.patchValue({
+        employeeCode: emp.employeeCode,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        primaryEmail: emp.primaryEmail ?? '',
+        primaryMobile: emp.primaryMobile ?? '',
+        joiningDate: emp.joiningDate ? emp.joiningDate.slice(0, 10) : '',
+        employmentType: emp.employmentType ?? '',
+      });
+      // Employee code is the tenant-scoped identifier — never editable.
+      this.form.get('employeeCode')?.disable();
+      return; // roles list is only needed when provisioning a new login account
+    }
+
     this.rbacService.findAllRoles().subscribe({
       next: (roles) => this.roles.set(roles),
       error: () => this.roles.set([]),
@@ -209,6 +255,36 @@ export class EmployeeCreateDialogComponent implements OnInit {
   onSubmit() {
     if (this.form.invalid) return;
     const v = this.form.getRawValue();
+
+    if (this.isEdit) {
+      this.saving.set(true);
+      this.employeeService
+        .update(this.data!.employee!.id, {
+          firstName: v.firstName!,
+          lastName: v.lastName!,
+          primaryEmail: v.primaryEmail || undefined,
+          primaryMobile: v.primaryMobile || undefined,
+          joiningDate: v.joiningDate || undefined,
+          employmentType: v.employmentType || undefined,
+        })
+        .subscribe({
+          next: () => {
+            this.saving.set(false);
+            this.snack.open('Employee updated', 'Close', { duration: 3000 });
+            this.dialogRef.close(true);
+          },
+          error: (err) => {
+            this.saving.set(false);
+            this.snack.open(
+              err?.error?.message || 'Failed to update employee',
+              'Close',
+              { duration: 5000 },
+            );
+          },
+        });
+      return;
+    }
+
     if (v.roleId && !v.primaryEmail) {
       this.snack.open('Email is required to create a login account', 'Close', {
         duration: 4000,

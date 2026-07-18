@@ -55,6 +55,17 @@ export class EmployeeService {
     return this.http.post<CreateEmployeeResult>(this.api, payload);
   }
 
+  update(
+    id: string,
+    payload: Partial<CreateEmployeePayload>,
+  ): Observable<Employee> {
+    return this.http.patch<Employee>(`${this.api}/${id}`, payload);
+  }
+
+  remove(id: string): Observable<Employee> {
+    return this.http.delete<Employee>(`${this.api}/${id}`);
+  }
+
   invite(id: string): Observable<EmployeeInviteResult> {
     return this.http.post<EmployeeInviteResult>(`${this.api}/${id}/invite`, {});
   }

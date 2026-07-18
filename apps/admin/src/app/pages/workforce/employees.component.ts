@@ -5,11 +5,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 import {
   EmployeeService,
   Employee,
 } from '../../core/services/employee.service';
 import { EmployeeCreateDialogComponent } from './dialogs/employee-create-dialog.component';
+import { ConfirmDialogComponent } from '../../core/components/confirm-dialog.component';
 
 @Component({
   selector: 'app-employees',
@@ -55,6 +57,16 @@ import { EmployeeCreateDialogComponent } from './dialogs/employee-create-dialog.
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef class="right">Actions</th>
             <td mat-cell *matCellDef="let e" class="right">
+              <button
+                mat-icon-button
+                title="View details"
+                (click)="view(e)"
+              >
+                <mat-icon>visibility</mat-icon>
+              </button>
+              <button mat-icon-button title="Edit" (click)="edit(e)">
+                <mat-icon>edit</mat-icon>
+              </button>
               @if (e.userId) {
                 <button
                   mat-icon-button
@@ -65,6 +77,14 @@ import { EmployeeCreateDialogComponent } from './dialogs/employee-create-dialog.
                   <mat-icon>mail</mat-icon>
                 </button>
               }
+              <button
+                mat-icon-button
+                title="Delete"
+                (click)="remove(e)"
+                class="danger"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
             </td>
           </ng-container>
 
@@ -95,7 +115,6 @@ import { EmployeeCreateDialogComponent } from './dialogs/employee-create-dialog.
         font-weight: 600;
       }
       .table-wrap {
-        background: white;
         border-radius: 8px;
         overflow: hidden;
       }
@@ -108,7 +127,10 @@ import { EmployeeCreateDialogComponent } from './dialogs/employee-create-dialog.
       .empty {
         padding: 48px;
         text-align: center;
-        color: #757575;
+        color: var(--text-secondary);
+      }
+      .danger:hover {
+        color: var(--status-danger);
       }
     `,
   ],
@@ -117,6 +139,7 @@ export class EmployeesComponent implements OnInit {
   private employeeService = inject(EmployeeService);
   private dialog = inject(MatDialog);
   private snack = inject(MatSnackBar);
+  private router = inject(Router);
 
   employees = signal<Employee[]>([]);
   cols = ['code', 'name', 'email', 'login', 'actions'];
@@ -138,6 +161,47 @@ export class EmployeesComponent implements OnInit {
     });
     ref.afterClosed().subscribe((changed) => {
       if (changed) this.load();
+    });
+  }
+
+  view(e: Employee) {
+    this.router.navigate(['/workforce/employee', e.id]);
+  }
+
+  edit(e: Employee) {
+    const ref = this.dialog.open(EmployeeCreateDialogComponent, {
+      panelClass: 'premium-dialog-panel',
+      data: { employee: e },
+    });
+    ref.afterClosed().subscribe((changed) => {
+      if (changed) this.load();
+    });
+  }
+
+  remove(e: Employee) {
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete Employee',
+        message: `Delete <strong>${e.firstName} ${e.lastName}</strong>? This can be restored by an administrator.`,
+        confirmText: 'Delete',
+        color: 'warn',
+        icon: 'delete',
+      },
+    });
+    ref.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.employeeService.remove(e.id).subscribe({
+        next: () => {
+          this.snack.open('Employee deleted', 'Close', { duration: 3000 });
+          this.load();
+        },
+        error: (err) =>
+          this.snack.open(
+            err?.error?.message || 'Failed to delete employee',
+            'Close',
+            { duration: 5000 },
+          ),
+      });
     });
   }
 

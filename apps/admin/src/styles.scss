@@ -121,6 +121,18 @@ h6 {
   color: var(--text-secondary) !important;
 }
 
+/* Table wrapper — glass panel matching the rest of the app (never white) */
+.table-wrap {
+  background: var(--bg-surface) !important;
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-md) !important;
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
 /* Tables */
 .mat-mdc-table {
   background: transparent !important;
