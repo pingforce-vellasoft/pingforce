@@ -77,7 +77,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               SliverToBoxAdapter(
                 child: Padding(
                   padding: AppSpacing.screenPaddingH,
-                  child: SyncStatusBar(syncInfo: state.syncInfo),
+                  child: SyncStatusBar(
+                    syncInfo: state.syncInfo,
+                    onSyncNow: () =>
+                        ref.read(dashboardNotifierProvider.notifier).syncNow(),
+                  ),
                 ),
               ),
 
@@ -119,7 +123,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             right: AppSpacing.screenHorizontal,
             top: MediaQuery.of(context).padding.top + AppSpacing.space2,
           ),
-          child: DashboardHeader(state: state),
+          child: DashboardHeader(
+            state: state,
+            onAvatarTap: () => ref
+                .read(dashboardNotifierProvider.notifier)
+                .goToProfile(context),
+          ),
         ),
       ),
       actions: [
@@ -196,6 +205,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
       onViewDetails: () =>
           ref.read(dashboardNotifierProvider.notifier).goToAttendanceHistory(context),
+      onRequestCorrection: () =>
+          ref.read(dashboardNotifierProvider.notifier).goToCorrection(context),
     ));
 
     widgets.add(AppSpacing.sectionGapBox);

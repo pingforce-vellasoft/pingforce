@@ -25,6 +25,9 @@ import 'features/network_map/data/network_map_remote_data_source.dart';
 import 'features/visits/data/visits_remote_data_source.dart';
 import 'features/profile/data/profile_remote_data_source.dart';
 import 'features/attendance/data/datasources/attendance_history_remote_data_source.dart';
+import 'features/dashboard/data/datasources/dashboard_remote_data_source.dart';
+import 'features/dashboard/data/repositories/dashboard_repository_impl.dart';
+import 'features/dashboard/domain/repositories/dashboard_repository.dart';
 
 final sl = GetIt.instance;
 
@@ -98,5 +101,13 @@ Future<void> init() async {
   // --- Features: Attendance History ---
   sl.registerLazySingleton<AttendanceHistoryRemoteDataSource>(
     () => AttendanceHistoryRemoteDataSourceImpl(dio: sl()),
+  );
+
+  // --- Features: Dashboard (Home) ---
+  sl.registerLazySingleton<DashboardRemoteDataSource>(
+    () => DashboardRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<DashboardRepository>(
+    () => DashboardRepositoryImpl(remoteDataSource: sl()),
   );
 }

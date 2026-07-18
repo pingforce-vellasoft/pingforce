@@ -2,11 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/connectivity_provider.dart';
+import '../../../core/sync/sync_provider.dart';
+import '../../../core/sync/sync_state.dart';
+import '../../../injection_container.dart';
+import '../data/models/dashboard_summary_model.dart';
+import '../domain/repositories/dashboard_repository.dart';
 import 'dashboard_state.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DASHBOARD NOTIFIER  (stub — wire to real repositories)
+// DASHBOARD NOTIFIER  (DASHBOARD_SPEC.md §4)
 // ─────────────────────────────────────────────────────────────────────────────
+//
+// Composes the Home-screen state from three live sources:
+//   1. GET /api/v1/dashboard/summary  (user, attendance hero, KPIs, feed)
+//   2. connectivityProvider           (online/offline banner)
+//   3. syncProvider                   (pending-sync bar)
+// Quick actions are role-gated on the client — they map to fixed routes and
+// carry no server data.
 
 final dashboardNotifierProvider =
     NotifierProvider<DashboardNotifier, DashboardState>(
@@ -14,162 +27,55 @@ final dashboardNotifierProvider =
 );
 
 class DashboardNotifier extends Notifier<DashboardState> {
+  DashboardRepository get _repo => sl<DashboardRepository>();
+
   @override
-  DashboardState build() => const DashboardState(isLoading: true);
+  DashboardState build() {
+    // React to connectivity + sync changes without a full reload.
+    ref.listen(connectivityProvider, (_, next) {
+      state = state.copyWith(isOnline: next.isOnline);
+    });
+    ref.listen(syncProvider, (_, next) {
+      state = state.copyWith(syncInfo: _mapSync(next));
+    });
+    return const DashboardState(isLoading: true);
+  }
 
   // ── Load ───────────────────────────────────────────────────────────────────
 
   Future<void> load() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
-    try {
-      // TODO: inject repositories and fetch:
-      //   1. Current user info
-      //   2. Today's attendance session
-      //   3. RBAC-gated KPI cards
-      //   4. RBAC-gated quick actions
-      //   5. Today's activity feed
-      //   6. Team status (if manager)
-      //   7. Notification count
-      //   8. Sync queue status
 
-      // ── Stub data ────────────────────────────────────────────────────────
-      await Future<void>.delayed(const Duration(milliseconds: 500));
+    final result = await _repo.getSummary();
 
-      state = state.copyWith(
-        isLoading: false,
-        isOnline: true,
-        user: const DashboardUserInfo(
-          userId: 'u001',
-          firstName: 'Ahmed',
-          lastName: 'Al-Rashid',
-          role: 'Field Technician',
-          department: 'Operations',
-          initials: 'AA',
-          isManager: false,
-        ),
-        attendanceHero: AttendanceHeroData(
-          status: AttendanceHeroStatus.working,
-          checkInTime: DateTime.now().subtract(const Duration(hours: 3, minutes: 22)),
-          shiftName: 'Morning Shift',
-          shiftStart: '09:00',
-          shiftEnd: '18:00',
-          totalShiftMinutes: 540,
-          gracePeriodMinutes: 15,
-          progressFraction: 0.42,
-          breaksTaken: 1,
-          isLate: false,
-          isOnTime: true,
-        ),
-        kpiCards: const [
-          KpiCard(
-            id: 'attendance',
-            title: 'Attendance',
-            primaryValue: 'Present',
-            label: 'Today',
-            iconName: 'fingerprint',
-            trendLabel: 'On Time',
-            severity: KpiCardSeverity.normal,
-            route: '/attendance',
-          ),
-          KpiCard(
-            id: 'faults',
-            title: 'Faults',
-            primaryValue: '3',
-            label: 'Open Faults',
-            iconName: 'build_circle',
-            secondaryLabel: '1 Overdue',
-            trendLabel: '▲ 1 overdue',
-            trendUp: false,
-            severity: KpiCardSeverity.warning,
-            route: '/faults',
-          ),
-          KpiCard(
-            id: 'visits',
-            title: 'GPS Visits',
-            primaryValue: '2',
-            label: 'Today',
-            iconName: 'location_on',
-            secondaryLabel: 'Next: 2:30 PM',
-            trendLabel: '1 remaining',
-            severity: KpiCardSeverity.normal,
-            route: '/visits',
-          ),
-        ],
-        quickActions: const [
-          QuickAction(
-            id: 'checkout',
-            label: 'Check Out',
-            iconName: 'logout',
-            route: '/attendance',
-            isUrgent: true,
-          ),
-          QuickAction(
-            id: 'fault',
-            label: 'Report Fault',
-            iconName: 'report_problem',
-            route: '/faults/new',
-          ),
-          QuickAction(
-            id: 'visit',
-            label: 'Log Visit',
-            iconName: 'map',
-            route: '/visits/new',
-          ),
-          QuickAction(
-            id: 'lead',
-            label: 'New Lead',
-            iconName: 'person_add',
-            route: '/leads/new',
-          ),
-          QuickAction(
-            id: 'network-map',
-            label: 'Network Map',
-            iconName: 'share_location',
-            route: '/network-map',
-          ),
-        ],
-        activityFeed: [
-          ActivityFeedItem(
-            id: 'a1',
-            type: ActivityType.checkIn,
-            title: 'Checked in at 09:05 AM',
-            timestamp: DateTime.now().subtract(const Duration(hours: 3, minutes: 22)),
-          ),
-          ActivityFeedItem(
-            id: 'a2',
-            type: ActivityType.faultAssigned,
-            title: 'Fault #1032 assigned to you',
-            subtitle: 'AC Unit Failure — Building 4',
-            timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-            route: '/faults/1032',
-            isUnread: true,
-          ),
-          ActivityFeedItem(
-            id: 'a3',
-            type: ActivityType.breakEnd,
-            title: 'Break ended at 12:45 PM',
-            timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 30)),
-          ),
-          ActivityFeedItem(
-            id: 'a4',
-            type: ActivityType.visitLogged,
-            title: 'Visit logged at Client HQ',
-            timestamp: DateTime.now().subtract(const Duration(minutes: 45)),
-            route: '/visits/88',
-          ),
-        ],
-        unreadNotifications: 3,
-        syncInfo: const SyncInfo(
-          status: SyncStatus.pendingItems,
-          pendingCount: 2,
-        ),
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Failed to load dashboard. Pull down to retry.',
-      );
-    }
+    result.fold(
+      (failure) {
+        // Keep any previously loaded content on a network failure — the offline
+        // banner (driven by connectivityProvider) already explains the state.
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: failure.message,
+        );
+      },
+      (summary) {
+        state = state.copyWith(
+          isLoading: false,
+          user: _mapUser(summary.user),
+          attendanceHero: _mapAttendance(summary.attendance),
+          kpiCards: _mapKpis(summary.kpiCards),
+          quickActions: _buildQuickActions(summary),
+          activityFeed: _mapActivity(summary.activityFeed),
+          unreadNotifications: summary.unreadNotifications,
+          errorMessage: null,
+        );
+      },
+    );
+
+    // Fold in the current connectivity + sync snapshots.
+    state = state.copyWith(
+      isOnline: ref.read(connectivityProvider).isOnline,
+      syncInfo: _mapSync(ref.read(syncProvider)),
+    );
   }
 
   // ── Refresh ────────────────────────────────────────────────────────────────
@@ -181,7 +87,195 @@ class DashboardNotifier extends Notifier<DashboardState> {
     state = state.copyWith(isRefreshing: false);
   }
 
+  /// Manually flush the offline sync queue ("Sync Now" button).
+  Future<void> syncNow() async {
+    await ref.read(syncProvider.notifier).syncNow();
+  }
+
+  // ── Mappers ──────────────────────────────────────────────────────────────
+
+  DashboardUserInfo _mapUser(DashboardUserModel u) {
+    final initials = _initials(u.firstName, u.lastName);
+    return DashboardUserInfo(
+      userId: u.userId,
+      firstName: u.firstName,
+      lastName: u.lastName,
+      role: u.role,
+      department: u.department ?? '',
+      avatarUrl: u.avatarUrl,
+      initials: initials,
+      isManager: u.isManager,
+    );
+  }
+
+  AttendanceHeroData _mapAttendance(DashboardAttendanceModel a) {
+    final status = switch (a.status) {
+      'working' => AttendanceHeroStatus.working,
+      'onBreak' => AttendanceHeroStatus.onBreak,
+      'checkedOut' => AttendanceHeroStatus.checkedOut,
+      'notCheckedIn' => AttendanceHeroStatus.notCheckedIn,
+      'absent' => AttendanceHeroStatus.absent,
+      _ => AttendanceHeroStatus.noShift,
+    };
+
+    final worked =
+        a.workedMinutes != null ? Duration(minutes: a.workedMinutes!) : null;
+
+    // Progress across the shift = elapsed worked / total shift minutes.
+    double? progress;
+    if (a.workedMinutes != null &&
+        a.totalShiftMinutes != null &&
+        a.totalShiftMinutes! > 0) {
+      progress = (a.workedMinutes! / a.totalShiftMinutes!).clamp(0.0, 1.0);
+    }
+
+    return AttendanceHeroData(
+      status: status,
+      checkInTime: a.checkInTime,
+      checkOutTime: a.checkOutTime,
+      shiftName: a.shiftName,
+      shiftStart: a.shiftStart,
+      shiftEnd: a.shiftEnd,
+      totalShiftMinutes: a.totalShiftMinutes,
+      gracePeriodMinutes: a.gracePeriodMinutes,
+      progressFraction: progress,
+      workingDuration: worked,
+      breaksTaken: a.breaksTaken,
+      isLate: a.isLate,
+      minutesLate: a.minutesLate,
+      isOnTime: !a.isLate,
+    );
+  }
+
+  List<KpiCard> _mapKpis(List<DashboardKpiModel> cards) {
+    return cards
+        .map((c) => KpiCard(
+              id: c.id,
+              title: c.title,
+              primaryValue: c.primaryValue,
+              label: c.label,
+              iconName: c.iconName,
+              secondaryLabel: c.secondaryLabel,
+              severity: switch (c.severity) {
+                'critical' => KpiCardSeverity.critical,
+                'warning' => KpiCardSeverity.warning,
+                _ => KpiCardSeverity.normal,
+              },
+              route: c.route,
+            ))
+        .toList();
+  }
+
+  List<ActivityFeedItem> _mapActivity(List<DashboardActivityModel> items) {
+    return items
+        .map((i) => ActivityFeedItem(
+              id: i.id,
+              type: _activityType(i.type),
+              title: i.title,
+              subtitle: i.subtitle,
+              timestamp: i.timestamp,
+              route: i.route,
+            ))
+        .toList();
+  }
+
+  ActivityType _activityType(String type) {
+    return switch (type) {
+      'checkIn' => ActivityType.checkIn,
+      'checkOut' => ActivityType.checkOut,
+      'breakStart' => ActivityType.breakStart,
+      'breakEnd' => ActivityType.breakEnd,
+      'faultCreated' => ActivityType.faultCreated,
+      'faultAssigned' => ActivityType.faultAssigned,
+      'faultResolved' => ActivityType.faultResolved,
+      'faultOverdue' => ActivityType.faultOverdue,
+      'leadCreated' => ActivityType.leadCreated,
+      'leadUpdated' => ActivityType.leadUpdated,
+      'leadWon' => ActivityType.leadWon,
+      'visitLogged' => ActivityType.visitLogged,
+      'syncCompleted' => ActivityType.syncCompleted,
+      _ => ActivityType.notification,
+    };
+  }
+
+  /// Role-gated quick actions. The server does not send these; they are fixed
+  /// routes shown based on the user's role and current attendance state.
+  List<QuickAction> _buildQuickActions(DashboardSummaryModel summary) {
+    final actions = <QuickAction>[];
+    final working = summary.attendance.status == 'working';
+
+    // Check In / Check Out reflects current state.
+    if (working) {
+      actions.add(const QuickAction(
+        id: 'checkout',
+        label: 'Check Out',
+        iconName: 'logout',
+        route: '/attendance',
+        isUrgent: true,
+      ));
+    } else if (summary.attendance.status == 'notCheckedIn') {
+      actions.add(const QuickAction(
+        id: 'checkin',
+        label: 'Check In',
+        iconName: 'login',
+        route: '/attendance',
+        isHighlighted: true,
+      ));
+    }
+
+    actions.addAll(const [
+      QuickAction(
+        id: 'fault',
+        label: 'Report Fault',
+        iconName: 'report_problem',
+        route: '/faults/new',
+      ),
+      QuickAction(
+        id: 'visit',
+        label: 'Log Visit',
+        iconName: 'map',
+        route: '/visits/new',
+      ),
+      QuickAction(
+        id: 'network-map',
+        label: 'Network Map',
+        iconName: 'share_location',
+        route: '/network-map',
+      ),
+    ]);
+
+    return actions;
+  }
+
+  SyncInfo _mapSync(SyncState s) {
+    final status = switch (s.status) {
+      SyncQueueStatus.syncing => SyncStatus.syncing,
+      SyncQueueStatus.pending => SyncStatus.pendingItems,
+      SyncQueueStatus.completed => SyncStatus.allSynced,
+      SyncQueueStatus.failed => SyncStatus.failed,
+      SyncQueueStatus.conflict => SyncStatus.pendingItems,
+      SyncQueueStatus.idle => SyncStatus.idle,
+    };
+    return SyncInfo(
+      status: status,
+      pendingCount: s.pendingCount,
+      lastSyncTime: s.lastSyncedAt,
+      errorMessage: s.lastErrorMessage,
+    );
+  }
+
+  String _initials(String first, String last) {
+    final f = first.isNotEmpty ? first[0] : '';
+    final l = last.isNotEmpty ? last[0] : '';
+    final combined = '$f$l'.trim();
+    return combined.isEmpty ? '?' : combined.toUpperCase();
+  }
+
   // ── Navigation helpers ─────────────────────────────────────────────────────
+
+  void goToProfile(BuildContext context) {
+    context.push('/profile');
+  }
 
   void goToAttendance(BuildContext context) {
     context.go('/attendance');
@@ -189,6 +283,10 @@ class DashboardNotifier extends Notifier<DashboardState> {
 
   void goToAttendanceHistory(BuildContext context) {
     context.push('/attendance/history');
+  }
+
+  void goToCorrection(BuildContext context) {
+    context.push('/attendance/correction');
   }
 
   void goToTeam(BuildContext context) {

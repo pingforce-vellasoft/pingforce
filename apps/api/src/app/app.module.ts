@@ -40,6 +40,7 @@ import { MonitoringModule } from '../monitoring/monitoring.module';
 import { NetworkModule } from '../network/network.module';
 import { PortalModule } from '../portal/portal.module';
 import { BillingModule } from '../billing/billing.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -111,6 +112,7 @@ import { BillingModule } from '../billing/billing.module';
     NetworkModule,
     BillingModule,
     PortalModule,
+    DashboardModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

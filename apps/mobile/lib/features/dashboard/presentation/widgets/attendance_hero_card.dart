@@ -19,6 +19,7 @@ class AttendanceHeroCard extends StatefulWidget {
     required this.onBreak,
     required this.onResume,
     required this.onViewDetails,
+    this.onRequestCorrection,
   });
 
   final AttendanceHeroData? data;
@@ -28,6 +29,7 @@ class AttendanceHeroCard extends StatefulWidget {
   final VoidCallback onBreak;
   final VoidCallback onResume;
   final VoidCallback onViewDetails;
+  final VoidCallback? onRequestCorrection;
 
   @override
   State<AttendanceHeroCard> createState() => _AttendanceHeroCardState();
@@ -416,7 +418,7 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
         ),
         AppSpacing.space4.toSizedBox,
         OutlinedButton(
-          onPressed: () {},
+          onPressed: widget.onRequestCorrection,
           child: const Text('Request Correction'),
         ),
       ],

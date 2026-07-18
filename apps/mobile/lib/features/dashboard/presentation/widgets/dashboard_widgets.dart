@@ -8,9 +8,10 @@ import '../dashboard_state.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class DashboardHeader extends StatelessWidget {
-  const DashboardHeader({super.key, required this.state});
+  const DashboardHeader({super.key, required this.state, this.onAvatarTap});
 
   final DashboardState state;
+  final VoidCallback? onAvatarTap;
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +25,7 @@ class DashboardHeader extends StatelessWidget {
           label: 'Profile photo. Tap to open profile.',
           button: true,
           child: GestureDetector(
-            onTap: () {
-              // TODO: navigate to profile
-            },
+            onTap: onAvatarTap,
             child: _UserAvatar(
               avatarUrl: user?.avatarUrl,
               initials: user?.initials ?? '?',
@@ -350,6 +349,9 @@ class _KpiCardTileState extends State<_KpiCardTile>
     'person_search': Icons.person_search_rounded,
     'bar_chart': Icons.bar_chart_rounded,
     'notifications': Icons.notifications_rounded,
+    'event_busy': Icons.event_busy_rounded,
+    'check_circle': Icons.check_circle_rounded,
+    'schedule': Icons.schedule_rounded,
   };
 }
 
@@ -402,7 +404,7 @@ class QuickActionsGrid extends StatelessWidget {
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
-        if (isLoading) return _QuickActionSkeleton();
+        if (isLoading) return const _QuickActionSkeleton();
         final action = actions[index];
         return _QuickActionCell(
           action: action,
@@ -553,6 +555,8 @@ class _QuickActionCellState extends State<_QuickActionCell>
 }
 
 class _QuickActionSkeleton extends StatelessWidget {
+  const _QuickActionSkeleton();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -1023,8 +1027,9 @@ class _StatusCount extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class SyncStatusBar extends StatefulWidget {
-  const SyncStatusBar({super.key, required this.syncInfo});
+  const SyncStatusBar({super.key, required this.syncInfo, this.onSyncNow});
   final SyncInfo syncInfo;
+  final VoidCallback? onSyncNow;
 
   @override
   State<SyncStatusBar> createState() => _SyncStatusBarState();
@@ -1100,9 +1105,7 @@ class _SyncStatusBarState extends State<SyncStatusBar>
           ),
           if (!isSyncing && widget.syncInfo.pendingCount > 0)
             TextButton(
-              onPressed: () {
-                // TODO: trigger manual sync
-              },
+              onPressed: widget.onSyncNow,
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.space2),
                 minimumSize: const Size(48, 32),
