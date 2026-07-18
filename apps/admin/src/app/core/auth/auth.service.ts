@@ -6,8 +6,15 @@ import { Router } from '@angular/router';
 export interface UserProfile {
   userId: string;
   tenantId: string;
+  /** Human-facing workspace identifier (tenant code) shown on the dashboard. */
+  workspaceId?: string;
+  workspaceName?: string;
   email: string;
   roleCode?: string;
+  isOnboarded?: boolean;
+  mustChangePassword?: boolean;
+  /** Whether the attendance module is provisioned for this tenant. */
+  isAttendanceEnabled?: boolean;
 }
 
 @Injectable({
@@ -113,6 +120,20 @@ export class AuthService {
       shareReplay(1),
     );
     return this.profileFetch$;
+  }
+
+  /**
+   * Self-service password change. On success the API bumps tokenVersion and
+   * revokes every session, so the current token is now dead — force a fresh
+   * sign-in.
+   */
+  changePassword(currentPassword: string, newPassword: string): Observable<any> {
+    return this.http
+      .post<any>('/api/v1/auth/change-password', {
+        currentPassword,
+        newPassword,
+      })
+      .pipe(tap(() => this.logout()));
   }
 
   private setTokens(accessToken: string, refreshToken: string) {

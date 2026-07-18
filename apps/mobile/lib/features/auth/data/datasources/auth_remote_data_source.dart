@@ -12,6 +12,7 @@ abstract class AuthRemoteDataSource {
     String otp,
     String newPassword,
   );
+  Future<void> changePassword(String currentPassword, String newPassword);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -27,9 +28,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'email': email,
         'password': password,
         'tenantCode': tenantCode,
+        // Identifies this client so the API can enforce portal access rules
+        // (platform super admins are rejected on the mobile app).
+        'portalType': 'MOBILE_APP',
       },
     );
-    
+
     return response.data;
   }
 
@@ -87,6 +91,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'email': email,
         'tenantCode': tenantCode,
         'otp': otp,
+        'newPassword': newPassword,
+      },
+    );
+  }
+
+  @override
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    await dio.post(
+      '/api/v1/auth/change-password',
+      data: {
+        'currentPassword': currentPassword,
         'newPassword': newPassword,
       },
     );

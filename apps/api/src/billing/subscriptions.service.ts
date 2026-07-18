@@ -13,11 +13,13 @@ import {
 } from './providers/provider-registry.service';
 
 export interface CheckoutResult {
-  readonly mode: 'checkout' | 'contact_sales';
+  readonly mode: 'checkout' | 'contact_sales' | 'trial';
   readonly subscriptionId?: string;
   readonly gateway?: GatewayName;
   readonly checkoutUrl?: string;
   readonly message?: string;
+  /** Trial expiry, set only when mode === 'trial'. */
+  readonly trialEnd?: Date;
 }
 
 /**
@@ -47,6 +49,31 @@ export class SubscriptionsService {
       throw new NotFoundException(`Plan not found: ${dto.planCode}`);
     }
 
+    // No-card free trial: no gateway, provision a TRIALING subscription for the
+    // plan's trial window. The signup form links a real tenant to it next.
+    if (plan.trialDays > 0) {
+      const trialEnd = new Date(Date.now() + plan.trialDays * 24 * 60 * 60 * 1000);
+      const subscription = await this.prisma.tenantSubscription.create({
+        data: {
+          tenantId: await this.resolveOrHoldTenant(dto),
+          planId: plan.id,
+          // No gateway mandate exists for a no-card trial; default to the
+          // configured/primary gateway purely to satisfy the non-null column.
+          gateway: this.registry.defaultGateway() ?? 'RAZORPAY',
+          status: 'TRIALING',
+          amount: plan.amount,
+          currency: plan.currency,
+          trialEnd,
+        },
+      });
+      return {
+        mode: 'trial',
+        subscriptionId: subscription.id,
+        trialEnd,
+      };
+    }
+
+    // Custom/contact-sales: paid plans with no self-serve checkout.
     if (plan.isCustom || plan.amount === 0) {
       return {
         mode: 'contact_sales',

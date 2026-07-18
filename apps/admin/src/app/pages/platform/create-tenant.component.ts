@@ -70,14 +70,14 @@ import { PlatformService } from '../../core/services/platform.service';
                     placeholder="admin@acme.com"
                   />
                 </div>
-                <div class="custom-field">
-                  <label>Admin Password *</label>
-                  <input
-                    type="password"
-                    [(ngModel)]="formData.adminPassword"
-                    placeholder="Minimum 8 characters"
-                  />
-                </div>
+                <div class="custom-field"></div>
+              </div>
+              <div class="info-note">
+                <mat-icon>lock</mat-icon>
+                <span>
+                  A secure temporary password is generated automatically and
+                  emailed to the admin. They must change it on first sign-in.
+                </span>
               </div>
             </div>
 
@@ -394,6 +394,24 @@ import { PlatformService } from '../../core/services/platform.service';
         color: #10b981;
         font-weight: bold;
       }
+      .info-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 16px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        background: rgba(99, 102, 241, 0.08);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+      .info-note mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: #818cf8;
+      }
       .mt-16 {
         margin-top: 16px;
       }
@@ -415,7 +433,6 @@ export class CreateTenantComponent {
     contactPhone: '',
     industry: '',
     country: '',
-    adminPassword: '',
     isAttendanceEnabled: false,
     maxFieldStaff: null as number | null,
   };
@@ -423,12 +440,11 @@ export class CreateTenantComponent {
   isSubmitting = false;
 
   get isValid(): boolean {
+    // Password is generated server-side — no longer collected here.
     return !!(
       this.formData.name &&
       this.formData.contactEmail &&
-      this.formData.contactPhone &&
-      this.formData.adminPassword &&
-      this.formData.adminPassword.length >= 8
+      this.formData.contactPhone
     );
   }
 

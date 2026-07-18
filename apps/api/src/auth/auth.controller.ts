@@ -31,6 +31,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { OnboardingTenantDto } from './dto/onboarding-tenant.dto';
 import { OnboardingEmployeeDto } from './dto/onboarding-employee.dto';
 import { ConfirmPasswordResetDto } from './dto/confirm-password-reset.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { PasswordResetService } from './password-reset.service';
 import { SessionService } from './session.service';
 import { OtpService } from './otp.service';
@@ -263,11 +265,28 @@ export class AuthController {
     return (this.authService as any).googleAuth(googleDto);
   }
 
-  @ApiOperation({ summary: 'Register a new tenant' })
+  @ApiOperation({ summary: 'Register a new tenant (website self-signup)' })
   @ApiResponse({ status: 201, description: 'Tenant registered successfully.' })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 5, ttl: 60000 },
+  })
   @Post('register-tenant')
   async registerTenant(@Body() registerDto: RegisterTenantDto) {
     return (this.authService as any).registerTenant(registerDto);
+  }
+
+  @ApiOperation({ summary: 'Verify signup email and activate the workspace' })
+  @ApiResponse({ status: 200, description: 'Email verified, tenant activated.' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired code.' })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 5, ttl: 60000 },
+  })
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    return (this.authService as any).verifyEmail(dto);
   }
 
   @ApiOperation({ summary: 'Register a new employee' })
@@ -278,6 +297,28 @@ export class AuthController {
   @Post('register-employee')
   async registerEmployee(@Body() registerDto: RegisterEmployeeDto) {
     return (this.authService as any).registerEmployee(registerDto);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Change own password (also clears the force-change flag)',
+  })
+  @ApiResponse({ status: 200, description: 'Password changed.' })
+  @ApiResponse({ status: 401, description: 'Current password incorrect.' })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 5, ttl: 60000 },
+  })
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  async changePassword(@Request() req: any, @Body() dto: ChangePasswordDto) {
+    return (this.authService as any).changePassword(
+      req.user.tenantId,
+      req.user.userId,
+      dto.currentPassword,
+      dto.newPassword,
+    );
   }
 
   @ApiBearerAuth()

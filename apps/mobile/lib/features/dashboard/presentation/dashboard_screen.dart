@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/navigation/nav_destinations.dart';
 import '../../../core/theme/theme.dart';
+import '../../auth/presentation/current_user_provider.dart';
 import 'dashboard_state.dart';
 import 'dashboard_notifier.dart';
+import 'geofence_nudge_provider.dart';
 import 'widgets/attendance_hero_card.dart';
 import 'widgets/dashboard_widgets.dart';
 
@@ -84,6 +87,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   ),
                 ),
               ),
+
+            // ── Geofence setup reminder (admin + attendance enabled) ──────
+            SliverToBoxAdapter(child: _buildGeofenceNudge(context)),
 
             // ── Main content ──────────────────────────────────────────────
             SliverPadding(
@@ -186,6 +192,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
+  // ── Geofence setup reminder ─────────────────────────────────────────────────
+  //
+  // Shown only to tenant admins while the attendance module is enabled. Mobile
+  // has no in-app geofence management, so this points admins to the web portal
+  // and is permanently dismissible per tenant (no live geofence count here).
+  Widget _buildGeofenceNudge(BuildContext context) {
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    if (user == null || !user.isAttendanceEnabled) {
+      return const SizedBox.shrink();
+    }
+    if (AppUserRoleX.fromRoleCode(user.role) != AppUserRole.admin) {
+      return const SizedBox.shrink();
+    }
+
+    // Read the (async) dismissal flag; watch the provider so a dismiss rebuilds.
+    ref.watch(geofenceNudgeDismissalProvider);
+    final dismissal = ref.read(geofenceNudgeDismissalProvider.notifier);
+
+    return FutureBuilder<bool>(
+      future: dismissal.isDismissed(user.tenantId),
+      builder: (context, snapshot) {
+        if (snapshot.data != true) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const SizedBox.shrink();
+          }
+          return _GeofenceNudgeBanner(
+            onDismiss: () => dismissal.dismiss(user.tenantId),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
   // ── Main content list ──────────────────────────────────────────────────────
 
   List<Widget> _buildContent(BuildContext context, DashboardState state) {
@@ -267,6 +307,78 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     ));
 
     return widgets;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GEOFENCE SETUP NUDGE BANNER
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _GeofenceNudgeBanner extends StatelessWidget {
+  const _GeofenceNudgeBanner({required this.onDismiss});
+
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        AppSpacing.space3,
+        AppSpacing.screenHorizontal,
+        0,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.space4),
+        decoration: BoxDecoration(
+          color: scheme.tertiaryContainer.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: scheme.tertiary.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.location_off_rounded,
+              size: AppIconSize.md,
+              color: scheme.tertiary,
+            ),
+            AppSpacing.iconGapBox,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Set up a geofence first',
+                    style: AppTypography.titleSmall.copyWith(
+                      color: scheme.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.space1),
+                  Text(
+                    'The attendance module is enabled. Configure at least one '
+                    'geofence in the web admin portal before adding employees, '
+                    'so their check-ins can be validated.',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close_rounded),
+              iconSize: AppIconSize.sm,
+              color: scheme.onSurfaceVariant,
+              tooltip: 'Dismiss',
+              onPressed: onDismiss,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

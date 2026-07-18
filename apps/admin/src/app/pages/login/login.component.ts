@@ -198,7 +198,19 @@ export class LoginComponent {
 
       this.authService.login(payload).subscribe({
         next: () => {
-          this.router.navigate(['/dashboard']);
+          // Wait for the profile so a forced password change is honoured
+          // before landing on the dashboard.
+          this.authService.fetchProfile().subscribe((profile) => {
+            if (profile?.mustChangePassword) {
+              this.router.navigate(['/change-password']);
+            } else if (profile && profile.isOnboarded === false) {
+              // New self-signup admin: complete the mandatory onboarding wizard
+              // (profile + optional white-label) before the dashboard.
+              this.router.navigate(['/onboarding']);
+            } else {
+              this.router.navigate(['/dashboard']);
+            }
+          });
         },
         error: (err) => {
           this.isLoading = false;

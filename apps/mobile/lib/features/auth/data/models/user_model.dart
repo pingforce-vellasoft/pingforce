@@ -9,6 +9,8 @@ class UserModel extends User {
     required super.tenantId,
     required super.tenantCode,
     super.isOnboarded = false,
+    super.mustChangePassword = false,
+    super.isAttendanceEnabled = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,8 @@ class UserModel extends User {
       tenantId: json['tenantId'],
       tenantCode: json['tenantCode'] ?? 'DEFAULT',
       isOnboarded: json['isOnboarded'] ?? false,
+      mustChangePassword: json['mustChangePassword'] ?? false,
+      isAttendanceEnabled: json['isAttendanceEnabled'] ?? false,
     );
   }
 }

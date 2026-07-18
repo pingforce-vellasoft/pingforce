@@ -149,4 +149,25 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
   }
+
+  @override
+  Future<Either<Failure, void>> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    try {
+      await remoteDataSource.changePassword(currentPassword, newPassword);
+      // The server revoked this session; clear the local token/cache so the
+      // router sends the user back to a clean login.
+      await secureStorage.delete(key: 'jwt_token');
+      await secureStorage.delete(key: 'user_cache');
+      return const Right(null);
+    } catch (e) {
+      return const Left(
+        ServerFailure(
+          'Could not change the password. Check your current password.',
+        ),
+      );
+    }
+  }
 }

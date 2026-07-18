@@ -15,6 +15,8 @@ export interface ApiPlan {
   readonly maxFieldStaff: number | null;
   readonly highlighted: boolean;
   readonly isCustom: boolean;
+  /** >0 marks a no-card free-trial plan. */
+  readonly trialDays: number;
 }
 
 export interface CheckoutRequest {
@@ -25,9 +27,12 @@ export interface CheckoutRequest {
 }
 
 export interface CheckoutResult {
-  readonly mode: 'checkout' | 'contact_sales';
+  readonly mode: 'checkout' | 'contact_sales' | 'trial';
   readonly checkoutUrl?: string;
   readonly message?: string;
+  /** Set for both paid and trial checkouts — the subscription to link at signup. */
+  readonly subscriptionId?: string;
+  readonly trialEnd?: string;
 }
 
 /**

@@ -23,6 +23,9 @@ import { seedDefaultNotificationTemplates } from '../notifications/default-templ
 import { SessionService, SessionMeta } from './session.service';
 import { AuditService } from '../audit/audit.service';
 import { LoginHistoryService } from './login-history.service';
+import { OtpService } from './otp.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { generateStrongPassword } from '../common/utils/password-generator';
 
 const googleClient = new OAuth2Client();
 
@@ -34,6 +37,8 @@ export class AuthService implements IAuthService {
     private readonly sessionService: SessionService,
     private readonly auditService: AuditService,
     private readonly loginHistory: LoginHistoryService,
+    private readonly otpService: OtpService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async login(loginDto: LoginDto, meta: SessionMeta = {}) {
@@ -293,6 +298,7 @@ export class AuthService implements IAuthService {
           role: 'SUPER_ADMIN',
           tenantId: 'SYSTEM',
           tenantCode: 'SYSTEM',
+          tenantName: 'Platform',
           isOnboarded: true,
         };
       }
@@ -311,7 +317,10 @@ export class AuthService implements IAuthService {
           role: u.role?.code || 'UNKNOWN',
           tenantId: u.tenantId,
           tenantCode: u.tenant.code,
+          tenantName: u.tenant.name,
           isOnboarded: !!u.profile,
+          mustChangePassword: u.mustChangePassword,
+          isAttendanceEnabled: u.tenant.isAttendanceEnabled,
         };
       }
     }
@@ -464,6 +473,75 @@ export class AuthService implements IAuthService {
     await this.sessionService.revokeAllForUser(tenantId, userId, 'LOGOUT_ALL');
   }
 
+  /**
+   * Self-service password change for an authenticated tenant user. Verifies the
+   * current password, sets the new one, clears the mustChangePassword flag, and
+   * bumps tokenVersion so every other outstanding session is invalidated. Not
+   * available to super admins (SYSTEM) — they have no User row.
+   */
+  async changePassword(
+    tenantId: string,
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    if (tenantId === 'SYSTEM') {
+      throw new BadRequestException(
+        'Password change is not available for platform accounts here',
+      );
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, tenantId },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const currentValid = await argon2.verify(
+      user.passwordHash,
+      currentPassword,
+    );
+    if (!currentValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const sameAsOld = await argon2.verify(user.passwordHash, newPassword);
+    if (sameAsOld) {
+      throw new BadRequestException(
+        'New password must be different from the current password',
+      );
+    }
+
+    const newHash = await argon2.hash(newPassword);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: newHash,
+        mustChangePassword: false,
+        // Invalidate all other sessions/tokens issued before the change.
+        tokenVersion: { increment: 1 },
+      },
+    });
+    await this.sessionService.revokeAllForUser(
+      tenantId,
+      user.id,
+      'PASSWORD_CHANGE',
+    );
+
+    void this.auditService.log({
+      tenantId,
+      actorId: user.id,
+      module: 'AUTH',
+      entityName: 'user',
+      entityId: user.id,
+      action: 'PASSWORD_CHANGED',
+    });
+
+    return { message: 'Password changed successfully. Please sign in again.' };
+  }
+
   private generateTenantCode(tenantName: string): string {
     const prefix = tenantName
       .replace(/[^a-zA-Z]/g, '')
@@ -554,12 +632,57 @@ export class AuthService implements IAuthService {
     );
   }
 
+  /**
+   * Website self-signup. The tenant is created in PROVISIONING and CANNOT log in
+   * until the admin verifies their email (verifyEmail flips it to ACTIVE) —
+   * login already rejects non-ACTIVE tenants. No tokens are returned here.
+   *
+   * Signup is gated behind a subscription chosen on the pricing page: a valid
+   * `subscriptionId` (paid checkout or free trial) is required unless the
+   * SELF_SIGNUP_OPEN env flag is set (open registration for dev/manual use).
+   */
   async registerTenant(dto: RegisterTenantDto) {
     const fallbackTenantName = dto.tenantName || 'My Workspace';
+    const selfSignupOpen = process.env.SELF_SIGNUP_OPEN === 'true';
+
+    // Resolve and validate the pre-created subscription, if this signup is
+    // gated behind one. It must not already belong to a real (non-holding) tenant.
+    let subscription: {
+      id: string;
+      planId: string;
+      tenantId: string;
+      status: string;
+      trialEnd: Date | null;
+    } | null = null;
+    if (dto.subscriptionId) {
+      const sub = await this.prisma.tenantSubscription.findFirst({
+        where: { id: dto.subscriptionId, deletedAt: null },
+        include: { tenant: { select: { code: true } } },
+      });
+      if (!sub) {
+        throw new BadRequestException('Subscription not found.');
+      }
+      if (sub.tenant.code !== 'UNASSIGNED') {
+        throw new BadRequestException(
+          'This subscription is already linked to a workspace.',
+        );
+      }
+      subscription = {
+        id: sub.id,
+        planId: sub.planId,
+        tenantId: sub.tenantId,
+        status: sub.status,
+        trialEnd: sub.trialEnd,
+      };
+    } else if (!selfSignupOpen) {
+      throw new BadRequestException(
+        'Choose a plan before creating your workspace.',
+      );
+    }
 
     if (dto.tenantName) {
       const existingTenant = await this.prisma.tenant.findFirst({
-        where: { name: dto.tenantName },
+        where: { name: dto.tenantName, deletedAt: null },
       });
       if (existingTenant) {
         throw new BadRequestException(
@@ -592,6 +715,16 @@ export class AuthService implements IAuthService {
 
     const passwordHash = await argon2.hash(dto.adminPassword);
 
+    // Denormalized subscription fields mirrored onto the tenant, so the plan is
+    // visible without a join (matches how the billing webhook mirrors them).
+    const plan = subscription
+      ? await this.prisma.plan.findUnique({
+          where: { id: subscription.planId },
+          select: { maxFieldStaff: true },
+        })
+      : null;
+    const isTrial = subscription?.status === 'TRIALING';
+
     // Run in a transaction
     const result = await this.prisma.$transaction(async (prisma) => {
       const tenant = await prisma.tenant.create({
@@ -599,7 +732,11 @@ export class AuthService implements IAuthService {
           name: fallbackTenantName,
           code: tenantCode,
           domain: dto.domain,
-          status: 'ACTIVE',
+          // Not ACTIVE yet — email verification activates the tenant.
+          status: 'PROVISIONING',
+          maxFieldStaff: plan?.maxFieldStaff ?? undefined,
+          subscriptionStatus: isTrial ? 'TRIAL' : 'ACTIVE',
+          subscriptionEnd: subscription?.trialEnd ?? undefined,
         },
       });
 
@@ -648,28 +785,149 @@ export class AuthService implements IAuthService {
         },
       });
 
+      // Re-link the website subscription from the UNASSIGNED holding tenant to
+      // the real one now that it exists.
+      if (subscription) {
+        await prisma.tenantSubscription.update({
+          where: { id: subscription.id },
+          data: { tenantId: tenant.id },
+        });
+      }
+
       return { tenant, adminUser };
     });
 
-    const tokens = await this.generateTokens(
-      result.adminUser.id,
-      result.tenant.id,
-      result.adminUser.tokenVersion,
-      'ADMIN_MANAGER',
-    );
+    // Fire the email-verification code (background — never fail signup on SMTP).
+    if (result.adminUser.email) {
+      await this.sendEmailVerification(
+        result.tenant.id,
+        result.adminUser.id,
+        result.adminUser.email,
+      );
+    }
 
     return {
-      message: 'Tenant registered successfully',
+      message:
+        'Workspace created. Check your email for a verification code to activate it.',
       tenantCode: result.tenant.code,
-      access_token: tokens.accessToken,
-      refresh_token: tokens.refreshToken,
-      user: {
-        id: result.adminUser.id,
-        email: result.adminUser.email,
-        role: 'ADMIN_MANAGER',
-        tenantId: result.tenant.id,
-      },
+      email: result.adminUser.email,
+      // No tokens: the tenant is PROVISIONING until the email is verified.
+      verificationRequired: true,
     };
+  }
+
+  /**
+   * Issues an EMAIL_VERIFICATION OTP and emails it. Best-effort: a failure is
+   * logged, not thrown, so provisioning is never rolled back by a mail outage —
+   * the admin can request a fresh code.
+   */
+  private async sendEmailVerification(
+    tenantId: string,
+    userId: string,
+    email: string,
+  ): Promise<void> {
+    try {
+      const otp = await this.otpService.issue(
+        tenantId,
+        userId,
+        'EMAIL_VERIFICATION',
+      );
+      await this.notifications.sendRawEmail(
+        email,
+        'Verify your PingForce email',
+        `<p>Welcome to PingForce!</p>
+         <p>Your email verification code is <b>${otp}</b>.</p>
+         <p>It expires in 10 minutes. Enter it to activate your workspace.</p>`,
+        tenantId,
+      );
+    } catch {
+      // Swallowed intentionally — see doc comment.
+    }
+  }
+
+  /**
+   * Confirms a self-signup admin's email with the OTP, activates the tenant
+   * (PROVISIONING → ACTIVE, so login is now permitted) and sends the welcome
+   * email carrying the auto-generated workspace ID.
+   */
+  async verifyEmail(dto: {
+    tenantCode: string;
+    email: string;
+    otp: string;
+  }): Promise<{ message: string; tenantCode: string }> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { code: dto.tenantCode },
+    });
+    if (!tenant) {
+      throw new BadRequestException('Invalid verification request.');
+    }
+    if (tenant.status === 'ACTIVE') {
+      return { message: 'Email already verified.', tenantCode: tenant.code };
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: { tenantId: tenant.id, email: dto.email, deletedAt: null },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new BadRequestException('Invalid verification request.');
+    }
+
+    await this.otpService.verify(
+      tenant.id,
+      user.id,
+      'EMAIL_VERIFICATION',
+      dto.otp,
+    );
+
+    await this.prisma.tenant.update({
+      where: { id: tenant.id },
+      data: { status: 'ACTIVE' },
+    });
+
+    void this.auditService.log({
+      tenantId: tenant.id,
+      actorId: user.id,
+      module: 'AUTH',
+      entityName: 'tenant',
+      entityId: tenant.id,
+      action: 'TENANT_ACTIVATED',
+      severity: 'MEDIUM',
+    });
+
+    // Welcome email with the workspace ID — best-effort, never blocks activation.
+    void this.sendWelcomeEmail(tenant.id, dto.email, tenant.name, tenant.code);
+
+    return {
+      message: 'Email verified. Your workspace is now active — you can sign in.',
+      tenantCode: tenant.code,
+    };
+  }
+
+  private async sendWelcomeEmail(
+    tenantId: string,
+    email: string,
+    workspaceName: string,
+    workspaceCode: string,
+  ): Promise<void> {
+    const webUrl = process.env.ADMIN_WEB_URL ?? 'https://admin.pingforce.in';
+    try {
+      await this.notifications.sendRawEmail(
+        email,
+        `Welcome to PingForce — ${workspaceName} is ready`,
+        `<p>Your PingForce workspace is active.</p>
+         <ul>
+           <li><strong>Workspace ID:</strong> ${workspaceCode}</li>
+           <li><strong>Sign-in email:</strong> ${email}</li>
+         </ul>
+         <p>Keep your Workspace ID handy — you'll need it to sign in on the
+            web portal and the mobile app.</p>
+         <p><a href="${webUrl}">Open the admin portal</a></p>`,
+        tenantId,
+      );
+    } catch {
+      // Best-effort.
+    }
   }
 
   async registerEmployee(dto: RegisterEmployeeDto) {

@@ -37,6 +37,23 @@ import { AuthService } from '../../core/auth/auth.service';
           <mat-icon>menu</mat-icon>
         </button>
         <span>PingForce Admin Dashboard</span>
+
+        @if (
+          authService.currentUser()?.roleCode !== 'SUPER_ADMIN' &&
+          authService.currentUser()?.workspaceId
+        ) {
+          <span
+            class="workspace-chip"
+            [title]="'Workspace ID: ' + authService.currentUser()?.workspaceId"
+          >
+            <mat-icon>domain</mat-icon>
+            {{ authService.currentUser()?.workspaceName }}
+            <span class="workspace-id"
+              >#{{ authService.currentUser()?.workspaceId }}</span
+            >
+          </span>
+        }
+
         <span class="spacer"></span>
 
         @if (authService.currentUser()?.roleCode === 'SUPER_ADMIN') {
@@ -220,14 +237,16 @@ import { AuthService } from '../../core/auth/auth.service';
 
               <mat-divider></mat-divider>
               <div mat-subheader>Settings</div>
-              <a
-                mat-list-item
-                routerLink="/dashboard/settings/geofences"
-                routerLinkActive="active-link"
-              >
-                <mat-icon matListItemIcon>location_on</mat-icon>
-                <span matListItemTitle>Geofences</span>
-              </a>
+              @if (authService.currentUser()?.isAttendanceEnabled) {
+                <a
+                  mat-list-item
+                  routerLink="/dashboard/settings/geofences"
+                  routerLinkActive="active-link"
+                >
+                  <mat-icon matListItemIcon>location_on</mat-icon>
+                  <span matListItemTitle>Geofences</span>
+                </a>
+              }
               <a
                 mat-list-item
                 routerLink="/dashboard/rbac/roles"
@@ -335,6 +354,29 @@ import { AuthService } from '../../core/auth/auth.service';
       }
       .tenant-menu-btn:hover {
         background: rgba(255, 255, 255, 0.2);
+      }
+      .workspace-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: 16px !important;
+        padding: 2px 12px;
+        border-radius: 16px;
+        background: rgba(99, 102, 241, 0.12);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        color: var(--text-primary);
+      }
+      .workspace-chip mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+      .workspace-id {
+        opacity: 0.7;
+        font-family: monospace;
+        margin-left: 2px;
       }
       .spacer {
         flex: 1 1 auto;

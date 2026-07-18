@@ -1,5 +1,6 @@
 import { Route } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { passwordChangeGuard } from './core/auth/password-change.guard';
 import { roleGuard } from './core/guards/role.guard';
 
 export const appRoutes: Route[] = [
@@ -16,8 +17,40 @@ export const appRoutes: Route[] = [
       ),
   },
   {
-    path: 'dashboard',
+    // Website self-signup lands here after a plan is chosen on pingforce.in
+    // (carries ?subscriptionId=&email=&org=).
+    path: 'signup',
+    loadComponent: () =>
+      import('./pages/login/tenant-register.component').then(
+        (m) => m.TenantRegisterComponent,
+      ),
+  },
+  {
+    path: 'verify-email',
+    loadComponent: () =>
+      import('./pages/login/verify-email.component').then(
+        (m) => m.VerifyEmailComponent,
+      ),
+  },
+  {
+    path: 'onboarding',
     canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/onboarding/onboarding.component').then(
+        (m) => m.OnboardingComponent,
+      ),
+  },
+  {
+    path: 'change-password',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/login/change-password.component').then(
+        (m) => m.ChangePasswordComponent,
+      ),
+  },
+  {
+    path: 'dashboard',
+    canActivate: [authGuard, passwordChangeGuard],
     loadComponent: () =>
       import('./pages/dashboard/dashboard.component').then(
         (m) => m.DashboardComponent,

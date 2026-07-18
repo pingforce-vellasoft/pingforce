@@ -124,9 +124,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       userId: payload.sub,
       tenantId: payload.tenantId,
+      // Human-facing workspace identifier (tenant code) shown on dashboards.
+      workspaceId: user.tenant.code,
+      workspaceName: user.tenant.name,
       email: user.email,
       roleCode: roleCode,
       isOnboarded: !!user.profile,
+      mustChangePassword: user.mustChangePassword,
+      isAttendanceEnabled: user.tenant.isAttendanceEnabled,
       sessionId: payload.sid,
     };
   }

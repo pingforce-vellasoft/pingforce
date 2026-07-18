@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 
 import '../../../core/auth/auth_session.dart';
+import '../../../core/navigation/app_shell.dart';
 import '../../../core/notifications/push_notifications_service.dart';
 import '../../../injection_container.dart';
 import '../domain/repositories/auth_repository.dart';
@@ -137,7 +138,13 @@ class LoginNotifier extends Notifier<LoginState> {
         );
       },
       (user) async {
-        AuthSession.instance.signIn(roleCode: user.role);
+        AuthSession.instance.signIn(
+          roleCode: user.role,
+          mustChangePassword: user.mustChangePassword,
+        );
+        // Point the shell's bottom-nav at the role we just signed in as (the
+        // shell notifier may have been built during the signed-out session).
+        ref.read(appShellProvider.notifier).syncRoleFromSession();
         // Register this device for push now that we're authenticated
         // (fire-and-forget — login must not wait on FCM)
         unawaited(sl<PushNotificationsService>().registerToken());

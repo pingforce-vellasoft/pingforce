@@ -7,6 +7,7 @@ import '../../features/splash/splash_screen.dart';
 import '../../features/splash/tenant_resolution_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
+import '../../features/auth/presentation/force_change_password_screen.dart';
 import '../../features/auth/presentation/biometric_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/permissions_flow_screen.dart';
@@ -119,6 +120,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/auth/forgot-password',
         name: 'forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+
+      GoRoute(
+        path: '/auth/change-password',
+        name: 'force-change-password',
+        builder: (context, state) => const ForceChangePasswordScreen(),
       ),
 
       GoRoute(

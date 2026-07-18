@@ -1,11 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -93,6 +93,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
                   hidePassword ? 'visibility_off' : 'visibility'
                 }}</mat-icon>
               </button>
+              <mat-hint>At least 12 characters.</mat-hint>
             </mat-form-field>
 
             @if (errorMessage) {
@@ -210,10 +211,11 @@ import { MatSnackBar } from '@angular/material/snack-bar';
     `,
   ],
 })
-export class TenantRegisterComponent {
+export class TenantRegisterComponent implements OnInit {
   private fb = inject(FormBuilder);
   private http = inject(HttpClient);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private snackBar = inject(MatSnackBar);
 
   registerForm: FormGroup;
@@ -221,14 +223,27 @@ export class TenantRegisterComponent {
   isLoading = false;
   errorMessage = '';
 
+  /** Subscription chosen on the pricing page (pingforce.in), passed via query. */
+  private subscriptionId: string | null = null;
+
   constructor() {
     this.registerForm = this.fb.group({
       tenantName: ['', Validators.required],
       adminFirstName: ['', Validators.required],
       adminLastName: ['', Validators.required],
       adminEmail: ['', [Validators.required, Validators.email]],
-      adminPassword: ['', [Validators.required, Validators.minLength(8)]],
+      // Platform policy: 12+ chars (Authentication.md §5).
+      adminPassword: ['', [Validators.required, Validators.minLength(12)]],
     });
+  }
+
+  ngOnInit(): void {
+    const qp = this.route.snapshot.queryParamMap;
+    this.subscriptionId = qp.get('subscriptionId');
+    const email = qp.get('email');
+    const org = qp.get('org');
+    if (email) this.registerForm.patchValue({ adminEmail: email });
+    if (org) this.registerForm.patchValue({ tenantName: org });
   }
 
   onSubmit() {
@@ -236,24 +251,35 @@ export class TenantRegisterComponent {
       this.isLoading = true;
       this.errorMessage = '';
 
-      this.http
-        .post('/api/v1/auth/register-tenant', this.registerForm.value)
-        .subscribe({
-          next: (response: any) => {
-            this.isLoading = false;
-            this.snackBar.open(
-              `Tenant registered! Your Workspace ID is: ${response.tenantCode}`,
-              'Close',
-              { duration: 10000 },
-            );
-            this.router.navigate(['/login']);
-          },
-          error: (err) => {
-            this.isLoading = false;
-            this.errorMessage =
-              err.error?.message || 'Registration failed. Please try again.';
-          },
-        });
+      const payload = {
+        ...this.registerForm.value,
+        ...(this.subscriptionId
+          ? { subscriptionId: this.subscriptionId }
+          : {}),
+      };
+
+      this.http.post('/api/v1/auth/register-tenant', payload).subscribe({
+        next: (response: any) => {
+          this.isLoading = false;
+          this.snackBar.open(
+            'Workspace created. Enter the verification code we emailed you.',
+            'Close',
+            { duration: 8000 },
+          );
+          // Continue to email verification; carry the workspace code + email.
+          this.router.navigate(['/verify-email'], {
+            queryParams: {
+              tenantCode: response.tenantCode,
+              email: this.registerForm.value.adminEmail,
+            },
+          });
+        },
+        error: (err) => {
+          this.isLoading = false;
+          this.errorMessage =
+            err.error?.message || 'Registration failed. Please try again.';
+        },
+      });
     }
   }
 }

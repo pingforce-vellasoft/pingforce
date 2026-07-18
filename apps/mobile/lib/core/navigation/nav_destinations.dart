@@ -45,6 +45,24 @@ extension AppUserRoleX on AppUserRole {
         AppUserRole.manager => 'Manager',
         AppUserRole.admin => 'Admin',
       };
+
+  /// Maps a backend RBAC role code (JWT `role` claim / `user.role`) to the
+  /// mobile shell's navigation role. The API's built-in system roles are
+  /// `ADMIN_MANAGER`, `EMPLOYEE_FIELD_STAFF` and `CUSTOMER`; custom tenant
+  /// roles fall back to the least-privileged field-employee layout so a new
+  /// role never accidentally exposes admin nav. Super admins never reach the
+  /// mobile app (the API rejects them), so they are not mapped here.
+  static AppUserRole fromRoleCode(String? roleCode) {
+    final code = (roleCode ?? '').toUpperCase();
+    if (code == 'ADMIN_MANAGER' || code.startsWith('ADMIN')) {
+      return AppUserRole.admin;
+    }
+    if (code.contains('MANAGER')) return AppUserRole.manager;
+    if (code.contains('SALES')) return AppUserRole.salesRep;
+    if (code.contains('TECHNICIAN')) return AppUserRole.fieldTechnician;
+    // EMPLOYEE_FIELD_STAFF, CUSTOMER and any unknown/custom role.
+    return AppUserRole.fieldEmployee;
+  }
 }
 
 // ── Destination ID ─────────────────────────────────────────────────────────

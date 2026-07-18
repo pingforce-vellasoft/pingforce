@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SiteContentService } from '../../site.data';
 import { ApiPlan, BillingService } from '../../core/billing.service';
+import { environment } from '../../../environments/environment';
 
 /** View-model row unifying API plans and the static fallback. */
 interface PlanVm {
@@ -12,6 +13,7 @@ interface PlanVm {
   period: string;
   highlighted: boolean;
   isCustom: boolean;
+  isTrial: boolean;
   features: readonly string[];
 }
 
@@ -80,7 +82,15 @@ export class PricingComponent implements OnInit {
       .subscribe({
         next: (res) => {
           this.submitting.set(false);
+          // No-card free trial: no gateway. Continue straight to the admin
+          // portal to create the workspace, carrying the subscription to link.
+          if (res.mode === 'trial' && res.subscriptionId) {
+            this.goToAdminSignup(res.subscriptionId);
+            return;
+          }
           if (res.mode === 'checkout' && res.checkoutUrl) {
+            // Paid plan: hand off to the gateway. Its success return URL brings
+            // the customer back to the admin signup with the subscription id.
             window.location.href = res.checkoutUrl;
             return;
           }
@@ -99,20 +109,39 @@ export class PricingComponent implements OnInit {
       });
   }
 
+  /**
+   * Continue the signup on the admin portal, carrying the subscription to link
+   * and pre-filling the admin email captured on the pricing page.
+   */
+  private goToAdminSignup(subscriptionId: string): void {
+    const params = new URLSearchParams({ subscriptionId });
+    if (this.email) params.set('email', this.email);
+    if (this.orgName) params.set('org', this.orgName);
+    window.location.href = `${environment.adminUrl}/signup?${params.toString()}`;
+  }
+
   // ── mappers ───────────────────────────────────────────────────────────────
   private toApiVm(p: ApiPlan): PlanVm {
+    const isTrial = (p.trialDays ?? 0) > 0;
     return {
       code: p.code,
       name: p.name,
       tagline: p.tagline ?? '',
-      priceLabel: p.isCustom ? "Let's talk" : this.rupees(p.amount),
-      period: p.isCustom
-        ? 'custom pricing'
-        : p.interval === 'YEARLY'
-          ? 'per year'
-          : 'per month',
+      priceLabel: isTrial
+        ? 'Free'
+        : p.isCustom
+          ? "Let's talk"
+          : this.rupees(p.amount),
+      period: isTrial
+        ? `${p.trialDays} days free`
+        : p.isCustom
+          ? 'custom pricing'
+          : p.interval === 'YEARLY'
+            ? 'per year'
+            : 'per month',
       highlighted: p.highlighted,
       isCustom: p.isCustom,
+      isTrial,
       features: p.features,
     };
   }
@@ -126,6 +155,7 @@ export class PricingComponent implements OnInit {
       period: p.period,
       highlighted: p.highlighted,
       isCustom: false,
+      isTrial: false,
       features: p.features,
     }));
   }
@@ -140,6 +170,7 @@ export class PricingComponent implements OnInit {
       period: c.period,
       highlighted: false,
       isCustom: true,
+      isTrial: false,
       features: c.features,
     };
   }

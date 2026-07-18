@@ -172,6 +172,9 @@ model User {
   role         Role?     @relation(fields: [roleId], references: [id])
   status       String    @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
   tokenVersion Int       @default(1)
+  // Forces a password change on next login — set when an account is
+  // provisioned with a password chosen by an admin (e.g. tenant-admin welcome).
+  mustChangePassword Boolean @default(false)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
@@ -233,7 +236,7 @@ model Session {
   lastActivityAt DateTime  @default(now())
   expiresAt      DateTime
   revokedAt      DateTime?
-  revokeReason   String? // LOGOUT, LOGOUT_ALL, ADMIN_REVOKE, TOKEN_REPLAY, PASSWORD_RESET
+  revokeReason   String? // LOGOUT, LOGOUT_ALL, ADMIN_REVOKE, TOKEN_REPLAY, PASSWORD_RESET, PASSWORD_CHANGE
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -258,7 +261,7 @@ model RefreshToken {
   tokenHash    String    @unique
   expiresAt    DateTime
   revokedAt    DateTime?
-  revokeReason String? // ROTATED, LOGOUT, LOGOUT_ALL, TOKEN_REPLAY, PASSWORD_RESET
+  revokeReason String? // ROTATED, LOGOUT, LOGOUT_ALL, TOKEN_REPLAY, PASSWORD_RESET, PASSWORD_CHANGE
   lastUsedAt   DateTime?
   createdAt    DateTime  @default(now())
 
@@ -2345,6 +2348,7 @@ enum BillingInterval {
 enum SubscriptionStatus {
   CREATED // subscription record made, awaiting first authorization/payment
   AUTHENTICATED // mandate authorized, not yet active
+  TRIALING // no-card free trial in its 30-day window; no gateway mandate
   ACTIVE
   PAST_DUE // a charge failed, in retry/grace window
   PAUSED
@@ -2373,6 +2377,9 @@ model Plan {
   interval      BillingInterval @default(MONTHLY)
   /// Feature bullet points shown on the pricing page.
   features      String[]
+  /// Free-trial length in days. 0 = paid plan (gateway checkout). >0 = no-card
+  /// trial plan: checkout provisions a TRIALING subscription for this many days.
+  trialDays     Int             @default(0)
   maxFieldStaff Int?
   /// Marks the "Most popular" tier on the pricing page.
   highlighted   Boolean         @default(false)

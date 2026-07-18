@@ -6,4 +6,6 @@
 export const environment = {
   production: false,
   apiUrl: '',
+  // Admin portal — signup/verify/onboarding continue here after a plan is chosen.
+  adminUrl: 'http://localhost:4200',
 };

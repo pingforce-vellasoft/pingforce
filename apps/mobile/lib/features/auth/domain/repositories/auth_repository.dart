@@ -37,4 +37,12 @@ abstract class AuthRepository {
     String otp,
     String newPassword,
   );
+
+  /// Changes the password for the authenticated user (used for the forced
+  /// rotation of an admin-provisioned temporary password). The server revokes
+  /// the current session on success.
+  Future<Either<Failure, void>> changePassword(
+    String currentPassword,
+    String newPassword,
+  );
 }

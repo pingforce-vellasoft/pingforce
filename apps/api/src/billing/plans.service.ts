@@ -30,6 +30,7 @@ export class PlansService {
         maxFieldStaff: true,
         highlighted: true,
         isCustom: true,
+        trialDays: true,
       },
     });
   }

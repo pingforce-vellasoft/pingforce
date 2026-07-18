@@ -61,6 +61,13 @@ function makeService(stored: StoredToken | null) {
     markLogout: jest.fn(),
     markLogoutAll: jest.fn(),
   };
+  const otpService = {
+    issue: jest.fn(),
+    verify: jest.fn(),
+  };
+  const notifications = {
+    sendRawEmail: jest.fn().mockResolvedValue(true),
+  };
 
   const service = new AuthService(
     prisma as unknown as ConstructorParameters<typeof AuthService>[0],
@@ -68,6 +75,8 @@ function makeService(stored: StoredToken | null) {
     sessionService as unknown as ConstructorParameters<typeof AuthService>[2],
     auditService as unknown as ConstructorParameters<typeof AuthService>[3],
     loginHistory as unknown as ConstructorParameters<typeof AuthService>[4],
+    otpService as unknown as ConstructorParameters<typeof AuthService>[5],
+    notifications as unknown as ConstructorParameters<typeof AuthService>[6],
   );
   return { service, prisma, sessionService, loginHistory };
 }

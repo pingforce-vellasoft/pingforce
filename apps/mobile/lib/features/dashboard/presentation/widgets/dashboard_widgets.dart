@@ -1,21 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/theme.dart';
+import '../../../auth/presentation/current_user_provider.dart';
 import '../dashboard_state.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DASHBOARD HEADER  (DASHBOARD_SPEC.md §4.1)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class DashboardHeader extends StatelessWidget {
+class DashboardHeader extends ConsumerWidget {
   const DashboardHeader({super.key, required this.state, this.onAvatarTap});
 
   final DashboardState state;
   final VoidCallback? onAvatarTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final user = state.user;
+    // Auto-generated workspace ID (tenant code) from the cached signed-in user.
+    final workspaceId = ref.watch(currentUserProvider).maybeWhen(
+          data: (u) => (u == null || u.tenantCode == 'SYSTEM')
+              ? null
+              : u.tenantCode,
+          orElse: () => null,
+        );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -72,11 +82,70 @@ class DashboardHeader extends StatelessWidget {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (workspaceId != null) ...[
+                  const SizedBox(height: 6),
+                  _WorkspaceIdChip(workspaceId: workspaceId),
+                ],
               ],
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKSPACE ID CHIP  — shows the tenant/workspace code; tap to copy
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _WorkspaceIdChip extends StatelessWidget {
+  const _WorkspaceIdChip({required this.workspaceId});
+
+  final String workspaceId;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      label: 'Workspace ID $workspaceId. Tap to copy.',
+      button: true,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+          Clipboard.setData(ClipboardData(text: workspaceId));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Workspace ID copied: $workspaceId'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: scheme.primaryContainer.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: scheme.primary.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.domain_rounded, size: 13, color: scheme.primary),
+              const SizedBox(width: 4),
+              Text(
+                'Workspace $workspaceId',
+                style: AppTypography.labelSmall.copyWith(
+                  color: scheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 3),
+              Icon(Icons.copy_rounded, size: 12, color: scheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

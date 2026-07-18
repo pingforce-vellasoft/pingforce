@@ -74,9 +74,18 @@ final appShellProvider =
 
 class AppShellNotifier extends Notifier<AppShellState> {
   @override
-  AppShellState build() => const AppShellState();
+  AppShellState build() =>
+      AppShellState(role: AppUserRoleX.fromRoleCode(AuthSession.instance.roleCode));
 
   void setRole(AppUserRole role) => state = state.copyWith(role: role);
+
+  /// Re-reads the authenticated user's role from the session. Called after a
+  /// fresh login so the bottom nav reflects the newly signed-in role even if
+  /// this notifier was already built during a previous (signed-out) session.
+  void syncRoleFromSession() =>
+      state = state.copyWith(
+        role: AppUserRoleX.fromRoleCode(AuthSession.instance.roleCode),
+      );
 
   void setNotificationBadge(int count) =>
       state = state.copyWith(notificationBadge: count);
@@ -733,13 +742,24 @@ class RouteGuard {
 
     // 1. Auth guard — redirect unauthenticated users to login
     final isAuthenticated = _isAuthenticated();
-    final isOnAuthRoute = state.matchedLocation.startsWith('/auth') ||
-        state.matchedLocation == '/splash';
-    if (!isAuthenticated && !isOnAuthRoute) {
+    final isOnChangePassword =
+        state.matchedLocation == '/auth/change-password';
+    // The forced change-password screen is an authenticated route despite its
+    // /auth prefix, so exclude it from the auth-route bounce below.
+    final isOnAuthRoute =
+        (state.matchedLocation.startsWith('/auth') && !isOnChangePassword) ||
+            state.matchedLocation == '/splash';
+    if (!isAuthenticated && !isOnAuthRoute && !isOnChangePassword) {
       return '/auth/login';
     }
     if (isAuthenticated && isOnAuthRoute) {
       return '/home';
+    }
+
+    // 1b. Forced password change — an admin-provisioned temporary password
+    // must be rotated before the rest of the app is reachable.
+    if (isAuthenticated && _mustChangePassword() && !isOnChangePassword) {
+      return '/auth/change-password';
     }
 
     // 2. Session expired
@@ -765,6 +785,10 @@ class RouteGuard {
 
   static bool _isAuthenticated() {
     return AuthSession.instance.isAuthenticated;
+  }
+
+  static bool _mustChangePassword() {
+    return AuthSession.instance.mustChangePassword;
   }
 
   static bool _isSessionExpired() {

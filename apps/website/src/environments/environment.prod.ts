@@ -6,4 +6,6 @@
 export const environment = {
   production: true,
   apiUrl: 'https://api.pingforce.in',
+  // Admin portal — signup/verify/onboarding continue here after a plan is chosen.
+  adminUrl: 'https://admin.pingforce.in',
 };
