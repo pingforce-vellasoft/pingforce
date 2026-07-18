@@ -46,6 +46,12 @@ export class EmployeeController {
     return this.employeeService.create(tenantId, createEmployeeDto);
   }
 
+  @Post(':id/invite')
+  @RequirePermission('EMPLOYEES', 'UPDATE')
+  invite(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.employeeService.invite(tenantId, id);
+  }
+
   @Get()
   @RequirePermission('EMPLOYEES', 'READ')
   findAll(

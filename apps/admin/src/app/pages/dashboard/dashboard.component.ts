@@ -137,22 +137,24 @@ import { AuthService } from '../../core/auth/auth.service';
               </a>
               -->
 
-              <!-- HIDDEN AS PER REQUEST
               <mat-divider></mat-divider>
-              <div mat-subheader>Master Data</div>
-              <a mat-list-item routerLink="/dashboard/master-data/company" routerLinkActive="active-link">
-                <mat-icon matListItemIcon>business</mat-icon>
-                <span matListItemTitle>Companies</span>
+              <div mat-subheader>People</div>
+              <a
+                mat-list-item
+                routerLink="/dashboard/workforce/employees"
+                routerLinkActive="active-link"
+              >
+                <mat-icon matListItemIcon>badge</mat-icon>
+                <span matListItemTitle>Employees</span>
               </a>
-              <a mat-list-item routerLink="/dashboard/master-data/branch" routerLinkActive="active-link">
-                <mat-icon matListItemIcon>store</mat-icon>
-                <span matListItemTitle>Branches</span>
+              <a
+                mat-list-item
+                routerLink="/dashboard/customers"
+                routerLinkActive="active-link"
+              >
+                <mat-icon matListItemIcon>groups</mat-icon>
+                <span matListItemTitle>Customers</span>
               </a>
-              <a mat-list-item routerLink="/dashboard/master-data/department" routerLinkActive="active-link">
-                <mat-icon matListItemIcon>domain</mat-icon>
-                <span matListItemTitle>Departments</span>
-              </a>
-              -->
 
               <mat-divider></mat-divider>
               <div mat-subheader>Workforce</div>

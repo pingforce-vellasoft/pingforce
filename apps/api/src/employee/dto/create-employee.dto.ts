@@ -124,4 +124,10 @@ export class CreateEmployeeDto {
   @IsString()
   @IsOptional()
   userId?: string;
+
+  // When provided, a login User account is provisioned for this employee with
+  // the given role and a generated temporary password (returned once).
+  @IsString()
+  @IsOptional()
+  roleId?: string;
 }

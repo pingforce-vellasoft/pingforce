@@ -49,12 +49,21 @@ export const appRoutes: Route[] = [
           ),
       },
       {
-        path: 'master-data/:type',
+        path: 'workforce/employees',
         canActivate: [roleGuard],
         data: { roles: ['ADMIN_MANAGER'] },
         loadComponent: () =>
-          import('./pages/master-data/master-data-list.component').then(
-            (m) => m.MasterDataListComponent,
+          import('./pages/workforce/employees.component').then(
+            (m) => m.EmployeesComponent,
+          ),
+      },
+      {
+        path: 'customers',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN_MANAGER'] },
+        loadComponent: () =>
+          import('./pages/customers/customers.component').then(
+            (m) => m.CustomersComponent,
           ),
       },
       {
