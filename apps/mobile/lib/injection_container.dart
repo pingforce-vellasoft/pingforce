@@ -31,6 +31,9 @@ import 'features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'features/leave/data/datasources/leave_remote_data_source.dart';
 import 'features/leave/data/repositories/leave_repository_impl.dart';
 import 'features/leave/domain/repositories/leave_repository.dart';
+import 'features/notifications/data/datasources/notification_remote_data_source.dart';
+import 'features/notifications/data/repositories/notification_repository_impl.dart';
+import 'features/notifications/domain/repositories/notification_repository.dart';
 
 final sl = GetIt.instance;
 
@@ -120,5 +123,13 @@ Future<void> init() async {
   );
   sl.registerLazySingleton<LeaveRepository>(
     () => LeaveRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // --- Features: Notifications ---
+  sl.registerLazySingleton<NotificationRemoteDataSource>(
+    () => NotificationRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<NotificationRepository>(
+    () => NotificationRepositoryImpl(remoteDataSource: sl()),
   );
 }

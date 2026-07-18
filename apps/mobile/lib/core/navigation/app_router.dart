@@ -24,6 +24,7 @@ import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/presentation/active_sessions_screen.dart';
 import '../../features/profile/presentation/login_history_screen.dart';
 import '../../features/attendance/presentation/history/attendance_history_screen.dart';
+import '../../features/notifications/presentation/notification_center_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // APP ROUTER  (AUDIT §17 — GoRouter configuration)
@@ -319,8 +320,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         name: 'notifications',
-        builder: (context, state) =>
-            const _PlaceholderScreen(name: 'Notifications'),
+        builder: (context, state) => const NotificationCenterScreen(),
       ),
 
       GoRoute(
