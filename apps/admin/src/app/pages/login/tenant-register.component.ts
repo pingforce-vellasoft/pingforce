@@ -253,9 +253,7 @@ export class TenantRegisterComponent implements OnInit {
 
       const payload = {
         ...this.registerForm.value,
-        ...(this.subscriptionId
-          ? { subscriptionId: this.subscriptionId }
-          : {}),
+        ...(this.subscriptionId ? { subscriptionId: this.subscriptionId } : {}),
       };
 
       this.http.post('/api/v1/auth/register-tenant', payload).subscribe({

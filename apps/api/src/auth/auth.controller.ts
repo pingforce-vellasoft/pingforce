@@ -277,7 +277,10 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Verify signup email and activate the workspace' })
-  @ApiResponse({ status: 200, description: 'Email verified, tenant activated.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verified, tenant activated.',
+  })
   @ApiResponse({ status: 400, description: 'Invalid or expired code.' })
   @Throttle({
     burst: { limit: 5, ttl: 60000 },

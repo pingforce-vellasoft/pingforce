@@ -127,7 +127,10 @@ export class AuthService {
    * revokes every session, so the current token is now dead — force a fresh
    * sign-in.
    */
-  changePassword(currentPassword: string, newPassword: string): Observable<any> {
+  changePassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Observable<any> {
     return this.http
       .post<any>('/api/v1/auth/change-password', {
         currentPassword,

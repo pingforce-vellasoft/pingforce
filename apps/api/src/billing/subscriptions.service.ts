@@ -52,7 +52,9 @@ export class SubscriptionsService {
     // No-card free trial: no gateway, provision a TRIALING subscription for the
     // plan's trial window. The signup form links a real tenant to it next.
     if (plan.trialDays > 0) {
-      const trialEnd = new Date(Date.now() + plan.trialDays * 24 * 60 * 60 * 1000);
+      const trialEnd = new Date(
+        Date.now() + plan.trialDays * 24 * 60 * 60 * 1000,
+      );
       const subscription = await this.prisma.tenantSubscription.create({
         data: {
           tenantId: await this.resolveOrHoldTenant(dto),

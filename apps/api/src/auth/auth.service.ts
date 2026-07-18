@@ -899,7 +899,8 @@ export class AuthService implements IAuthService {
     void this.sendWelcomeEmail(tenant.id, dto.email, tenant.name, tenant.code);
 
     return {
-      message: 'Email verified. Your workspace is now active — you can sign in.',
+      message:
+        'Email verified. Your workspace is now active — you can sign in.',
       tenantCode: tenant.code,
     };
   }

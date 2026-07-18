@@ -62,8 +62,10 @@ import { MatSnackBar } from '@angular/material/snack-bar';
                 placeholder="000000"
               />
               <mat-icon matIconPrefix>pin</mat-icon>
-              @if (form.get('otp')?.hasError('minlength') ||
-              form.get('otp')?.hasError('maxlength')) {
+              @if (
+                form.get('otp')?.hasError('minlength') ||
+                form.get('otp')?.hasError('maxlength')
+              ) {
                 <mat-error>Enter the 6-digit code</mat-error>
               }
             </mat-form-field>

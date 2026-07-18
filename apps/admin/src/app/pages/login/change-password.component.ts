@@ -78,7 +78,9 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
               <mat-icon matIconPrefix>lock_open</mat-icon>
             </mat-form-field>
 
-            @if (form.hasError('mismatch') && form.get('confirmPassword')?.touched) {
+            @if (
+              form.hasError('mismatch') && form.get('confirmPassword')?.touched
+            ) {
               <div class="error-message">Passwords do not match</div>
             }
             @if (errorMessage) {

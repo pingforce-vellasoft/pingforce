@@ -21,9 +21,13 @@ export const passwordChangeGuard: CanActivateFn = () => {
   }
 
   // Profile not loaded yet (e.g. hard refresh) — fetch, then decide.
-  return authService.fetchProfile().pipe(
-    map((profile) =>
-      profile?.mustChangePassword ? router.parseUrl('/change-password') : true,
-    ),
-  );
+  return authService
+    .fetchProfile()
+    .pipe(
+      map((profile) =>
+        profile?.mustChangePassword
+          ? router.parseUrl('/change-password')
+          : true,
+      ),
+    );
 };

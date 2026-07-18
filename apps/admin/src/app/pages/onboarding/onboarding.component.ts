@@ -103,7 +103,11 @@ import { AuthService } from '../../core/auth/auth.service';
 
                 <mat-form-field appearance="fill" class="full-width">
                   <mat-label>Theme color (hex)</mat-label>
-                  <input matInput formControlName="themeColor" placeholder="#6366f1" />
+                  <input
+                    matInput
+                    formControlName="themeColor"
+                    placeholder="#6366f1"
+                  />
                   <mat-icon matIconPrefix>palette</mat-icon>
                 </mat-form-field>
 

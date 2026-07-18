@@ -1,4 +1,9 @@
-import { Injectable, Inject, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import * as argon2 from 'argon2';
 import { syncSystemRolePermissions } from '../rbac/permission-catalog';

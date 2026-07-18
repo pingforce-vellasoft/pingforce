@@ -57,11 +57,7 @@ import { ConfirmDialogComponent } from '../../core/components/confirm-dialog.com
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef class="right">Actions</th>
             <td mat-cell *matCellDef="let e" class="right">
-              <button
-                mat-icon-button
-                title="View details"
-                (click)="view(e)"
-              >
+              <button mat-icon-button title="View details" (click)="view(e)">
                 <mat-icon>visibility</mat-icon>
               </button>
               <button mat-icon-button title="Edit" (click)="edit(e)">
