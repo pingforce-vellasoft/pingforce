@@ -28,8 +28,8 @@ services:
       - api
 
   api:
-    # Local image built on the VM (no ghcr image pushed for this repo yet).
-    image: pingforce_api:latest
+    # Image built + pushed by CI (package job) to GHCR. Pull, don't build on VM.
+    image: ${API_IMAGE:-ghcr.io/pingforce-vellasoft/pingforce-api:latest}
     restart: unless-stopped
     env_file: .env
     environment:
@@ -48,10 +48,10 @@ services:
       - '3000'
 
   # One-shot: apply pending Prisma migrations, then exit.
-  # Uses the same local image as api.
+  # Uses the same GHCR image as api.
   #   docker compose run --rm migrate
   migrate:
-    image: pingforce_api:latest
+    image: ${API_IMAGE:-ghcr.io/pingforce-vellasoft/pingforce-api:latest}
     profiles: ['tools']
     env_file: .env
     environment:
