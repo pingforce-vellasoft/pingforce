@@ -37,7 +37,10 @@ export class DashboardRepository {
   }
 
   /** True if anyone reports to this employee (drives the manager team card). */
-  async hasDirectReports(tenantId: string, employeeId: string): Promise<boolean> {
+  async hasDirectReports(
+    tenantId: string,
+    employeeId: string,
+  ): Promise<boolean> {
     const count = await this.prisma.employee.count({
       where: { tenantId, reportingManagerId: employeeId, deletedAt: null },
     });

@@ -10,9 +10,11 @@ import { LeaveService } from './leave.service';
 function makeService(opts: { employee?: { id: string } | null } = {}) {
   const prisma = {
     leaveType: {
-      findMany: jest.fn().mockResolvedValue([
-        { id: 'lt1', name: 'Annual', code: 'ANNUAL', isPaid: true },
-      ]),
+      findMany: jest
+        .fn()
+        .mockResolvedValue([
+          { id: 'lt1', name: 'Annual', code: 'ANNUAL', isPaid: true },
+        ]),
     },
     employee: {
       findFirst: jest
@@ -22,9 +24,11 @@ function makeService(opts: { employee?: { id: string } | null } = {}) {
         ),
     },
     leaveBalance: {
-      findMany: jest.fn().mockResolvedValue([
-        { id: 'b1', availableDays: 13, leaveType: { name: 'Annual' } },
-      ]),
+      findMany: jest
+        .fn()
+        .mockResolvedValue([
+          { id: 'b1', availableDays: 13, leaveType: { name: 'Annual' } },
+        ]),
     },
     leaveRequest: {
       findMany: jest.fn().mockResolvedValue([{ id: 'r1', status: 'PENDING' }]),

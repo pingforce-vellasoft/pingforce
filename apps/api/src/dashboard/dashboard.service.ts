@@ -81,9 +81,7 @@ export class DashboardService {
   // ── Attendance hero ────────────────────────────────────────────────────────
 
   private buildAttendance(
-    row: Awaited<
-      ReturnType<DashboardRepository['findTodayAttendance']>
-    > | null,
+    row: Awaited<ReturnType<DashboardRepository['findTodayAttendance']>> | null,
     now: Date,
   ): DashboardAttendanceDto {
     if (!row) {
@@ -137,7 +135,10 @@ export class DashboardService {
     // Elapsed worked minutes across all sessions, capping open sessions at now.
     const workedMinutes = sessions.reduce((sum, s) => {
       const end = s.punchOut ?? now;
-      return sum + Math.max(0, Math.round((end.getTime() - s.punchIn.getTime()) / 60000));
+      return (
+        sum +
+        Math.max(0, Math.round((end.getTime() - s.punchIn.getTime()) / 60000))
+      );
     }, 0);
 
     const { isLate, minutesLate } = this.lateness(
@@ -180,7 +181,9 @@ export class DashboardService {
       primaryValue: present ? 'Present' : 'Absent',
       label: 'Today',
       iconName: 'fingerprint',
-      secondaryLabel: attendance.isLate ? `Late ${attendance.minutesLate}m` : null,
+      secondaryLabel: attendance.isLate
+        ? `Late ${attendance.minutesLate}m`
+        : null,
       severity: attendance.isLate ? 'warning' : 'normal',
       route: '/attendance',
     });
@@ -214,9 +217,7 @@ export class DashboardService {
   // ── Activity feed ──────────────────────────────────────────────────────────
 
   private buildActivity(
-    row: Awaited<
-      ReturnType<DashboardRepository['findTodayAttendance']>
-    > | null,
+    row: Awaited<ReturnType<DashboardRepository['findTodayAttendance']>> | null,
     _faults: { open: number; overdue: number },
   ): DashboardActivityDto[] {
     const items: DashboardActivityDto[] = [];
