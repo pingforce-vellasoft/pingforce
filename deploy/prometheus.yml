@@ -3,9 +3,10 @@ global:
   evaluation_interval: 30s
 
 scrape_configs:
-  # NestJS API metrics (global prefix api + URI version v1)
+  # NestJS API metrics — willsoto PrometheusModule registers at /metrics,
+  # bypassing the global 'api' prefix and URI versioning
   - job_name: pingforce-api
-    metrics_path: /api/v1/metrics
+    metrics_path: /metrics
     static_configs:
       - targets: ['api:3000']
 
