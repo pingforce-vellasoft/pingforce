@@ -33,7 +33,9 @@ function makeService(opts: {
         ),
     },
     employeeLocation: {
-      createMany: jest.fn().mockResolvedValue({ count: opts.createdCount ?? 0 }),
+      createMany: jest
+        .fn()
+        .mockResolvedValue({ count: opts.createdCount ?? 0 }),
       // Trail read only (live now reads latestEmployeeLocation).
       findMany: jest.fn().mockResolvedValue(opts.trailPoints ?? []),
     },

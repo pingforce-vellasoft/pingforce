@@ -9,7 +9,10 @@ const at = (iso: string) => new Date(iso);
 const SITE_A = { latitude: 12.9, longitude: 77.6 };
 const SITE_B = { latitude: 12.95, longitude: 77.65 }; // ~7km from A
 
-function p(site: { latitude: number; longitude: number }, iso: string): RawPoint {
+function p(
+  site: { latitude: number; longitude: number },
+  iso: string,
+): RawPoint {
   return { ...site, capturedAt: at(iso) };
 }
 

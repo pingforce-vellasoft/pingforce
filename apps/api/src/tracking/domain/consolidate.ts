@@ -59,7 +59,9 @@ interface Place {
  * then ranked by dwell minutes; the top 5 are kept. Returns null for an empty
  * day (nothing to summarise).
  */
-export function consolidateDay(points: readonly RawPoint[]): DailySummary | null {
+export function consolidateDay(
+  points: readonly RawPoint[],
+): DailySummary | null {
   if (points.length === 0) return null;
 
   const sorted = [...points].sort(
@@ -83,9 +85,7 @@ export function consolidateDay(points: readonly RawPoint[]): DailySummary | null
       prevAt === null ? 0 : Math.min(at - prevAt, MAX_DWELL_PER_STEP_MS);
     prevAt = at;
 
-    let place = places.find(
-      (pl) => haversineMeters(pl, p) <= CLUSTER_RADIUS_M,
-    );
+    let place = places.find((pl) => haversineMeters(pl, p) <= CLUSTER_RADIUS_M);
     if (!place) {
       place = {
         latitude: p.latitude,

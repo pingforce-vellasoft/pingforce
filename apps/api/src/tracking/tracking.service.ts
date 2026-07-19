@@ -203,11 +203,7 @@ export class TrackingService {
    * Consolidated daily summaries for one operator (field-time + top places),
    * newest day first. Same TRACKING:VIEW_LIVE scope as the live/trail reads.
    */
-  async getDailySummaries(
-    user: AuthUser,
-    employeeId: string,
-    limit = 90,
-  ) {
+  async getDailySummaries(user: AuthUser, employeeId: string, limit = 90) {
     const scope = await this.rbacService.resolveScopeIds(
       user.tenantId,
       user.userId,

@@ -115,7 +115,8 @@ const POLL_MS = 20_000;
           </div>
           <div class="detail-body">
             <div class="detail-row">
-              <span class="label">Code</span><span>{{ op.employeeCode || '—' }}</span>
+              <span class="label">Code</span
+              ><span>{{ op.employeeCode || '—' }}</span>
             </div>
             <div class="detail-row">
               <span class="label">Last fix</span
@@ -126,10 +127,12 @@ const POLL_MS = 20_000;
               ><span>{{ op.accuracy | number: '1.0-0' }} m</span>
             </div>
             <div class="detail-row" *ngIf="op.batteryLevel != null">
-              <span class="label">Battery</span><span>{{ op.batteryLevel }}%</span>
+              <span class="label">Battery</span
+              ><span>{{ op.batteryLevel }}%</span>
             </div>
             <div class="detail-row" *ngIf="trail() as t">
-              <span class="label">Trail points</span><span>{{ t.points.length }}</span>
+              <span class="label">Trail points</span
+              ><span>{{ t.points.length }}</span>
             </div>
           </div>
 
@@ -148,7 +151,9 @@ const POLL_MS = 20_000;
                 >
                 <span class="place-mins">{{ pl.minutes }}m</span>
               </div>
-              <p class="muted" *ngIf="d.topPlaces.length === 0">No places recorded.</p>
+              <p class="muted" *ngIf="d.topPlaces.length === 0">
+                No places recorded.
+              </p>
             </div>
           </ng-container>
         </mat-card>
@@ -361,8 +366,7 @@ export class LiveTrackingComponent implements AfterViewInit, OnDestroy {
   readonly loading = signal(false);
   readonly lastRefreshed = signal<Date | null>(null);
   readonly staleCount = computed(
-    () =>
-      this.operators().filter((o) => this.isStale(o.capturedAt)).length,
+    () => this.operators().filter((o) => this.isStale(o.capturedAt)).length,
   );
 
   private map: L.Map | null = null;
