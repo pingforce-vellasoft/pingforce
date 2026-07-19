@@ -1861,7 +1861,11 @@ mixin _$CheckInState {
   GeofenceInfo? get geofence => throw _privateConstructorUsedError;
   ActiveSession? get activeSession => throw _privateConstructorUsedError;
   CheckInResult? get checkInResult => throw _privateConstructorUsedError;
-  TenantCheckInPolicy? get policy => throw _privateConstructorUsedError; // GPS
+  TenantCheckInPolicy? get policy => throw _privateConstructorUsedError;
+
+  /// Name of the geofence the user is inside, or the nearest one when
+  /// outside. Used to name the zone in status messages.
+  String? get nearestGeofenceName => throw _privateConstructorUsedError; // GPS
   GpsAccuracyLevel get gpsAccuracy => throw _privateConstructorUsedError;
   GeofenceStatus get geofenceStatus => throw _privateConstructorUsedError;
   bool get isMockLocationDetected => throw _privateConstructorUsedError;
@@ -1895,6 +1899,7 @@ abstract class $CheckInStateCopyWith<$Res> {
     ActiveSession? activeSession,
     CheckInResult? checkInResult,
     TenantCheckInPolicy? policy,
+    String? nearestGeofenceName,
     GpsAccuracyLevel gpsAccuracy,
     GeofenceStatus geofenceStatus,
     bool isMockLocationDetected,
@@ -1937,6 +1942,7 @@ class _$CheckInStateCopyWithImpl<$Res, $Val extends CheckInState>
     Object? activeSession = freezed,
     Object? checkInResult = freezed,
     Object? policy = freezed,
+    Object? nearestGeofenceName = freezed,
     Object? gpsAccuracy = null,
     Object? geofenceStatus = null,
     Object? isMockLocationDetected = null,
@@ -1978,6 +1984,10 @@ class _$CheckInStateCopyWithImpl<$Res, $Val extends CheckInState>
                 ? _value.policy
                 : policy // ignore: cast_nullable_to_non_nullable
                       as TenantCheckInPolicy?,
+            nearestGeofenceName: freezed == nearestGeofenceName
+                ? _value.nearestGeofenceName
+                : nearestGeofenceName // ignore: cast_nullable_to_non_nullable
+                      as String?,
             gpsAccuracy: null == gpsAccuracy
                 ? _value.gpsAccuracy
                 : gpsAccuracy // ignore: cast_nullable_to_non_nullable
@@ -2125,6 +2135,7 @@ abstract class _$$CheckInStateImplCopyWith<$Res>
     ActiveSession? activeSession,
     CheckInResult? checkInResult,
     TenantCheckInPolicy? policy,
+    String? nearestGeofenceName,
     GpsAccuracyLevel gpsAccuracy,
     GeofenceStatus geofenceStatus,
     bool isMockLocationDetected,
@@ -2172,6 +2183,7 @@ class __$$CheckInStateImplCopyWithImpl<$Res>
     Object? activeSession = freezed,
     Object? checkInResult = freezed,
     Object? policy = freezed,
+    Object? nearestGeofenceName = freezed,
     Object? gpsAccuracy = null,
     Object? geofenceStatus = null,
     Object? isMockLocationDetected = null,
@@ -2213,6 +2225,10 @@ class __$$CheckInStateImplCopyWithImpl<$Res>
             ? _value.policy
             : policy // ignore: cast_nullable_to_non_nullable
                   as TenantCheckInPolicy?,
+        nearestGeofenceName: freezed == nearestGeofenceName
+            ? _value.nearestGeofenceName
+            : nearestGeofenceName // ignore: cast_nullable_to_non_nullable
+                  as String?,
         gpsAccuracy: null == gpsAccuracy
             ? _value.gpsAccuracy
             : gpsAccuracy // ignore: cast_nullable_to_non_nullable
@@ -2269,6 +2285,7 @@ class _$CheckInStateImpl extends _CheckInState {
     this.activeSession,
     this.checkInResult,
     this.policy,
+    this.nearestGeofenceName,
     this.gpsAccuracy = GpsAccuracyLevel.unavailable,
     this.geofenceStatus = GeofenceStatus.unknown,
     this.isMockLocationDetected = false,
@@ -2297,6 +2314,11 @@ class _$CheckInStateImpl extends _CheckInState {
   final CheckInResult? checkInResult;
   @override
   final TenantCheckInPolicy? policy;
+
+  /// Name of the geofence the user is inside, or the nearest one when
+  /// outside. Used to name the zone in status messages.
+  @override
+  final String? nearestGeofenceName;
   // GPS
   @override
   @JsonKey()
@@ -2331,7 +2353,7 @@ class _$CheckInStateImpl extends _CheckInState {
 
   @override
   String toString() {
-    return 'CheckInState(status: $status, shift: $shift, location: $location, geofence: $geofence, activeSession: $activeSession, checkInResult: $checkInResult, policy: $policy, gpsAccuracy: $gpsAccuracy, geofenceStatus: $geofenceStatus, isMockLocationDetected: $isMockLocationDetected, isOnline: $isOnline, buttonMode: $buttonMode, showSuccessOverlay: $showSuccessOverlay, isProcessingBiometric: $isProcessingBiometric, isCapturingSelfie: $isCapturingSelfie, errorMessage: $errorMessage, errorCode: $errorCode)';
+    return 'CheckInState(status: $status, shift: $shift, location: $location, geofence: $geofence, activeSession: $activeSession, checkInResult: $checkInResult, policy: $policy, nearestGeofenceName: $nearestGeofenceName, gpsAccuracy: $gpsAccuracy, geofenceStatus: $geofenceStatus, isMockLocationDetected: $isMockLocationDetected, isOnline: $isOnline, buttonMode: $buttonMode, showSuccessOverlay: $showSuccessOverlay, isProcessingBiometric: $isProcessingBiometric, isCapturingSelfie: $isCapturingSelfie, errorMessage: $errorMessage, errorCode: $errorCode)';
   }
 
   @override
@@ -2350,6 +2372,8 @@ class _$CheckInStateImpl extends _CheckInState {
             (identical(other.checkInResult, checkInResult) ||
                 other.checkInResult == checkInResult) &&
             (identical(other.policy, policy) || other.policy == policy) &&
+            (identical(other.nearestGeofenceName, nearestGeofenceName) ||
+                other.nearestGeofenceName == nearestGeofenceName) &&
             (identical(other.gpsAccuracy, gpsAccuracy) ||
                 other.gpsAccuracy == gpsAccuracy) &&
             (identical(other.geofenceStatus, geofenceStatus) ||
@@ -2382,6 +2406,7 @@ class _$CheckInStateImpl extends _CheckInState {
     activeSession,
     checkInResult,
     policy,
+    nearestGeofenceName,
     gpsAccuracy,
     geofenceStatus,
     isMockLocationDetected,
@@ -2412,6 +2437,7 @@ abstract class _CheckInState extends CheckInState {
     final ActiveSession? activeSession,
     final CheckInResult? checkInResult,
     final TenantCheckInPolicy? policy,
+    final String? nearestGeofenceName,
     final GpsAccuracyLevel gpsAccuracy,
     final GeofenceStatus geofenceStatus,
     final bool isMockLocationDetected,
@@ -2438,7 +2464,12 @@ abstract class _CheckInState extends CheckInState {
   @override
   CheckInResult? get checkInResult;
   @override
-  TenantCheckInPolicy? get policy; // GPS
+  TenantCheckInPolicy? get policy;
+
+  /// Name of the geofence the user is inside, or the nearest one when
+  /// outside. Used to name the zone in status messages.
+  @override
+  String? get nearestGeofenceName; // GPS
   @override
   GpsAccuracyLevel get gpsAccuracy;
   @override

@@ -172,6 +172,17 @@ class _CheckInButtonState extends State<CheckInButton>
           semanticLabel: 'Check in for your shift',
         ),
 
+      // Ready — inside geofence, biometric required
+      CheckInButtonMode.enabledBiometric => _ButtonConfig(
+          label: 'Check In with Biometric',
+          icon: Icons.fingerprint_rounded,
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
+          isEnabled: true,
+          semanticLabel:
+              'Check in using fingerprint or face verification',
+        ),
+
       // Offline
       CheckInButtonMode.enabledOffline => _ButtonConfig(
           label: 'Check In (Offline)',

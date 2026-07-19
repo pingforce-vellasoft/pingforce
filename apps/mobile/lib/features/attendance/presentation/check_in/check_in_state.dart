@@ -34,6 +34,9 @@ enum CheckInScreenStatus {
   /// S8 — GPS / Location permission not granted.
   gpsPermissionRequired,
 
+  /// S9 — Tenant has not configured any geofence / go-location yet.
+  geofenceNotConfigured,
+
   /// S11 — API submission in progress.
   submitting,
 
@@ -86,6 +89,7 @@ enum CheckInButtonMode {
   loading,          // Initializing / acquiring GPS
   disabled,         // Hard block (outside fence, mock detected, etc.)
   enabledNormal,    // All clear — check in
+  enabledBiometric, // Inside geofence — check in via fingerprint / face
   enabledOffline,   // Offline mode enabled
   enabledOverride,  // Low GPS / outside fence — policy allows override
   alreadyCheckedIn, // Active session exists
@@ -199,6 +203,10 @@ class CheckInState with _$CheckInState {
     CheckInResult? checkInResult,
     TenantCheckInPolicy? policy,
 
+    /// Name of the geofence the user is inside, or the nearest one when
+    /// outside. Used to name the zone in status messages.
+    String? nearestGeofenceName,
+
     // GPS
     @Default(GpsAccuracyLevel.unavailable) GpsAccuracyLevel gpsAccuracy,
     @Default(GeofenceStatus.unknown) GeofenceStatus geofenceStatus,
@@ -230,8 +238,8 @@ class CheckInState with _$CheckInState {
   bool get isCheckInBlocked =>
       status == CheckInScreenStatus.mockLocationDetected ||
       status == CheckInScreenStatus.gpsPermissionRequired ||
-      (status == CheckInScreenStatus.outsideGeofence &&
-          (policy?.geofencePolicy == 'BLOCK'));
+      status == CheckInScreenStatus.geofenceNotConfigured ||
+      status == CheckInScreenStatus.outsideGeofence;
 
   /// Derived: should the method selector be visible?
   bool get showMethodSelector =>

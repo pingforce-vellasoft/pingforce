@@ -170,6 +170,37 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                     if (state.status != CheckInScreenStatus.alreadyCheckedIn)
                       AppSpacing.sectionGapBox,
 
+                    // ── Geofence state messages ────────────────────────
+                    if (state.status ==
+                        CheckInScreenStatus.geofenceNotConfigured) ...[
+                      _GeofenceMessageCard(
+                        icon: Icons.wrong_location_rounded,
+                        color: Theme.of(context).colorScheme.tertiary,
+                        title: 'Geofence not configured',
+                        message:
+                            'Your go-location (check-in zone) has not been '
+                            'set up yet. Please ask your admin to configure a '
+                            'geofence before you can check in.',
+                      ),
+                      AppSpacing.sectionGapBox,
+                    ],
+
+                    if (state.status ==
+                        CheckInScreenStatus.outsideGeofence) ...[
+                      _GeofenceMessageCard(
+                        icon: Icons.location_off_rounded,
+                        color: Theme.of(context).colorScheme.error,
+                        title: 'You are outside the check-in zone',
+                        message: state.nearestGeofenceName != null
+                            ? 'You need to be inside "'
+                                '${state.nearestGeofenceName}" to check in. '
+                                'Move to the specified location and try again.'
+                            : 'You need to be inside the specified location to '
+                                'check in. Move to the zone and try again.',
+                      ),
+                      AppSpacing.sectionGapBox,
+                    ],
+
                     // ── GPS Map Panel ──────────────────────────────────
                     GpsMapPanel(
                       status: state.status,
@@ -292,6 +323,63 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
 
   void _openAttendanceSettings(BuildContext context) {
     // TODO: navigate to attendance settings
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GEOFENCE MESSAGE CARD  — notConfigured / outsideGeofence banners
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _GeofenceMessageCard extends StatelessWidget {
+  const _GeofenceMessageCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.message,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: AppSpacing.screenPaddingAll,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: AppRadius.lgAll,
+        border: Border.all(color: color.withValues(alpha: 0.30)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: AppIconSize.lg),
+          AppSpacing.mediumGapBox,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTypography.titleSmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.space1),
+                Text(
+                  message,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
