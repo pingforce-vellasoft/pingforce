@@ -583,6 +583,12 @@ export class ConfirmActionDialogComponent {
                       <span>Edit Details</span>
                     </div>
                   </button>
+                  <button mat-menu-item (click)="resendInvite(tenant)">
+                    <div class="menu-item-content">
+                      <mat-icon>mail</mat-icon>
+                      <span>Resend Welcome Email</span>
+                    </div>
+                  </button>
                   <button mat-menu-item (click)="toggleTenantStatus(tenant)">
                     <div class="menu-item-content">
                       <mat-icon
@@ -1056,6 +1062,41 @@ export class TenantsComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.loadTenants();
+      }
+    });
+  }
+
+  resendInvite(tenant: any) {
+    const dialogRef = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '460px',
+      data: {
+        title: 'Resend Welcome Email?',
+        message: `Send the onboarding email again to <strong>${tenant.name}</strong>?`,
+        subMessage:
+          'A new temporary password will be generated and emailed to the tenant admin. Their previous temporary password will stop working. Use this when the original email failed to arrive.',
+        confirmText: 'Yes, Resend',
+        isDanger: false,
+        icon: 'mail',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.platformService.resendTenantInvite(tenant.id).subscribe({
+          next: (res) => {
+            this.snackBar.open(
+              `Welcome email sent to ${res.email}`,
+              'Close',
+              { duration: 4000 },
+            );
+          },
+          error: (err) =>
+            this.snackBar.open(
+              err?.error?.message || 'Failed to resend welcome email',
+              'Close',
+              { duration: 4000 },
+            ),
+        });
       }
     });
   }

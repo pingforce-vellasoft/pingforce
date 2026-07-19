@@ -36,6 +36,12 @@ export class TenantsController {
     return this.tenantsService.findOne(id);
   }
 
+  @Post(':id/resend-invite')
+  @RequirePermission('platform', 'manage')
+  async resendInvite(@Param('id') id: string) {
+    return this.tenantsService.resendWelcomeInvite(id);
+  }
+
   @Patch(':id/provisioning')
   @RequirePermission('platform', 'manage')
   async updateProvisioning(

@@ -3,6 +3,7 @@ import {
   Inject,
   Logger,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import * as argon2 from 'argon2';
@@ -163,6 +164,77 @@ export class TenantsService {
   }
 
   /**
+   * Manually re-triggers the onboarding email for an already-provisioned tenant.
+   *
+   * The original temporary password is stored only as an argon2 hash and cannot
+   * be recovered, so re-inviting rotates it: a fresh temporary password is
+   * generated, the tenant admin's credentials are reset to it and
+   * `mustChangePassword` is forced, and the welcome email carries the new one.
+   * This is the fallback path when the automatic email at creation time failed
+   * to send (SMTP down, wrong address at first, etc.).
+   */
+  async resendWelcomeInvite(tenantId: string): Promise<{
+    success: boolean;
+    email: string;
+  }> {
+    const tenant = await this.prisma.tenant.findFirst({
+      where: { id: tenantId, deletedAt: null },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found.');
+    }
+
+    // The provisioning flow always seeds exactly one TENANT_ADMIN user; that is
+    // the account the welcome email addresses.
+    const admin = await this.prisma.user.findFirst({
+      where: {
+        tenantId: tenant.id,
+        clientCode: 'TENANT_ADMIN',
+        deletedAt: null,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (!admin?.email) {
+      throw new NotFoundException(
+        'No tenant admin with an email address to re-invite.',
+      );
+    }
+
+    // Rotate the temporary password — the old one is unrecoverable (hash only).
+    const newPassword = generateStrongPassword();
+    const passwordHash = await argon2.hash(newPassword);
+
+    await this.prisma.user.update({
+      where: { id: admin.id },
+      data: {
+        passwordHash,
+        mustChangePassword: true,
+      },
+    });
+
+    const delivered = await this.sendWelcomeInvite(
+      tenant.id,
+      admin.email,
+      tenant.name,
+      tenant.code,
+      newPassword,
+      'ADMIN_MANAGER',
+    );
+
+    if (!delivered) {
+      // Password was already rotated; report the delivery failure so the
+      // super admin knows the email did not go out (and can retry).
+      throw new BadRequestException(
+        'Failed to send the welcome email. Check the mail configuration and retry.',
+      );
+    }
+
+    return { success: true, email: admin.email };
+  }
+
+  /**
    * Onboarding email to a freshly provisioned tenant admin: their workspace ID,
    * sign-in credentials, a one-tap deep link that opens the mobile app with the
    * workspace (and role) pre-filled, the app-store links to install it, and the
@@ -175,7 +247,7 @@ export class TenantsService {
     workspaceCode: string,
     tempPassword: string,
     roleCode: string,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const webUrl = process.env.ADMIN_WEB_URL ?? 'https://admin.pingforce.in';
     const androidUrl =
       process.env.MOBILE_ANDROID_URL ??
@@ -193,7 +265,7 @@ export class TenantsService {
       `&role=${encodeURIComponent(roleCode)}`;
 
     try {
-      await this.notifications.sendRawEmail(
+      return await this.notifications.sendRawEmail(
         email,
         `Welcome to PingForce — your ${workspaceName} workspace is ready`,
         this.buildWelcomeEmailHtml({
@@ -216,6 +288,7 @@ export class TenantsService {
           error instanceof Error ? error.message : String(error)
         }`,
       );
+      return false;
     }
   }
 

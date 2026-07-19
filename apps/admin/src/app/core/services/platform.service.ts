@@ -38,6 +38,13 @@ export class PlatformService {
     return this.http.patch(`/api/v1/tenants/${id}/provisioning`, payload);
   }
 
+  resendTenantInvite(id: string): Observable<{ success: boolean; email: string }> {
+    return this.http.post<{ success: boolean; email: string }>(
+      `/api/v1/tenants/${id}/resend-invite`,
+      {},
+    );
+  }
+
   // ── Platform settings ──────────────────────────────────────────────────────
 
   getSettings(): Observable<any[]> {
