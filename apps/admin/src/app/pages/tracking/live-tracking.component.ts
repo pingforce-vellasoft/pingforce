@@ -122,11 +122,11 @@ const POLL_MS = 20_000;
               <span class="label">Last fix</span
               ><span>{{ op.capturedAt | date: 'medium' }}</span>
             </div>
-            <div class="detail-row" *ngIf="op.accuracy != null">
+            <div class="detail-row" *ngIf="op.accuracy !== null">
               <span class="label">Accuracy</span
               ><span>{{ op.accuracy | number: '1.0-0' }} m</span>
             </div>
-            <div class="detail-row" *ngIf="op.batteryLevel != null">
+            <div class="detail-row" *ngIf="op.batteryLevel !== null">
               <span class="label">Battery</span
               ><span>{{ op.batteryLevel }}%</span>
             </div>
