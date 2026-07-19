@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/theme/theme.dart';
 
@@ -174,30 +177,57 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
   AppPermission get _current => _states[_currentIndex].permission;
   _PermState get _currentState => _states[_currentIndex];
 
+  /// Maps an app permission to its OS permission(s). Location returns two: the
+  /// foreground grant, then background ("Allow all the time") — Android 11+
+  /// requires requesting background separately, only after foreground is held.
+  List<Permission> _osPermissions(AppPermission p) => switch (p) {
+        AppPermission.location => [
+            Permission.locationWhenInUse,
+            Permission.locationAlways,
+          ],
+        AppPermission.camera => [Permission.camera],
+        AppPermission.notifications => [Permission.notification],
+        AppPermission.storage => [Permission.storage],
+        AppPermission.microphone => [Permission.microphone],
+      };
+
+  PermissionGrantStatus _mapStatus(PermissionStatus s) {
+    if (s.isGranted || s.isLimited) return PermissionGrantStatus.granted;
+    if (s.isPermanentlyDenied || s.isRestricted) {
+      return PermissionGrantStatus.permanentlyDenied;
+    }
+    return PermissionGrantStatus.denied;
+  }
+
   Future<void> _requestPermission() async {
     setState(() {
       _states[_currentIndex] =
           _currentState.copyWith(isRequesting: true);
     });
 
-    await Future<void>.delayed(const Duration(milliseconds: 800));
+    final perms = _osPermissions(_current);
+
+    // Request the primary (foreground) permission first.
+    final result = _mapStatus(await perms.first.request());
+
+    // For location, escalate to background only if foreground was granted.
+    // A denied "Allow all the time" still leaves foreground tracking usable,
+    // so we don't downgrade the overall result on background denial.
+    if (result == PermissionGrantStatus.granted && perms.length > 1) {
+      await perms[1].request();
+    }
 
     if (!mounted) return;
 
-    // TODO: permission_handler plugin:
-    //   final status = await Permission.location.request();
-    //   granted / denied / permanentlyDenied
-
-    // Stub: simulate granted
     setState(() {
       _states[_currentIndex] = _currentState.copyWith(
         isRequesting: false,
-        status: PermissionGrantStatus.granted,
+        status: result,
       );
     });
 
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    if (mounted) _advance();
+    if (mounted && result == PermissionGrantStatus.granted) _advance();
   }
 
   void _skipPermission() {
@@ -224,7 +254,7 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
   }
 
   void _openSettings() {
-    // TODO: openAppSettings() from permission_handler
+    unawaited(openAppSettings());
   }
 
   void _showCriticalWarning() {

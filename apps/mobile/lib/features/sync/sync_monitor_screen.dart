@@ -702,6 +702,7 @@ class _ModuleBreakdownCard extends StatelessWidget {
       SyncItemModule.leads => (Icons.person_search_rounded, 'Leads'),
       SyncItemModule.documents => (Icons.folder_rounded, 'Documents'),
       SyncItemModule.profile => (Icons.person_rounded, 'Profile'),
+      SyncItemModule.tracking => (Icons.my_location_rounded, 'Tracking'),
     };
   }
 }
@@ -779,6 +780,7 @@ class _QueueListSection extends StatelessWidget {
       SyncItemModule.leads => (Icons.person_search_rounded, 'Leads'),
       SyncItemModule.documents => (Icons.folder_rounded, 'Documents'),
       SyncItemModule.profile => (Icons.person_rounded, 'Profile'),
+      SyncItemModule.tracking => (Icons.my_location_rounded, 'Tracking'),
     };
   }
 
@@ -832,6 +834,7 @@ class _ModuleBadge extends StatelessWidget {
       SyncItemModule.leads => 'Leads',
       SyncItemModule.documents => 'Docs',
       SyncItemModule.profile => 'Profile',
+      SyncItemModule.tracking => 'Tracking',
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

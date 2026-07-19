@@ -64,6 +64,21 @@ export class SiteContentService {
 
   readonly plans: readonly Plan[] = [
     {
+      name: 'Free Trial',
+      tagline: 'Try PingForce free for 30 days. No card required.',
+      price: 'Free',
+      period: '30 days free',
+      highlighted: false,
+      cta: 'Start free trial',
+      features: [
+        '30 days free, no credit card',
+        'Up to 10 field users',
+        'GPS attendance & geofencing',
+        'Field visit tracking',
+        'Offline-first mobile app',
+      ],
+    },
+    {
       name: 'Starter',
       tagline: 'For small field teams getting organised.',
       price: '₹4,999',

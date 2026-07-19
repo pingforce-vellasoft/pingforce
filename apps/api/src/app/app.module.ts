@@ -20,6 +20,7 @@ import { EmployeeModule } from '../employee/employee.module';
 import { CustomerModule } from '../customer/customer.module';
 import { LeadModule } from '../lead/lead.module';
 import { AttendanceModule } from '../attendance/attendance.module';
+import { TrackingModule } from '../tracking/tracking.module';
 import { LeaveModule } from '../leave/leave.module';
 import { ShiftModule } from '../shift/shift.module';
 import { PayrollModule } from '../payroll/payroll.module';
@@ -92,6 +93,7 @@ import { DashboardModule } from '../dashboard/dashboard.module';
     CustomerModule,
     LeadModule,
     AttendanceModule,
+    TrackingModule,
     LeaveModule,
     ShiftModule,
     PayrollModule,

@@ -18,11 +18,19 @@ class AttendanceActiveSessionCard extends StatefulWidget {
     required this.session,
     required this.onBreak,
     required this.onCheckOut,
+    this.isCheckingOut = false,
+    this.checkOutError,
   });
 
   final ActiveSession session;
   final VoidCallback onBreak;
   final VoidCallback onCheckOut;
+
+  /// Check-out punch in progress (GPS + biometric + API).
+  final bool isCheckingOut;
+
+  /// Message shown when check-out is refused (e.g. outside the check-in zone).
+  final String? checkOutError;
 
   @override
   State<AttendanceActiveSessionCard> createState() =>
@@ -164,6 +172,41 @@ class _AttendanceActiveSessionCardState
 
           const Divider(height: 1),
 
+          // ── Check-out location error ───────────────────────────────────
+          if (widget.checkOutError != null)
+            Container(
+              margin: const EdgeInsets.fromLTRB(
+                AppSpacing.cardPadding,
+                AppSpacing.space3,
+                AppSpacing.cardPadding,
+                0,
+              ),
+              padding: const EdgeInsets.all(AppSpacing.space3),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer,
+                borderRadius: AppRadius.mdAll,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.location_off_rounded,
+                    size: AppIconSize.sm,
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                  AppSpacing.iconGapBox,
+                  Expanded(
+                    child: Text(
+                      widget.checkOutError!,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // ── Action buttons ─────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.all(AppSpacing.cardPadding),
@@ -172,7 +215,9 @@ class _AttendanceActiveSessionCardState
                 // Break button
                 Expanded(
                   child: FilledButton.tonal(
-                    onPressed: widget.session.isOnBreak ? null : widget.onBreak,
+                    onPressed: (widget.session.isOnBreak || widget.isCheckingOut)
+                        ? null
+                        : widget.onBreak,
                     child: Text(
                       widget.session.isOnBreak ? 'On Break' : 'Start Break',
                     ),
@@ -183,8 +228,14 @@ class _AttendanceActiveSessionCardState
                 Expanded(
                   flex: 2,
                   child: FilledButton(
-                    onPressed: widget.onCheckOut,
-                    child: const Text('Check Out'),
+                    onPressed: widget.isCheckingOut ? null : widget.onCheckOut,
+                    child: widget.isCheckingOut
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Check Out'),
                   ),
                 ),
               ],

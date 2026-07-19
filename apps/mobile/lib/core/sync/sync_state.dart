@@ -25,6 +25,7 @@ enum SyncItemModule {
   leads,
   documents,
   profile,
+  tracking,
 }
 
 // ── Per-item model ─────────────────────────────────────────────────────────

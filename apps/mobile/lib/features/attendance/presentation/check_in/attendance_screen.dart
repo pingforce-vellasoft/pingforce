@@ -153,6 +153,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         state.activeSession != null) ...[
                       AttendanceActiveSessionCard(
                         session: state.activeSession!,
+                        isCheckingOut: state.isCheckingOut,
+                        checkOutError: state.checkOutError,
                         onBreak: () => ref
                             .read(checkInNotifierProvider.notifier)
                             .startBreak(),

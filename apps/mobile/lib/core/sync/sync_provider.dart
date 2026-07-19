@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../features/attendance/data/datasources/attendance_remote_data_source.dart';
+import '../../features/tracking/data/datasources/tracking_remote_data_source.dart';
 import '../../features/visits/data/visits_remote_data_source.dart';
 import '../../injection_container.dart';
 import 'sync_state.dart';
@@ -354,6 +355,9 @@ class SyncNotifier extends Notifier<SyncState> {
       case SyncItemModule.visits:
         // Idempotent replay via clientRef (POST /visits/sync)
         await sl<VisitsRemoteDataSource>().syncActions(payloads);
+      case SyncItemModule.tracking:
+        // Background location pings — idempotent on clientRef.
+        await sl<TrackingRemoteDataSource>().sendPingBatch(payloads);
       // Remaining modules gain client sync flows in a later phase
       case SyncItemModule.faults:
       case SyncItemModule.leads:

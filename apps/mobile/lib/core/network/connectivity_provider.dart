@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -72,9 +73,12 @@ class ConnectivityState {
 // ── Connectivity Notifier ──────────────────────────────────────────────────
 
 class ConnectivityNotifier extends Notifier<ConnectivityState> {
-  // Re-check interval in seconds (poll while offline to detect recovery)
+  // Re-check interval in seconds (poll as a backstop; the stream drives
+  // transitions in real time — background tracking depends on prompt
+  // offline→online flushes of buffered pings).
   static const _pollIntervalSec = 15;
   Timer? _pollTimer;
+  StreamSubscription<List<ConnectivityResult>>? _sub;
 
   @override
   ConnectivityState build() {
@@ -94,13 +98,11 @@ class ConnectivityNotifier extends Notifier<ConnectivityState> {
   // ── Internal ────────────────────────────────────────────────────────────
 
   void _startMonitoring() {
-    // TODO: Replace with connectivity_plus stream listener:
-    //
-    //   Connectivity().onConnectivityChanged.listen((result) {
-    //     _update();
-    //   });
-    //
-    // For now, we do an initial check and then poll.
+    // Real-time transitions via the platform stream, plus a slow poll as a
+    // backstop (some OEMs miss stream events after a long doze).
+    _sub = Connectivity().onConnectivityChanged.listen((results) {
+      _applyResults(results);
+    });
     _update();
     _pollTimer = Timer.periodic(
       const Duration(seconds: _pollIntervalSec),
@@ -111,44 +113,38 @@ class ConnectivityNotifier extends Notifier<ConnectivityState> {
   void _stopMonitoring() {
     _pollTimer?.cancel();
     _pollTimer = null;
+    _sub?.cancel();
+    _sub = null;
   }
 
   Future<void> _update() async {
-    final (isOnline, type) = await _checkConnectivity();
+    try {
+      _applyResults(await Connectivity().checkConnectivity());
+    } catch (_) {
+      // Platform check failed — leave the last known state rather than
+      // flapping the whole app offline on a transient plugin error.
+    }
+  }
+
+  /// Maps a connectivity_plus result set to our state. `checkConnectivity`
+  /// and the change stream both yield a `List<ConnectivityResult>` (v6+):
+  /// online when any interface other than `none` is present.
+  void _applyResults(List<ConnectivityResult> results) {
+    final online = results.any((r) => r != ConnectivityResult.none);
     final previous = state;
 
-    final newStatus =
-        isOnline ? ConnectivityStatus.online : ConnectivityStatus.offline;
-
     state = ConnectivityState(
-      status: newStatus,
-      lastOnlineAt: isOnline ? DateTime.now() : previous.lastOnlineAt,
-      connectionType: isOnline ? type : null,
+      status: online ? ConnectivityStatus.online : ConnectivityStatus.offline,
+      lastOnlineAt: online ? DateTime.now() : previous.lastOnlineAt,
+      connectionType: online ? _typeLabel(results) : null,
     );
   }
 
-  /// TODO: Replace stub with real connectivity_plus check.
-  /// Install: flutter pub add connectivity_plus
-  ///
-  /// ```dart
-  /// import 'package:connectivity_plus/connectivity_plus.dart';
-  ///
-  /// Future<(bool, String?)> _checkConnectivity() async {
-  ///   final result = await Connectivity().checkConnectivity();
-  ///   if (result == ConnectivityResult.none) return (false, null);
-  ///   final type = switch (result) {
-  ///     ConnectivityResult.wifi     => 'wifi',
-  ///     ConnectivityResult.mobile   => 'mobile',
-  ///     ConnectivityResult.ethernet => 'ethernet',
-  ///     _                           => 'other',
-  ///   };
-  ///   return (true, type);
-  /// }
-  /// ```
-  Future<(bool, String?)> _checkConnectivity() async {
-    // Stub: assume online. Replace with real implementation above.
-    await Future<void>.delayed(const Duration(milliseconds: 50));
-    return (true, 'wifi');
+  String _typeLabel(List<ConnectivityResult> results) {
+    if (results.contains(ConnectivityResult.wifi)) return 'wifi';
+    if (results.contains(ConnectivityResult.mobile)) return 'mobile';
+    if (results.contains(ConnectivityResult.ethernet)) return 'ethernet';
+    return 'other';
   }
 }
 

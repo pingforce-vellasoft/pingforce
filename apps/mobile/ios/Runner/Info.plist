@@ -43,6 +43,16 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Location: attendance GPS check-ins + background field-operator tracking. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>PingForce uses your location to verify attendance check-ins and log visit sites.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>PingForce tracks your location while you are checked in to a shift so your team can see field coverage. Tracking stops when you check out.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<!-- Google Sign-in Section -->

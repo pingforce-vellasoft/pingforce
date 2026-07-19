@@ -147,17 +147,21 @@ export class PricingComponent implements OnInit {
   }
 
   private staticPlanVms(): PlanVm[] {
-    return this.content.plans.map((p, i) => ({
-      code: ['starter', 'growth', 'enterprise'][i] ?? p.name.toLowerCase(),
-      name: p.name,
-      tagline: p.tagline,
-      priceLabel: p.price,
-      period: p.period,
-      highlighted: p.highlighted,
-      isCustom: false,
-      isTrial: false,
-      features: p.features,
-    }));
+    const codes = ['free-trial', 'starter', 'growth', 'enterprise'];
+    return this.content.plans.map((p, i) => {
+      const code = codes[i] ?? p.name.toLowerCase().replace(/\s+/g, '-');
+      return {
+        code,
+        name: p.name,
+        tagline: p.tagline,
+        priceLabel: p.price,
+        period: p.period,
+        highlighted: p.highlighted,
+        isCustom: false,
+        isTrial: code === 'free-trial',
+        features: p.features,
+      };
+    });
   }
 
   private toStaticCustomVm(): PlanVm {

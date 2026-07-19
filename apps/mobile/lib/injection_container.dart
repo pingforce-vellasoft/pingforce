@@ -37,6 +37,8 @@ import 'features/notifications/domain/repositories/notification_repository.dart'
 import 'features/geofences/data/datasources/geofence_remote_data_source.dart';
 import 'features/geofences/data/repositories/geofence_repository_impl.dart';
 import 'features/geofences/domain/repositories/geofence_repository.dart';
+import 'features/tracking/data/datasources/tracking_remote_data_source.dart';
+import 'features/tracking/data/location_tracking_service.dart';
 
 final sl = GetIt.instance;
 
@@ -143,4 +145,11 @@ Future<void> init() async {
   sl.registerLazySingleton<GeofenceRepository>(
     () => GeofenceRepositoryImpl(remoteDataSource: sl()),
   );
+
+  // --- Features: Tracking (background field-operator location) ---
+  sl.registerLazySingleton<TrackingRemoteDataSource>(
+    () => TrackingRemoteDataSourceImpl(dio: sl()),
+  );
+  // Factory: each tracking session owns a fresh stream subscription.
+  sl.registerFactory(() => LocationTrackingService());
 }

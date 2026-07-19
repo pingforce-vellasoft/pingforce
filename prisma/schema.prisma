@@ -1316,12 +1316,14 @@ model EmployeeLocation {
   speed        Float?
   provider     String?
   batteryLevel Int?
+  clientRef    String?
   createdAt    DateTime @default(now())
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([id, tenantId])
+  @@unique([employeeId, clientRef])
   @@index([tenantId])
   @@index([employeeId, capturedAt])
   @@map("employee_locations")

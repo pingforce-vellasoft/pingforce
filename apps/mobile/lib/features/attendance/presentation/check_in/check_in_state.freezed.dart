@@ -951,6 +951,11 @@ mixin _$ActiveSession {
   DateTime? get lastBreakStart => throw _privateConstructorUsedError;
   bool get isOnBreak => throw _privateConstructorUsedError;
 
+  /// Geofence the employee checked in from. Check-out must occur inside this
+  /// same zone (exceptions are handled by admin force-checkout).
+  String? get checkInGeofenceId => throw _privateConstructorUsedError;
+  String? get checkInGeofenceName => throw _privateConstructorUsedError;
+
   /// Create a copy of ActiveSession
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -972,6 +977,8 @@ abstract class $ActiveSessionCopyWith<$Res> {
     int? breaksTaken,
     DateTime? lastBreakStart,
     bool isOnBreak,
+    String? checkInGeofenceId,
+    String? checkInGeofenceName,
   });
 }
 
@@ -996,6 +1003,8 @@ class _$ActiveSessionCopyWithImpl<$Res, $Val extends ActiveSession>
     Object? breaksTaken = freezed,
     Object? lastBreakStart = freezed,
     Object? isOnBreak = null,
+    Object? checkInGeofenceId = freezed,
+    Object? checkInGeofenceName = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -1023,6 +1032,14 @@ class _$ActiveSessionCopyWithImpl<$Res, $Val extends ActiveSession>
                 ? _value.isOnBreak
                 : isOnBreak // ignore: cast_nullable_to_non_nullable
                       as bool,
+            checkInGeofenceId: freezed == checkInGeofenceId
+                ? _value.checkInGeofenceId
+                : checkInGeofenceId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            checkInGeofenceName: freezed == checkInGeofenceName
+                ? _value.checkInGeofenceName
+                : checkInGeofenceName // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -1045,6 +1062,8 @@ abstract class _$$ActiveSessionImplCopyWith<$Res>
     int? breaksTaken,
     DateTime? lastBreakStart,
     bool isOnBreak,
+    String? checkInGeofenceId,
+    String? checkInGeofenceName,
   });
 }
 
@@ -1068,6 +1087,8 @@ class __$$ActiveSessionImplCopyWithImpl<$Res>
     Object? breaksTaken = freezed,
     Object? lastBreakStart = freezed,
     Object? isOnBreak = null,
+    Object? checkInGeofenceId = freezed,
+    Object? checkInGeofenceName = freezed,
   }) {
     return _then(
       _$ActiveSessionImpl(
@@ -1095,6 +1116,14 @@ class __$$ActiveSessionImplCopyWithImpl<$Res>
             ? _value.isOnBreak
             : isOnBreak // ignore: cast_nullable_to_non_nullable
                   as bool,
+        checkInGeofenceId: freezed == checkInGeofenceId
+            ? _value.checkInGeofenceId
+            : checkInGeofenceId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        checkInGeofenceName: freezed == checkInGeofenceName
+            ? _value.checkInGeofenceName
+            : checkInGeofenceName // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -1110,6 +1139,8 @@ class _$ActiveSessionImpl implements _ActiveSession {
     this.breaksTaken,
     this.lastBreakStart,
     this.isOnBreak = false,
+    this.checkInGeofenceId,
+    this.checkInGeofenceName,
   });
 
   @override
@@ -1126,9 +1157,16 @@ class _$ActiveSessionImpl implements _ActiveSession {
   @JsonKey()
   final bool isOnBreak;
 
+  /// Geofence the employee checked in from. Check-out must occur inside this
+  /// same zone (exceptions are handled by admin force-checkout).
+  @override
+  final String? checkInGeofenceId;
+  @override
+  final String? checkInGeofenceName;
+
   @override
   String toString() {
-    return 'ActiveSession(sessionId: $sessionId, checkInTime: $checkInTime, shiftName: $shiftName, breaksTaken: $breaksTaken, lastBreakStart: $lastBreakStart, isOnBreak: $isOnBreak)';
+    return 'ActiveSession(sessionId: $sessionId, checkInTime: $checkInTime, shiftName: $shiftName, breaksTaken: $breaksTaken, lastBreakStart: $lastBreakStart, isOnBreak: $isOnBreak, checkInGeofenceId: $checkInGeofenceId, checkInGeofenceName: $checkInGeofenceName)';
   }
 
   @override
@@ -1147,7 +1185,11 @@ class _$ActiveSessionImpl implements _ActiveSession {
             (identical(other.lastBreakStart, lastBreakStart) ||
                 other.lastBreakStart == lastBreakStart) &&
             (identical(other.isOnBreak, isOnBreak) ||
-                other.isOnBreak == isOnBreak));
+                other.isOnBreak == isOnBreak) &&
+            (identical(other.checkInGeofenceId, checkInGeofenceId) ||
+                other.checkInGeofenceId == checkInGeofenceId) &&
+            (identical(other.checkInGeofenceName, checkInGeofenceName) ||
+                other.checkInGeofenceName == checkInGeofenceName));
   }
 
   @override
@@ -1159,6 +1201,8 @@ class _$ActiveSessionImpl implements _ActiveSession {
     breaksTaken,
     lastBreakStart,
     isOnBreak,
+    checkInGeofenceId,
+    checkInGeofenceName,
   );
 
   /// Create a copy of ActiveSession
@@ -1178,6 +1222,8 @@ abstract class _ActiveSession implements ActiveSession {
     final int? breaksTaken,
     final DateTime? lastBreakStart,
     final bool isOnBreak,
+    final String? checkInGeofenceId,
+    final String? checkInGeofenceName,
   }) = _$ActiveSessionImpl;
 
   @override
@@ -1192,6 +1238,13 @@ abstract class _ActiveSession implements ActiveSession {
   DateTime? get lastBreakStart;
   @override
   bool get isOnBreak;
+
+  /// Geofence the employee checked in from. Check-out must occur inside this
+  /// same zone (exceptions are handled by admin force-checkout).
+  @override
+  String? get checkInGeofenceId;
+  @override
+  String? get checkInGeofenceName;
 
   /// Create a copy of ActiveSession
   /// with the given fields replaced by the non-null parameter values.
@@ -1873,7 +1926,9 @@ mixin _$CheckInState {
   CheckInButtonMode get buttonMode => throw _privateConstructorUsedError;
   bool get showSuccessOverlay => throw _privateConstructorUsedError;
   bool get isProcessingBiometric => throw _privateConstructorUsedError;
-  bool get isCapturingSelfie => throw _privateConstructorUsedError; // Error
+  bool get isCapturingSelfie => throw _privateConstructorUsedError; // Check-out
+  bool get isCheckingOut => throw _privateConstructorUsedError;
+  String? get checkOutError => throw _privateConstructorUsedError; // Error
   String? get errorMessage => throw _privateConstructorUsedError;
   String? get errorCode => throw _privateConstructorUsedError;
 
@@ -1908,6 +1963,8 @@ abstract class $CheckInStateCopyWith<$Res> {
     bool showSuccessOverlay,
     bool isProcessingBiometric,
     bool isCapturingSelfie,
+    bool isCheckingOut,
+    String? checkOutError,
     String? errorMessage,
     String? errorCode,
   });
@@ -1951,6 +2008,8 @@ class _$CheckInStateCopyWithImpl<$Res, $Val extends CheckInState>
     Object? showSuccessOverlay = null,
     Object? isProcessingBiometric = null,
     Object? isCapturingSelfie = null,
+    Object? isCheckingOut = null,
+    Object? checkOutError = freezed,
     Object? errorMessage = freezed,
     Object? errorCode = freezed,
   }) {
@@ -2020,6 +2079,14 @@ class _$CheckInStateCopyWithImpl<$Res, $Val extends CheckInState>
                 ? _value.isCapturingSelfie
                 : isCapturingSelfie // ignore: cast_nullable_to_non_nullable
                       as bool,
+            isCheckingOut: null == isCheckingOut
+                ? _value.isCheckingOut
+                : isCheckingOut // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            checkOutError: freezed == checkOutError
+                ? _value.checkOutError
+                : checkOutError // ignore: cast_nullable_to_non_nullable
+                      as String?,
             errorMessage: freezed == errorMessage
                 ? _value.errorMessage
                 : errorMessage // ignore: cast_nullable_to_non_nullable
@@ -2144,6 +2211,8 @@ abstract class _$$CheckInStateImplCopyWith<$Res>
     bool showSuccessOverlay,
     bool isProcessingBiometric,
     bool isCapturingSelfie,
+    bool isCheckingOut,
+    String? checkOutError,
     String? errorMessage,
     String? errorCode,
   });
@@ -2192,6 +2261,8 @@ class __$$CheckInStateImplCopyWithImpl<$Res>
     Object? showSuccessOverlay = null,
     Object? isProcessingBiometric = null,
     Object? isCapturingSelfie = null,
+    Object? isCheckingOut = null,
+    Object? checkOutError = freezed,
     Object? errorMessage = freezed,
     Object? errorCode = freezed,
   }) {
@@ -2261,6 +2332,14 @@ class __$$CheckInStateImplCopyWithImpl<$Res>
             ? _value.isCapturingSelfie
             : isCapturingSelfie // ignore: cast_nullable_to_non_nullable
                   as bool,
+        isCheckingOut: null == isCheckingOut
+            ? _value.isCheckingOut
+            : isCheckingOut // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        checkOutError: freezed == checkOutError
+            ? _value.checkOutError
+            : checkOutError // ignore: cast_nullable_to_non_nullable
+                  as String?,
         errorMessage: freezed == errorMessage
             ? _value.errorMessage
             : errorMessage // ignore: cast_nullable_to_non_nullable
@@ -2294,6 +2373,8 @@ class _$CheckInStateImpl extends _CheckInState {
     this.showSuccessOverlay = false,
     this.isProcessingBiometric = false,
     this.isCapturingSelfie = false,
+    this.isCheckingOut = false,
+    this.checkOutError,
     this.errorMessage,
     this.errorCode,
   }) : super._();
@@ -2345,6 +2426,12 @@ class _$CheckInStateImpl extends _CheckInState {
   @override
   @JsonKey()
   final bool isCapturingSelfie;
+  // Check-out
+  @override
+  @JsonKey()
+  final bool isCheckingOut;
+  @override
+  final String? checkOutError;
   // Error
   @override
   final String? errorMessage;
@@ -2353,7 +2440,7 @@ class _$CheckInStateImpl extends _CheckInState {
 
   @override
   String toString() {
-    return 'CheckInState(status: $status, shift: $shift, location: $location, geofence: $geofence, activeSession: $activeSession, checkInResult: $checkInResult, policy: $policy, nearestGeofenceName: $nearestGeofenceName, gpsAccuracy: $gpsAccuracy, geofenceStatus: $geofenceStatus, isMockLocationDetected: $isMockLocationDetected, isOnline: $isOnline, buttonMode: $buttonMode, showSuccessOverlay: $showSuccessOverlay, isProcessingBiometric: $isProcessingBiometric, isCapturingSelfie: $isCapturingSelfie, errorMessage: $errorMessage, errorCode: $errorCode)';
+    return 'CheckInState(status: $status, shift: $shift, location: $location, geofence: $geofence, activeSession: $activeSession, checkInResult: $checkInResult, policy: $policy, nearestGeofenceName: $nearestGeofenceName, gpsAccuracy: $gpsAccuracy, geofenceStatus: $geofenceStatus, isMockLocationDetected: $isMockLocationDetected, isOnline: $isOnline, buttonMode: $buttonMode, showSuccessOverlay: $showSuccessOverlay, isProcessingBiometric: $isProcessingBiometric, isCapturingSelfie: $isCapturingSelfie, isCheckingOut: $isCheckingOut, checkOutError: $checkOutError, errorMessage: $errorMessage, errorCode: $errorCode)';
   }
 
   @override
@@ -2390,6 +2477,10 @@ class _$CheckInStateImpl extends _CheckInState {
                 other.isProcessingBiometric == isProcessingBiometric) &&
             (identical(other.isCapturingSelfie, isCapturingSelfie) ||
                 other.isCapturingSelfie == isCapturingSelfie) &&
+            (identical(other.isCheckingOut, isCheckingOut) ||
+                other.isCheckingOut == isCheckingOut) &&
+            (identical(other.checkOutError, checkOutError) ||
+                other.checkOutError == checkOutError) &&
             (identical(other.errorMessage, errorMessage) ||
                 other.errorMessage == errorMessage) &&
             (identical(other.errorCode, errorCode) ||
@@ -2397,7 +2488,7 @@ class _$CheckInStateImpl extends _CheckInState {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     status,
     shift,
@@ -2415,9 +2506,11 @@ class _$CheckInStateImpl extends _CheckInState {
     showSuccessOverlay,
     isProcessingBiometric,
     isCapturingSelfie,
+    isCheckingOut,
+    checkOutError,
     errorMessage,
     errorCode,
-  );
+  ]);
 
   /// Create a copy of CheckInState
   /// with the given fields replaced by the non-null parameter values.
@@ -2446,6 +2539,8 @@ abstract class _CheckInState extends CheckInState {
     final bool showSuccessOverlay,
     final bool isProcessingBiometric,
     final bool isCapturingSelfie,
+    final bool isCheckingOut,
+    final String? checkOutError,
     final String? errorMessage,
     final String? errorCode,
   }) = _$CheckInStateImpl;
@@ -2485,7 +2580,11 @@ abstract class _CheckInState extends CheckInState {
   @override
   bool get isProcessingBiometric;
   @override
-  bool get isCapturingSelfie; // Error
+  bool get isCapturingSelfie; // Check-out
+  @override
+  bool get isCheckingOut;
+  @override
+  String? get checkOutError; // Error
   @override
   String? get errorMessage;
   @override

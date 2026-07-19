@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -12,6 +14,7 @@ import '../../../../core/sync/sync_state.dart';
 import '../../../../injection_container.dart';
 import '../../../geofences/domain/entities/geofence.dart';
 import '../../../geofences/domain/repositories/geofence_repository.dart';
+import '../../../tracking/presentation/tracking_notifier.dart';
 import '../../domain/usecases/punch_command.dart' as punch_uc;
 import '../../domain/usecases/register_device_command.dart';
 import 'check_in_state.dart';
@@ -266,6 +269,12 @@ class CheckInNotifier extends Notifier<CheckInState> {
     // queue for sync, and show optimistic success flagged as offline.
     if (!ref.read(isOnlineProvider)) {
       await _enqueueOfflinePunch(location);
+      // Track the on-shift operator even for an offline check-in — pings buffer
+      // in the sync queue and upload on reconnect.
+      final offlineSessionId = state.activeSession?.sessionId;
+      if (offlineSessionId != null) {
+        unawaited(ref.read(trackingProvider.notifier).start(offlineSessionId));
+      }
       return;
     }
 
@@ -314,8 +323,12 @@ class CheckInNotifier extends Notifier<CheckInState> {
             sessionId: session.id,
             checkInTime: session.punchIn,
             shiftName: state.shift?.shiftName ?? 'Shift',
+            checkInGeofenceId: state.geofence?.id,
+            checkInGeofenceName: state.geofence?.name,
           ),
         );
+        // Begin background location tracking for the on-shift operator.
+        unawaited(ref.read(trackingProvider.notifier).start(session.id));
       },
     );
   }
@@ -408,6 +421,8 @@ class CheckInNotifier extends Notifier<CheckInState> {
         sessionId: clientRef,
         checkInTime: now,
         shiftName: state.shift?.shiftName ?? 'Shift',
+        checkInGeofenceId: state.geofence?.id,
+        checkInGeofenceName: state.geofence?.name,
       ),
     );
   }
@@ -436,12 +451,146 @@ class CheckInNotifier extends Notifier<CheckInState> {
     );
   }
 
+  /// Check-out must happen inside the SAME geofence the employee checked in
+  /// from. If they have drifted out of that zone the punch is refused with a
+  /// message naming the zone — the only override is admin force-checkout from
+  /// the tenant portal (POST /attendance/manual-checkout).
   Future<void> initiateCheckOut() async {
-    // TODO(phase-2): execute check-out PunchCommand.
-    state = state.copyWith(
-      activeSession: null,
-      status: CheckInScreenStatus.readyToCheckIn,
-      buttonMode: CheckInButtonMode.enabledNormal,
+    final session = state.activeSession;
+    if (session == null || state.isCheckingOut) return;
+
+    state = state.copyWith(isCheckingOut: true, checkOutError: null);
+
+    // Re-acquire the current position for the check-out punch.
+    final location = await _readCurrentLocation();
+    if (location == null) {
+      state = state.copyWith(
+        isCheckingOut: false,
+        checkOutError: 'Could not determine your location. Try again.',
+      );
+      return;
+    }
+
+    // Mock-location hard block on check-out too.
+    if (location.isMockLocation &&
+        (state.policy?.mockLocationPolicy ?? 'BLOCK') == 'BLOCK') {
+      state = state.copyWith(
+        isCheckingOut: false,
+        checkOutError: 'Simulated location detected. Check-out blocked.',
+      );
+      return;
+    }
+
+    // Same-location rule: verify still inside the check-in geofence.
+    final inside = await _isInsideCheckInFence(session, location);
+    if (!inside) {
+      final zone = session.checkInGeofenceName;
+      state = state.copyWith(
+        isCheckingOut: false,
+        checkOutError: zone != null
+            ? 'You must be inside "$zone" (where you checked in) to check '
+                'out. If you are working off-site, ask your admin to check '
+                'you out from the tenant portal.'
+            : 'You must be at your check-in location to check out. Otherwise '
+                'ask your admin to check you out from the tenant portal.',
+      );
+      return;
+    }
+
+    // Biometric gate on check-out as well.
+    final authed = await _verifyBiometric();
+    if (!authed) {
+      state = state.copyWith(isCheckingOut: false);
+      return;
+    }
+
+    // Offline check-out → queue the punch; the server toggles in/out.
+    if (!ref.read(isOnlineProvider)) {
+      await _enqueueOfflinePunch(location);
+      state = state.copyWith(isCheckingOut: false, activeSession: null);
+      unawaited(ref.read(trackingProvider.notifier).stop());
+      return;
+    }
+
+    final params = punch_uc.PunchParams(
+      latitude: location.latitude,
+      longitude: location.longitude,
+      cryptographicSignature: 'gps:${location.timestamp.toIso8601String()}',
     );
+    final result = await sl<punch_uc.PunchCommand>()(params);
+
+    result.fold(
+      (failure) => state = state.copyWith(
+        isCheckingOut: false,
+        checkOutError: failure.message,
+      ),
+      (_) {
+        state = state.copyWith(
+          isCheckingOut: false,
+          activeSession: null,
+          status: CheckInScreenStatus.readyToCheckIn,
+          buttonMode: CheckInButtonMode.enabledNormal,
+        );
+        unawaited(ref.read(trackingProvider.notifier).stop());
+      },
+    );
+  }
+
+  /// Re-evaluates the tenant geofences and returns whether [location] is inside
+  /// the specific zone the session was checked in from (falls back to any zone
+  /// when the check-in fence id is unknown, e.g. an offline check-in).
+  Future<bool> _isInsideCheckInFence(
+    ActiveSession session,
+    GpsLocation location,
+  ) async {
+    final result = await sl<GeofenceRepository>().getGeofences();
+    final fences = result.getOrElse(() => const <Geofence>[]);
+    if (fences.isEmpty) return false;
+
+    final userPoint = LatLng(location.latitude, location.longitude);
+    const distance = Distance();
+    final fenceId = session.checkInGeofenceId;
+
+    for (final fence in fences) {
+      if (fenceId != null && fenceId.isNotEmpty && fence.id != fenceId) {
+        continue;
+      }
+      final center = LatLng(fence.latitude, fence.longitude);
+      final metres = distance.as(LengthUnit.Meter, userPoint, center);
+      if (metres - fence.radiusMeters <= 0) return true;
+    }
+    return false;
+  }
+
+  /// Reads the current GPS position, mapped to [GpsLocation]. Returns null on
+  /// permission denial or timeout.
+  Future<GpsLocation?> _readCurrentLocation() async {
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      return null;
+    }
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 20),
+        ),
+      );
+      return GpsLocation(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        accuracyMeters: position.accuracy,
+        timestamp: position.timestamp,
+        isMockLocation: position.isMocked,
+        altitude: position.altitude,
+        speed: position.speed,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 }

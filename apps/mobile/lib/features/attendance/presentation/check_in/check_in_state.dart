@@ -154,6 +154,11 @@ class ActiveSession with _$ActiveSession {
     int? breaksTaken,
     DateTime? lastBreakStart,
     @Default(false) bool isOnBreak,
+
+    /// Geofence the employee checked in from. Check-out must occur inside this
+    /// same zone (exceptions are handled by admin force-checkout).
+    String? checkInGeofenceId,
+    String? checkInGeofenceName,
   }) = _ActiveSession;
 }
 
@@ -218,6 +223,10 @@ class CheckInState with _$CheckInState {
     @Default(false) bool showSuccessOverlay,
     @Default(false) bool isProcessingBiometric,
     @Default(false) bool isCapturingSelfie,
+
+    // Check-out
+    @Default(false) bool isCheckingOut,
+    String? checkOutError,
 
     // Error
     String? errorMessage,
