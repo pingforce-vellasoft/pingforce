@@ -130,6 +130,6 @@
     "uuid": "^14.0.1"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "npx tsx prisma/seed.ts"
   }
 }
