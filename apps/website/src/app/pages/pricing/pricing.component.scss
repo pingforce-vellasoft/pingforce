@@ -63,7 +63,11 @@
 
 .plan--trial {
   border-color: var(--accent);
-  background: linear-gradient(180deg, var(--accent-wash) 0%, var(--surface) 60%);
+  background: linear-gradient(
+    180deg,
+    var(--accent-wash) 0%,
+    var(--surface) 60%
+  );
 }
 
 .badge {
