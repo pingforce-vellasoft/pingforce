@@ -145,6 +145,15 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'tracking/live',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN_MANAGER'] },
+        loadComponent: () =>
+          import('./pages/tracking/live-tracking.component').then(
+            (m) => m.LiveTrackingComponent,
+          ),
+      },
+      {
         path: 'reports',
         canActivate: [roleGuard],
         data: { roles: ['ADMIN_MANAGER'] },

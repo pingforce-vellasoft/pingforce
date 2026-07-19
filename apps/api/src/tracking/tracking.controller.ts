@@ -56,4 +56,19 @@ export class TrackingController {
   ) {
     return this.trackingService.getTrail(req.user, employeeId, from, to);
   }
+
+  /** Consolidated daily summaries (field-time + top places) for one operator. */
+  @Get(':employeeId/summary')
+  @RequirePermission('TRACKING', 'VIEW_LIVE')
+  async getDailySummaries(
+    @Req() req: AuthRequest,
+    @Param('employeeId') employeeId: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.trackingService.getDailySummaries(
+      req.user,
+      employeeId,
+      limit ? parseInt(limit, 10) : undefined,
+    );
+  }
 }

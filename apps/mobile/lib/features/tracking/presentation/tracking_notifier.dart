@@ -12,7 +12,7 @@ import '../data/location_tracking_service.dart';
 //
 // Background field-operator tracking. Runs ONLY while an attendance session is
 // active (start on check-in, stop on check-out). Keeps the app alive in the
-// background via a location foreground service, captures a fix ~every 60s, and
+// background via a location foreground service, captures a fix ~every 10 min, and
 // enqueues each fix onto the shared offline sync queue (SyncProvider) — so
 // batching, retry/jitter, Hive persistence and offline buffering are all reused.
 // ─────────────────────────────────────────────────────────────────────────────

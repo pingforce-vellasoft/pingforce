@@ -47,7 +47,7 @@ class LocationPing {
 /// wires [onPing] to the queue so this class stays testable and isolate-safe.
 class LocationTrackingService {
   LocationTrackingService({Duration? interval})
-      : _interval = interval ?? const Duration(seconds: 60);
+      : _interval = interval ?? const Duration(minutes: 10);
 
   final Duration _interval;
   final Battery _battery = Battery();

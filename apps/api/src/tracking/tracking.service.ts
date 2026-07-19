@@ -37,21 +37,55 @@ export class TrackingService {
     });
     if (!employee) throw new UnauthorizedException('Not an employee');
 
-    const result = await this.prisma.employeeLocation.createMany({
-      data: dto.pings.map((p) => ({
-        tenantId: user.tenantId,
-        employeeId: employee.id,
-        latitude: p.latitude,
-        longitude: p.longitude,
-        accuracy: p.accuracy ?? null,
-        speed: p.speed ?? null,
-        batteryLevel: p.batteryLevel ?? null,
-        provider: p.provider ?? null,
-        capturedAt: new Date(p.capturedAt),
-        clientRef: p.clientRef,
-      })),
-      skipDuplicates: true,
-    });
+    // Newest ping in the batch drives the live-map position. Batches can arrive
+    // out of order after an offline flush, so pick the max capturedAt.
+    const newest = dto.pings.reduce((a, b) =>
+      new Date(a.capturedAt) >= new Date(b.capturedAt) ? a : b,
+    );
+
+    const capturedAt = new Date(newest.capturedAt);
+
+    // History append + current-position upsert in one round-trip. History write
+    // is idempotent (unique employeeId+clientRef). The latest row is a
+    // conflict-guarded upsert: DO UPDATE only when this fix is NEWER than the
+    // stored one, so an out-of-order offline flush can't rewind the live map.
+    const [result] = await this.prisma.$transaction([
+      this.prisma.employeeLocation.createMany({
+        data: dto.pings.map((p) => ({
+          tenantId: user.tenantId,
+          employeeId: employee.id,
+          latitude: p.latitude,
+          longitude: p.longitude,
+          accuracy: p.accuracy ?? null,
+          speed: p.speed ?? null,
+          batteryLevel: p.batteryLevel ?? null,
+          provider: p.provider ?? null,
+          capturedAt: new Date(p.capturedAt),
+          clientRef: p.clientRef,
+        })),
+        skipDuplicates: true,
+      }),
+      this.prisma.$executeRaw`
+        INSERT INTO "latest_employee_locations"
+          ("employeeId", "tenantId", "latitude", "longitude", "accuracy",
+           "speed", "batteryLevel", "capturedAt", "updatedAt")
+        VALUES
+          (${employee.id}, ${user.tenantId}, ${newest.latitude},
+           ${newest.longitude}, ${newest.accuracy ?? null},
+           ${newest.speed ?? null}, ${newest.batteryLevel ?? null},
+           ${capturedAt}, NOW())
+        ON CONFLICT ("employeeId") DO UPDATE SET
+          "tenantId" = EXCLUDED."tenantId",
+          "latitude" = EXCLUDED."latitude",
+          "longitude" = EXCLUDED."longitude",
+          "accuracy" = EXCLUDED."accuracy",
+          "speed" = EXCLUDED."speed",
+          "batteryLevel" = EXCLUDED."batteryLevel",
+          "capturedAt" = EXCLUDED."capturedAt",
+          "updatedAt" = NOW()
+        WHERE "latest_employee_locations"."capturedAt" < EXCLUDED."capturedAt"
+      `,
+    ]);
 
     return { accepted: result.count, received: dto.pings.length };
   }
@@ -71,11 +105,12 @@ export class TrackingService {
     const scopeWhere = this.rbacService.employeeScopeWhere(scope);
     if (scopeWhere === null) return { data: [] };
 
-    // Latest row per employee: distinct on employeeId with capturedAt desc.
-    const rows = await this.prisma.employeeLocation.findMany({
+    // Reads the current-position table (one row per employee), so the result
+    // is bounded to headcount regardless of how large the breadcrumb history
+    // grows — no DISTINCT ON scan.
+    const rows = await this.prisma.latestEmployeeLocation.findMany({
       where: { tenantId: user.tenantId, ...scopeWhere },
-      distinct: ['employeeId'],
-      orderBy: [{ employeeId: 'asc' }, { capturedAt: 'desc' }],
+      orderBy: { capturedAt: 'desc' },
       select: {
         employeeId: true,
         latitude: true,
@@ -115,22 +150,26 @@ export class TrackingService {
    * Time-bounded breadcrumb trail for one operator, oldest→newest. Enforces the
    * caller's TRACKING:VIEW_LIVE scope so a manager can't read outside their team.
    */
-  async getTrail(user: AuthUser, employeeId: string, from?: string, to?: string) {
+  async getTrail(
+    user: AuthUser,
+    employeeId: string,
+    from?: string,
+    to?: string,
+  ) {
     const scope = await this.rbacService.resolveScopeIds(
       user.tenantId,
       user.userId,
       'TRACKING',
       ['VIEW_LIVE'],
     );
-    const scopeWhere = this.rbacService.employeeScopeWhere(scope);
-    if (scopeWhere === null) throw new NotFoundException('Operator not found');
-
-    // The requested employee must fall within the caller's visible scope.
-    const visible = await this.prisma.employeeLocation.findFirst({
-      where: { tenantId: user.tenantId, employeeId, ...scopeWhere },
-      select: { id: true },
-    });
-    if (!visible) throw new NotFoundException('Operator not found');
+    if (scope.kind === 'NONE') {
+      throw new NotFoundException('Operator not found');
+    }
+    // Scope check is in-memory — no extra probe query. ALL scope needs only the
+    // tenant filter on the trail query below; IDS scope must contain the target.
+    if (scope.kind === 'IDS' && !scope.employeeIds.includes(employeeId)) {
+      throw new NotFoundException('Operator not found');
+    }
 
     const capturedAt: Record<string, Date> = {};
     if (from) capturedAt.gte = new Date(from);
@@ -153,6 +192,49 @@ export class TrackingService {
       },
     });
 
-    return { employeeId, points, truncated: points.length === TRAIL_MAX_POINTS };
+    return {
+      employeeId,
+      points,
+      truncated: points.length === TRAIL_MAX_POINTS,
+    };
+  }
+
+  /**
+   * Consolidated daily summaries for one operator (field-time + top places),
+   * newest day first. Same TRACKING:VIEW_LIVE scope as the live/trail reads.
+   */
+  async getDailySummaries(
+    user: AuthUser,
+    employeeId: string,
+    limit = 90,
+  ) {
+    const scope = await this.rbacService.resolveScopeIds(
+      user.tenantId,
+      user.userId,
+      'TRACKING',
+      ['VIEW_LIVE'],
+    );
+    if (scope.kind === 'NONE') {
+      throw new NotFoundException('Operator not found');
+    }
+    if (scope.kind === 'IDS' && !scope.employeeIds.includes(employeeId)) {
+      throw new NotFoundException('Operator not found');
+    }
+
+    const days = await this.prisma.dailyLocationSummary.findMany({
+      where: { tenantId: user.tenantId, employeeId },
+      orderBy: { day: 'desc' },
+      take: Math.min(Math.max(limit, 1), 365),
+      select: {
+        day: true,
+        minutesInField: true,
+        firstFixAt: true,
+        lastFixAt: true,
+        pointCount: true,
+        topPlaces: true,
+      },
+    });
+
+    return { employeeId, days };
   }
 }

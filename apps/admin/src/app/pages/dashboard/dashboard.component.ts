@@ -210,6 +210,14 @@ import { AuthService } from '../../core/auth/auth.service';
                 <mat-icon matListItemIcon>share_location</mat-icon>
                 <span matListItemTitle>Connection Map</span>
               </a>
+              <a
+                mat-list-item
+                routerLink="/dashboard/tracking/live"
+                routerLinkActive="active-link"
+              >
+                <mat-icon matListItemIcon>my_location</mat-icon>
+                <span matListItemTitle>Live Tracking</span>
+              </a>
 
               <mat-divider></mat-divider>
               <div mat-subheader>Analytics</div>

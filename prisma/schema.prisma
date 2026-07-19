@@ -85,6 +85,8 @@ model Tenant {
   shiftAssignments      ShiftAssignment[]
   geofences             Geofence[]
   employeeLocations     EmployeeLocation[]
+  latestEmployeeLocations LatestEmployeeLocation[]
+  dailyLocationSummaries DailyLocationSummary[]
   gpsValidationLogs     GpsValidationLog[]
   offlineQueues         OfflineQueue[]
   syncLogs              SyncLog[]
@@ -832,6 +834,8 @@ model Employee {
   attendanceCorrections AttendanceCorrection[]
   shiftAssignments      ShiftAssignment[]
   employeeLocations     EmployeeLocation[]
+  latestEmployeeLocation LatestEmployeeLocation?
+  dailyLocationSummaries DailyLocationSummary[]
   gpsValidationLogs     GpsValidationLog[]
   offlineQueues         OfflineQueue[]
   salaryStructures      SalaryStructure[]
@@ -1327,6 +1331,55 @@ model EmployeeLocation {
   @@index([tenantId])
   @@index([employeeId, capturedAt])
   @@map("employee_locations")
+}
+
+/// Current position per employee — exactly one row per employee, upserted on
+/// every ping. The live map reads THIS table (bounded to headcount) instead of
+/// running a DISTINCT ON scan over the millions-of-rows breadcrumb history.
+model LatestEmployeeLocation {
+  employeeId   String   @id
+  tenantId     String
+  latitude     Float
+  longitude    Float
+  accuracy     Float?
+  speed        Float?
+  batteryLevel Int?
+  capturedAt   DateTime
+  updatedAt    DateTime @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, capturedAt])
+  @@map("latest_employee_locations")
+}
+
+/// One consolidated record per employee per day. A nightly job collapses that
+/// day's raw pings into field-time + the top places the operator dwelled, so
+/// long-term storage is one small row/day instead of ~60-120 raw pings.
+/// Raw pings are kept 7 days then deleted; these summaries are kept 90 days.
+model DailyLocationSummary {
+  id             String   @id @default(uuid())
+  tenantId       String
+  employeeId     String
+  /// Local calendar day (midnight) the summary covers.
+  day            DateTime @db.Date
+  /// Minutes between first and last fix of the day (time in the field).
+  minutesInField Int
+  firstFixAt     DateTime
+  lastFixAt      DateTime
+  pointCount     Int
+  /// Up to 5 places the operator spent the most time, ranked by dwell minutes.
+  /// Shape: [{ latitude, longitude, minutes, pings }].
+  topPlaces      Json
+  createdAt      DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, day])
+  @@index([tenantId, day])
+  @@map("daily_location_summaries")
 }
 
 model GpsValidationLog {
