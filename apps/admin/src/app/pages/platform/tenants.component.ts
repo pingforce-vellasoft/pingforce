@@ -1084,11 +1084,9 @@ export class TenantsComponent implements OnInit {
       if (confirmed) {
         this.platformService.resendTenantInvite(tenant.id).subscribe({
           next: (res) => {
-            this.snackBar.open(
-              `Welcome email sent to ${res.email}`,
-              'Close',
-              { duration: 4000 },
-            );
+            this.snackBar.open(`Welcome email sent to ${res.email}`, 'Close', {
+              duration: 4000,
+            });
           },
           error: (err) =>
             this.snackBar.open(
