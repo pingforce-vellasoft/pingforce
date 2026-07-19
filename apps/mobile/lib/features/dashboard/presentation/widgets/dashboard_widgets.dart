@@ -615,6 +615,8 @@ class _QuickActionCellState extends State<_QuickActionCell>
       'person_add': Icons.person_add_rounded,
       'groups': Icons.groups_rounded,
       'map': Icons.map_rounded,
+      'share_location': Icons.share_location_rounded,
+      'add_location_alt': Icons.add_location_alt_rounded,
       'event_busy': Icons.event_busy_rounded,
       'bar_chart': Icons.bar_chart_rounded,
       'folder': Icons.folder_rounded,

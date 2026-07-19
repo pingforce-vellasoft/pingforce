@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/navigation/nav_destinations.dart';
 import '../../../core/network/connectivity_provider.dart';
 import '../../../core/sync/sync_provider.dart';
 import '../../../core/sync/sync_state.dart';
 import '../../../injection_container.dart';
+import '../../auth/domain/repositories/auth_repository.dart';
 import '../data/models/dashboard_summary_model.dart';
 import '../domain/repositories/dashboard_repository.dart';
 import 'dashboard_state.dart';
@@ -46,6 +48,14 @@ class DashboardNotifier extends Notifier<DashboardState> {
   Future<void> load() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
+    // Cached user carries role + attendance-enabled flags the dashboard summary
+    // does not, used to gate admin-only quick actions (e.g. Geofences).
+    final cached = await sl<AuthRepository>().getCachedUser();
+    final user = cached.fold((_) => null, (u) => u);
+    final isAdmin = user != null &&
+        AppUserRoleX.fromRoleCode(user.role) == AppUserRole.admin;
+    final attendanceEnabled = user?.isAttendanceEnabled ?? false;
+
     final result = await _repo.getSummary();
 
     result.fold(
@@ -63,7 +73,11 @@ class DashboardNotifier extends Notifier<DashboardState> {
           user: _mapUser(summary.user),
           attendanceHero: _mapAttendance(summary.attendance),
           kpiCards: _mapKpis(summary.kpiCards),
-          quickActions: _buildQuickActions(summary),
+          quickActions: _buildQuickActions(
+            summary,
+            isAdmin: isAdmin,
+            attendanceEnabled: attendanceEnabled,
+          ),
           activityFeed: _mapActivity(summary.activityFeed),
           unreadNotifications: summary.unreadNotifications,
           errorMessage: null,
@@ -200,9 +214,25 @@ class DashboardNotifier extends Notifier<DashboardState> {
 
   /// Role-gated quick actions. The server does not send these; they are fixed
   /// routes shown based on the user's role and current attendance state.
-  List<QuickAction> _buildQuickActions(DashboardSummaryModel summary) {
+  List<QuickAction> _buildQuickActions(
+    DashboardSummaryModel summary, {
+    bool isAdmin = false,
+    bool attendanceEnabled = false,
+  }) {
     final actions = <QuickAction>[];
     final working = summary.attendance.status == 'working';
+
+    // Admins with the attendance module enabled get a fast path to geofence
+    // setup — they configure zones, they don't clock in.
+    if (isAdmin && attendanceEnabled) {
+      actions.add(const QuickAction(
+        id: 'geofence',
+        label: 'Geofences',
+        iconName: 'add_location_alt',
+        route: '/geofences',
+        isHighlighted: true,
+      ));
+    }
 
     // Check In / Check Out reflects current state.
     if (working) {

@@ -52,6 +52,21 @@ class ConnectivityState {
   @override
   String toString() =>
       'ConnectivityState(status: $status, type: $connectionType)';
+
+  // Value equality so an unchanged connectivity poll does NOT emit a "new"
+  // state every 15s. Without this, each poll builds a fresh object that
+  // Riverpod treats as changed, rebuilding the whole shell + dashboard on a
+  // timer (the app "blinks"). `lastOnlineAt` is deliberately excluded — it
+  // ticks every poll and would defeat the purpose; only status + type matter
+  // to the UI.
+  @override
+  bool operator ==(Object other) =>
+      other is ConnectivityState &&
+      other.status == status &&
+      other.connectionType == connectionType;
+
+  @override
+  int get hashCode => Object.hash(status, connectionType);
 }
 
 // ── Connectivity Notifier ──────────────────────────────────────────────────

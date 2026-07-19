@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../auth/auth_session.dart';
+import '../../features/auth/presentation/current_user_provider.dart';
 import '../theme/theme.dart';
 import '../sync/sync_provider.dart';
 import '../network/connectivity_provider.dart';
@@ -71,6 +72,12 @@ class AppShellState {
 
 final appShellProvider =
     NotifierProvider<AppShellNotifier, AppShellState>(AppShellNotifier.new);
+
+/// Key on the AppShell's Scaffold so inner screens (which have their own nested
+/// Scaffolds) can open the shell's left navigation drawer. `Scaffold.of` from a
+/// screen would resolve to that screen's own Scaffold, which has no drawer.
+final appShellScaffoldKeyProvider =
+    Provider<GlobalKey<ScaffoldState>>((_) => GlobalKey<ScaffoldState>());
 
 class AppShellNotifier extends Notifier<AppShellState> {
   @override
@@ -162,15 +169,26 @@ class _AppShellState extends ConsumerState<AppShell>
       leadBadge: shellState.leadBadge,
     );
 
-    final currentIndex = widget.navigationShell.currentIndex;
-    final currentDest = currentIndex < destinations.length
-        ? destinations[currentIndex]
-        : destinations.first;
+    // `navigationShell.currentIndex` is a BRANCH index; the bottom nav needs the
+    // POSITION of the destination that owns that branch. Translate so the right
+    // tab is highlighted regardless of role (admin Reports ≠ branch 1, etc.).
+    final currentBranch = widget.navigationShell.currentIndex;
+    var selectedNavIndex = destinations.indexWhere(
+      (d) => NavDestinations.branchIndexForRoute(d.rootRoute) == currentBranch,
+    );
+    if (selectedNavIndex < 0) selectedNavIndex = 0;
+
+    final currentDest = destinations[selectedNavIndex];
 
     final fab = currentDest.fab;
 
     return Scaffold(
+      key: ref.watch(appShellScaffoldKeyProvider),
       backgroundColor: Theme.of(context).colorScheme.surface,
+      drawer: _AppDrawer(
+        shellState: shellState,
+        onNavigate: (route) => context.push(route),
+      ),
       body: Column(
         children: [
           // ── Global offline banner ─────────────────────────────────────
@@ -193,7 +211,7 @@ class _AppShellState extends ConsumerState<AppShell>
       // ── Bottom Navigation ────────────────────────────────────────────
       bottomNavigationBar: _AppBottomNav(
         destinations: destinations,
-        currentIndex: currentIndex,
+        currentIndex: selectedNavIndex,
         onTap: _onNavTap,
         onMoreTap: () => _showMoreSheet(context, shellState),
       ),
@@ -222,11 +240,22 @@ class _AppShellState extends ConsumerState<AppShell>
       return;
     }
 
-    if (index == widget.navigationShell.currentIndex) {
+    // Resolve the destination to its actual shell branch. The per-role nav lists
+    // destinations positionally, but goBranch() needs the real branch index —
+    // otherwise e.g. admin's "Reports"/"Settings" tabs land on the wrong branch.
+    final branch = NavDestinations.branchIndexForRoute(dest.rootRoute);
+
+    // Non-branch destinations (e.g. /settings) are modal routes over the shell.
+    if (branch == null) {
+      if (dest.rootRoute.isNotEmpty) context.push(dest.rootRoute);
+      return;
+    }
+
+    if (branch == widget.navigationShell.currentIndex) {
       // Tap active tab → scroll to top (pop to root)
-      widget.navigationShell.goBranch(index, initialLocation: true);
+      widget.navigationShell.goBranch(branch, initialLocation: true);
     } else {
-      widget.navigationShell.goBranch(index);
+      widget.navigationShell.goBranch(branch);
     }
   }
 
@@ -235,6 +264,9 @@ class _AppShellState extends ConsumerState<AppShell>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      // The sheet draws its own drag handle (below); suppress Material's built-in
+      // one so only a single handle shows.
+      showDragHandle: false,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -491,6 +523,124 @@ class _MoreSheetItemState extends State<_MoreSheetItem> {
         ),
       ),
     );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LEFT NAVIGATION DRAWER  (AUDIT §17 — secondary navigation)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Side menu opened from the dashboard app-bar menu icon. Surfaces the same
+// RBAC-filtered secondary modules as the "More" sheet plus Profile, with a
+// user header. Tapping an item closes the drawer and pushes its route.
+
+class _AppDrawer extends ConsumerWidget {
+  const _AppDrawer({required this.shellState, required this.onNavigate});
+
+  final AppShellState shellState;
+  final void Function(String route) onNavigate;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    final syncPending = ref.watch(syncPendingCountProvider);
+
+    final items = NavDestinations.moreSheetItems(
+      hasPermission: (key) =>
+          NavDestinations.roleHasPermission(shellState.role, key),
+      pendingSyncBadge: syncPending,
+    );
+
+    void go(String route) {
+      Navigator.pop(context); // close drawer
+      onNavigate(route);
+    }
+
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── User header (tap → profile) ─────────────────────────────
+            InkWell(
+              onTap: () => go('/profile'),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.space4),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: scheme.primaryContainer,
+                      child: Text(
+                        _initials(user?.name),
+                        style: AppTypography.titleMedium.copyWith(
+                          color: scheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.space3),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.name ?? 'Profile',
+                            style: AppTypography.titleSmall
+                                .copyWith(color: scheme.onSurface),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            shellState.role.label,
+                            style: AppTypography.labelMedium
+                                .copyWith(color: scheme.primary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded,
+                        color: scheme.onSurfaceVariant),
+                  ],
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+
+            // ── Navigation items ─────────────────────────────────────────
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(
+                    vertical: AppSpacing.space2),
+                children: [
+                  for (final dest in items)
+                    ListTile(
+                      leading: Icon(dest.icon, color: scheme.onSurfaceVariant),
+                      title: Text(dest.label),
+                      trailing: dest.hasBadge
+                          ? Badge(
+                              label: Text(dest.badgeLabel),
+                              backgroundColor: scheme.error,
+                              textColor: scheme.onError,
+                            )
+                          : null,
+                      onTap: () => go(dest.rootRoute),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _initials(String? name) {
+    if (name == null || name.trim().isEmpty) return '?';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    final first = parts.first.isNotEmpty ? parts.first[0] : '';
+    final last = parts.length > 1 && parts.last.isNotEmpty ? parts.last[0] : '';
+    final combined = '$first$last';
+    return combined.isEmpty ? '?' : combined.toUpperCase();
   }
 }
 

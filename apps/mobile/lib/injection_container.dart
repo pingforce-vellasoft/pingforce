@@ -34,6 +34,9 @@ import 'features/leave/domain/repositories/leave_repository.dart';
 import 'features/notifications/data/datasources/notification_remote_data_source.dart';
 import 'features/notifications/data/repositories/notification_repository_impl.dart';
 import 'features/notifications/domain/repositories/notification_repository.dart';
+import 'features/geofences/data/datasources/geofence_remote_data_source.dart';
+import 'features/geofences/data/repositories/geofence_repository_impl.dart';
+import 'features/geofences/domain/repositories/geofence_repository.dart';
 
 final sl = GetIt.instance;
 
@@ -131,5 +134,13 @@ Future<void> init() async {
   );
   sl.registerLazySingleton<NotificationRepository>(
     () => NotificationRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // --- Features: Geofences ---
+  sl.registerLazySingleton<GeofenceRemoteDataSource>(
+    () => GeofenceRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<GeofenceRepository>(
+    () => GeofenceRepositoryImpl(remoteDataSource: sl()),
   );
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/navigation/app_shell.dart';
 import '../../../core/navigation/nav_destinations.dart';
 import '../../../core/theme/theme.dart';
 import '../../auth/presentation/current_user_provider.dart';
@@ -121,6 +123,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       surfaceTintColor: Colors.transparent,
       elevation: AppElevation.flat,
       scrolledUnderElevation: AppElevation.level1,
+      // Opens the shell's left navigation drawer. The drawer lives on the
+      // AppShell Scaffold, not this screen's, so open it via the shared key.
+      leading: IconButton(
+        icon: const Icon(Icons.menu_rounded),
+        tooltip: 'Menu',
+        onPressed: () =>
+            ref.read(appShellScaffoldKeyProvider).currentState?.openDrawer(),
+      ),
       flexibleSpace: FlexibleSpaceBar(
         collapseMode: CollapseMode.pin,
         background: Padding(
@@ -219,6 +229,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           }
           return _GeofenceNudgeBanner(
             onDismiss: () => dismissal.dismiss(user.tenantId),
+            onSetup: () => context.push('/geofences'),
           );
         }
         return const SizedBox.shrink();
@@ -231,25 +242,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   List<Widget> _buildContent(BuildContext context, DashboardState state) {
     final widgets = <Widget>[];
 
-    // ── Attendance Hero Card ─────────────────────────────────────────────
-    widgets.add(AttendanceHeroCard(
-      data: state.attendanceHero,
-      isLoading: state.isLoading,
-      onCheckIn: () =>
-          ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
-      onCheckOut: () =>
-          ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
-      onBreak: () =>
-          ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
-      onResume: () =>
-          ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
-      onViewDetails: () =>
-          ref.read(dashboardNotifierProvider.notifier).goToAttendanceHistory(context),
-      onRequestCorrection: () =>
-          ref.read(dashboardNotifierProvider.notifier).goToCorrection(context),
-    ));
+    // Tenant admins/owners do not clock in, so the attendance hero (and its
+    // "No Shift Assigned" empty state) is meaningless for them — hide it.
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    final isAdmin = user != null &&
+        AppUserRoleX.fromRoleCode(user.role) == AppUserRole.admin;
 
-    widgets.add(AppSpacing.sectionGapBox);
+    // ── Attendance Hero Card ─────────────────────────────────────────────
+    if (!isAdmin) {
+      widgets.add(AttendanceHeroCard(
+        data: state.attendanceHero,
+        isLoading: state.isLoading,
+        onCheckIn: () =>
+            ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
+        onCheckOut: () =>
+            ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
+        onBreak: () =>
+            ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
+        onResume: () =>
+            ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
+        onViewDetails: () => ref
+            .read(dashboardNotifierProvider.notifier)
+            .goToAttendanceHistory(context),
+        onRequestCorrection: () =>
+            ref.read(dashboardNotifierProvider.notifier).goToCorrection(context),
+      ));
+      widgets.add(AppSpacing.sectionGapBox);
+    }
 
     // ── Manager: Team Status Card ────────────────────────────────────────
     if ((state.user?.isManager ?? false) && state.teamStatus != null) {
@@ -315,9 +334,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _GeofenceNudgeBanner extends StatelessWidget {
-  const _GeofenceNudgeBanner({required this.onDismiss});
+  const _GeofenceNudgeBanner({required this.onDismiss, required this.onSetup});
 
   final VoidCallback onDismiss;
+  final VoidCallback onSetup;
 
   @override
   Widget build(BuildContext context) {
@@ -336,44 +356,59 @@ class _GeofenceNudgeBanner extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: scheme.tertiary.withValues(alpha: 0.5)),
         ),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.location_off_rounded,
-              size: AppIconSize.md,
-              color: scheme.tertiary,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.location_off_rounded,
+                  size: AppIconSize.md,
+                  color: scheme.tertiary,
+                ),
+                AppSpacing.iconGapBox,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Set up a geofence first',
+                        style: AppTypography.titleSmall.copyWith(
+                          color: scheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.space1),
+                      Text(
+                        'The attendance module is enabled. Configure at least '
+                        'one geofence before adding employees, so their '
+                        'check-ins can be validated.',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  iconSize: AppIconSize.sm,
+                  color: scheme.onSurfaceVariant,
+                  tooltip: 'Dismiss',
+                  onPressed: onDismiss,
+                ),
+              ],
             ),
-            AppSpacing.iconGapBox,
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Set up a geofence first',
-                    style: AppTypography.titleSmall.copyWith(
-                      color: scheme.onSurface,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.space1),
-                  Text(
-                    'The attendance module is enabled. Configure at least one '
-                    'geofence in the web admin portal before adding employees, '
-                    'so their check-ins can be validated.',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+            const SizedBox(height: AppSpacing.space2),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.tonalIcon(
+                onPressed: onSetup,
+                icon: const Icon(Icons.add_location_alt_rounded,
+                    size: AppIconSize.sm),
+                label: const Text('Set up geofence'),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close_rounded),
-              iconSize: AppIconSize.sm,
-              color: scheme.onSurfaceVariant,
-              tooltip: 'Dismiss',
-              onPressed: onDismiss,
             ),
           ],
         ),

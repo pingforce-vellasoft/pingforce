@@ -252,9 +252,10 @@ export class TenantsService {
     const androidUrl =
       process.env.MOBILE_ANDROID_URL ??
       'https://play.google.com/store/apps/details?id=com.vellasoft.pingforce';
-    const iosUrl =
-      process.env.MOBILE_IOS_URL ??
-      'https://apps.apple.com/app/pingforce/id0000000000';
+    // iOS app is not published yet — only show the App Store link once a real
+    // URL is configured via MOBILE_IOS_URL. Until then it is hidden (no
+    // placeholder link that would 404).
+    const iosUrl = process.env.MOBILE_IOS_URL ?? null;
 
     // Custom-scheme deep link — opens the installed app straight onto the login
     // screen with the workspace code (and role) already filled in. Carries no
@@ -304,7 +305,7 @@ export class TenantsService {
     inviteUrl: string;
     webUrl: string;
     androidUrl: string;
-    iosUrl: string;
+    iosUrl: string | null;
   }): string {
     const brand = '#6366f1';
     const ink = '#111827';
@@ -384,9 +385,13 @@ export class TenantsService {
                 <td style="padding-right:10px;">
                   <a href="${p.androidUrl}" style="display:inline-block;padding:10px 18px;font-size:13px;font-weight:600;color:${ink};text-decoration:none;border:1px solid ${line};border-radius:8px;font-family:Arial,Helvetica,sans-serif;">▶ Google Play</a>
                 </td>
-                <td>
+                ${
+                  p.iosUrl
+                    ? `<td>
                   <a href="${p.iosUrl}" style="display:inline-block;padding:10px 18px;font-size:13px;font-weight:600;color:${ink};text-decoration:none;border:1px solid ${line};border-radius:8px;font-family:Arial,Helvetica,sans-serif;"> App Store</a>
-                </td>
+                </td>`
+                    : ''
+                }
               </tr>
             </table>
           </td>

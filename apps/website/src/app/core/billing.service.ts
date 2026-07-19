@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 /** A plan as served by the public billing API (amount in paise). */
 export interface ApiPlan {
@@ -42,7 +43,8 @@ export interface CheckoutResult {
 @Injectable({ providedIn: 'root' })
 export class BillingService {
   private readonly http = inject(HttpClient);
-  private readonly api = '/api/v1/public/billing';
+  // Absolute in prod (api.pingforce.in), relative in dev so the nx proxy handles it.
+  private readonly api = `${environment.apiUrl}/api/v1/public/billing`;
 
   getPlans(): Observable<ApiPlan[]> {
     return this.http.get<ApiPlan[]>(`${this.api}/plans`);

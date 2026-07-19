@@ -26,6 +26,7 @@ import '../../features/profile/presentation/active_sessions_screen.dart';
 import '../../features/profile/presentation/login_history_screen.dart';
 import '../../features/attendance/presentation/history/attendance_history_screen.dart';
 import '../../features/notifications/presentation/notification_center_screen.dart';
+import '../../features/geofences/presentation/geofence_list_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // APP ROUTER  (AUDIT §17 — GoRouter configuration)
@@ -368,6 +369,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'settings',
         builder: (context, state) =>
             const _PlaceholderScreen(name: 'Settings'),
+      ),
+
+      // ── Geofences (attendance zones) — admin, opened from dashboard ──────
+      GoRoute(
+        path: '/geofences',
+        name: 'geofences',
+        builder: (context, state) => const GeofenceListScreen(),
       ),
 
       GoRoute(

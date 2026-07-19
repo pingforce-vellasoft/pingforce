@@ -416,14 +416,14 @@ class NavDestinations {
     int notificationBadge = 0,
     int pendingSyncBadge = 0,
   }) {
+    // Notifications live on the dashboard bell, Reports has its own bottom-nav
+    // tab (admin/manager), and Profile now opens from the avatar — so none of
+    // those belong in the "More" sheet.
     final all = [
-      notifications(badgeCount: notificationBadge),
-      reports(),
       leave(),
       documents(),
       announcements(),
       syncMonitor(badgeCount: pendingSyncBadge),
-      profile(),
       settings(),
     ];
     return all.where((d) => hasPermission(d.permissionKey)).toList();
@@ -506,4 +506,33 @@ class NavDestinations {
     }
     return null;
   }
+
+  // ── Bottom-nav root route → StatefulShell branch index ─────────────────────
+  //
+  // The GoRouter `StatefulShellRoute` branches (see app_router.dart) are, in
+  // order: 0 = /home, 1 = /attendance, 2 = the shared role-feature branch
+  // (/faults, /visits, /leads, /team, /reports all live here), 3 = /more.
+  //
+  // `goBranch(i)` takes a BRANCH index, but the per-role bottom nav lists
+  // destinations in POSITION order, and those two only line up for the default
+  // role. This map lets the shell translate a tapped destination's rootRoute to
+  // the branch it actually belongs to, so e.g. an admin's "Reports" tab lands
+  // on /reports (branch 2) instead of /attendance (branch 1).
+  //
+  // Routes NOT listed here (e.g. /settings) are not shell branches — they are
+  // modal routes pushed over the shell, and the shell handles them via push().
+  static const Map<String, int> _rootRouteBranchIndex = {
+    '/home': 0,
+    '/attendance': 1,
+    '/faults': 2,
+    '/visits': 2,
+    '/leads': 2,
+    '/team': 2,
+    '/reports': 2,
+  };
+
+  /// The shell branch index that owns [rootRoute], or null when the route is a
+  /// modal (non-branch) route that must be pushed instead of switched to.
+  static int? branchIndexForRoute(String rootRoute) =>
+      _rootRouteBranchIndex[rootRoute];
 }
