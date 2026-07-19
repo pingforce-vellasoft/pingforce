@@ -13,9 +13,15 @@
   <div class="container">
     <div class="plan-grid">
       @for (p of plans(); track p.code) {
-        <div class="plan" [class.plan--featured]="p.highlighted">
+        <div
+          class="plan"
+          [class.plan--featured]="p.highlighted"
+          [class.plan--trial]="p.isTrial"
+        >
           @if (p.highlighted) {
             <span class="badge">Most popular</span>
+          } @else if (p.isTrial) {
+            <span class="badge badge--trial">Free trial</span>
           }
           <h3 class="plan-name">{{ p.name }}</h3>
           <p class="plan-tagline">{{ p.tagline }}</p>
@@ -26,11 +32,11 @@
           <button
             type="button"
             class="btn"
-            [class.btn-primary]="p.highlighted"
-            [class.btn-outline]="!p.highlighted"
+            [class.btn-primary]="p.highlighted || p.isTrial"
+            [class.btn-outline]="!p.highlighted && !p.isTrial"
             (click)="openCheckout(p)"
           >
-            Subscribe
+            {{ p.isTrial ? 'Start free trial' : 'Subscribe' }}
           </button>
           <ul class="plan-features">
             @for (feat of p.features; track feat) {

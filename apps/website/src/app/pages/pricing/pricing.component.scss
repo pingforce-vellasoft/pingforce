@@ -28,9 +28,20 @@
 
 .plan-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  /* Four tiers tile evenly on desktop, 2×2 on tablet, single column on phone.
+     Explicit breakpoints (not auto-fit) so the fixed set never leaves an
+     orphan card on a half-empty row. */
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
-  align-items: start;
+  align-items: stretch;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .plan {
@@ -50,6 +61,11 @@
   box-shadow: var(--shadow-pop);
 }
 
+.plan--trial {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, var(--accent-wash) 0%, var(--surface) 60%);
+}
+
 .badge {
   position: absolute;
   top: -0.75rem;
@@ -62,6 +78,10 @@
   text-transform: uppercase;
   padding: 0.25rem 0.7rem;
   border-radius: 999px;
+}
+
+.badge--trial {
+  background: var(--ink);
 }
 
 .plan-name {
@@ -100,6 +120,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  /* Fill remaining card height so equal-height cards align their top content. */
+  flex: 1 0 auto;
 
   li {
     position: relative;
