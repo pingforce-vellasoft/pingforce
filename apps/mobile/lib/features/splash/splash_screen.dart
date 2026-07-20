@@ -326,10 +326,10 @@ class _PingForceLogo extends StatelessWidget {
         ],
       ),
       child: Center(
-        child: Icon(
-          Icons.bolt_rounded,
-          size: size * 0.52,
-          color: Theme.of(context).colorScheme.onPrimary,
+        child: Image.asset(
+          'assets/branding/logo_1024.png',
+          width: size * 0.52,
+          height: size * 0.52,
         ),
       ),
     );

@@ -31,5 +31,13 @@ export const routes: Routes = [
       ),
     title: 'Download the App — PingForce',
   },
+  {
+    path: 'privacy',
+    loadComponent: () =>
+      import('./pages/privacy/privacy.component').then(
+        (m) => m.PrivacyComponent,
+      ),
+    title: 'Privacy Policy — PingForce',
+  },
   { path: '**', redirectTo: '' },
 ];

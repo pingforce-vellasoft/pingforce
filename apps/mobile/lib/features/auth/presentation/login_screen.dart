@@ -254,10 +254,10 @@ class _TenantCodeStep extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: Theme.of(context).colorScheme.primaryContainer,
               ),
-              child: Icon(
-                Icons.bolt_rounded,
-                size: AppIconSize.xl,
-                color: Theme.of(context).colorScheme.primary,
+              child: Image.asset(
+                'assets/branding/logo_1024.png',
+                width: AppIconSize.xl,
+                height: AppIconSize.xl,
               ),
             ),
           ),

@@ -32,8 +32,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     <div class="login-container">
       <mat-card class="login-card">
         <mat-card-header>
-          <div mat-card-avatar class="logo-avatar">
-            <mat-icon color="primary">work</mat-icon>
+          <div mat-card-avatar class="logo-avatar" style="padding: 4px; background: transparent; border: none;">
+            <img src="logo.png" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%;" alt="PingForce Logo" />
           </div>
           <mat-card-title>PingForce Admin</mat-card-title>
           <mat-card-subtitle>Sign in to your workspace</mat-card-subtitle>

@@ -126,11 +126,15 @@ class _PermState {
 class PermissionsFlowScreen extends StatefulWidget {
   const PermissionsFlowScreen({
     super.key,
+    // Only request permissions the app actually uses and declares in the
+    // manifest. Camera, storage and microphone are not requested: the features
+    // behind them (photo capture, offline document download, voice notes) are
+    // not implemented yet and the permissions are not declared, so requesting
+    // them returns permanentlyDenied and dead-ends onboarding. Add each back
+    // here together with its manifest entry when its feature ships.
     this.permissions = const [
       AppPermission.location,
-      AppPermission.camera,
       AppPermission.notifications,
-      AppPermission.storage,
     ],
   });
 
@@ -213,8 +217,17 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
     // For location, escalate to background only if foreground was granted.
     // A denied "Allow all the time" still leaves foreground tracking usable,
     // so we don't downgrade the overall result on background denial.
+    //
+    // Google Play policy requires a prominent in-app disclosure shown BEFORE
+    // the background-location system dialog, describing background collection
+    // in its own right and allowing the user to decline. Requesting
+    // locationAlways without it is grounds for rejection.
     if (result == PermissionGrantStatus.granted && perms.length > 1) {
-      await perms[1].request();
+      if (!mounted) return;
+      final accepted = await _showBackgroundLocationDisclosure();
+      if (accepted == true) {
+        await perms[1].request();
+      }
     }
 
     if (!mounted) return;
@@ -228,6 +241,45 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
 
     await Future<void>.delayed(const Duration(milliseconds: 400));
     if (mounted && result == PermissionGrantStatus.granted) _advance();
+  }
+
+  /// Google Play prominent disclosure for background location.
+  ///
+  /// Must state: what data is collected, that collection continues in the
+  /// background, and what it is used for — before the OS dialog appears.
+  /// Declining leaves foreground-only tracking working.
+  Future<bool?> _showBackgroundLocationDisclosure() {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        icon: Icon(
+          Icons.my_location_rounded,
+          color: Theme.of(ctx).colorScheme.primary,
+          size: 36,
+        ),
+        title: const Text('Allow background location?'),
+        content: const Text(
+          'PingForce collects location data to record your route and visit '
+          'sites for your employer while you are clocked in.\n\n'
+          'This collection continues in the background — while the app is '
+          'closed or not in use — and only between your check-in and '
+          'check-out. It stops when you clock out.\n\n'
+          'You can decline and still use GPS check-in; only background route '
+          'tracking will be unavailable.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('No thanks'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _skipPermission() {

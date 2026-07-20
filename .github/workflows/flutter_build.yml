@@ -13,7 +13,7 @@ on:
 
 jobs:
   build_apk:
-    name: Build Android APK
+    name: Build Android APK + AAB
     runs-on: ubuntu-latest
 
     defaults:
@@ -42,8 +42,42 @@ jobs:
       - name: Run Static Analysis
         run: flutter analyze
 
-      - name: Build APK (Release mode)
-        run: flutter build apk --release
+      # Reconstruct the upload keystore from secrets so release artifacts are
+      # signed with the real key. Without these secrets (e.g. on a fork PR) the
+      # build falls back to debug signing and the AAB is NOT uploadable to Play.
+      - name: Restore Upload Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::No signing secrets present — release build will use debug signing and is NOT uploadable to Play."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          cat > android/key.properties <<EOF
+          storePassword=$STORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=$RUNNER_TEMP/upload.jks
+          EOF
+
+      # versionCode must increase on every Play upload. Derive it from the run
+      # number so uploads are always monotonic.
+      - name: Build AAB (Play upload artifact)
+        run: flutter build appbundle --release --build-number=${{ github.run_number }}
+
+      - name: Build APK (sideload / QA)
+        run: flutter build apk --release --build-number=${{ github.run_number }}
+
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PingForce-Mobile-Release-AAB
+          path: apps/mobile/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -51,3 +85,7 @@ jobs:
           name: PingForce-Mobile-Release-APK
           path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 7
+
+      - name: Remove Keystore
+        if: always()
+        run: rm -f android/key.properties "$RUNNER_TEMP/upload.jks"

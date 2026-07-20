@@ -173,9 +173,9 @@ class _BiometricScreenState extends ConsumerState<BiometricScreen>
                         shape: BoxShape.circle,
                         color: Theme.of(context).colorScheme.primaryContainer,
                       ),
-                      child: Icon(
-                        Icons.bolt_rounded,
-                        color: Theme.of(context).colorScheme.primary,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Image.asset('assets/branding/logo_1024.png'),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.space2),
