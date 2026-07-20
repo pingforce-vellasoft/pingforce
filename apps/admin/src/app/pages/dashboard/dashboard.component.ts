@@ -36,7 +36,11 @@ import { AuthService } from '../../core/auth/auth.service';
         <button mat-icon-button (click)="sidenav.toggle()">
           <mat-icon>menu</mat-icon>
         </button>
-        <img src="logo.png" style="height: 32px; margin-left: 8px; border-radius: 6px;" alt="PingForce Logo" />
+        <img
+          src="logo.png"
+          style="height: 32px; margin-left: 8px; border-radius: 6px;"
+          alt="PingForce Logo"
+        />
         <span>PingForce Admin Dashboard</span>
 
         @if (

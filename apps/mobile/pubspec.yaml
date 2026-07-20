@@ -128,13 +128,13 @@ flutter:
 # This regenerates Android mipmaps (all densities + adaptive), iOS AppIcon,
 # and the web icons from that single source.
 flutter_launcher_icons:
-  image_path: "assets/branding/logo_1024.png"
-  android: "ic_launcher"
+  image_path: 'assets/branding/logo_1024.png'
+  android: 'ic_launcher'
   min_sdk_android: 24
   remove_alpha_ios: true
   ios: true
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/branding/logo_foreground_1024.png"
+  adaptive_icon_background: '#FFFFFF'
+  adaptive_icon_foreground: 'assets/branding/logo_foreground_1024.png'
   web:
     generate: true
-    image_path: "assets/branding/logo_1024.png"
+    image_path: 'assets/branding/logo_1024.png'
