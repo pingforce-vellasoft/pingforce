@@ -38,6 +38,17 @@ export class PlatformService {
     return this.http.patch(`/api/v1/tenants/${id}/provisioning`, payload);
   }
 
+  /** Manually activate a PROVISIONING tenant without email verification. */
+  activateTenant(
+    id: string,
+  ): Observable<{ success: boolean; status: string; email: string | null }> {
+    return this.http.post<{
+      success: boolean;
+      status: string;
+      email: string | null;
+    }>(`/api/v1/tenants/${id}/activate`, {});
+  }
+
   resendTenantInvite(
     id: string,
   ): Observable<{ success: boolean; email: string }> {

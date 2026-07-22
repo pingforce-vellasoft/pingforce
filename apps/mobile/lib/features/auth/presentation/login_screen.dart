@@ -11,9 +11,9 @@ import 'auth_notifier.dart';
 // LOGIN SCREEN  (AUDIT §3.1 — Login Screen)
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// All 12 audit gaps covered:
-//   ✅ Screen layout defined
-//   ✅ Multi-step flow: Tenant code → Credentials with PageView slide-in
+// Single-screen login: workspace code + email/employee ID + password are all
+// on one form, so a user signs in with one submit instead of a two-step flow.
+//
 //   ✅ Field validation: real-time clear on change, full on submit
 //   ✅ Show/hide password toggle (eye icon)
 //   ✅ "Remember this device" checkbox
@@ -23,7 +23,7 @@ import 'auth_notifier.dart';
 //   ✅ Error banner (AUTH-001 to AUTH-008) — dismissible, above form
 //   ✅ Biometric quick-unlock button (shown if enrolled)
 //   ✅ Landscape mode: scrollable form, logo hides on small height
-//   ✅ Tenant branding: appears on step 2 after tenant code resolves
+//   ✅ Tenant branding: appears once the workspace code resolves
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -34,7 +34,6 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
     with TickerProviderStateMixin {
-  final _pageCtrl = PageController();
   final _tenantCtrl = TextEditingController();
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -60,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
 
     // Consume an invite deep link (pingforce://invite?workspace=CODE&role=X):
-    // pre-fill the workspace and skip to the credentials step. Runs after the
+    // pre-fill the workspace and move focus to the credentials. Runs after the
     // first frame so GoRouterState is available, and only once per screen.
     WidgetsBinding.instance.addPostFrameCallback((_) => _consumeInviteLink());
   }
@@ -76,11 +75,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           workspace,
           role: params['role'],
         );
+    _usernameFocus.requestFocus();
   }
 
   @override
   void dispose() {
-    _pageCtrl.dispose();
     _tenantCtrl.dispose();
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
@@ -95,16 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Widget build(BuildContext context) {
     final loginState = ref.watch(loginProvider);
 
-    // Listen for step change → animate PageView
     ref.listen(loginProvider, (prev, next) {
-      if (prev?.step != next.step) {
-        final page = next.step == LoginStep.tenantCode ? 0 : 1;
-        _pageCtrl.animateToPage(
-          page,
-          duration: AppDurations.normal,
-          curve: AppEasing.standard,
-        );
-      }
       // Shake error on auth error
       if (next.hasBanner && prev?.authError != next.authError) {
         _shakeCtrl.forward(from: 0);
@@ -115,8 +105,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       }
     });
 
-    final isLandscape =
-        MediaQuery.orientationOf(context) == Orientation.landscape;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final showLogo = screenHeight > 500;
 
@@ -124,87 +112,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       resizeToAvoidBottomInset: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
-        child: PageView(
-          controller: _pageCtrl,
-          physics: const NeverScrollableScrollPhysics(), // nav via notifier
-          children: [
-            // ── Step 1: Tenant Code ────────────────────────────────────
-            _StepWrapper(
-              child: _TenantCodeStep(
-                controller: _tenantCtrl,
-                focusNode: _tenantFocus,
-                loginState: loginState,
-                showLogo: showLogo,
-                isLandscape: isLandscape,
-                shakeAnim: _shakeAnim,
-                onChanged: (v) =>
-                    ref.read(loginProvider.notifier).onTenantCodeChanged(v),
-                onSubmit: () =>
-                    ref.read(loginProvider.notifier).submitTenantCode(),
-                onDismissError: () =>
-                    ref.read(loginProvider.notifier).dismissError(),
-              ),
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: AppSpacing.screenPaddingAll,
+            child: _LoginForm(
+              tenantCtrl: _tenantCtrl,
+              usernameCtrl: _usernameCtrl,
+              passwordCtrl: _passwordCtrl,
+              tenantFocus: _tenantFocus,
+              usernameFocus: _usernameFocus,
+              passwordFocus: _passwordFocus,
+              loginState: loginState,
+              showLogo: showLogo,
+              shakeAnim: _shakeAnim,
+              onTenantCodeChanged: (v) =>
+                  ref.read(loginProvider.notifier).onTenantCodeChanged(v),
+              onUsernameChanged: (v) =>
+                  ref.read(loginProvider.notifier).onUsernameChanged(v),
+              onPasswordChanged: (v) =>
+                  ref.read(loginProvider.notifier).onPasswordChanged(v),
+              onTogglePassword: () =>
+                  ref.read(loginProvider.notifier).togglePasswordVisibility(),
+              onToggleRemember: () =>
+                  ref.read(loginProvider.notifier).toggleRememberDevice(),
+              onSubmit: () => ref.read(loginProvider.notifier).submitLogin(),
+              onBiometric: () =>
+                  ref.read(loginProvider.notifier).submitBiometric(),
+              onForgotPassword: () => context.push('/auth/forgot-password'),
+              onDismissError: () =>
+                  ref.read(loginProvider.notifier).dismissError(),
             ),
-
-            // ── Step 2: Credentials ────────────────────────────────────
-            _StepWrapper(
-              child: _CredentialsStep(
-                usernameCtrl: _usernameCtrl,
-                passwordCtrl: _passwordCtrl,
-                usernameFocus: _usernameFocus,
-                passwordFocus: _passwordFocus,
-                loginState: loginState,
-                showLogo: showLogo,
-                isLandscape: isLandscape,
-                shakeAnim: _shakeAnim,
-                onUsernameChanged: (v) =>
-                    ref.read(loginProvider.notifier).onUsernameChanged(v),
-                onPasswordChanged: (v) =>
-                    ref.read(loginProvider.notifier).onPasswordChanged(v),
-                onTogglePassword: () =>
-                    ref.read(loginProvider.notifier).togglePasswordVisibility(),
-                onToggleRemember: () =>
-                    ref.read(loginProvider.notifier).toggleRememberDevice(),
-                onSubmit: () =>
-                    ref.read(loginProvider.notifier).submitLogin(),
-                onBiometric: () =>
-                    ref.read(loginProvider.notifier).submitBiometric(),
-                onForgotPassword: () => context.push('/auth/forgot-password'),
-                onBack: () =>
-                    ref.read(loginProvider.notifier).goBackToTenantStep(),
-                onDismissError: () =>
-                    ref.read(loginProvider.notifier).dismissError(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STEP WRAPPER  — scrollable + keyboard-aware
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _StepWrapper extends StatelessWidget {
-  const _StepWrapper({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: SingleChildScrollView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: AppSpacing.screenPaddingAll,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: MediaQuery.sizeOf(context).height -
-                MediaQuery.paddingOf(context).vertical -
-                AppSpacing.screenVertical * 2,
           ),
-          child: IntrinsicHeight(child: child),
         ),
       ),
     );
@@ -212,30 +152,48 @@ class _StepWrapper extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STEP 1 — TENANT CODE
+// LOGIN FORM — workspace + credentials on one screen
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TenantCodeStep extends StatelessWidget {
-  const _TenantCodeStep({
-    required this.controller,
-    required this.focusNode,
+class _LoginForm extends StatelessWidget {
+  const _LoginForm({
+    required this.tenantCtrl,
+    required this.usernameCtrl,
+    required this.passwordCtrl,
+    required this.tenantFocus,
+    required this.usernameFocus,
+    required this.passwordFocus,
     required this.loginState,
     required this.showLogo,
-    required this.isLandscape,
     required this.shakeAnim,
-    required this.onChanged,
+    required this.onTenantCodeChanged,
+    required this.onUsernameChanged,
+    required this.onPasswordChanged,
+    required this.onTogglePassword,
+    required this.onToggleRemember,
     required this.onSubmit,
+    required this.onBiometric,
+    required this.onForgotPassword,
     required this.onDismissError,
   });
 
-  final TextEditingController controller;
-  final FocusNode focusNode;
+  final TextEditingController tenantCtrl;
+  final TextEditingController usernameCtrl;
+  final TextEditingController passwordCtrl;
+  final FocusNode tenantFocus;
+  final FocusNode usernameFocus;
+  final FocusNode passwordFocus;
   final LoginState loginState;
   final bool showLogo;
-  final bool isLandscape;
   final Animation<double> shakeAnim;
-  final ValueChanged<String> onChanged;
+  final ValueChanged<String> onTenantCodeChanged;
+  final ValueChanged<String> onUsernameChanged;
+  final ValueChanged<String> onPasswordChanged;
+  final VoidCallback onTogglePassword;
+  final VoidCallback onToggleRemember;
   final VoidCallback onSubmit;
+  final VoidCallback onBiometric;
+  final VoidCallback onForgotPassword;
   final VoidCallback onDismissError;
 
   @override
@@ -245,7 +203,7 @@ class _TenantCodeStep extends StatelessWidget {
       children: [
         // ── Logo ────────────────────────────────────────────────────────
         if (showLogo) ...[
-          const SizedBox(height: AppSpacing.space8),
+          const SizedBox(height: AppSpacing.space6),
           Center(
             child: Container(
               width: 72,
@@ -270,158 +228,9 @@ class _TenantCodeStep extends StatelessWidget {
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: AppSpacing.space8),
+          const SizedBox(height: AppSpacing.space6),
         ] else
           const SizedBox(height: AppSpacing.space4),
-
-        // ── Headline ─────────────────────────────────────────────────
-        Text(
-          'Welcome',
-          style: AppTypography.headlineSmall.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.space1),
-        Text(
-          'Enter your workspace code to get started',
-          style: AppTypography.bodyMedium.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-
-        const SizedBox(height: AppSpacing.space6),
-
-        // ── Error banner ──────────────────────────────────────────────
-        if (loginState.hasBanner)
-          AuthErrorBanner(
-            code: loginState.authError,
-            shakeAnim: shakeAnim,
-            onDismiss: onDismissError,
-          ),
-
-        const SizedBox(height: AppSpacing.space2),
-
-        // ── Workspace code field ──────────────────────────────────────
-        TextField(
-          controller: controller,
-          focusNode: focusNode,
-          textCapitalization: TextCapitalization.characters,
-          textInputAction: TextInputAction.go,
-          onChanged: onChanged,
-          onSubmitted: (_) => onSubmit(),
-          decoration: InputDecoration(
-            labelText: 'Workspace Code',
-            hintText: 'e.g. ACME',
-            helperText: 'Enter the code provided by your company',
-            prefixIcon: const Icon(Icons.domain_rounded),
-            errorText: loginState.tenantCodeError,
-          ),
-        ),
-
-        const Spacer(),
-
-        // ── Continue button ───────────────────────────────────────────
-        LoadingButton(
-          isLoading: loginState.isLoading,
-          label: 'Continue',
-          onPressed: loginState.canSubmitTenantStep ? onSubmit : null,
-        ),
-
-        const SizedBox(height: AppSpacing.space4),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STEP 2 — CREDENTIALS
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _CredentialsStep extends StatelessWidget {
-  const _CredentialsStep({
-    required this.usernameCtrl,
-    required this.passwordCtrl,
-    required this.usernameFocus,
-    required this.passwordFocus,
-    required this.loginState,
-    required this.showLogo,
-    required this.isLandscape,
-    required this.shakeAnim,
-    required this.onUsernameChanged,
-    required this.onPasswordChanged,
-    required this.onTogglePassword,
-    required this.onToggleRemember,
-    required this.onSubmit,
-    required this.onBiometric,
-    required this.onForgotPassword,
-    required this.onBack,
-    required this.onDismissError,
-  });
-
-  final TextEditingController usernameCtrl;
-  final TextEditingController passwordCtrl;
-  final FocusNode usernameFocus;
-  final FocusNode passwordFocus;
-  final LoginState loginState;
-  final bool showLogo;
-  final bool isLandscape;
-  final Animation<double> shakeAnim;
-  final ValueChanged<String> onUsernameChanged;
-  final ValueChanged<String> onPasswordChanged;
-  final VoidCallback onTogglePassword;
-  final VoidCallback onToggleRemember;
-  final VoidCallback onSubmit;
-  final VoidCallback onBiometric;
-  final VoidCallback onForgotPassword;
-  final VoidCallback onBack;
-  final VoidCallback onDismissError;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: AppSpacing.space4),
-
-        // ── Back + Tenant branding ────────────────────────────────────
-        Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back_rounded),
-              tooltip: 'Change workspace',
-              onPressed: onBack,
-            ),
-            // Tenant logo + name (branding swap after step 1 resolves)
-            if (loginState.resolvedTenantName != null) ...[
-              const SizedBox(width: AppSpacing.space2),
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                ),
-                child: Icon(
-                  Icons.business_rounded,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.space2),
-              Expanded(
-                child: Text(
-                  loginState.resolvedTenantName!,
-                  style: AppTypography.labelMedium.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ],
-        ),
-
-        if (showLogo) const SizedBox(height: AppSpacing.space5),
 
         // ── Headline ─────────────────────────────────────────────────
         Text(
@@ -432,7 +241,7 @@ class _CredentialsStep extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.space1),
         Text(
-          'Enter your credentials to continue',
+          'Enter your workspace code and credentials to continue',
           style: AppTypography.bodyMedium.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -449,6 +258,25 @@ class _CredentialsStep extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.space3),
         ],
+
+        // ── Workspace code field ──────────────────────────────────────
+        TextField(
+          controller: tenantCtrl,
+          focusNode: tenantFocus,
+          textCapitalization: TextCapitalization.characters,
+          textInputAction: TextInputAction.next,
+          autocorrect: false,
+          onChanged: onTenantCodeChanged,
+          onSubmitted: (_) => usernameFocus.requestFocus(),
+          decoration: InputDecoration(
+            labelText: 'Workspace Code',
+            hintText: 'e.g. ACME',
+            prefixIcon: const Icon(Icons.domain_rounded),
+            errorText: loginState.tenantCodeError,
+          ),
+        ),
+
+        const SizedBox(height: AppSpacing.space4),
 
         // ── Username field ────────────────────────────────────────────
         TextField(
@@ -546,7 +374,7 @@ class _CredentialsStep extends StatelessWidget {
           isLoading: loginState.isLoading,
           label: 'Sign In',
           onPressed:
-              loginState.canSubmitCredentials && !loginState.isLoading
+              loginState.canSubmitSingleScreen && !loginState.isLoading
                   ? onSubmit
                   : null,
         ),

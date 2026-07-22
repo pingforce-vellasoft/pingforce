@@ -154,6 +154,11 @@ class LoginState with _$LoginState {
 
   bool get canSubmitCredentials =>
       username.trim().isNotEmpty && password.length >= 6;
+
+  /// Single-screen login: workspace code + credentials are all on one form,
+  /// so the Sign In button needs every field to be filled.
+  bool get canSubmitSingleScreen =>
+      canSubmitTenantStep && canSubmitCredentials;
 }
 
 // ── Forgot password state ──────────────────────────────────────────────────

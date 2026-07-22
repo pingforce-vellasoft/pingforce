@@ -78,15 +78,31 @@ async function main() {
   const superAdminPassword = process.env.SEED_SUPER_ADMIN_PASSWORD;
 
   if (!superAdminPassword) {
-    console.warn(
-      'SEED_SUPER_ADMIN_PASSWORD is not set — skipping super admin creation. ' +
-        'Set it in the environment to (re)provision the super admin account.',
+    // Skipping is only safe when a usable super admin already exists. Without
+    // this check the seed exits 0 on a fresh database and every login fails
+    // with "Invalid super admin credentials" — the account was never created.
+    const existing = await prisma.superAdmin.count({
+      where: { status: 'ACTIVE', deletedAt: null },
+    });
+
+    if (existing === 0) {
+      throw new Error(
+        'SEED_SUPER_ADMIN_PASSWORD is not set and no active super admin exists. ' +
+          'The deployment would have no way to log in. Re-run with ' +
+          'SEED_SUPER_ADMIN_PASSWORD set to provision the account.',
+      );
+    }
+
+    console.log(
+      `SEED_SUPER_ADMIN_PASSWORD not set — keeping ${existing} existing super admin(s) untouched.`,
     );
   } else {
     const passwordHash = await argon2.hash(superAdminPassword);
+    // Reactivate on update: a suspended or soft-deleted account would otherwise
+    // keep failing login even after a successful reseed.
     const admin = await prisma.superAdmin.upsert({
       where: { email: superAdminEmail },
-      update: { passwordHash },
+      update: { passwordHash, status: 'ACTIVE', deletedAt: null },
       create: {
         email: superAdminEmail,
         name: 'Super Admin',

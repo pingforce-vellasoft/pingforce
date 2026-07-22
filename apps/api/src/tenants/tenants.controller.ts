@@ -6,12 +6,17 @@ import {
   Delete,
   Param,
   Body,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
+
+interface AuthRequest {
+  user: { userId: string; tenantId: string };
+}
 
 @Controller('tenants')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -40,6 +45,16 @@ export class TenantsController {
   @RequirePermission('platform', 'manage')
   async resendInvite(@Param('id') id: string) {
     return this.tenantsService.resendWelcomeInvite(id);
+  }
+
+  /**
+   * Manually activate a PROVISIONING (self-signup) tenant, bypassing the email
+   * verification code. Super-admin only.
+   */
+  @Post(':id/activate')
+  @RequirePermission('platform', 'manage')
+  async activate(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.tenantsService.activateTenant(id, req.user?.userId);
   }
 
   @Patch(':id/provisioning')

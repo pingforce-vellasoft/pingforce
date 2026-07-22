@@ -21,7 +21,21 @@ final loginProvider =
 
 class LoginNotifier extends Notifier<LoginState> {
   @override
-  LoginState build() => const LoginState();
+  LoginState build() {
+    // Single-screen login has no tenant-code step to hang the biometric probe
+    // off, so resolve availability once when the screen's provider is created.
+    unawaited(_refreshBiometricState());
+    return const LoginState();
+  }
+
+  Future<void> _refreshBiometricState() async {
+    final available = await _checkBiometricAvailability();
+    final enrolled = await _checkBiometricEnrolled();
+    state = state.copyWith(
+      isBiometricAvailable: available,
+      isBiometricEnabled: enrolled,
+    );
+  }
 
   // ── Step 1: Tenant code ────────────────────────────────────────────────
 
@@ -34,8 +48,8 @@ class LoginNotifier extends Notifier<LoginState> {
   }
 
   /// Pre-fill the workspace from an invite deep link
-  /// (`pingforce://invite?workspace=CODE&role=X`) and jump straight to the
-  /// credentials step so the admin only has to type their email + password.
+  /// (`pingforce://invite?workspace=CODE&role=X`) so the admin only has to
+  /// type their email + password.
   ///
   /// Idempotent: if the workspace already matches (e.g. a rebuild re-delivers
   /// the same link) it does nothing, so it won't stomp a code the user is
@@ -43,50 +57,16 @@ class LoginNotifier extends Notifier<LoginState> {
   void prefillFromInvite(String workspace, {String? role}) {
     final code = workspace.trim().toUpperCase();
     if (code.isEmpty) return;
-    if (state.tenantCode.trim().toUpperCase() == code &&
-        state.step == LoginStep.credentials) {
-      return;
-    }
+    if (state.tenantCode.trim().toUpperCase() == code) return;
     state = state.copyWith(
       tenantCode: code,
       tenantCodeError: null,
       authError: AuthErrorCode.none,
       resolvedTenantName: code,
-      step: LoginStep.credentials,
     );
   }
 
-  Future<void> submitTenantCode() async {
-    if (!state.canSubmitTenantStep) {
-      state = state.copyWith(
-        tenantCodeError: 'Please enter your workspace code',
-      );
-      return;
-    }
-
-    state = state.copyWith(isLoading: true, authError: AuthErrorCode.none);
-
-    try {
-      // The tenant code is validated server-side at login; advance to
-      // credentials with the code as the workspace label until a public
-      // tenant-branding endpoint exists.
-      final code = state.tenantCode.trim().toUpperCase();
-      state = state.copyWith(
-        isLoading: false,
-        step: LoginStep.credentials,
-        resolvedTenantName: code,
-        isBiometricAvailable: await _checkBiometricAvailability(),
-        isBiometricEnabled: await _checkBiometricEnrolled(),
-      );
-    } on Exception {
-      state = state.copyWith(
-        isLoading: false,
-        authError: AuthErrorCode.networkError,
-      );
-    }
-  }
-
-  // ── Step 2: Credentials ────────────────────────────────────────────────
+  // ── Credentials ────────────────────────────────────────────────────────
 
   void onUsernameChanged(String value) {
     state = state.copyWith(
@@ -114,8 +94,15 @@ class LoginNotifier extends Notifier<LoginState> {
 
   Future<void> submitLogin() async {
     // ── Field-level validation (real-time style, triggered on submit) ──
+    String? tenantCodeError;
     String? usernameError;
     String? passwordError;
+
+    if (state.tenantCode.trim().isEmpty) {
+      tenantCodeError = 'Workspace code is required';
+    } else if (state.tenantCode.trim().length < 3) {
+      tenantCodeError = 'Workspace code must be at least 3 characters';
+    }
 
     if (state.username.trim().isEmpty) {
       usernameError = 'Email or employee ID is required';
@@ -130,8 +117,11 @@ class LoginNotifier extends Notifier<LoginState> {
       passwordError = 'Password must be at least 6 characters';
     }
 
-    if (usernameError != null || passwordError != null) {
+    if (tenantCodeError != null ||
+        usernameError != null ||
+        passwordError != null) {
       state = state.copyWith(
+        tenantCodeError: tenantCodeError,
         usernameError: usernameError,
         passwordError: passwordError,
       );
@@ -198,17 +188,6 @@ class LoginNotifier extends Notifier<LoginState> {
         authError: AuthErrorCode.invalidCredentials,
       );
     }
-  }
-
-  // ── Navigation back to step 1 ──────────────────────────────────────────
-
-  void goBackToTenantStep() {
-    state = state.copyWith(
-      step: LoginStep.tenantCode,
-      authError: AuthErrorCode.none,
-      usernameError: null,
-      passwordError: null,
-    );
   }
 
   void dismissError() {

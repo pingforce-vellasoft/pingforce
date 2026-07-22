@@ -11,6 +11,7 @@ import { syncSystemRolePermissions } from '../rbac/permission-catalog';
 import { seedDefaultNotificationTemplates } from '../notifications/default-templates';
 import { NotificationsService } from '../notifications/notifications.service';
 import { generateStrongPassword } from '../common/utils/password-generator';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class TenantsService {
@@ -19,6 +20,7 @@ export class TenantsService {
   constructor(
     @Inject('IPrismaService') private readonly prisma: IPrismaService,
     private readonly notifications: NotificationsService,
+    private readonly audit: AuditService,
   ) {}
 
   async create(data: any) {
@@ -232,6 +234,90 @@ export class TenantsService {
     }
 
     return { success: true, email: admin.email };
+  }
+
+  /**
+   * Super-admin manual activation: flips a self-signup tenant from PROVISIONING
+   * to ACTIVE without the email-verification OTP. Used when the admin's
+   * verification mail never arrives (bad SMTP, typo'd inbox) or when the sales
+   * team onboards a tenant out of band. The welcome email carrying the workspace
+   * ID is still sent, best-effort, so the admin knows how to sign in.
+   *
+   * Only PROVISIONING → ACTIVE is allowed here; re-enabling a SUSPENDED tenant
+   * stays on the existing status-toggle path so suspension is never silently
+   * undone by an "activate" click.
+   */
+  async activateTenant(
+    tenantId: string,
+    actorId?: string,
+  ): Promise<{ success: boolean; status: string; email: string | null }> {
+    const tenant = await this.prisma.tenant.findFirst({
+      where: { id: tenantId, deletedAt: null },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found.');
+    }
+
+    if (tenant.status === 'ACTIVE') {
+      return { success: true, status: 'ACTIVE', email: null };
+    }
+
+    if (tenant.status !== 'PROVISIONING') {
+      throw new BadRequestException(
+        `Cannot activate a tenant in status ${tenant.status}. Use the enable/disable action instead.`,
+      );
+    }
+
+    await this.prisma.tenant.update({
+      where: { id: tenant.id },
+      data: { status: 'ACTIVE', updatedBy: actorId },
+    });
+
+    const admin = await this.prisma.user.findFirst({
+      where: {
+        tenantId: tenant.id,
+        clientCode: 'TENANT_ADMIN',
+        deletedAt: null,
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { email: true },
+    });
+
+    void this.audit.log({
+      tenantId: tenant.id,
+      actorId,
+      module: 'TENANTS',
+      entityName: 'tenant',
+      entityId: tenant.id,
+      action: 'TENANT_ACTIVATED_MANUALLY',
+      severity: 'MEDIUM',
+    });
+
+    if (admin?.email) {
+      // Best-effort — activation already succeeded, a mail outage must not
+      // roll it back (that is the very failure this endpoint works around).
+      try {
+        await this.notifications.sendRawEmail(
+          admin.email,
+          `Welcome to PingForce — ${tenant.name} is ready`,
+          `<p>Your PingForce workspace has been activated.</p>
+           <ul>
+             <li><strong>Workspace ID:</strong> ${tenant.code}</li>
+             <li><strong>Sign-in email:</strong> ${admin.email}</li>
+           </ul>
+           <p>Sign in with the password you chose at signup.</p>
+           <p><a href="${process.env.ADMIN_WEB_URL ?? 'https://admin.pingforce.in'}">Open the admin portal</a></p>`,
+          tenant.id,
+        );
+      } catch {
+        this.logger.warn(
+          `Tenant ${tenant.code} activated but the welcome email failed to send.`,
+        );
+      }
+    }
+
+    return { success: true, status: 'ACTIVE', email: admin?.email ?? null };
   }
 
   /**

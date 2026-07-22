@@ -51,13 +51,24 @@ services:
   # Uses the same GHCR image as api. Seed is idempotent (all upserts), so it is
   # safe to run on every deploy. Run before (re)starting api after a schema change:
   #   docker compose run --rm migrate
+  #
+  # SEED_SUPER_ADMIN_PASSWORD must be set in .env, or the seed aborts when no
+  # active super admin exists (otherwise the deployment has no way to log in).
+  # The seed entrypoint is "tsx prisma/seed.ts", and tsx is a devDependency that
+  # the production image does not ship — so pin+install it here rather than
+  # letting `npx` silently reach out to the network mid-deploy.
   migrate:
     image: ${API_IMAGE:-ghcr.io/pingforce-vellasoft/pingforce-api:latest}
     profiles: ['tools']
     env_file: .env
     environment:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?schema=public
-    command: ['sh', '-c', 'npx prisma migrate deploy && npx prisma db seed']
+    command:
+      [
+        'sh',
+        '-c',
+        'npx prisma migrate deploy && npx --yes tsx@4 prisma/seed.ts',
+      ]
     depends_on:
       postgres:
         condition: service_healthy

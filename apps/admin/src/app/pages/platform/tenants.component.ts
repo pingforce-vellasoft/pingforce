@@ -534,6 +534,11 @@ export class ConfirmActionDialogComponent {
                     "
                     >{{ tenant.subscriptionStatus || 'N/A' }}</span
                   >
+                  @if (tenant.status === 'PROVISIONING') {
+                    <span class="status-badge provisioning"
+                      >Pending Verification</span
+                    >
+                  }
                 </div>
               </td>
             </ng-container>
@@ -583,6 +588,14 @@ export class ConfirmActionDialogComponent {
                       <span>Edit Details</span>
                     </div>
                   </button>
+                  @if (tenant.status === 'PROVISIONING') {
+                    <button mat-menu-item (click)="activateTenant(tenant)">
+                      <div class="menu-item-content">
+                        <mat-icon color="primary">verified</mat-icon>
+                        <span>Activate Without Email</span>
+                      </div>
+                    </button>
+                  }
                   <button mat-menu-item (click)="resendInvite(tenant)">
                     <div class="menu-item-content">
                       <mat-icon>mail</mat-icon>
@@ -821,6 +834,11 @@ export class ConfirmActionDialogComponent {
         background: rgba(100, 116, 139, 0.1);
         color: #94a3b8;
         border: 1px solid rgba(100, 116, 139, 0.2);
+      }
+      .status-badge.provisioning {
+        background: rgba(56, 189, 248, 0.1);
+        color: #38bdf8;
+        border: 1px solid rgba(56, 189, 248, 0.2);
       }
       .status-badge.unknown {
         background: rgba(100, 116, 139, 0.1);
@@ -1091,6 +1109,45 @@ export class TenantsComponent implements OnInit {
           error: (err) =>
             this.snackBar.open(
               err?.error?.message || 'Failed to resend welcome email',
+              'Close',
+              { duration: 4000 },
+            ),
+        });
+      }
+    });
+  }
+
+  /**
+   * Bypasses the self-signup email verification code and marks the workspace
+   * ACTIVE. Only offered for PROVISIONING tenants — suspended accounts are
+   * re-enabled through the enable/disable action.
+   */
+  activateTenant(tenant: any) {
+    const dialogRef = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '460px',
+      data: {
+        title: 'Activate Without Email Verification?',
+        message: `Activate <strong>${tenant.name}</strong> immediately?`,
+        subMessage:
+          'The tenant admin will be able to sign in without entering the emailed verification code. Use this when the verification email never arrived or the tenant was onboarded manually.',
+        confirmText: 'Yes, Activate',
+        isDanger: false,
+        icon: 'verified',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.platformService.activateTenant(tenant.id).subscribe({
+          next: () => {
+            this.snackBar.open(`${tenant.name} is now active`, 'Close', {
+              duration: 4000,
+            });
+            this.loadTenants();
+          },
+          error: (err) =>
+            this.snackBar.open(
+              err?.error?.message || 'Failed to activate tenant',
               'Close',
               { duration: 4000 },
             ),
