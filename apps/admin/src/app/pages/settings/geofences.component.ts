@@ -95,8 +95,8 @@ import { buildTileLayer } from '../network/map-tile-providers';
               <div class="picker-map-wrapper">
                 <div class="picker-map" #pickerMap></div>
                 <div class="picker-hint">
-                  <mat-icon>touch_app</mat-icon> Click the map or drag the pin to
-                  set the boundary centre
+                  <mat-icon>touch_app</mat-icon> Click the map or drag the pin
+                  to set the boundary centre
                 </div>
               </div>
 
