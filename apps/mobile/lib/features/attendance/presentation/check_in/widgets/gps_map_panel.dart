@@ -239,12 +239,6 @@ class _GpsMapPanelState extends State<GpsMapPanel>
         ),
         CircleLayer(circles: _buildCircles()),
         MarkerLayer(markers: _buildMarkers()),
-        const Align(
-          alignment: Alignment.bottomRight,
-          child: SimpleAttributionWidget(
-            source: Text('© OpenStreetMap'),
-          ),
-        ),
       ],
     );
   }

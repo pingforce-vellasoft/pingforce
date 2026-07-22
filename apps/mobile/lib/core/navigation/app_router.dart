@@ -11,6 +11,7 @@ import '../../features/auth/presentation/force_change_password_screen.dart';
 import '../../features/auth/presentation/biometric_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/permissions_flow_screen.dart';
+import '../../features/onboarding/profile_setup_screen.dart';
 import '../../features/system/system_screens.dart';
 import '../../features/leave/leave_screen.dart';
 import '../../features/documents/document_screen.dart';
@@ -127,6 +128,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/auth/change-password',
         name: 'force-change-password',
         builder: (context, state) => const ForceChangePasswordScreen(),
+      ),
+
+      // First-login profile setup (+ white-label branding for tenant owners).
+      // Authenticated despite the /auth prefix — RouteGuard gates the app
+      // behind it until the account has a profile.
+      GoRoute(
+        path: '/auth/profile-setup',
+        name: 'profile-setup',
+        builder: (context, state) => const ProfileSetupScreen(),
       ),
 
       GoRoute(

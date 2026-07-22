@@ -1,6 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:local_auth/local_auth.dart';
 import 'hardware_service.dart';
+import 'location_failure.dart';
 
 class HardwareServiceImpl implements HardwareService {
   final LocalAuthentication auth = LocalAuthentication();
@@ -29,25 +30,44 @@ class HardwareServiceImpl implements HardwareService {
   }
 
   @override
+  Future<bool> openLocationSettings() => Geolocator.openLocationSettings();
+
+  @override
+  Future<bool> openAppSettings() => Geolocator.openAppSettings();
+
+  @override
+  Future<bool> isLocationServiceEnabled() =>
+      Geolocator.isLocationServiceEnabled();
+
+  @override
   Future<Position> getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      throw Exception('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
+    // Permission is resolved before the service check: asking first means a
+    // user with GPS switched off still gets the grant prompt, and the caller
+    // can then send them straight to the location settings screen instead of
+    // hitting two blockers in sequence.
+    var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        throw Exception('Location permissions are denied');
-      }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      throw Exception('Location permissions are permanently denied, we cannot request permissions.');
+      throw const LocationFailure(
+        LocationFailureKind.permissionDeniedForever,
+        'Location permission is permanently denied. Enable it in app settings.',
+      );
+    }
+    if (permission == LocationPermission.denied) {
+      throw const LocationFailure(
+        LocationFailureKind.permissionDenied,
+        'Location permission is required to capture this position.',
+      );
+    }
+
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      throw const LocationFailure(
+        LocationFailureKind.serviceDisabled,
+        'Location services are turned off on this device.',
+      );
     }
 
     try {
@@ -63,7 +83,10 @@ class HardwareServiceImpl implements HardwareService {
       // Timed out — a recent cached fix beats failing the whole flow
       final lastKnown = await Geolocator.getLastKnownPosition();
       if (lastKnown != null) return lastKnown;
-      rethrow;
+      throw const LocationFailure(
+        LocationFailureKind.unavailable,
+        'Could not get a location fix. Move to an open area and retry.',
+      );
     }
   }
 }

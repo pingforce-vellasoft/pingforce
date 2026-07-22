@@ -20,14 +20,13 @@ export function buildTileLayer(config: MapProviderConfig | null): L.TileLayer {
         maxZoom: 19,
         tileSize: 512,
         zoomOffset: -1,
-        attribution:
-          '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; OpenStreetMap contributors',
+        attribution: '',
       },
     );
   }
 
   return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors',
+    attribution: '',
   });
 }

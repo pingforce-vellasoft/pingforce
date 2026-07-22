@@ -1,6 +1,10 @@
 import { Route } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { passwordChangeGuard } from './core/auth/password-change.guard';
+import {
+  onboardingGuard,
+  notOnboardedGuard,
+} from './core/auth/onboarding.guard';
 import { roleGuard } from './core/guards/role.guard';
 
 export const appRoutes: Route[] = [
@@ -34,7 +38,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'onboarding',
-    canActivate: [authGuard],
+    canActivate: [authGuard, passwordChangeGuard, notOnboardedGuard],
     loadComponent: () =>
       import('./pages/onboarding/onboarding.component').then(
         (m) => m.OnboardingComponent,
@@ -50,7 +54,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'dashboard',
-    canActivate: [authGuard, passwordChangeGuard],
+    canActivate: [authGuard, passwordChangeGuard, onboardingGuard],
     loadComponent: () =>
       import('./pages/dashboard/dashboard.component').then(
         (m) => m.DashboardComponent,

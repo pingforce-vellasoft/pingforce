@@ -40,7 +40,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         onRefresh: () => ref.read(profileNotifierProvider.notifier).load(),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: EdgeInsets.fromLTRB(
+            0,
+            16,
+            0,
+            16 + MediaQuery.of(context).viewPadding.bottom,
+          ),
           children: [
             if (state.isLoading)
               const Padding(

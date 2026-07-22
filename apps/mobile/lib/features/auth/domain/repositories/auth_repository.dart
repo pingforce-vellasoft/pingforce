@@ -15,8 +15,11 @@ abstract class AuthRepository {
   /// Authenticates with Google and securely caches the JWT
   Future<Either<Failure, User>> googleAuth(String idToken);
 
-  /// Submits tenant onboarding data
+  /// Submits tenant onboarding data (profile + company + white-label branding)
   Future<Either<Failure, void>> onboardTenant(Map<String, dynamic> data);
+
+  /// Submits employee onboarding data (profile only — no tenant/branding step)
+  Future<Either<Failure, void>> onboardEmployee(Map<String, dynamic> data);
 
   /// Checks if a valid session exists in secure storage
   Future<Either<Failure, User?>> getCachedUser();

@@ -154,6 +154,7 @@ class LoginNotifier extends Notifier<LoginState> {
         AuthSession.instance.signIn(
           roleCode: user.role,
           mustChangePassword: user.mustChangePassword,
+          isOnboarded: user.isOnboarded,
         );
         // Point the shell's bottom-nav at the role we just signed in as (the
         // shell notifier may have been built during the signed-out session).

@@ -174,15 +174,13 @@ import { buildTileLayer } from '../network/map-tile-providers';
                     <div class="map-tooltip-popover">
                       <div class="map-tooltip-header">Location Preview</div>
                       <div class="map-tooltip-body">
-                        <iframe
+                        <img
                           [src]="element.mapUrl"
                           width="100%"
                           height="100%"
-                          frameborder="0"
-                          style="border:0;"
-                          allowfullscreen=""
-                        >
-                        </iframe>
+                          alt="Location preview"
+                          style="border:0; object-fit: cover;"
+                        />
                       </div>
                     </div>
                   </ng-template>
@@ -385,12 +383,8 @@ import { buildTileLayer } from '../network/map-tile-providers';
         width: 15px;
         height: 15px;
       }
-      ::ng-deep .picker-map .leaflet-control-attribution {
-        background: rgba(15, 23, 42, 0.75);
-        color: #94a3b8;
-      }
-      ::ng-deep .picker-map .leaflet-control-attribution a {
-        color: #a78bfa;
+      ::ng-deep .leaflet-control-attribution {
+        display: none !important;
       }
 
       .submit-btn {
@@ -639,7 +633,7 @@ export class GeofenceSettingsComponent
     this.map = L.map(host, {
       center: [13.6288, 79.4192], // fallback until a coordinate is set
       zoom: 12,
-      attributionControl: true,
+      attributionControl: false,
     });
     // Free default first; swap when the platform map config arrives.
     this.tileLayer = buildTileLayer(null).addTo(this.map);
@@ -780,10 +774,20 @@ export class GeofenceSettingsComponent
     });
   }
 
+  /**
+   * Raw raster tile containing the point — an unbranded PNG, unlike the
+   * openstreetmap.org embed iframe which renders OSM's own chrome.
+   */
   getMapUrl(lat: number, lon: number) {
-    const offset = 0.005;
-    const bbox = `${lon - offset},${lat - offset},${lon + offset},${lat + offset}`;
-    const url = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`;
+    const zoom = 15;
+    const n = 2 ** zoom;
+    const x = Math.floor(((lon + 180) / 360) * n);
+    const latRad = (lat * Math.PI) / 180;
+    const y = Math.floor(
+      ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) *
+        n,
+    );
+    const url = `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   }
 }

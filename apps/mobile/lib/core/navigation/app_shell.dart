@@ -428,7 +428,11 @@ class _MoreSheet extends ConsumerWidget {
             Expanded(
               child: GridView.builder(
                 controller: scrollCtrl,
-                padding: AppSpacing.screenPaddingAll,
+                padding: AppSpacing.screenPaddingAll.add(
+                  EdgeInsets.only(
+                    bottom: MediaQuery.viewPaddingOf(context).bottom,
+                  ),
+                ),
                 gridDelegate:
                     const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
@@ -895,12 +899,15 @@ class RouteGuard {
     final isAuthenticated = _isAuthenticated();
     final isOnChangePassword =
         state.matchedLocation == '/auth/change-password';
-    // The forced change-password screen is an authenticated route despite its
-    // /auth prefix, so exclude it from the auth-route bounce below.
+    final isOnProfileSetup = state.matchedLocation == '/auth/profile-setup';
+    // The forced change-password and profile-setup screens are authenticated
+    // routes despite their /auth prefix, so exclude them from the auth-route
+    // bounce below.
+    final isOnGatedAuthRoute = isOnChangePassword || isOnProfileSetup;
     final isOnAuthRoute =
-        (state.matchedLocation.startsWith('/auth') && !isOnChangePassword) ||
+        (state.matchedLocation.startsWith('/auth') && !isOnGatedAuthRoute) ||
             state.matchedLocation == '/splash';
-    if (!isAuthenticated && !isOnAuthRoute && !isOnChangePassword) {
+    if (!isAuthenticated && !isOnAuthRoute && !isOnGatedAuthRoute) {
       return '/auth/login';
     }
     if (isAuthenticated && isOnAuthRoute) {
@@ -911,6 +918,14 @@ class RouteGuard {
     // must be rotated before the rest of the app is reachable.
     if (isAuthenticated && _mustChangePassword() && !isOnChangePassword) {
       return '/auth/change-password';
+    }
+
+    // 1c. First-login profile setup — an account with no profile yet must
+    // complete it (and, for a tenant owner, company + branding) before the
+    // rest of the app is reachable. Runs after 1b so a temporary password is
+    // always rotated first.
+    if (isAuthenticated && !_isOnboarded() && !isOnProfileSetup) {
+      return '/auth/profile-setup';
     }
 
     // 2. Session expired
@@ -955,6 +970,10 @@ class RouteGuard {
 
   static bool _mustChangePassword() {
     return AuthSession.instance.mustChangePassword;
+  }
+
+  static bool _isOnboarded() {
+    return AuthSession.instance.isOnboarded;
   }
 
   static bool _isSessionExpired() {

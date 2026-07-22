@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/hardware/hardware_service.dart';
+import '../../../core/hardware/location_failure.dart';
 import '../../../core/theme/theme.dart';
 import '../../../core/widgets/app_states.dart';
 import '../../../injection_container.dart';
@@ -234,6 +235,7 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
   GeofenceCaptureMode _mode = GeofenceCaptureMode.manual;
   bool _locating = false;
   String? _locationError;
+  LocationFailureKind? _locationFailureKind;
   double? _accuracyMeters;
 
   /// Centre currently staged for save; null until typed, tapped or captured.
@@ -255,6 +257,7 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
     setState(() {
       _mode = mode;
       _locationError = null;
+      _locationFailureKind = null;
       if (mode == GeofenceCaptureMode.manual) _accuracyMeters = null;
     });
   }
@@ -263,10 +266,11 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
     setState(() {
       _locating = true;
       _locationError = null;
+      _locationFailureKind = null;
     });
     try {
-      // HardwareService already handles the permission prompt, the bounded
-      // 15s high-accuracy request and the last-known-position fallback.
+      // HardwareService prompts for permission, then verifies the OS location
+      // toggle, and falls back to the last known fix on timeout.
       final position = await sl<HardwareService>().getCurrentLocation();
       if (!mounted) return;
       setState(() {
@@ -274,30 +278,44 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
         _accuracyMeters = position.accuracy;
       });
       _applyCenter(LatLng(position.latitude, position.longitude), zoom: 17);
-    } catch (e) {
+    } on LocationFailure catch (failure) {
       if (!mounted) return;
       setState(() {
         _locating = false;
         _accuracyMeters = null;
-        _locationError = _describeLocationError(e);
+        _locationError = failure.message;
+        _locationFailureKind = failure.kind;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _locating = false;
+        _accuracyMeters = null;
+        _locationError = 'Could not read the current location.';
+        _locationFailureKind = LocationFailureKind.unavailable;
       });
     }
   }
 
-  String _describeLocationError(Object error) {
-    final message = error.toString();
-    if (message.contains('permanently denied')) {
-      return 'Location permission is permanently denied. Enable it in system '
-          'settings, then retry.';
+  /// Label for the recovery button shown beneath a failure, or null when the
+  /// only sensible action is to retry the capture itself.
+  String? get _recoveryLabel => switch (_locationFailureKind) {
+        LocationFailureKind.serviceDisabled => 'Turn on location',
+        LocationFailureKind.permissionDeniedForever => 'Open app settings',
+        _ => null,
+      };
+
+  /// Sends the user to the right OS screen, then re-attempts the capture on
+  /// return — the toggle and the permission switch both live outside the app.
+  Future<void> _runRecovery() async {
+    final hardware = sl<HardwareService>();
+    if (_locationFailureKind == LocationFailureKind.serviceDisabled) {
+      await hardware.openLocationSettings();
+    } else {
+      await hardware.openAppSettings();
     }
-    if (message.contains('denied')) {
-      return 'Location permission denied. Allow access and retry.';
-    }
-    if (message.contains('services are disabled')) {
-      return 'Location services are off. Turn them on and retry.';
-    }
-    return 'Could not read the current location. Retry with a clearer GPS '
-        'signal.';
+    if (!mounted) return;
+    await _useCurrentLocation();
   }
 
   // ── Centre plumbing ────────────────────────────────────────────────────────
@@ -341,7 +359,10 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
   @override
   Widget build(BuildContext context) {
     final isSaving = ref.watch(geofenceNotifierProvider).isSaving;
-    final insets = MediaQuery.of(context).viewInsets.bottom;
+    final mq = MediaQuery.of(context);
+    // Keyboard inset + system navigation-bar inset, so the save button never
+    // sits underneath the Android gesture/nav bar.
+    final insets = mq.viewInsets.bottom + mq.viewPadding.bottom;
 
     final isManual = _mode == GeofenceCaptureMode.manual;
 
@@ -412,10 +433,24 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
               if (_locationError != null) ...[
                 const SizedBox(height: AppSpacing.space2),
                 _CaptureNote(
-                  icon: Icons.error_outline_rounded,
+                  icon: _locationFailureKind ==
+                          LocationFailureKind.serviceDisabled
+                      ? Icons.location_disabled_rounded
+                      : Icons.error_outline_rounded,
                   message: _locationError!,
                   color: Theme.of(context).colorScheme.error,
                 ),
+                if (_recoveryLabel != null) ...[
+                  const SizedBox(height: AppSpacing.space2),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _locating ? null : _runRecovery,
+                      icon: const Icon(Icons.settings_rounded, size: 18),
+                      label: Text(_recoveryLabel!),
+                    ),
+                  ),
+                ],
               ],
               if (_accuracyMeters != null) ...[
                 const SizedBox(height: AppSpacing.space2),
@@ -566,12 +601,6 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
                       ),
                     ],
                   ),
-                const Align(
-                  alignment: Alignment.bottomRight,
-                  child: SimpleAttributionWidget(
-                    source: Text('© OpenStreetMap'),
-                  ),
-                ),
               ],
             ),
           ),

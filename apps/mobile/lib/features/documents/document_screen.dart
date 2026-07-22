@@ -252,6 +252,7 @@ class _DocumentListScreenState extends ConsumerState<DocumentListScreen>
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (_) => const _UploadSheet(),
     );
   }
@@ -260,6 +261,7 @@ class _DocumentListScreenState extends ConsumerState<DocumentListScreen>
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (_) => _PreviewSheet(doc: doc),
     );
   }
@@ -366,7 +368,9 @@ class _UploadSheetState extends State<_UploadSheet> {
         24,
         16,
         24,
-        MediaQuery.viewInsetsOf(context).bottom + 24,
+        MediaQuery.viewInsetsOf(context).bottom +
+            MediaQuery.viewPaddingOf(context).bottom +
+            24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -684,6 +688,10 @@ class _PreviewSheet extends StatelessWidget {
                       },
                       icon: const Icon(Icons.share_rounded),
                       label: const Text('Share'),
+                    ),
+                    // Clear the system navigation bar.
+                    SizedBox(
+                      height: MediaQuery.viewPaddingOf(context).bottom,
                     ),
                   ],
                 ),

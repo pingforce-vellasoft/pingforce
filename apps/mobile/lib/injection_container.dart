@@ -15,6 +15,7 @@ import 'features/auth/domain/usecases/login_command.dart';
 import 'features/auth/domain/usecases/signup_command.dart';
 import 'features/auth/domain/usecases/google_auth_command.dart';
 import 'features/auth/domain/usecases/onboard_tenant_command.dart';
+import 'features/auth/domain/usecases/onboard_employee_command.dart';
 import 'core/network/token_interceptor.dart';
 import 'core/hardware/hardware_service.dart';
 import 'core/hardware/hardware_service_impl.dart';
@@ -67,6 +68,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => SignupCommand(sl()));
   sl.registerLazySingleton(() => GoogleAuthCommand(sl()));
   sl.registerLazySingleton(() => OnboardTenantCommand(sl()));
+  sl.registerLazySingleton(() => OnboardEmployeeCommand(sl()));
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(remoteDataSource: sl(), secureStorage: sl()),
   );

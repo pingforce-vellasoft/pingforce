@@ -275,13 +275,22 @@ export class OnboardingComponent {
 
     this.http.post('/api/v1/auth/onboarding/tenant', payload).subscribe({
       next: () => {
-        this.isLoading = false;
         this.snackBar.open('Workspace ready. Welcome to PingForce!', 'Close', {
           duration: 6000,
         });
-        // Refresh the cached profile so isOnboarded flips, then go to dashboard.
-        this.auth.fetchProfile().subscribe();
-        this.router.navigate(['/dashboard']);
+        // Refresh the cached profile FIRST so isOnboarded has flipped by the
+        // time onboardingGuard runs — navigating early would bounce straight
+        // back here on the stale profile.
+        this.auth.fetchProfile().subscribe({
+          next: () => {
+            this.isLoading = false;
+            this.router.navigate(['/dashboard']);
+          },
+          error: () => {
+            this.isLoading = false;
+            this.router.navigate(['/dashboard']);
+          },
+        });
       },
       error: (err) => {
         this.isLoading = false;

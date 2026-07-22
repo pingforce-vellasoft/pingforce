@@ -114,9 +114,6 @@ class _FreeMapViewState extends State<FreeMapView> {
               ),
           ],
         ),
-        const SimpleAttributionWidget(
-          source: Text('© OpenStreetMap contributors'),
-        ),
       ],
     );
   }

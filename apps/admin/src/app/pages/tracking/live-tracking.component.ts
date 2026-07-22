@@ -380,6 +380,7 @@ export class LiveTrackingComponent implements AfterViewInit, OnDestroy {
     this.map = L.map(this.mapContainer.nativeElement, {
       center: [13.6288, 79.4192], // fallback until data fits bounds
       zoom: 12,
+      attributionControl: false,
     });
     this.tileLayer = buildTileLayer(null).addTo(this.map);
     this.networkService.getMapConfig().subscribe({

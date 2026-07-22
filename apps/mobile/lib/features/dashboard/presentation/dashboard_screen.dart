@@ -16,6 +16,12 @@ import 'widgets/dashboard_widgets.dart';
 // DASHBOARD SCREEN  (DASHBOARD_SPEC.md)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Horizontal space one AppBar icon button occupies (Material's 48dp touch
+/// target plus the 4dp edge gap). The SliverAppBar's flexibleSpace background
+/// is painted *behind* the toolbar row, so header content must be inset by this
+/// on both sides to clear the leading menu icon and the trailing bell.
+const double _kToolbarIconSlot = 52;
+
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -133,10 +139,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       ),
       flexibleSpace: FlexibleSpaceBar(
         collapseMode: CollapseMode.pin,
+        // The leading hamburger and the trailing notification bell are painted
+        // in the toolbar row ON TOP of this background, so inset the header by
+        // their widths — otherwise the avatar/greeting sits under the icons.
         background: Padding(
           padding: EdgeInsets.only(
-            left: AppSpacing.screenHorizontal,
-            right: AppSpacing.screenHorizontal,
+            left: _kToolbarIconSlot,
+            right: _kToolbarIconSlot,
             top: MediaQuery.of(context).padding.top + AppSpacing.space2,
           ),
           child: DashboardHeader(

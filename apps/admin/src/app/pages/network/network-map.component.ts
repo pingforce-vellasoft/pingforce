@@ -699,6 +699,7 @@ export class NetworkMapComponent implements AfterViewInit, OnDestroy {
     this.map = L.map(this.mapContainer.nativeElement, {
       center: [13.6288, 79.4192], // Tirupati fallback until data fits bounds
       zoom: 12,
+      attributionControl: false,
     });
     // Start with the free default; swap once the platform config arrives.
     this.tileLayer = buildTileLayer(null).addTo(this.map);
