@@ -92,7 +92,9 @@ type GeofenceCaptureMode = 'MANUAL' | 'CURRENT';
                   [disabled]="locating"
                   (click)="useCurrentLocation()"
                 >
-                  <mat-icon>{{ locating ? 'hourglass_top' : 'gps_fixed' }}</mat-icon>
+                  <mat-icon>{{
+                    locating ? 'hourglass_top' : 'gps_fixed'
+                  }}</mat-icon>
                   {{ locating ? 'Locating…' : 'Capture Current Position' }}
                 </button>
                 @if (locationError) {
@@ -102,8 +104,9 @@ type GeofenceCaptureMode = 'MANUAL' | 'CURRENT';
                 }
                 @if (accuracyMeters !== null) {
                   <div class="locate-accuracy">
-                    <mat-icon>check_circle</mat-icon> Captured — accuracy
-                    ±{{ accuracyMeters | number: '1.0-0' }}m
+                    <mat-icon>check_circle</mat-icon> Captured — accuracy ±{{
+                      accuracyMeters | number: '1.0-0'
+                    }}m
                   </div>
                 }
               }

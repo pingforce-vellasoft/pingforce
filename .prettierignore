@@ -2,6 +2,8 @@
 /dist
 /coverage
 /.nx/cache
+/apps/mobile/.dart_tool
+/apps/mobile/build
 /.nx/workspace-data
 .angular
 
