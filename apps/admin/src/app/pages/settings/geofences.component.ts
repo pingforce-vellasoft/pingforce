@@ -11,7 +11,6 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
@@ -22,8 +21,6 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { OverlayModule } from '@angular/cdk/overlay';
 import * as L from 'leaflet';
 import { buildTileLayer } from '../network/map-tile-providers';
-
-type GeofenceCaptureMode = 'MANUAL' | 'CURRENT';
 
 @Component({
   selector: 'app-geofence-settings',
@@ -38,7 +35,6 @@ type GeofenceCaptureMode = 'MANUAL' | 'CURRENT';
     FormsModule,
     MatDialogModule,
     OverlayModule,
-    MatButtonToggleModule,
   ],
   template: `
     <div class="page-container">
@@ -61,20 +57,6 @@ type GeofenceCaptureMode = 'MANUAL' | 'CURRENT';
             </div>
 
             <div class="form-content">
-              <mat-button-toggle-group
-                class="mode-toggle"
-                [value]="mode"
-                (change)="setMode($event.value)"
-                aria-label="Geofence capture mode"
-              >
-                <mat-button-toggle value="MANUAL">
-                  <mat-icon>edit_location_alt</mat-icon> Manual
-                </mat-button-toggle>
-                <mat-button-toggle value="CURRENT">
-                  <mat-icon>my_location</mat-icon> Use My Location
-                </mat-button-toggle>
-              </mat-button-toggle-group>
-
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Office Location Name</mat-label>
                 <input
@@ -85,39 +67,12 @@ type GeofenceCaptureMode = 'MANUAL' | 'CURRENT';
                 <mat-icon matPrefix class="field-icon">business</mat-icon>
               </mat-form-field>
 
-              @if (mode === 'CURRENT') {
-                <button
-                  mat-stroked-button
-                  class="locate-btn"
-                  [disabled]="locating"
-                  (click)="useCurrentLocation()"
-                >
-                  <mat-icon>{{
-                    locating ? 'hourglass_top' : 'gps_fixed'
-                  }}</mat-icon>
-                  {{ locating ? 'Locating…' : 'Capture Current Position' }}
-                </button>
-                @if (locationError) {
-                  <div class="locate-error">
-                    <mat-icon>error_outline</mat-icon> {{ locationError }}
-                  </div>
-                }
-                @if (accuracyMeters !== null) {
-                  <div class="locate-accuracy">
-                    <mat-icon>check_circle</mat-icon> Captured — accuracy ±{{
-                      accuracyMeters | number: '1.0-0'
-                    }}m
-                  </div>
-                }
-              }
-
               <div class="row">
                 <mat-form-field appearance="outline">
                   <mat-label>Latitude</mat-label>
                   <input
                     matInput
                     type="number"
-                    [readonly]="mode === 'CURRENT'"
                     [(ngModel)]="newGeofence.latitude"
                     (ngModelChange)="onCoordinatesTyped()"
                     placeholder="40.7128"
@@ -129,7 +84,6 @@ type GeofenceCaptureMode = 'MANUAL' | 'CURRENT';
                   <input
                     matInput
                     type="number"
-                    [readonly]="mode === 'CURRENT'"
                     [(ngModel)]="newGeofence.longitude"
                     (ngModelChange)="onCoordinatesTyped()"
                     placeholder="-74.0060"
@@ -141,13 +95,8 @@ type GeofenceCaptureMode = 'MANUAL' | 'CURRENT';
               <div class="picker-map-wrapper">
                 <div class="picker-map" #pickerMap></div>
                 <div class="picker-hint">
-                  @if (mode === 'MANUAL') {
-                    <mat-icon>touch_app</mat-icon> Click the map or drag the pin
-                    to set the boundary centre
-                  } @else {
-                    <mat-icon>my_location</mat-icon> Pin follows your captured
-                    device position
-                  }
+                  <mat-icon>touch_app</mat-icon> Click the map or drag the pin to
+                  set the boundary centre
                 </div>
               </div>
 
@@ -413,70 +362,6 @@ type GeofenceCaptureMode = 'MANUAL' | 'CURRENT';
         margin-top: 4px;
       }
 
-      .mode-toggle {
-        width: 100%;
-        margin-bottom: 20px;
-        border-radius: 12px !important;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-      }
-      ::ng-deep .mode-toggle .mat-button-toggle {
-        flex: 1;
-        background: rgba(15, 23, 42, 0.6);
-        color: #94a3b8;
-        border-left-color: rgba(255, 255, 255, 0.08) !important;
-      }
-      ::ng-deep .mode-toggle .mat-button-toggle-checked {
-        background: rgba(99, 102, 241, 0.18);
-        color: #c7d2fe;
-      }
-      ::ng-deep .mode-toggle .mat-button-toggle-label-content {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        font-size: 13px;
-        font-weight: 600;
-      }
-      ::ng-deep .mode-toggle mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
-
-      .locate-btn {
-        width: 100%;
-        height: 44px;
-        border-radius: 12px !important;
-        border-color: rgba(99, 102, 241, 0.4) !important;
-        color: #a5b4fc !important;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        margin-bottom: 12px;
-      }
-      .locate-error,
-      .locate-accuracy {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        margin-bottom: 12px;
-      }
-      .locate-error {
-        color: #f87171;
-      }
-      .locate-accuracy {
-        color: #34d399;
-      }
-      .locate-error mat-icon,
-      .locate-accuracy mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-      }
-
       .picker-map-wrapper {
         margin: 4px 0 8px;
       }
@@ -727,13 +612,6 @@ export class GeofenceSettingsComponent
   geofences: any[] = [];
   newGeofence = { name: '', latitude: 0, longitude: 0, radiusMeters: 50 };
 
-  /** MANUAL: type coordinates and/or pick on the map. CURRENT: capture the
-   *  browser's GPS position for the site the admin is physically standing in. */
-  mode: GeofenceCaptureMode = 'MANUAL';
-  locating = false;
-  locationError = '';
-  accuracyMeters: number | null = null;
-
   private map?: L.Map;
   private tileLayer?: L.TileLayer;
   private marker?: L.Marker;
@@ -750,55 +628,6 @@ export class GeofenceSettingsComponent
   ngOnDestroy() {
     this.map?.remove();
     this.map = undefined;
-  }
-
-  // ── Capture mode ───────────────────────────────────────────────────────────
-
-  setMode(mode: GeofenceCaptureMode) {
-    this.mode = mode;
-    this.locationError = '';
-    if (mode === 'MANUAL') {
-      this.accuracyMeters = null;
-    }
-  }
-
-  useCurrentLocation() {
-    if (!navigator.geolocation) {
-      this.locationError = 'Geolocation is not supported by this browser.';
-      return;
-    }
-    this.locating = true;
-    this.locationError = '';
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        this.locating = false;
-        this.accuracyMeters = position.coords.accuracy ?? null;
-        this.setCoordinates(
-          position.coords.latitude,
-          position.coords.longitude,
-          17,
-        );
-      },
-      (error) => {
-        this.locating = false;
-        this.accuracyMeters = null;
-        this.locationError = this.describeGeolocationError(error);
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
-    );
-  }
-
-  private describeGeolocationError(error: GeolocationPositionError): string {
-    switch (error.code) {
-      case error.PERMISSION_DENIED:
-        return 'Location permission denied. Allow it in the browser and retry.';
-      case error.POSITION_UNAVAILABLE:
-        return 'Position unavailable. Check device location services.';
-      case error.TIMEOUT:
-        return 'Timed out getting position. Retry with a clearer GPS signal.';
-      default:
-        return 'Could not read the current location.';
-    }
   }
 
   // ── Map picker ─────────────────────────────────────────────────────────────
@@ -825,10 +654,9 @@ export class GeofenceSettingsComponent
       },
     });
 
-    this.map.on('click', (event: L.LeafletMouseEvent) => {
-      if (this.mode !== 'MANUAL') return;
-      this.setCoordinates(event.latlng.lat, event.latlng.lng);
-    });
+    this.map.on('click', (event: L.LeafletMouseEvent) =>
+      this.setCoordinates(event.latlng.lat, event.latlng.lng),
+    );
 
     // Leaflet mis-measures a container that was hidden/resized during init.
     setTimeout(() => this.map?.invalidateSize(), 0);
@@ -842,7 +670,6 @@ export class GeofenceSettingsComponent
   }
 
   onCoordinatesTyped() {
-    if (this.mode !== 'MANUAL') return;
     this.renderPin();
   }
 
@@ -861,18 +688,12 @@ export class GeofenceSettingsComponent
     if (!this.marker) {
       this.marker = L.marker(position, { draggable: true }).addTo(this.map);
       this.marker.on('dragend', () => {
-        if (this.mode !== 'MANUAL') {
-          // Position is device-derived in CURRENT mode — snap back.
-          this.renderPin();
-          return;
-        }
         const moved = this.marker!.getLatLng();
         this.setCoordinates(moved.lat, moved.lng);
       });
     } else {
       this.marker.setLatLng(position);
     }
-    this.marker.dragging?.[this.mode === 'MANUAL' ? 'enable' : 'disable']();
 
     if (!this.radiusCircle) {
       this.radiusCircle = L.circle(position, {
@@ -920,11 +741,7 @@ export class GeofenceSettingsComponent
       return;
     }
     if (!this.isValidCoordinate(latitude, longitude)) {
-      alert(
-        this.mode === 'CURRENT'
-          ? 'Capture the current position before saving'
-          : 'Set a valid latitude/longitude, or pick a point on the map',
-      );
+      alert('Set a valid latitude/longitude, or pick a point on the map');
       return;
     }
 
@@ -943,8 +760,6 @@ export class GeofenceSettingsComponent
           longitude: 0,
           radiusMeters: 50,
         };
-        this.accuracyMeters = null;
-        this.locationError = '';
         this.marker?.remove();
         this.marker = undefined;
         this.radiusCircle?.remove();

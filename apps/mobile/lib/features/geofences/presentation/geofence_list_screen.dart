@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
+import '../../../core/hardware/hardware_service.dart';
 import '../../../core/theme/theme.dart';
 import '../../../core/widgets/app_states.dart';
+import '../../../injection_container.dart';
 import '../domain/entities/geofence.dart';
 import 'geofence_notifier.dart';
+
+/// How the admin supplies the geofence centre.
+///
+/// [manual] — type coordinates and/or drop the pin by tapping the map.
+/// [current] — capture the device's GPS fix while standing at the site.
+enum GeofenceCaptureMode { manual, current }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GEOFENCE LIST SCREEN
@@ -219,6 +229,15 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
   final _latCtrl = TextEditingController();
   final _lngCtrl = TextEditingController();
   final _radiusCtrl = TextEditingController(text: '100');
+  final _mapController = MapController();
+
+  GeofenceCaptureMode _mode = GeofenceCaptureMode.manual;
+  bool _locating = false;
+  String? _locationError;
+  double? _accuracyMeters;
+
+  /// Centre currently staged for save; null until typed, tapped or captured.
+  LatLng? _center;
 
   @override
   void dispose() {
@@ -226,13 +245,105 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
     _latCtrl.dispose();
     _lngCtrl.dispose();
     _radiusCtrl.dispose();
+    _mapController.dispose();
     super.dispose();
+  }
+
+  // ── Capture mode ───────────────────────────────────────────────────────────
+
+  void _setMode(GeofenceCaptureMode mode) {
+    setState(() {
+      _mode = mode;
+      _locationError = null;
+      if (mode == GeofenceCaptureMode.manual) _accuracyMeters = null;
+    });
+  }
+
+  Future<void> _useCurrentLocation() async {
+    setState(() {
+      _locating = true;
+      _locationError = null;
+    });
+    try {
+      // HardwareService already handles the permission prompt, the bounded
+      // 15s high-accuracy request and the last-known-position fallback.
+      final position = await sl<HardwareService>().getCurrentLocation();
+      if (!mounted) return;
+      setState(() {
+        _locating = false;
+        _accuracyMeters = position.accuracy;
+      });
+      _applyCenter(LatLng(position.latitude, position.longitude), zoom: 17);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _locating = false;
+        _accuracyMeters = null;
+        _locationError = _describeLocationError(e);
+      });
+    }
+  }
+
+  String _describeLocationError(Object error) {
+    final message = error.toString();
+    if (message.contains('permanently denied')) {
+      return 'Location permission is permanently denied. Enable it in system '
+          'settings, then retry.';
+    }
+    if (message.contains('denied')) {
+      return 'Location permission denied. Allow access and retry.';
+    }
+    if (message.contains('services are disabled')) {
+      return 'Location services are off. Turn them on and retry.';
+    }
+    return 'Could not read the current location. Retry with a clearer GPS '
+        'signal.';
+  }
+
+  // ── Centre plumbing ────────────────────────────────────────────────────────
+
+  /// Single source of truth: keeps the text fields, the pin and [_center]
+  /// in step whichever input moved.
+  void _applyCenter(LatLng point, {double? zoom}) {
+    setState(() {
+      _center = point;
+      _latCtrl.text = point.latitude.toStringAsFixed(6);
+      _lngCtrl.text = point.longitude.toStringAsFixed(6);
+    });
+    _mapController.move(point, zoom ?? _currentZoom);
+  }
+
+  double get _currentZoom {
+    try {
+      return _mapController.camera.zoom;
+    } catch (_) {
+      // Camera is unavailable until the map has laid out at least once.
+      return 15;
+    }
+  }
+
+  void _onCoordinatesTyped() {
+    if (_mode != GeofenceCaptureMode.manual) return;
+    final lat = double.tryParse(_latCtrl.text);
+    final lng = double.tryParse(_lngCtrl.text);
+    if (lat == null || lng == null) return;
+    if (lat.abs() > 90 || lng.abs() > 180) return;
+    final point = LatLng(lat, lng);
+    setState(() => _center = point);
+    _mapController.move(point, _currentZoom);
+  }
+
+  void _onMapTap(LatLng point) {
+    if (_mode != GeofenceCaptureMode.manual) return;
+    _applyCenter(point);
   }
 
   @override
   Widget build(BuildContext context) {
     final isSaving = ref.watch(geofenceNotifierProvider).isSaving;
     final insets = MediaQuery.of(context).viewInsets.bottom;
+
+    final isManual = _mode == GeofenceCaptureMode.manual;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -243,11 +354,29 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
       ),
       child: Form(
         key: _formKey,
-        child: Column(
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('New geofence', style: AppTypography.titleMedium),
+            const SizedBox(height: AppSpacing.space4),
+            SegmentedButton<GeofenceCaptureMode>(
+              segments: const [
+                ButtonSegment(
+                  value: GeofenceCaptureMode.manual,
+                  icon: Icon(Icons.edit_location_alt_rounded),
+                  label: Text('Manual'),
+                ),
+                ButtonSegment(
+                  value: GeofenceCaptureMode.current,
+                  icon: Icon(Icons.my_location_rounded),
+                  label: Text('My location'),
+                ),
+              ],
+              selected: {_mode},
+              onSelectionChanged: (s) => _setMode(s.first),
+            ),
             const SizedBox(height: AppSpacing.space4),
             TextFormField(
               controller: _nameCtrl,
@@ -261,12 +390,51 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
                   ? 'Enter at least 3 characters'
                   : null,
             ),
+            if (!isManual) ...[
+              const SizedBox(height: AppSpacing.space3),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: _locating ? null : _useCurrentLocation,
+                  icon: _locating
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.gps_fixed_rounded),
+                  label: Text(
+                    _locating ? 'Locating…' : 'Capture current position',
+                  ),
+                ),
+              ),
+              if (_locationError != null) ...[
+                const SizedBox(height: AppSpacing.space2),
+                _CaptureNote(
+                  icon: Icons.error_outline_rounded,
+                  message: _locationError!,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ],
+              if (_accuracyMeters != null) ...[
+                const SizedBox(height: AppSpacing.space2),
+                _CaptureNote(
+                  icon: Icons.check_circle_rounded,
+                  message: 'Captured — accuracy '
+                      '±${_accuracyMeters!.toStringAsFixed(0)}m',
+                  color: PingForceColors.gpsExcellent,
+                ),
+              ],
+            ],
             const SizedBox(height: AppSpacing.space3),
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
                     controller: _latCtrl,
+                    readOnly: !isManual,
+                    onChanged: (_) => _onCoordinatesTyped(),
                     keyboardType: const TextInputType.numberWithOptions(
                         decimal: true, signed: true),
                     inputFormatters: [_decimalFormatter],
@@ -281,6 +449,8 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
                 Expanded(
                   child: TextFormField(
                     controller: _lngCtrl,
+                    readOnly: !isManual,
+                    onChanged: (_) => _onCoordinatesTyped(),
                     keyboardType: const TextInputType.numberWithOptions(
                         decimal: true, signed: true),
                     inputFormatters: [_decimalFormatter],
@@ -294,10 +464,13 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
               ],
             ),
             const SizedBox(height: AppSpacing.space3),
+            _buildPickerMap(context, isManual),
+            const SizedBox(height: AppSpacing.space3),
             TextFormField(
               controller: _radiusCtrl,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (_) => setState(() {}), // redraw the radius circle
               decoration: const InputDecoration(
                 labelText: 'Radius (meters)',
                 hintText: '100',
@@ -327,8 +500,103 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
               ),
             ),
           ],
+          ),
         ),
       ),
+    );
+  }
+
+  // ── Map picker ─────────────────────────────────────────────────────────────
+
+  Widget _buildPickerMap(BuildContext context, bool isManual) {
+    final scheme = Theme.of(context).colorScheme;
+    final center = _center;
+    final radius = double.tryParse(_radiusCtrl.text) ?? 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: AppRadius.lgAll,
+          child: SizedBox(
+            height: 200,
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: center ?? const LatLng(13.6288, 79.4192),
+                initialZoom: center != null ? 16 : 4,
+                onTap: (_, point) => _onMapTap(point),
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.pinchZoom |
+                      InteractiveFlag.drag |
+                      InteractiveFlag.doubleTapZoom,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.vellasoft.pingforce',
+                ),
+                if (center != null && radius > 0)
+                  CircleLayer(
+                    circles: [
+                      CircleMarker(
+                        point: center,
+                        radius: radius,
+                        useRadiusInMeter: true,
+                        borderStrokeWidth: 2,
+                        borderColor: scheme.primary,
+                        color: scheme.primary.withValues(alpha: 0.15),
+                      ),
+                    ],
+                  ),
+                if (center != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: center,
+                        width: 36,
+                        height: 36,
+                        alignment: Alignment.topCenter,
+                        child: Icon(
+                          Icons.location_on_rounded,
+                          size: 36,
+                          color: scheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                const Align(
+                  alignment: Alignment.bottomRight,
+                  child: SimpleAttributionWidget(
+                    source: Text('© OpenStreetMap'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.space2),
+        Row(
+          children: [
+            Icon(
+              isManual ? Icons.touch_app_rounded : Icons.my_location_rounded,
+              size: AppIconSize.xs,
+              color: scheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                isManual
+                    ? 'Tap the map to set the boundary centre'
+                    : 'Pin follows your captured device position',
+                style: AppTypography.bodySmall
+                    .copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -344,6 +612,13 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_mode == GeofenceCaptureMode.current && _center == null) {
+      AppSnackBar.showError(
+        context,
+        'Capture the current position before saving',
+      );
+      return;
+    }
 
     final error = await ref.read(geofenceNotifierProvider.notifier).create(
           name: _nameCtrl.text.trim(),
@@ -359,6 +634,39 @@ class _AddGeofenceSheetState extends ConsumerState<_AddGeofenceSheet> {
       Navigator.pop(context);
       AppSnackBar.showSuccess(context, 'Geofence created');
     }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CAPTURE NOTE — inline success/error line under the GPS capture button
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CaptureNote extends StatelessWidget {
+  const _CaptureNote({
+    required this.icon,
+    required this.message,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String message;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: AppIconSize.xs, color: color),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            message,
+            style: AppTypography.bodySmall.copyWith(color: color),
+          ),
+        ),
+      ],
+    );
   }
 }
 
