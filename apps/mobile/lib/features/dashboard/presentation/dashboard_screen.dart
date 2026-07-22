@@ -216,24 +216,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       return const SizedBox.shrink();
     }
 
-    // Read the (async) dismissal flag; watch the provider so a dismiss rebuilds.
+    // Watch the cached dismissal map so a dismiss (or the one-time load)
+    // rebuilds. The read is synchronous — kicking off an async read from
+    // build() restarted itself on every rebuild and flickered the banner.
     ref.watch(geofenceNudgeDismissalProvider);
     final dismissal = ref.read(geofenceNudgeDismissalProvider.notifier);
+    final dismissed = dismissal.dismissedOrNull(user.tenantId);
 
-    return FutureBuilder<bool>(
-      future: dismissal.isDismissed(user.tenantId),
-      builder: (context, snapshot) {
-        if (snapshot.data != true) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const SizedBox.shrink();
-          }
-          return _GeofenceNudgeBanner(
-            onDismiss: () => dismissal.dismiss(user.tenantId),
-            onSetup: () => context.push('/geofences'),
-          );
-        }
-        return const SizedBox.shrink();
-      },
+    if (dismissed == null) {
+      // Not loaded yet — trigger the one-shot load, render nothing this frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        dismissal.ensureLoaded(user.tenantId);
+      });
+      return const SizedBox.shrink();
+    }
+    if (dismissed) return const SizedBox.shrink();
+
+    return _GeofenceNudgeBanner(
+      onDismiss: () => dismissal.dismiss(user.tenantId),
+      onSetup: () => context.push('/geofences'),
     );
   }
 

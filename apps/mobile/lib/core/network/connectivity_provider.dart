@@ -164,15 +164,26 @@ final isOnlineProvider = Provider<bool>((ref) {
 
 /// Convenience: only emits when connectivity *transitions* (online→offline
 /// or offline→online). Use this to show NetworkRecoveryOverlay.
+///
+/// Event-driven: emits only when `connectivityProvider` actually changes.
+/// (An earlier `while (true)` + `ref.watch` + 1s delay version re-ran the whole
+/// stream on every emit and ticked forever, rebuilding listeners on a timer.)
 final connectivityTransitionProvider =
-    StreamProvider<ConnectivityStatus>((ref) async* {
-  ConnectivityStatus? previous;
-  while (true) {
-    final current = ref.watch(connectivityProvider).status;
-    if (previous != null && previous != current) {
-      yield current;
+    StreamProvider<ConnectivityStatus>((ref) {
+  final controller = StreamController<ConnectivityStatus>();
+  var previous = ref.read(connectivityProvider).status;
+
+  final sub = ref.listen<ConnectivityState>(connectivityProvider, (_, next) {
+    if (next.status != previous) {
+      previous = next.status;
+      controller.add(next.status);
     }
-    previous = current;
-    await Future<void>.delayed(const Duration(seconds: 1));
-  }
+  });
+
+  ref.onDispose(() {
+    sub.close();
+    controller.close();
+  });
+
+  return controller.stream;
 });

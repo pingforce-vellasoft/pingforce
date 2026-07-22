@@ -88,6 +88,7 @@ export class AuthService implements IAuthService {
     const user = await this.prisma.user.findFirst({
       where: {
         tenantId: tenant.id,
+        deletedAt: null,
         ...(loginDto.email ? { email: loginDto.email } : {}),
         ...(loginDto.phone ? { phone: loginDto.phone } : {}),
       },
@@ -492,7 +493,7 @@ export class AuthService implements IAuthService {
     }
 
     const user = await this.prisma.user.findFirst({
-      where: { id: userId, tenantId },
+      where: { id: userId, tenantId, deletedAt: null },
     });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -582,6 +583,7 @@ export class AuthService implements IAuthService {
       where: {
         tenantId: tenant.id,
         email: payload.email,
+        deletedAt: null,
       },
       include: {
         role: true,
@@ -691,8 +693,13 @@ export class AuthService implements IAuthService {
       }
     }
 
+    // Tenant-admin signup creates a brand-new tenant, so the email must be free
+    // across the platform. Soft-deleted rows still count — the unique constraint
+    // @@unique([tenantId, email]) covers them, so ignoring deletedAt here would
+    // only turn a clean 400 into a P2002 further down.
     const existingUser = await this.prisma.user.findFirst({
       where: { email: dto.adminEmail },
+      select: { id: true },
     });
     if (existingUser) {
       throw new BadRequestException(
@@ -944,13 +951,25 @@ export class AuthService implements IAuthService {
       throw new BadRequestException('This tenant account is inactive.');
     }
 
+    // Soft-deleted rows are intentionally included: the DB uniques
+    // ([tenantId, email] / [tenantId, phone]) apply to them too, so an email or
+    // phone released only by a soft delete is still taken.
     const existingUser = await this.prisma.user.findFirst({
-      where: { tenantId: tenant.id, email: dto.email },
+      where: {
+        tenantId: tenant.id,
+        OR: [
+          { email: dto.email },
+          ...(dto.phone ? [{ phone: dto.phone }] : []),
+        ],
+      },
+      select: { email: true },
     });
 
     if (existingUser) {
       throw new BadRequestException(
-        'An employee with this email already exists in this tenant.',
+        existingUser.email === dto.email
+          ? 'An employee with this email already exists in this tenant.'
+          : 'An employee with this phone number already exists in this tenant.',
       );
     }
 

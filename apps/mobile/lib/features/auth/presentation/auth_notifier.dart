@@ -269,14 +269,10 @@ class ForgotPasswordNotifier extends AutoDisposeNotifier<ForgotPasswordState> {
     );
   }
 
-  void selectChannel(OtpChannel channel) {
-    state = state.copyWith(channel: channel);
-  }
-
   Future<void> sendOtp() async {
     if (!state.canSendOtp) {
       state = state.copyWith(
-        identifierError: 'Enter a valid email or mobile number',
+        identifierError: 'Enter a valid email address',
       );
       return;
     }
@@ -397,10 +393,21 @@ class ForgotPasswordNotifier extends AutoDisposeNotifier<ForgotPasswordState> {
 
     state = state.copyWith(isLoading: true);
 
+    // An empty workspace code would come back as a generic "Invalid code",
+    // hiding the real cause behind an OTP error the user cannot act on.
     final tenantCode = await _storedTenantCode();
+    if (tenantCode == null || tenantCode.trim().isEmpty) {
+      state = state.copyWith(
+        isLoading: false,
+        passwordError:
+            'Workspace unknown on this device - sign in once first',
+      );
+      return;
+    }
+
     final result = await sl<AuthRepository>().confirmPasswordReset(
       state.identifier.trim(),
-      tenantCode ?? '',
+      tenantCode,
       state.otp,
       state.newPassword,
     );

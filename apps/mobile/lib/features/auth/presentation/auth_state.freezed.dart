@@ -514,8 +514,8 @@ abstract class _LoginState extends LoginState {
 
 /// @nodoc
 mixin _$ForgotPasswordState {
-  String get identifier => throw _privateConstructorUsedError; // email or phone
-  OtpChannel get channel => throw _privateConstructorUsedError;
+  String get identifier =>
+      throw _privateConstructorUsedError; // email — reset is email-only
   String get otp => throw _privateConstructorUsedError; // 6-digit entered OTP
   String get newPassword => throw _privateConstructorUsedError;
   String get confirmPassword => throw _privateConstructorUsedError;
@@ -550,7 +550,6 @@ abstract class $ForgotPasswordStateCopyWith<$Res> {
   @useResult
   $Res call({
     String identifier,
-    OtpChannel channel,
     String otp,
     String newPassword,
     String confirmPassword,
@@ -587,7 +586,6 @@ class _$ForgotPasswordStateCopyWithImpl<$Res, $Val extends ForgotPasswordState>
   @override
   $Res call({
     Object? identifier = null,
-    Object? channel = null,
     Object? otp = null,
     Object? newPassword = null,
     Object? confirmPassword = null,
@@ -612,10 +610,6 @@ class _$ForgotPasswordStateCopyWithImpl<$Res, $Val extends ForgotPasswordState>
                 ? _value.identifier
                 : identifier // ignore: cast_nullable_to_non_nullable
                       as String,
-            channel: null == channel
-                ? _value.channel
-                : channel // ignore: cast_nullable_to_non_nullable
-                      as OtpChannel,
             otp: null == otp
                 ? _value.otp
                 : otp // ignore: cast_nullable_to_non_nullable
@@ -701,7 +695,6 @@ abstract class _$$ForgotPasswordStateImplCopyWith<$Res>
   @useResult
   $Res call({
     String identifier,
-    OtpChannel channel,
     String otp,
     String newPassword,
     String confirmPassword,
@@ -737,7 +730,6 @@ class __$$ForgotPasswordStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? identifier = null,
-    Object? channel = null,
     Object? otp = null,
     Object? newPassword = null,
     Object? confirmPassword = null,
@@ -762,10 +754,6 @@ class __$$ForgotPasswordStateImplCopyWithImpl<$Res>
             ? _value.identifier
             : identifier // ignore: cast_nullable_to_non_nullable
                   as String,
-        channel: null == channel
-            ? _value.channel
-            : channel // ignore: cast_nullable_to_non_nullable
-                  as OtpChannel,
         otp: null == otp
             ? _value.otp
             : otp // ignore: cast_nullable_to_non_nullable
@@ -844,7 +832,6 @@ class __$$ForgotPasswordStateImplCopyWithImpl<$Res>
 class _$ForgotPasswordStateImpl extends _ForgotPasswordState {
   const _$ForgotPasswordStateImpl({
     this.identifier = '',
-    this.channel = OtpChannel.email,
     this.otp = '',
     this.newPassword = '',
     this.confirmPassword = '',
@@ -867,10 +854,7 @@ class _$ForgotPasswordStateImpl extends _ForgotPasswordState {
   @override
   @JsonKey()
   final String identifier;
-  // email or phone
-  @override
-  @JsonKey()
-  final OtpChannel channel;
+  // email — reset is email-only
   @override
   @JsonKey()
   final String otp;
@@ -922,7 +906,7 @@ class _$ForgotPasswordStateImpl extends _ForgotPasswordState {
 
   @override
   String toString() {
-    return 'ForgotPasswordState(identifier: $identifier, channel: $channel, otp: $otp, newPassword: $newPassword, confirmPassword: $confirmPassword, isLoading: $isLoading, otpSent: $otpSent, otpVerified: $otpVerified, countdownSeconds: $countdownSeconds, canResend: $canResend, passwordStrength: $passwordStrength, isNewPasswordVisible: $isNewPasswordVisible, isConfirmPasswordVisible: $isConfirmPasswordVisible, identifierError: $identifierError, otpError: $otpError, passwordError: $passwordError, confirmPasswordError: $confirmPasswordError, authError: $authError, isComplete: $isComplete)';
+    return 'ForgotPasswordState(identifier: $identifier, otp: $otp, newPassword: $newPassword, confirmPassword: $confirmPassword, isLoading: $isLoading, otpSent: $otpSent, otpVerified: $otpVerified, countdownSeconds: $countdownSeconds, canResend: $canResend, passwordStrength: $passwordStrength, isNewPasswordVisible: $isNewPasswordVisible, isConfirmPasswordVisible: $isConfirmPasswordVisible, identifierError: $identifierError, otpError: $otpError, passwordError: $passwordError, confirmPasswordError: $confirmPasswordError, authError: $authError, isComplete: $isComplete)';
   }
 
   @override
@@ -932,7 +916,6 @@ class _$ForgotPasswordStateImpl extends _ForgotPasswordState {
             other is _$ForgotPasswordStateImpl &&
             (identical(other.identifier, identifier) ||
                 other.identifier == identifier) &&
-            (identical(other.channel, channel) || other.channel == channel) &&
             (identical(other.otp, otp) || other.otp == otp) &&
             (identical(other.newPassword, newPassword) ||
                 other.newPassword == newPassword) &&
@@ -971,10 +954,9 @@ class _$ForgotPasswordStateImpl extends _ForgotPasswordState {
   }
 
   @override
-  int get hashCode => Object.hashAll([
+  int get hashCode => Object.hash(
     runtimeType,
     identifier,
-    channel,
     otp,
     newPassword,
     confirmPassword,
@@ -992,7 +974,7 @@ class _$ForgotPasswordStateImpl extends _ForgotPasswordState {
     confirmPasswordError,
     authError,
     isComplete,
-  ]);
+  );
 
   /// Create a copy of ForgotPasswordState
   /// with the given fields replaced by the non-null parameter values.
@@ -1009,7 +991,6 @@ class _$ForgotPasswordStateImpl extends _ForgotPasswordState {
 abstract class _ForgotPasswordState extends ForgotPasswordState {
   const factory _ForgotPasswordState({
     final String identifier,
-    final OtpChannel channel,
     final String otp,
     final String newPassword,
     final String confirmPassword,
@@ -1031,9 +1012,7 @@ abstract class _ForgotPasswordState extends ForgotPasswordState {
   const _ForgotPasswordState._() : super._();
 
   @override
-  String get identifier; // email or phone
-  @override
-  OtpChannel get channel;
+  String get identifier; // email — reset is email-only
   @override
   String get otp; // 6-digit entered OTP
   @override

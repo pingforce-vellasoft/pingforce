@@ -7,6 +7,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/auth/auth.service';
 
 import { MatCardModule } from '@angular/material/card';
@@ -220,9 +221,17 @@ export class LoginComponent {
             }
           });
         },
-        error: (err) => {
+        error: (err: HttpErrorResponse) => {
           this.isLoading = false;
-          this.errorMessage = 'Invalid credentials or workspace ID';
+          // Surface the API's own message for the non-credential failures
+          // ("Tenant not found", "Account is inactive or suspended", the portal
+          // access rejections) — collapsing them all into one string hides the
+          // actual reason a sign-in was refused. 401 stays generic on purpose.
+          const apiMessage = err.error?.message;
+          this.errorMessage =
+            err.status !== 401 && typeof apiMessage === 'string' && apiMessage
+              ? apiMessage
+              : 'Invalid credentials or workspace ID';
           console.error('Login error', err);
         },
       });

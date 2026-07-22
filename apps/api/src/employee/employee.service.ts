@@ -62,19 +62,32 @@ export class EmployeeService {
       );
     }
 
+    // No deletedAt filter on purpose: the DB uniques ([tenantId, email],
+    // [tenantId, phone], [tenantId, clientCode]) still cover soft-deleted rows,
+    // so skipping them here would let a create sail past this check and fail on
+    // a P2002 instead of a readable 400.
     const existingUser = await this.prisma.user.findFirst({
       where: {
         tenantId,
-        deletedAt: null,
         OR: [
           { email: employeeData.primaryEmail },
           { clientCode: employeeData.employeeCode },
+          ...(employeeData.primaryMobile
+            ? [{ phone: employeeData.primaryMobile }]
+            : []),
         ],
       },
+      select: { email: true, clientCode: true },
     });
     if (existingUser) {
+      const conflict =
+        existingUser.email === employeeData.primaryEmail
+          ? 'email'
+          : existingUser.clientCode === employeeData.employeeCode
+            ? 'employee code'
+            : 'phone number';
       throw new BadRequestException(
-        'A user with this email or employee code already exists in this tenant',
+        `A user with this ${conflict} already exists in this tenant`,
       );
     }
 

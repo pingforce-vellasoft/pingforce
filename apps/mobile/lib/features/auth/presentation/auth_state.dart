@@ -110,10 +110,6 @@ extension PasswordStrengthX on PasswordStrength {
       };
 }
 
-// ── OTP channel ────────────────────────────────────────────────────────────
-
-enum OtpChannel { email, sms }
-
 // ── Login state ────────────────────────────────────────────────────────────
 
 @freezed
@@ -166,8 +162,7 @@ class LoginState with _$LoginState {
 @freezed
 class ForgotPasswordState with _$ForgotPasswordState {
   const factory ForgotPasswordState({
-    @Default('') String identifier,   // email or phone
-    @Default(OtpChannel.email) OtpChannel channel,
+    @Default('') String identifier,   // email — reset is email-only
     @Default('') String otp,          // 6-digit entered OTP
     @Default('') String newPassword,
     @Default('') String confirmPassword,
@@ -189,7 +184,11 @@ class ForgotPasswordState with _$ForgotPasswordState {
 
   const ForgotPasswordState._();
 
-  bool get canSendOtp => identifier.trim().length >= 6;
+  // The API looks the account up by email only, so a non-email identifier can
+  // never match — reject it here instead of returning the generic
+  // "if the account exists, a code has been sent" and stranding the user.
+  bool get canSendOtp =>
+      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(identifier.trim());
   bool get canVerifyOtp => otp.length == 6;
   bool get passwordsMatch => newPassword == confirmPassword;
   bool get canSubmitNewPassword =>

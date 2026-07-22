@@ -174,50 +174,15 @@ class _IdentifierStep extends ConsumerWidget {
 
           const SizedBox(height: AppSpacing.space6),
 
-          // Channel selector chips
-          Text(
-            'Send code via',
-            style: AppTypography.labelMedium.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.space2),
-          Row(
-            children: [
-              _ChannelChip(
-                label: 'Email',
-                icon: Icons.email_outlined,
-                selected: state.channel == OtpChannel.email,
-                onTap: () => notifier.selectChannel(OtpChannel.email),
-              ),
-              const SizedBox(width: AppSpacing.space3),
-              _ChannelChip(
-                label: 'SMS',
-                icon: Icons.sms_outlined,
-                selected: state.channel == OtpChannel.sms,
-                onTap: () => notifier.selectChannel(OtpChannel.sms),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppSpacing.space4),
-
-          // Identifier field
+          // Email field — the reset API resolves the account by email only,
+          // so there is no channel to choose between.
           TextField(
-            keyboardType: state.channel == OtpChannel.email
-                ? TextInputType.emailAddress
-                : TextInputType.phone,
+            keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.done,
             onChanged: notifier.onIdentifierChanged,
             decoration: InputDecoration(
-              labelText: state.channel == OtpChannel.email
-                  ? 'Email address'
-                  : 'Mobile number',
-              prefixIcon: Icon(
-                state.channel == OtpChannel.email
-                    ? Icons.email_outlined
-                    : Icons.phone_outlined,
-              ),
+              labelText: 'Email address',
+              prefixIcon: const Icon(Icons.email_outlined),
               errorText: state.identifierError,
             ),
           ),
@@ -236,67 +201,6 @@ class _IdentifierStep extends ConsumerWidget {
             onPressed: state.canSendOtp ? notifier.sendOtp : null,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ChannelChip extends StatelessWidget {
-  const _ChannelChip({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: AppDurations.fast,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: selected
-                ? Theme.of(context).colorScheme.primaryContainer
-                : Theme.of(context).colorScheme.surfaceContainerLow,
-            borderRadius: AppRadius.mdAll,
-            border: Border.all(
-              color: selected
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.outlineVariant,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                color: selected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: AppTypography.labelMedium.copyWith(
-                  color: selected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight:
-                      selected ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -394,7 +298,7 @@ class _OtpStepState extends ConsumerState<_OtpStep> {
           const SizedBox(height: AppSpacing.space4),
 
           Text(
-            'Check your ${state.channel == OtpChannel.email ? 'inbox' : 'messages'}',
+            'Check your inbox',
             textAlign: TextAlign.center,
             style: AppTypography.titleLarge,
           ),
@@ -402,7 +306,7 @@ class _OtpStepState extends ConsumerState<_OtpStep> {
           const SizedBox(height: AppSpacing.space1),
 
           Text(
-            'A 6-digit code was sent to ${_masked(state.identifier, state.channel)}',
+            'A 6-digit code was sent to ${_masked(state.identifier)}',
             textAlign: TextAlign.center,
             style: AppTypography.bodyMedium.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -505,18 +409,12 @@ class _OtpStepState extends ConsumerState<_OtpStep> {
     );
   }
 
-  String _masked(String identifier, OtpChannel channel) {
-    if (channel == OtpChannel.email) {
-      final parts = identifier.split('@');
-      if (parts.length != 2) return identifier;
-      final name = parts[0];
-      final domain = parts[1];
-      return '${name.substring(0, name.length.clamp(2, 3))}***@$domain';
-    } else {
-      // Phone: show last 4 digits
-      if (identifier.length <= 4) return identifier;
-      return '****${identifier.substring(identifier.length - 4)}';
-    }
+  String _masked(String identifier) {
+    final parts = identifier.split('@');
+    if (parts.length != 2) return identifier;
+    final name = parts[0];
+    final domain = parts[1];
+    return '${name.substring(0, name.length.clamp(2, 3))}***@$domain';
   }
 }
 

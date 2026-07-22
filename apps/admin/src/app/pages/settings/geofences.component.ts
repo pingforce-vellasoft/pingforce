@@ -1,20 +1,29 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { WorkforceService } from '../../core/services/workforce.service';
-import {
-  MatDialogModule,
-  MatDialog,
-  MAT_DIALOG_DATA,
-  MatDialogRef,
-} from '@angular/material/dialog';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { NetworkService } from '../../core/services/network.service';
+import { MatDialogModule } from '@angular/material/dialog';
+import { DomSanitizer } from '@angular/platform-browser';
 import { OverlayModule } from '@angular/cdk/overlay';
+import * as L from 'leaflet';
+import { buildTileLayer } from '../network/map-tile-providers';
+
+type GeofenceCaptureMode = 'MANUAL' | 'CURRENT';
 
 @Component({
   selector: 'app-geofence-settings',
@@ -29,6 +38,7 @@ import { OverlayModule } from '@angular/cdk/overlay';
     FormsModule,
     MatDialogModule,
     OverlayModule,
+    MatButtonToggleModule,
   ],
   template: `
     <div class="page-container">
@@ -51,6 +61,20 @@ import { OverlayModule } from '@angular/cdk/overlay';
             </div>
 
             <div class="form-content">
+              <mat-button-toggle-group
+                class="mode-toggle"
+                [value]="mode"
+                (change)="setMode($event.value)"
+                aria-label="Geofence capture mode"
+              >
+                <mat-button-toggle value="MANUAL">
+                  <mat-icon>edit_location_alt</mat-icon> Manual
+                </mat-button-toggle>
+                <mat-button-toggle value="CURRENT">
+                  <mat-icon>my_location</mat-icon> Use My Location
+                </mat-button-toggle>
+              </mat-button-toggle-group>
+
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Office Location Name</mat-label>
                 <input
@@ -61,13 +85,38 @@ import { OverlayModule } from '@angular/cdk/overlay';
                 <mat-icon matPrefix class="field-icon">business</mat-icon>
               </mat-form-field>
 
+              @if (mode === 'CURRENT') {
+                <button
+                  mat-stroked-button
+                  class="locate-btn"
+                  [disabled]="locating"
+                  (click)="useCurrentLocation()"
+                >
+                  <mat-icon>{{ locating ? 'hourglass_top' : 'gps_fixed' }}</mat-icon>
+                  {{ locating ? 'Locating…' : 'Capture Current Position' }}
+                </button>
+                @if (locationError) {
+                  <div class="locate-error">
+                    <mat-icon>error_outline</mat-icon> {{ locationError }}
+                  </div>
+                }
+                @if (accuracyMeters !== null) {
+                  <div class="locate-accuracy">
+                    <mat-icon>check_circle</mat-icon> Captured — accuracy
+                    ±{{ accuracyMeters | number: '1.0-0' }}m
+                  </div>
+                }
+              }
+
               <div class="row">
                 <mat-form-field appearance="outline">
                   <mat-label>Latitude</mat-label>
                   <input
                     matInput
                     type="number"
+                    [readonly]="mode === 'CURRENT'"
                     [(ngModel)]="newGeofence.latitude"
+                    (ngModelChange)="onCoordinatesTyped()"
                     placeholder="40.7128"
                   />
                   <mat-icon matPrefix class="field-icon">explore</mat-icon>
@@ -77,11 +126,26 @@ import { OverlayModule } from '@angular/cdk/overlay';
                   <input
                     matInput
                     type="number"
+                    [readonly]="mode === 'CURRENT'"
                     [(ngModel)]="newGeofence.longitude"
+                    (ngModelChange)="onCoordinatesTyped()"
                     placeholder="-74.0060"
                   />
                   <mat-icon matPrefix class="field-icon">explore</mat-icon>
                 </mat-form-field>
+              </div>
+
+              <div class="picker-map-wrapper">
+                <div class="picker-map" #pickerMap></div>
+                <div class="picker-hint">
+                  @if (mode === 'MANUAL') {
+                    <mat-icon>touch_app</mat-icon> Click the map or drag the pin
+                    to set the boundary centre
+                  } @else {
+                    <mat-icon>my_location</mat-icon> Pin follows your captured
+                    device position
+                  }
+                </div>
               </div>
 
               <mat-form-field appearance="outline" class="full-width">
@@ -90,6 +154,7 @@ import { OverlayModule } from '@angular/cdk/overlay';
                   matInput
                   type="number"
                   [(ngModel)]="newGeofence.radiusMeters"
+                  (ngModelChange)="onRadiusChanged()"
                 />
                 <mat-icon matPrefix class="field-icon">radar</mat-icon>
                 <mat-hint>Recommended: 50 - 200 meters</mat-hint>
@@ -345,6 +410,101 @@ import { OverlayModule } from '@angular/cdk/overlay';
         margin-top: 4px;
       }
 
+      .mode-toggle {
+        width: 100%;
+        margin-bottom: 20px;
+        border-radius: 12px !important;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      }
+      ::ng-deep .mode-toggle .mat-button-toggle {
+        flex: 1;
+        background: rgba(15, 23, 42, 0.6);
+        color: #94a3b8;
+        border-left-color: rgba(255, 255, 255, 0.08) !important;
+      }
+      ::ng-deep .mode-toggle .mat-button-toggle-checked {
+        background: rgba(99, 102, 241, 0.18);
+        color: #c7d2fe;
+      }
+      ::ng-deep .mode-toggle .mat-button-toggle-label-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      ::ng-deep .mode-toggle mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+
+      .locate-btn {
+        width: 100%;
+        height: 44px;
+        border-radius: 12px !important;
+        border-color: rgba(99, 102, 241, 0.4) !important;
+        color: #a5b4fc !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .locate-error,
+      .locate-accuracy {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        margin-bottom: 12px;
+      }
+      .locate-error {
+        color: #f87171;
+      }
+      .locate-accuracy {
+        color: #34d399;
+      }
+      .locate-error mat-icon,
+      .locate-accuracy mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+
+      .picker-map-wrapper {
+        margin: 4px 0 8px;
+      }
+      .picker-map {
+        height: 220px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+        background: #0f172a;
+      }
+      .picker-hint {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #64748b;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      .picker-hint mat-icon {
+        font-size: 15px;
+        width: 15px;
+        height: 15px;
+      }
+      ::ng-deep .picker-map .leaflet-control-attribution {
+        background: rgba(15, 23, 42, 0.75);
+        color: #94a3b8;
+      }
+      ::ng-deep .picker-map .leaflet-control-attribution a {
+        color: #a78bfa;
+      }
+
       .submit-btn {
         width: 100%;
         height: 48px;
@@ -551,16 +711,190 @@ import { OverlayModule } from '@angular/cdk/overlay';
     `,
   ],
 })
-export class GeofenceSettingsComponent implements OnInit {
+export class GeofenceSettingsComponent
+  implements OnInit, AfterViewInit, OnDestroy
+{
   private workforceService = inject(WorkforceService);
+  private networkService = inject(NetworkService);
   private sanitizer = inject(DomSanitizer);
+
+  @ViewChild('pickerMap') private pickerMapEl?: ElementRef<HTMLDivElement>;
 
   displayedColumns: string[] = ['name', 'coordinates', 'radius', 'actions'];
   geofences: any[] = [];
   newGeofence = { name: '', latitude: 0, longitude: 0, radiusMeters: 50 };
 
+  /** MANUAL: type coordinates and/or pick on the map. CURRENT: capture the
+   *  browser's GPS position for the site the admin is physically standing in. */
+  mode: GeofenceCaptureMode = 'MANUAL';
+  locating = false;
+  locationError = '';
+  accuracyMeters: number | null = null;
+
+  private map?: L.Map;
+  private tileLayer?: L.TileLayer;
+  private marker?: L.Marker;
+  private radiusCircle?: L.Circle;
+
   ngOnInit() {
     this.loadGeofences();
+  }
+
+  ngAfterViewInit() {
+    this.initPickerMap();
+  }
+
+  ngOnDestroy() {
+    this.map?.remove();
+    this.map = undefined;
+  }
+
+  // ── Capture mode ───────────────────────────────────────────────────────────
+
+  setMode(mode: GeofenceCaptureMode) {
+    this.mode = mode;
+    this.locationError = '';
+    if (mode === 'MANUAL') {
+      this.accuracyMeters = null;
+    }
+  }
+
+  useCurrentLocation() {
+    if (!navigator.geolocation) {
+      this.locationError = 'Geolocation is not supported by this browser.';
+      return;
+    }
+    this.locating = true;
+    this.locationError = '';
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.locating = false;
+        this.accuracyMeters = position.coords.accuracy ?? null;
+        this.setCoordinates(
+          position.coords.latitude,
+          position.coords.longitude,
+          17,
+        );
+      },
+      (error) => {
+        this.locating = false;
+        this.accuracyMeters = null;
+        this.locationError = this.describeGeolocationError(error);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  }
+
+  private describeGeolocationError(error: GeolocationPositionError): string {
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        return 'Location permission denied. Allow it in the browser and retry.';
+      case error.POSITION_UNAVAILABLE:
+        return 'Position unavailable. Check device location services.';
+      case error.TIMEOUT:
+        return 'Timed out getting position. Retry with a clearer GPS signal.';
+      default:
+        return 'Could not read the current location.';
+    }
+  }
+
+  // ── Map picker ─────────────────────────────────────────────────────────────
+
+  private initPickerMap() {
+    const host = this.pickerMapEl?.nativeElement;
+    if (!host) return;
+
+    this.map = L.map(host, {
+      center: [13.6288, 79.4192], // fallback until a coordinate is set
+      zoom: 12,
+      attributionControl: true,
+    });
+    // Free default first; swap when the platform map config arrives.
+    this.tileLayer = buildTileLayer(null).addTo(this.map);
+    this.networkService.getMapConfig().subscribe({
+      next: (config) => {
+        if (!this.map) return;
+        this.tileLayer?.remove();
+        this.tileLayer = buildTileLayer(config).addTo(this.map);
+      },
+      error: () => {
+        // Keep the OSM default when the config endpoint is unavailable.
+      },
+    });
+
+    this.map.on('click', (event: L.LeafletMouseEvent) => {
+      if (this.mode !== 'MANUAL') return;
+      this.setCoordinates(event.latlng.lat, event.latlng.lng);
+    });
+
+    // Leaflet mis-measures a container that was hidden/resized during init.
+    setTimeout(() => this.map?.invalidateSize(), 0);
+  }
+
+  /** Single source of truth: updates the form fields and the map together. */
+  private setCoordinates(lat: number, lng: number, zoom?: number) {
+    this.newGeofence.latitude = Number(lat.toFixed(6));
+    this.newGeofence.longitude = Number(lng.toFixed(6));
+    this.renderPin(zoom);
+  }
+
+  onCoordinatesTyped() {
+    if (this.mode !== 'MANUAL') return;
+    this.renderPin();
+  }
+
+  onRadiusChanged() {
+    this.radiusCircle?.setRadius(Number(this.newGeofence.radiusMeters) || 0);
+  }
+
+  private renderPin(zoom?: number) {
+    const lat = Number(this.newGeofence.latitude);
+    const lng = Number(this.newGeofence.longitude);
+    if (!this.map || !this.isValidCoordinate(lat, lng)) return;
+
+    const position: L.LatLngExpression = [lat, lng];
+    const radius = Number(this.newGeofence.radiusMeters) || 0;
+
+    if (!this.marker) {
+      this.marker = L.marker(position, { draggable: true }).addTo(this.map);
+      this.marker.on('dragend', () => {
+        if (this.mode !== 'MANUAL') {
+          // Position is device-derived in CURRENT mode — snap back.
+          this.renderPin();
+          return;
+        }
+        const moved = this.marker!.getLatLng();
+        this.setCoordinates(moved.lat, moved.lng);
+      });
+    } else {
+      this.marker.setLatLng(position);
+    }
+    this.marker.dragging?.[this.mode === 'MANUAL' ? 'enable' : 'disable']();
+
+    if (!this.radiusCircle) {
+      this.radiusCircle = L.circle(position, {
+        radius,
+        color: '#8b5cf6',
+        fillColor: '#8b5cf6',
+        fillOpacity: 0.15,
+        weight: 2,
+      }).addTo(this.map);
+    } else {
+      this.radiusCircle.setLatLng(position);
+      this.radiusCircle.setRadius(radius);
+    }
+
+    this.map.setView(position, zoom ?? Math.max(this.map.getZoom(), 15));
+  }
+
+  private isValidCoordinate(lat: number, lng: number): boolean {
+    return (
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      Math.abs(lat) <= 90 &&
+      Math.abs(lng) <= 180 &&
+      !(lat === 0 && lng === 0)
+    );
   }
 
   loadGeofences() {
@@ -576,10 +910,25 @@ export class GeofenceSettingsComponent implements OnInit {
   }
 
   saveGeofence() {
+    const latitude = Number(this.newGeofence.latitude);
+    const longitude = Number(this.newGeofence.longitude);
+    if (!this.newGeofence.name?.trim()) {
+      alert('Enter a location name');
+      return;
+    }
+    if (!this.isValidCoordinate(latitude, longitude)) {
+      alert(
+        this.mode === 'CURRENT'
+          ? 'Capture the current position before saving'
+          : 'Set a valid latitude/longitude, or pick a point on the map',
+      );
+      return;
+    }
+
     const payload = {
-      name: this.newGeofence.name,
-      latitude: Number(this.newGeofence.latitude),
-      longitude: Number(this.newGeofence.longitude),
+      name: this.newGeofence.name.trim(),
+      latitude,
+      longitude,
       radiusMeters: Number(this.newGeofence.radiusMeters),
     };
     this.workforceService.createGeofence(payload).subscribe({
@@ -591,6 +940,12 @@ export class GeofenceSettingsComponent implements OnInit {
           longitude: 0,
           radiusMeters: 50,
         };
+        this.accuracyMeters = null;
+        this.locationError = '';
+        this.marker?.remove();
+        this.marker = undefined;
+        this.radiusCircle?.remove();
+        this.radiusCircle = undefined;
       },
       error: (err) => {
         console.error(err);

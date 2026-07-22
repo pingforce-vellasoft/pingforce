@@ -17,13 +17,20 @@ class GeofenceNudgeDismissal
 
   String _key(String tenantId) => '$_keyPrefix$tenantId';
 
-  /// Whether the reminder was already dismissed for [tenantId].
-  Future<bool> isDismissed(String tenantId) async {
-    if (state.containsKey(tenantId)) return state[tenantId]!;
+  /// Cached dismissal flag for [tenantId]. `null` means "not loaded yet" —
+  /// callers render nothing until [ensureLoaded] resolves. Synchronous so a
+  /// widget build never starts an async read (that re-triggered a state
+  /// change on every build and made the banner flicker).
+  bool? dismissedOrNull(String tenantId) => state[tenantId];
+
+  /// Loads the persisted flag once per tenant. Safe to call repeatedly; it
+  /// no-ops after the value is cached, so it cannot loop with a rebuild.
+  Future<void> ensureLoaded(String tenantId) async {
+    if (state.containsKey(tenantId)) return;
     final box = await Hive.openBox(_boxName);
     final dismissed = box.get(_key(tenantId), defaultValue: false) as bool;
+    if (state.containsKey(tenantId)) return;
     state = {...state, tenantId: dismissed};
-    return dismissed;
   }
 
   Future<void> dismiss(String tenantId) async {
