@@ -7,58 +7,64 @@ export interface JwtKeyConfig {
   algorithm: 'RS256' | 'HS256';
 }
 
+/**
+ * Resolution order for both keys (first hit wins):
+ *   1. JWT_{PRIVATE,PUBLIC}_KEY      — inline PEM, literal \n accepted
+ *   2. JWT_{PRIVATE,PUBLIC}_KEY_PATH — explicit file path
+ *   3. JWT_KEYS_DIR/{private,public}.pem
+ *   4. <cwd>/{private,public}.pem    — local dev fallback
+ *
+ * Containers use (3): the deploy stack mounts a persistent `jwt_keys` volume at
+ * /app/keys and generates the pair once, so pulling a new image or recreating
+ * the container never loses the keys. Rotating them invalidates every issued
+ * access and refresh token — all sessions must re-login.
+ */
 @Injectable()
 export class JwtConfigService {
   private privateKeyConfig?: JwtKeyConfig;
   private publicKeyConfig?: JwtKeyConfig;
 
   getPrivateKey(): JwtKeyConfig {
-    if (this.privateKeyConfig) return this.privateKeyConfig;
-
-    if (process.env.JWT_PRIVATE_KEY) {
-      this.privateKeyConfig = {
-        key: process.env.JWT_PRIVATE_KEY.replace(/\\n/g, '\n'),
-        algorithm: 'RS256',
-      };
-      return this.privateKeyConfig;
-    }
-
-    try {
-      const key = fs.readFileSync(
-        path.join(process.cwd(), 'private.pem'),
-        'utf8',
-      );
-      this.privateKeyConfig = { key, algorithm: 'RS256' };
-    } catch (e) {
-      throw new Error(
-        'FATAL: private.pem not found and JWT_PRIVATE_KEY not set in environment. Cannot start server securely!',
-      );
-    }
+    this.privateKeyConfig ??= this.resolve('private');
     return this.privateKeyConfig;
   }
 
   getPublicKey(): JwtKeyConfig {
-    if (this.publicKeyConfig) return this.publicKeyConfig;
-
-    if (process.env.JWT_PUBLIC_KEY) {
-      this.publicKeyConfig = {
-        key: process.env.JWT_PUBLIC_KEY.replace(/\\n/g, '\n'),
-        algorithm: 'RS256',
-      };
-      return this.publicKeyConfig;
-    }
-
-    try {
-      const key = fs.readFileSync(
-        path.join(process.cwd(), 'public.pem'),
-        'utf8',
-      );
-      this.publicKeyConfig = { key, algorithm: 'RS256' };
-    } catch (e) {
-      throw new Error(
-        'FATAL: public.pem not found and JWT_PUBLIC_KEY not set in environment. Cannot start server securely!',
-      );
-    }
+    this.publicKeyConfig ??= this.resolve('public');
     return this.publicKeyConfig;
+  }
+
+  private resolve(kind: 'private' | 'public'): JwtKeyConfig {
+    const envName = kind === 'private' ? 'JWT_PRIVATE_KEY' : 'JWT_PUBLIC_KEY';
+
+    const inline = process.env[envName];
+    if (inline) {
+      return { key: inline.replace(/\\n/g, '\n'), algorithm: 'RS256' };
+    }
+
+    const candidates = [
+      process.env[`${envName}_PATH`],
+      process.env.JWT_KEYS_DIR
+        ? path.join(process.env.JWT_KEYS_DIR, `${kind}.pem`)
+        : undefined,
+      path.join(process.cwd(), `${kind}.pem`),
+    ].filter((p): p is string => !!p);
+
+    for (const candidate of candidates) {
+      try {
+        return {
+          key: fs.readFileSync(candidate, 'utf8'),
+          algorithm: 'RS256',
+        };
+      } catch {
+        // Try the next candidate; only exhausting all of them is fatal.
+      }
+    }
+
+    throw new Error(
+      `FATAL: no JWT ${kind} key found. Set ${envName}, ${envName}_PATH, or ` +
+        `JWT_KEYS_DIR, or place ${kind}.pem in ${process.cwd()}. ` +
+        `Searched: ${candidates.join(', ')}. Cannot start server securely!`,
+    );
   }
 }

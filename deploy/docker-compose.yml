@@ -27,6 +27,36 @@ services:
     depends_on:
       - api
 
+  # One-shot: generate the RS256 JWT keypair on the persistent jwt_keys volume
+  # if it is not already there, then exit. Idempotent — an existing keypair is
+  # left untouched, so this runs safely on every `up` and the keys survive image
+  # pulls, container recreation, and `docker compose down`.
+  #
+  # Deleting the jwt_keys volume rotates the keys: every issued access/refresh
+  # token becomes invalid and all users must log in again.
+  jwt-keygen:
+    image: alpine:3.20
+    restart: 'no'
+    volumes:
+      - jwt_keys:/keys
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        if [ -s /keys/private.pem ] && [ -s /keys/public.pem ]; then
+          echo "JWT keypair already present — leaving it untouched."
+          exit 0
+        fi
+        echo "No JWT keypair found — generating a new RS256 pair."
+        apk add --no-cache openssl >/dev/null
+        openssl genrsa -out /keys/private.pem 2048
+        openssl rsa -in /keys/private.pem -pubout -out /keys/public.pem
+        # The api container runs as a non-root user and only ever reads these.
+        chmod 444 /keys/public.pem
+        chmod 444 /keys/private.pem
+        echo "JWT keypair generated."
+
   api:
     # Image built + pushed by CI (package job) to GHCR. Pull, don't build on VM.
     image: ${API_IMAGE:-ghcr.io/pingforce-vellasoft/pingforce-api:latest}
@@ -37,29 +67,43 @@ services:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?schema=public
       REDIS_URL: redis://redis:6379
       FIREBASE_SERVICE_ACCOUNT_PATH: /run/secrets/firebase-adminsdk.json
+      # JwtConfigService reads <dir>/private.pem and <dir>/public.pem from here.
+      JWT_KEYS_DIR: /app/keys
     volumes:
       - ./secrets/firebase-adminsdk.json:/run/secrets/firebase-adminsdk.json:ro
+      - jwt_keys:/app/keys:ro
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
+      # Must not boot before the keypair exists, or it crash-loops on startup.
+      jwt-keygen:
+        condition: service_completed_successfully
+      # Never serve a pulled image against an un-migrated schema.
+      migrate:
+        condition: service_completed_successfully
     expose:
       - '3000'
 
   # One-shot: apply pending Prisma migrations, seed the catalog, then exit.
-  # Uses the same GHCR image as api. Seed is idempotent (all upserts), so it is
-  # safe to run on every deploy. Run before (re)starting api after a schema change:
-  #   docker compose run --rm migrate
+  # Uses the same GHCR image as api, so its schema always matches its code.
+  # Runs automatically on every `up` and api waits for it to succeed — that is
+  # what stops a pulled image from running against an older schema. Both steps
+  # are idempotent: migrate deploy only applies migrations not yet recorded in
+  # _prisma_migrations, and the seed is all upserts. Neither ever drops data.
   #
-  # SEED_SUPER_ADMIN_PASSWORD must be set in .env, or the seed aborts when no
-  # active super admin exists (otherwise the deployment has no way to log in).
+  # SEED_SUPER_ADMIN_PASSWORD is optional once an active super admin exists, and
+  # leaving it unset is the norm after first deploy: when set, the seed RESETS
+  # that account's password to its value on every deploy. It is required only
+  # for the initial seed, which aborts without it rather than leave the
+  # deployment with no way to log in.
   # The seed entrypoint is "tsx prisma/seed.ts", and tsx is a devDependency that
   # the production image does not ship — so pin+install it here rather than
   # letting `npx` silently reach out to the network mid-deploy.
   migrate:
     image: ${API_IMAGE:-ghcr.io/pingforce-vellasoft/pingforce-api:latest}
-    profiles: ['tools']
+    restart: 'no'
     env_file: .env
     environment:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?schema=public
@@ -150,6 +194,9 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  # RS256 JWT keypair, generated once by jwt-keygen. Persists across image
+  # pulls and container recreation — removing it forces every user to re-login.
+  jwt_keys:
   # Reuse the EXISTING live data volume (created by the old root compose).
   # external: true => compose never creates/wipes it, only mounts it.
   postgres_prod_data:
