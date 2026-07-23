@@ -172,24 +172,42 @@ jobs:
           host: ${{ secrets.OCI_HOST }}
           username: ${{ secrets.OCI_SSH_USER }}
           key: ${{ secrets.OCI_SSH_KEY }}
-          envs: GH_TOKEN,GITHUB_REPOSITORY
+          envs: GH_TOKEN,GITHUB_REPOSITORY,GITHUB_SHA
           script: |
-            set -e
+            set -euo pipefail
             cd /opt/pingforce
-            # Pull latest source over HTTPS using the workflow token, so the OCI
-            # host needs no GitHub SSH deploy key. Remote is rewritten each run.
-            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-            git fetch origin
-            git reset --hard "origin/main"
-            # Rebuild the local api image (no registry image is published for this
-            # repo — see deploy/docker-compose.yml).
-            docker build -t pingforce_api:latest -f apps/api/Dockerfile .
-            # Pull only the third-party images that actually live in a registry.
-            docker compose pull postgres redis minio prometheus grafana caddy
-            # Apply any pending Prisma migrations before restarting the api.
-            docker compose run --rm migrate
+
+            # The stack config (compose file, Caddyfile, prometheus, backup
+            # script) is versioned in deploy/. The VM has no source checkout, so
+            # sync that directory from the repo tarball each run — hand-copying
+            # it by scp is what let the VM drift onto an old compose file and
+            # silently run the pre-DATADIR postgres mount for days.
+            #
+            # .env, secrets/ and backups/ live only on the VM and are never
+            # touched here.
+            curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/tarball/${GITHUB_SHA}" \
+              -o /tmp/pingforce-src.tar.gz
+            rm -rf /tmp/pingforce-src && mkdir -p /tmp/pingforce-src
+            tar -xzf /tmp/pingforce-src.tar.gz -C /tmp/pingforce-src --strip-components=1
+            cp /tmp/pingforce-src/deploy/docker-compose.yml ./docker-compose.yml
+            cp /tmp/pingforce-src/deploy/Caddyfile          ./Caddyfile
+            cp /tmp/pingforce-src/deploy/prometheus.yml     ./prometheus.yml
+            cp -r /tmp/pingforce-src/deploy/grafana         ./
+            sudo cp /tmp/pingforce-src/deploy/backup-db.sh /usr/local/bin/pingforce-backup
+            sudo chmod +x /usr/local/bin/pingforce-backup
+            rm -rf /tmp/pingforce-src /tmp/pingforce-src.tar.gz
+
+            # Fail before touching the stack if the synced compose is invalid.
+            docker compose config >/dev/null
+
+            # api + migrate share the GHCR image built by the package job; the
+            # rest are third-party. `up -d` runs jwt-keygen and migrate as gated
+            # one-shots, so no separate migrate invocation is needed here.
+            docker compose pull
             docker compose up -d
-            docker system prune -f
+            docker image prune -f
 
       - name: Smoke test
         if: steps.creds.outputs.configured == 'true'

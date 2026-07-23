@@ -39,17 +39,37 @@ docker compose exec -T -e PGPASSWORD="$DB_PASSWORD" postgres \
   pg_dump -h 127.0.0.1 -U "$DB_USER" -d "$DB_NAME" --clean --if-exists \
   | gzip -9 >"$TMP"
 
-mv "$TMP" "$OUT"
-echo "$(date -Is) backup written: $OUT ($(du -h "$OUT" | cut -f1))"
+# A dump of an empty-but-healthy database succeeds and looks fine by size alone.
+# That is exactly what happened on 2026-07-23, so check the payload before this
+# file is allowed to replace anything or reset the retention clock.
+if ! gzip -t "$TMP" 2>/dev/null; then
+  echo "$(date -Is) FATAL: dump is not a valid gzip stream — keeping previous backups" >&2
+  rm -f "$TMP"
+  exit 1
+fi
 
-# Fail loudly if the super admin table is empty — that is the failure mode that
-# locks everyone out of the admin portal, and a backup run is a good time to notice.
+TABLES=$(gunzip -c "$TMP" | grep -cE '^COPY public\.' || true)
+if [ "$TABLES" -lt 50 ]; then
+  echo "$(date -Is) FATAL: dump has only $TABLES COPY blocks (expected 90+) — refusing to store it" >&2
+  rm -f "$TMP"
+  exit 1
+fi
+
+mv "$TMP" "$OUT"
+echo "$(date -Is) backup written: $OUT ($(du -h "$OUT" | cut -f1), $TABLES tables)"
+
+# An empty super_admins table locks everyone out of the admin portal. Exit
+# non-zero so cron mails the operator — a warning on stderr alone went unread
+# through the whole 2026-07-23 outage. Pruning is deliberately skipped in this
+# path: if the live database is in a bad state, old good backups must survive.
 ADMINS=$(docker compose exec -T -e PGPASSWORD="$DB_PASSWORD" postgres \
   psql -h 127.0.0.1 -U "$DB_USER" -d "$DB_NAME" -tAc \
   "select count(*) from super_admins where status='ACTIVE' and \"deletedAt\" is null")
 
 if [ "$ADMINS" -eq 0 ]; then
-  echo "$(date -Is) WARNING: no active super admin rows — admin portal login is broken" >&2
+  echo "$(date -Is) ERROR: no active super admin rows — admin portal login is broken" >&2
+  echo "$(date -Is) retention prune skipped so older good backups are preserved" >&2
+  exit 1
 fi
 
 find "$BACKUP_DIR" -name 'pingforce-*.sql.gz' -mtime +"$RETENTION_DAYS" -delete
