@@ -93,6 +93,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         tenantId: 'SYSTEM',
         email: superAdmin.email,
         roleCode: 'SUPER_ADMIN',
+        // Onboarding collects a tenant profile, which a platform super admin
+        // never has. Report it complete so the admin portal does not trap the
+        // account on /onboarding.
+        isOnboarded: true,
         sessionId: payload.sid,
       };
     }
@@ -129,7 +133,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       workspaceName: user.tenant.name,
       email: user.email,
       roleCode: roleCode,
-      isOnboarded: !!user.profile,
+      // A SYS_ADMIN-backed super admin has no tenant profile to fill in, so
+      // onboarding does not apply to it either.
+      isOnboarded: roleCode === 'SUPER_ADMIN' || !!user.profile,
       mustChangePassword: user.mustChangePassword,
       isAttendanceEnabled: user.tenant.isAttendanceEnabled,
       sessionId: payload.sid,

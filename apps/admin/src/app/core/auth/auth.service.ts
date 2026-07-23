@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { tap, catchError, of, Observable, finalize, shareReplay } from 'rxjs';
+import { tap, catchError, of, Observable, shareReplay } from 'rxjs';
 import { Router } from '@angular/router';
 
 export interface UserProfile {
@@ -49,6 +49,9 @@ export class AuthService {
         if (response && response.accessToken) {
           this.setTokens(response.accessToken, response.refreshToken);
           this.isAuthenticated.set(true);
+          // Drop any profile cached against the previous session before
+          // re-fetching for the account that just signed in.
+          this.profileFetch$ = null;
           this.fetchProfile().subscribe();
         }
       }),
@@ -78,13 +81,23 @@ export class AuthService {
   }
 
   logout() {
+    this.clearSession();
+    this.router.navigate(['/login']);
+  }
+
+  /**
+   * Tears down all client-side session state without navigating. Guards use
+   * this when /auth/me rejects a stored token, so they can return their own
+   * UrlTree instead of racing an imperative navigate().
+   */
+  private clearSession() {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.IMPERSONATED_TENANT_KEY);
     this.isAuthenticated.set(false);
     this.currentUser.set(null);
     this.impersonatedTenantId.set(null);
-    this.router.navigate(['/login']);
+    this.profileFetch$ = null;
   }
 
   getToken(): string | null {
@@ -113,11 +126,17 @@ export class AuthService {
         }
         this.currentUser.set(profile);
       }),
-      catchError(() => of(null)),
-      finalize(() => {
-        this.profileFetch$ = null;
+      catchError(() => {
+        // The stored token is dead (expired/revoked). Drop it so authGuard
+        // stops treating this browser as signed in and guards can safely
+        // route to /login.
+        this.clearSession();
+        return of(null);
       }),
-      shareReplay(1),
+      // shareReplay must cache after completion so every guard in a single
+      // navigation reuses one /auth/me response. Clearing the cache in
+      // finalize() would let a second guard fire a duplicate request.
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
     return this.profileFetch$;
   }

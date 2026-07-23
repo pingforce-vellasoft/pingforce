@@ -1,7 +1,19 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { map } from 'rxjs';
-import { AuthService } from './auth.service';
+import { AuthService, UserProfile } from './auth.service';
+
+/**
+ * Onboarding collects a tenant profile (+ optional white-label branding), so it
+ * only ever applies to tenant accounts. A platform SUPER_ADMIN has no tenant
+ * profile by design and would otherwise be trapped on /onboarding forever.
+ */
+function needsOnboarding(profile: UserProfile): boolean {
+  if (profile.roleCode === 'SUPER_ADMIN') {
+    return false;
+  }
+  return !profile.isOnboarded;
+}
 
 /**
  * Blocks the app shell until the signed-in account has completed first-login
@@ -15,19 +27,20 @@ export const onboardingGuard: CanActivateFn = () => {
 
   const current = authService.currentUser();
   if (current) {
-    return current.isOnboarded ? true : router.parseUrl('/onboarding');
+    return needsOnboarding(current) ? router.parseUrl('/onboarding') : true;
   }
 
   // Profile not loaded yet (e.g. hard refresh) — fetch, then decide. A failed
-  // fetch resolves to null; treat that as "not onboarded" rather than letting
-  // an unknown account through.
-  return authService
-    .fetchProfile()
-    .pipe(
-      map((profile) =>
-        profile?.isOnboarded ? true : router.parseUrl('/onboarding'),
-      ),
-    );
+  // fetch means the stored token is dead (expired/revoked), not that the
+  // account is new: send it to /login, never to /onboarding.
+  return authService.fetchProfile().pipe(
+    map((profile) => {
+      if (!profile) {
+        return router.parseUrl('/login');
+      }
+      return needsOnboarding(profile) ? router.parseUrl('/onboarding') : true;
+    }),
+  );
 };
 
 /**
@@ -41,14 +54,15 @@ export const notOnboardedGuard: CanActivateFn = () => {
 
   const current = authService.currentUser();
   if (current) {
-    return current.isOnboarded ? router.parseUrl('/dashboard') : true;
+    return needsOnboarding(current) ? true : router.parseUrl('/dashboard');
   }
 
-  return authService
-    .fetchProfile()
-    .pipe(
-      map((profile) =>
-        profile?.isOnboarded ? router.parseUrl('/dashboard') : true,
-      ),
-    );
+  return authService.fetchProfile().pipe(
+    map((profile) => {
+      if (!profile) {
+        return router.parseUrl('/login');
+      }
+      return needsOnboarding(profile) ? true : router.parseUrl('/dashboard');
+    }),
+  );
 };
