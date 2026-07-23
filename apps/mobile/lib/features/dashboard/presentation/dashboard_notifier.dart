@@ -220,7 +220,6 @@ class DashboardNotifier extends Notifier<DashboardState> {
     bool attendanceEnabled = false,
   }) {
     final actions = <QuickAction>[];
-    final working = summary.attendance.status == 'working';
 
     // Admins with the attendance module enabled get a fast path to geofence
     // setup — they configure zones, they don't clock in.
@@ -234,24 +233,10 @@ class DashboardNotifier extends Notifier<DashboardState> {
       ));
     }
 
-    // Check In / Check Out reflects current state.
-    if (working) {
-      actions.add(const QuickAction(
-        id: 'checkout',
-        label: 'Check Out',
-        iconName: 'logout',
-        route: '/attendance',
-        isUrgent: true,
-      ));
-    } else if (summary.attendance.status == 'notCheckedIn') {
-      actions.add(const QuickAction(
-        id: 'checkin',
-        label: 'Check In',
-        iconName: 'login',
-        route: '/attendance',
-        isHighlighted: true,
-      ));
-    }
+    // No Check In / Check Out tile here: the Attendance Hero Card sits directly
+    // above this grid on the same screen and already exposes check-in,
+    // check-out, break and resume. A tile duplicating it just competed with the
+    // hero's primary button.
 
     actions.addAll(const [
       QuickAction(

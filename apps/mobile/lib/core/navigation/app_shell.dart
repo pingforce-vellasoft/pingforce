@@ -213,7 +213,6 @@ class _AppShellState extends ConsumerState<AppShell>
         destinations: destinations,
         currentIndex: selectedNavIndex,
         onTap: _onNavTap,
-        onMoreTap: () => _showMoreSheet(context, shellState),
       ),
 
       // ── FAB (role-specific, collapses on scroll) ─────────────────────
@@ -229,16 +228,6 @@ class _AppShellState extends ConsumerState<AppShell>
 
   void _onNavTap(int index, List<NavDestination> destinations) {
     final dest = destinations[index];
-
-    // "More" — opens sheet instead of navigating
-    if (dest.id == NavDestinationId.notifications &&
-        dest.label == 'More') {
-      _showMoreSheet(
-        context,
-        ref.read(appShellProvider),
-      );
-      return;
-    }
 
     // Resolve the destination to its actual shell branch. The per-role nav lists
     // destinations positionally, but goBranch() needs the real branch index —
@@ -258,27 +247,6 @@ class _AppShellState extends ConsumerState<AppShell>
       widget.navigationShell.goBranch(branch);
     }
   }
-
-  void _showMoreSheet(BuildContext context, AppShellState shellState) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      // The sheet draws its own drag handle (below); suppress Material's built-in
-      // one so only a single handle shows.
-      showDragHandle: false,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => _MoreSheet(
-        shellState: shellState,
-        onNavigate: (route) {
-          Navigator.pop(ctx);
-          context.push(route);
-        },
-      ),
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -290,13 +258,11 @@ class _AppBottomNav extends StatelessWidget {
     required this.destinations,
     required this.currentIndex,
     required this.onTap,
-    required this.onMoreTap,
   });
 
   final List<NavDestination> destinations;
   final int currentIndex;
   final void Function(int, List<NavDestination>) onTap;
-  final VoidCallback onMoreTap;
 
   @override
   Widget build(BuildContext context) {
@@ -306,7 +272,6 @@ class _AppBottomNav extends StatelessWidget {
       animationDuration: AppDurations.normal,
       indicatorColor: Theme.of(context).colorScheme.primaryContainer,
       destinations: destinations.map((dest) {
-        // "More" tap is handled via onMoreTap, but we still render it
         return NavigationDestination(
           icon: _BadgedIcon(
             icon: Icon(dest.icon),
@@ -356,187 +321,14 @@ class _BadgedIcon extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// "MORE" BOTTOM SHEET
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _MoreSheet extends ConsumerWidget {
-  const _MoreSheet({
-    required this.shellState,
-    required this.onNavigate,
-  });
-
-  final AppShellState shellState;
-  final void Function(String route) onNavigate;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final syncPending = ref.watch(syncPendingCountProvider);
-
-    final items = NavDestinations.moreSheetItems(
-      hasPermission: (key) =>
-          NavDestinations.roleHasPermission(shellState.role, key),
-      notificationBadge: shellState.notificationBadge,
-      pendingSyncBadge: syncPending,
-    );
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.55,
-      maxChildSize: 0.9,
-      minChildSize: 0.35,
-      expand: false,
-      builder: (ctx, scrollCtrl) {
-        return Column(
-          children: [
-            // ── Handle ──────────────────────────────────────────────────
-            const SizedBox(height: AppSpacing.space2),
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                  borderRadius: AppRadius.pillAll,
-                ),
-              ),
-            ),
-
-            // ── Header ──────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screenHorizontal,
-                AppSpacing.space4,
-                AppSpacing.screenHorizontal,
-                AppSpacing.space2,
-              ),
-              child: Row(
-                children: [
-                  Text('More', style: AppTypography.titleMedium),
-                  const Spacer(),
-                  Text(
-                    shellState.role.label,
-                    style: AppTypography.labelMedium.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const Divider(height: 1),
-
-            // ── Grid of items ────────────────────────────────────────────
-            Expanded(
-              child: GridView.builder(
-                controller: scrollCtrl,
-                padding: AppSpacing.screenPaddingAll.add(
-                  EdgeInsets.only(
-                    bottom: MediaQuery.viewPaddingOf(context).bottom,
-                  ),
-                ),
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 1,
-                  crossAxisSpacing: AppSpacing.space3,
-                  mainAxisSpacing: AppSpacing.space3,
-                ),
-                itemCount: items.length,
-                itemBuilder: (_, i) => _MoreSheetItem(
-                  destination: items[i],
-                  onTap: () => onNavigate(items[i].rootRoute),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _MoreSheetItem extends StatefulWidget {
-  const _MoreSheetItem({
-    required this.destination,
-    required this.onTap,
-  });
-
-  final NavDestination destination;
-  final VoidCallback onTap;
-
-  @override
-  State<_MoreSheetItem> createState() => _MoreSheetItemState();
-}
-
-class _MoreSheetItemState extends State<_MoreSheetItem> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final dest = widget.destination;
-
-    return Semantics(
-      label: dest.label + (dest.hasBadge ? ', ${dest.badgeLabel} unread' : ''),
-      button: true,
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapUp: (_) {
-          setState(() => _pressed = false);
-          widget.onTap();
-        },
-        onTapCancel: () => setState(() => _pressed = false),
-        child: AnimatedScale(
-          scale: _pressed ? 0.92 : 1.0,
-          duration: const Duration(milliseconds: 100),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerLowest,
-              borderRadius: AppRadius.lgAll,
-              boxShadow: AppElevation.shadowForLevel(1),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Badge wrapped icon
-                Badge(
-                  isLabelVisible: dest.hasBadge,
-                  label: Text(
-                    dest.badgeLabel,
-                    style: const TextStyle(fontSize: 9),
-                  ),
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  textColor: Theme.of(context).colorScheme.onError,
-                  child: Icon(
-                    dest.icon,
-                    size: AppIconSize.lg,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.space2),
-                Text(
-                  dest.label,
-                  style: AppTypography.labelSmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // LEFT NAVIGATION DRAWER  (AUDIT §17 — secondary navigation)
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Side menu opened from the dashboard app-bar menu icon. Surfaces the same
-// RBAC-filtered secondary modules as the "More" sheet plus Profile, with a
-// user header. Tapping an item closes the drawer and pushes its route.
+// Side menu opened from the dashboard app-bar menu icon. This is the ONLY
+// secondary-navigation surface — it holds the RBAC-filtered secondary modules
+// plus Profile (via the user header). Items the current role already has as a
+// bottom-nav tab are filtered out, so nothing appears twice. Tapping an item
+// closes the drawer and pushes its route.
 
 class _AppDrawer extends ConsumerWidget {
   const _AppDrawer({required this.shellState, required this.onNavigate});
@@ -550,7 +342,8 @@ class _AppDrawer extends ConsumerWidget {
     final user = ref.watch(currentUserProvider).valueOrNull;
     final syncPending = ref.watch(syncPendingCountProvider);
 
-    final items = NavDestinations.moreSheetItems(
+    final items = NavDestinations.drawerItems(
+      role: shellState.role,
       hasPermission: (key) =>
           NavDestinations.roleHasPermission(shellState.role, key),
       pendingSyncBadge: syncPending,

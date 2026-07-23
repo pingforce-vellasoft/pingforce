@@ -61,6 +61,35 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
 
+      # Destructive DDL in a migration deletes production data the moment it is
+      # applied, and no infrastructure fix can prevent that — `migrate deploy`
+      # faithfully runs whatever SQL the file contains. Prisma emits DROP COLUMN
+      # for any field removed from schema.prisma, including a rename it reads as
+      # drop + add, so this is easy to merge by accident.
+      #
+      # Intentional drops are allowed, but must be opted into explicitly by
+      # putting the marker below in the migration file, which forces a reviewer
+      # to have seen it:
+      #   -- pingforce:allow-destructive reason=<why the data is safe to lose>
+      - name: Block unreviewed destructive migrations
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in $(git ls-files 'prisma/migrations/**/*.sql'); do
+            if grep -qiE '(DROP[[:space:]]+(COLUMN|TABLE)|TRUNCATE)' "$f"; then
+              if ! grep -q 'pingforce:allow-destructive' "$f"; then
+                echo "::error file=$f::destructive DDL without a pingforce:allow-destructive marker"
+                grep -niE '(DROP[[:space:]]+(COLUMN|TABLE)|TRUNCATE)' "$f" | sed 's/^/    /'
+                fail=1
+              fi
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then
+            echo "Add '-- pingforce:allow-destructive reason=...' to the migration if the data loss is intended."
+            exit 1
+          fi
+          echo "No unreviewed destructive migrations."
+
   # ── 3. Package: API Docker image → GHCR (main only) ───────────────────────
   # Frontends do NOT get Docker images — they deploy to Firebase Hosting.
   package:
@@ -144,8 +173,8 @@ jobs:
   # ── 4. Deploy to OCI (main only; needs OCI_HOST/OCI_SSH_USER/OCI_SSH_KEY
   #      repo secrets — skips gracefully until they are configured) ──────────
   deploy:
-    # Manual only for now — trigger via Actions tab → Run workflow (workflow_dispatch).
-    # Auto-deploy on push is disabled until the OCI host git/registry auth is fixed.
+    # Auto-deploys every push to main; also runnable on demand via the Actions
+    # tab → Run workflow (workflow_dispatch).
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     needs: package
     runs-on: ubuntu-latest

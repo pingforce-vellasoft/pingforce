@@ -17,15 +17,18 @@ part 'nav_destinations.freezed.dart';
 //
 // Role → Bottom Nav mapping:
 //
-//  Field Employee:   [Home] [Attendance] [Visits]  [More]
-//  Field Technician: [Home] [Attendance] [Faults]  [More]
-//  Sales Rep:        [Home] [Attendance] [Leads]   [More]
-//  Manager:          [Home] [Team]       [Reports] [More]
-//  Admin:            [Home] [Reports]   [Settings] [More]
+//  Field Employee:   [Home] [Attendance] [Visits]
+//  Field Technician: [Home] [Attendance] [Faults]
+//  Sales Rep:        [Home] [Attendance] [Leads]
+//  Manager:          [Home] [Team]       [Reports]
+//  Admin:            [Home] [Reports]    [Settings]
 //
-// "More" sheet always contains:
-//   Notifications, Reports, Profile, Settings, Sync Monitor,
-//   Leave, Documents (filtered by RBAC)
+// Secondary modules (Leave, Documents, Announcements, Sync Monitor, Settings)
+// live ONLY in the left navigation drawer, opened from the dashboard's
+// hamburger. There is no "More" bottom-nav tab or "More" sheet — that was a
+// second entry point to the exact same list. Anything already reachable as a
+// bottom-nav tab for the current role is filtered out of the drawer, so a role
+// never sees the same destination twice.
 
 // ── App User Role ──────────────────────────────────────────────────────────
 
@@ -150,29 +153,10 @@ class NavDestinations {
         permissionKey: 'home.view',
         showInBottomNav: true,
         badgeCount: badgeCount,
-        fab: const DestinationFabConfig(
-          tooltip: 'Quick Action',
-          icon: Icons.add_rounded,
-          route: '/quick-action',
-          isSpeedDial: true,
-          speedDialItems: [
-            SpeedDialItem(
-              tooltip: 'Report Fault',
-              icon: Icons.build_circle_rounded,
-              route: '/faults/new',
-            ),
-            SpeedDialItem(
-              tooltip: 'Log Visit',
-              icon: Icons.location_on_rounded,
-              route: '/visits/new',
-            ),
-            SpeedDialItem(
-              tooltip: 'Add Lead',
-              icon: Icons.person_add_rounded,
-              route: '/leads/new',
-            ),
-          ],
-        ),
+        // No FAB on Home. The dashboard's Quick Actions grid already offers
+        // /faults/new, /visits/new and friends, and it is role-aware — the
+        // speed-dial that used to live here duplicated those same routes on the
+        // same screen (and offered "Add Lead" to roles that cannot see leads).
       );
 
   static NavDestination attendance({int badgeCount = 0}) => NavDestination(
@@ -258,7 +242,6 @@ class NavDestinations {
         rootRoute: '/reports',
         permissionKey: 'reports.view',
         showInBottomNav: true,
-        showInMoreSheet: true,
         badgeCount: badgeCount,
       );
 
@@ -349,76 +332,53 @@ class NavDestinations {
     int visitBadge = 0,
     int leadBadge = 0,
   }) {
-    final more = _moreDestination(
-      notificationBadge: notificationBadge,
-      pendingSyncBadge: pendingSyncBadge,
-    );
-
     return switch (role) {
       AppUserRole.fieldEmployee => [
           home(),
           attendance(),
           visits(badgeCount: visitBadge),
-          more,
         ],
       AppUserRole.fieldTechnician => [
           home(),
           attendance(),
           faults(badgeCount: faultBadge),
-          more,
         ],
       AppUserRole.salesRep => [
           home(),
           attendance(),
           leads(badgeCount: leadBadge),
-          more,
         ],
       AppUserRole.manager => [
           home(),
           team(),
           reports(),
-          more,
         ],
       AppUserRole.admin => [
           home(),
           reports(),
           settings(),
-          more,
         ],
     };
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // "MORE" SHEET CONFIGURATION  (always last in bottom nav)
+  // DRAWER CONFIGURATION  (left navigation drawer — the only secondary menu)
   // ─────────────────────────────────────────────────────────────────────────
 
-  static NavDestination _moreDestination({
-    int notificationBadge = 0,
-    int pendingSyncBadge = 0,
-  }) {
-    final totalBadge = notificationBadge + pendingSyncBadge;
-    return NavDestination(
-      id: NavDestinationId.notifications, // sentinel — "More" is not a real route
-      label: 'More',
-      icon: Icons.grid_view_outlined,
-      selectedIcon: Icons.grid_view_rounded,
-      rootRoute: '', // handled by sheet, not a route
-      permissionKey: '',
-      showInBottomNav: true,
-      badgeCount: totalBadge,
-    );
-  }
-
-  /// All items to show in the "More" bottom sheet, filtered by RBAC.
-  /// Pass a permission-check callback.
-  static List<NavDestination> moreSheetItems({
+  /// Items to show in the left navigation drawer, filtered by RBAC and by what
+  /// the role already has as a bottom-nav tab.
+  ///
+  /// Excluded by design:
+  ///   • Notifications — lives on the dashboard's app-bar bell
+  ///   • Profile       — opens from the drawer's own user header / dashboard avatar
+  ///   • Reports       — a bottom-nav tab for the roles that can see it
+  ///   • Settings      — dropped for admins, who have it as a bottom-nav tab
+  static List<NavDestination> drawerItems({
+    required AppUserRole role,
     required bool Function(String permissionKey) hasPermission,
-    int notificationBadge = 0,
     int pendingSyncBadge = 0,
   }) {
-    // Notifications live on the dashboard bell, Reports has its own bottom-nav
-    // tab (admin/manager), and Profile now opens from the avatar — so none of
-    // those belong in the "More" sheet.
+    final tabRoutes = bottomNavFor(role: role).map((d) => d.rootRoute).toSet();
     final all = [
       leave(),
       documents(),
@@ -426,7 +386,10 @@ class NavDestinations {
       syncMonitor(badgeCount: pendingSyncBadge),
       settings(),
     ];
-    return all.where((d) => hasPermission(d.permissionKey)).toList();
+    return all
+        .where((d) =>
+            hasPermission(d.permissionKey) && !tabRoutes.contains(d.rootRoute))
+        .toList();
   }
 
   // ─────────────────────────────────────────────────────────────────────────
