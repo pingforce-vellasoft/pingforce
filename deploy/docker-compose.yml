@@ -123,6 +123,13 @@ services:
   # kartoza/postgis: matches the image the live data volume was initialised with.
   # Env vars use kartoza's names (POSTGRES_PASS / POSTGRES_DBNAME); ignored on an
   # already-initialised volume but kept correct in case of first init.
+  #
+  # DATADIR pins the cluster inside the mounted volume. kartoza defaults to
+  # /var/lib/postgresql/<major> (e.g. .../16), NOT /var/lib/postgresql/data —
+  # so mounting only .../data leaves the real cluster on the container's
+  # writable layer, where `docker compose down` destroys it. That is exactly
+  # how the 2026-07-23 data loss happened. Keep DATADIR and the volume
+  # destination pointing at the same path.
   postgres:
     image: kartoza/postgis:16-3.4
     container_name: pingforce_postgres
@@ -131,6 +138,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASS: ${DB_PASSWORD}
       POSTGRES_DBNAME: ${DB_NAME}
+      DATADIR: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
     healthcheck:
