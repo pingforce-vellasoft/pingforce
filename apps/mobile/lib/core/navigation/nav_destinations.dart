@@ -299,6 +299,10 @@ class NavDestinations {
         showInMoreSheet: true,
       );
 
+  /// DISABLED — the Documents screen is a UI shell with stub data and no
+  /// backing API module, so it is kept out of the drawer and blocked by
+  /// `RouteGuard` (see `_routePermissionKeys`). Do not re-add this to
+  /// `drawerItems` until the backend documents module ships.
   static NavDestination documents() => const NavDestination(
         id: NavDestinationId.documents,
         label: 'Documents',
@@ -381,7 +385,6 @@ class NavDestinations {
     final tabRoutes = bottomNavFor(role: role).map((d) => d.rootRoute).toSet();
     final all = [
       leave(),
-      documents(),
       announcements(),
       syncMonitor(badgeCount: pendingSyncBadge),
       settings(),
@@ -415,7 +418,6 @@ class NavDestinations {
     'settings.view',
     'sync.view',
     'leave.view',
-    'documents.view',
     'announcements.view',
   };
 
@@ -456,6 +458,9 @@ class NavDestinations {
     '/leads': 'leads.view',
     '/team': 'team.view',
     '/reports': 'reports.view',
+    // No role carries 'documents.view', so this bounces every /documents
+    // deep link home until the module is re-enabled.
+    '/documents': 'documents.view',
   };
 
   /// The permission key gating `location`, or null if the route is not

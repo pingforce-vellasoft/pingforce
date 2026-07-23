@@ -170,6 +170,9 @@ class _ProfileHeader extends StatelessWidget {
         CircleAvatar(
           radius: 40,
           backgroundColor: cs.primaryContainer,
+          foregroundImage: (profile.avatar != null && profile.avatar!.isNotEmpty)
+              ? NetworkImage(profile.avatar!)
+              : null,
           child: Text(
             profile.initials,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(

@@ -18,18 +18,6 @@ class ProfileState {
   final bool isLoading;
   final ProfileInfo? profile;
   final String? errorMessage;
-
-  ProfileState copyWith({
-    bool? isLoading,
-    ProfileInfo? profile,
-    String? errorMessage,
-  }) {
-    return ProfileState(
-      isLoading: isLoading ?? this.isLoading,
-      profile: profile ?? this.profile,
-      errorMessage: errorMessage,
-    );
-  }
 }
 
 final profileNotifierProvider =
@@ -40,14 +28,23 @@ class ProfileNotifier extends Notifier<ProfileState> {
   ProfileState build() => const ProfileState();
 
   Future<void> load() async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    // Keep any already-loaded profile visible while refreshing so a pull-to-
+    // refresh does not flash the spinner over good data.
+    state = ProfileState(
+      isLoading: state.profile == null,
+      profile: state.profile,
+    );
     try {
       final me = await sl<ProfileRemoteDataSource>().fetchMe();
-      state = state.copyWith(isLoading: false, profile: me);
+      state = ProfileState(isLoading: false, profile: me);
     } catch (_) {
-      state = state.copyWith(
+      state = ProfileState(
         isLoading: false,
-        errorMessage: 'Could not load your profile. Pull to retry.',
+        // A failed refresh must not wipe a profile we already have.
+        profile: state.profile,
+        errorMessage: state.profile == null
+            ? 'Could not load your profile. Pull to retry.'
+            : null,
       );
     }
   }

@@ -136,6 +136,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       // A SYS_ADMIN-backed super admin has no tenant profile to fill in, so
       // onboarding does not apply to it either.
       isOnboarded: roleCode === 'SUPER_ADMIN' || !!user.profile,
+      firstName: user.profile?.firstName ?? null,
+      lastName: user.profile?.lastName ?? null,
+      avatar: user.profile?.avatar ?? null,
       mustChangePassword: user.mustChangePassword,
       isAttendanceEnabled: user.tenant.isAttendanceEnabled,
       sessionId: payload.sid,

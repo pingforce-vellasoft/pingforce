@@ -69,7 +69,9 @@ import '../../features/geofences/presentation/geofence_list_screen.dart';
 //   /settings                 → SettingsScreen
 //   /sync                     → SyncMonitorScreen
 //   /leave                    → LeaveScreen
-//   /documents                → DocumentsScreen
+//   /documents                → DocumentListScreen (DISABLED — blocked by
+//                               RouteGuard, hidden from the drawer, pending
+//                               the backend documents module)
 //   /announcements            → AnnouncementsScreen
 //   /qr-scanner               → QrScannerScreen
 //   /signature-pad            → SignaturePadScreen
@@ -400,6 +402,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LeaveScreen(),
       ),
 
+      // DISABLED — RouteGuard bounces this home (no role carries
+      // 'documents.view'). Kept registered so the screen stays compiled and
+      // re-enabling is a small revert.
       GoRoute(
         path: '/documents',
         name: 'documents',

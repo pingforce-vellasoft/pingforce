@@ -29,6 +29,9 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       roleCode: (json['roleCode'] ?? 'UNKNOWN') as String,
       tenantId: (json['tenantId'] ?? '') as String,
       isOnboarded: (json['isOnboarded'] ?? false) as bool,
+      firstName: json['firstName'] as String?,
+      lastName: json['lastName'] as String?,
+      avatar: json['avatar'] as String?,
     );
   }
 

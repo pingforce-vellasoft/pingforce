@@ -8,6 +8,9 @@ class ProfileInfo {
     required this.roleCode,
     required this.tenantId,
     required this.isOnboarded,
+    this.firstName,
+    this.lastName,
+    this.avatar,
   });
 
   final String userId;
@@ -15,18 +18,30 @@ class ProfileInfo {
   final String roleCode;
   final String tenantId;
   final bool isOnboarded;
+  final String? firstName;
+  final String? lastName;
+  final String? avatar;
 
-  /// Two-letter initials derived from the email local-part.
+  /// Initials from the profile name when present, otherwise the email
+  /// local-part (accounts that have not completed profile setup).
   String get initials {
+    final first = firstName?.trim() ?? '';
+    final last = lastName?.trim() ?? '';
+    if (first.isNotEmpty && last.isNotEmpty) {
+      return '${first[0]}${last[0]}'.toUpperCase();
+    }
+    if (first.isNotEmpty) {
+      return (first.length >= 2 ? first.substring(0, 2) : first).toUpperCase();
+    }
     final local = email.split('@').first;
     if (local.isEmpty) return '?';
-    return local.length >= 2
-        ? local.substring(0, 2).toUpperCase()
-        : local.substring(0, 1).toUpperCase();
+    return (local.length >= 2 ? local.substring(0, 2) : local).toUpperCase();
   }
 
-  /// Human-friendly name from the email local-part (backend has no name field).
+  /// Full name from the user profile, falling back to the email local-part.
   String get displayName {
+    final name = '${firstName?.trim() ?? ''} ${lastName?.trim() ?? ''}'.trim();
+    if (name.isNotEmpty) return name;
     final local = email.split('@').first;
     if (local.isEmpty) return 'User';
     return local[0].toUpperCase() + local.substring(1);
