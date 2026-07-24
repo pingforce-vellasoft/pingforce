@@ -66,6 +66,19 @@ extension AppUserRoleX on AppUserRole {
     // EMPLOYEE_FIELD_STAFF, CUSTOMER and any unknown/custom role.
     return AppUserRole.fieldEmployee;
   }
+
+  /// Whether this role does field work and so is subject to background location
+  /// tracking while checked in. Field roles move between sites; manager/admin
+  /// are office roles that may still punch attendance but must never be prompted
+  /// for background location or tracked. Single source of truth for the
+  /// tracking-scope gate on check-in.
+  bool get isFieldRole => switch (this) {
+        AppUserRole.fieldEmployee ||
+        AppUserRole.fieldTechnician ||
+        AppUserRole.salesRep =>
+          true,
+        AppUserRole.manager || AppUserRole.admin => false,
+      };
 }
 
 // ── Destination ID ─────────────────────────────────────────────────────────

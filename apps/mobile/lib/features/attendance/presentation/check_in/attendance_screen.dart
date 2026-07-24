@@ -67,9 +67,18 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
       return const MockLocationBlocker();
     }
 
+    // When the tenant has not configured a geofence the feature is blocked
+    // entirely — no check-in button, only the consult-admin message.
+    final showCheckInBar =
+        state.status != CheckInScreenStatus.geofenceNotConfigured &&
+            state.status != CheckInScreenStatus.gpsPermissionRequired &&
+            state.status != CheckInScreenStatus.initializing;
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: _buildAppBar(context, state),
+      bottomNavigationBar:
+          showCheckInBar ? const AttendanceCheckInBar() : null,
       body: Stack(
         children: [
           // ── Main scrollable content ──────────────────────────────────────
@@ -165,27 +174,28 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       AppSpacing.sectionGapBox,
                     ],
 
+                    // ── Geofence not configured — hard block ───────────
+                    // When the tenant has no check-in zone the whole feature
+                    // is unavailable: show only the consult-admin message and
+                    // suppress the shift card / GPS map (nothing to act on).
+                    if (state.status ==
+                        CheckInScreenStatus.geofenceNotConfigured) ...[
+                      _GeofenceMessageCard(
+                        icon: Icons.wrong_location_rounded,
+                        color: Theme.of(context).colorScheme.tertiary,
+                        title: 'Check-in unavailable',
+                        message:
+                            'Your check-in zone (geofence) has not been set '
+                            'up yet. Please consult your admin to add a '
+                            'geofence before you can use attendance check-in.',
+                      ),
+                    ] else ...[
                     // ── Shift Card (always visible except alreadyCheckedIn) ─
                     if (state.status != CheckInScreenStatus.alreadyCheckedIn)
                       ShiftCard(shift: state.shift),
 
                     if (state.status != CheckInScreenStatus.alreadyCheckedIn)
                       AppSpacing.sectionGapBox,
-
-                    // ── Geofence state messages ────────────────────────
-                    if (state.status ==
-                        CheckInScreenStatus.geofenceNotConfigured) ...[
-                      _GeofenceMessageCard(
-                        icon: Icons.wrong_location_rounded,
-                        color: Theme.of(context).colorScheme.tertiary,
-                        title: 'Geofence not configured',
-                        message:
-                            'Your go-location (check-in zone) has not been '
-                            'set up yet. Please ask your admin to configure a '
-                            'geofence before you can check in.',
-                      ),
-                      AppSpacing.sectionGapBox,
-                    ],
 
                     if (state.status ==
                         CheckInScreenStatus.outsideGeofence) ...[
@@ -224,6 +234,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
 
                     // ── Sync timestamp ─────────────────────────────────
                     _buildSyncInfo(context, state),
+                    ], // end else (geofence configured)
                   ],
                 ),
               ),

@@ -25,6 +25,15 @@ class AuthSession {
   /// setup screen — the mobile counterpart of the admin portal's /onboarding.
   bool isOnboarded = false;
 
+  /// True once the post-login permissions flow (location + notifications) has
+  /// been shown on this device. Device-local — persisted separately from the
+  /// JWT-backed account state so a reinstall re-runs it. The router shows the
+  /// flow once after profile setup; it is skippable, so this records "seen",
+  /// not "granted".
+  bool permissionsFlowSeen = false;
+
+  static const _permissionsSeenKey = 'permissions_flow_seen';
+
   /// Whether this account owns the tenant record, and so gets the company +
   /// branding (white-label) steps during setup instead of the profile-only
   /// flow. Mirrors `AppUserRoleX.fromRoleCode`'s admin arm: `ADMIN_MANAGER` is
@@ -43,6 +52,9 @@ class AuthSession {
     try {
       final token = await storage.read(key: 'jwt_token');
       isAuthenticated = token != null && token.isNotEmpty;
+
+      permissionsFlowSeen =
+          await storage.read(key: _permissionsSeenKey) == 'true';
 
       if (isAuthenticated) {
         final userCache = await storage.read(key: 'user_cache');
@@ -75,6 +87,14 @@ class AuthSession {
     this.roleCode = roleCode;
     this.mustChangePassword = mustChangePassword;
     this.isOnboarded = isOnboarded;
+  }
+
+  /// Marks the permissions flow shown for this device and persists it so the
+  /// router does not re-show it on the next launch. Survives sign-out (it is a
+  /// device fact, not an account one).
+  Future<void> markPermissionsFlowSeen(FlutterSecureStorage storage) async {
+    permissionsFlowSeen = true;
+    await storage.write(key: _permissionsSeenKey, value: 'true');
   }
 
   Future<void> signOut(FlutterSecureStorage storage) async {

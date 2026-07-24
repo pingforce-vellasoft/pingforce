@@ -41,10 +41,17 @@ class LocationPing {
       };
 }
 
-/// Owns the raw location stream for background field-operator tracking. It
-/// throttles the OS position stream to one fix per [interval] and hands each
-/// fix to [onPing]. It does NOT touch the sync queue directly — the controller
-/// wires [onPing] to the queue so this class stays testable and isolate-safe.
+/// Owns background field-operator location capture. Takes ONE fix per
+/// [interval] via a periodic timer + [Geolocator.getCurrentPosition], then
+/// hands it to [onPing]. It does NOT touch the sync queue directly — the
+/// controller wires [onPing] to the queue so this class stays testable and
+/// isolate-safe.
+///
+/// Battery: a periodic single-shot fix lets the GPS chip sleep between
+/// captures. The earlier design used [Geolocator.getPositionStream] with
+/// `LocationAccuracy.high`, which keeps the GPS radio powered continuously for
+/// the whole shift and then discards all but one fix per interval — full drain
+/// for ten-minute data. The timer model draws power only during each brief fix.
 class LocationTrackingService {
   LocationTrackingService({Duration? interval})
       : _interval = interval ?? const Duration(minutes: 10);
@@ -52,61 +59,73 @@ class LocationTrackingService {
   final Duration _interval;
   final Battery _battery = Battery();
 
-  StreamSubscription<Position>? _sub;
-  DateTime? _lastEmit;
+  Timer? _timer;
+  bool _capturing = false;
+  // Device id is stable for the process — resolve once at start, not per fix,
+  // to avoid a secure-storage read every interval.
+  String? _deviceId;
   void Function(LocationPing ping)? _onPing;
 
-  bool get isRunning => _sub != null;
+  bool get isRunning => _timer != null;
 
-  /// Begins listening to the OS location stream. A distance filter plus a time
-  /// throttle keep it near one fix/minute without spinning the GPS when the
-  /// operator is stationary.
-  void start({required void Function(LocationPing ping) onPing}) {
-    if (_sub != null) return;
+  /// Starts periodic capture. Fires one fix immediately, then one per
+  /// [interval]. Idempotent — a second call while running is a no-op.
+  Future<void> start(
+      {required void Function(LocationPing ping) onPing}) async {
+    if (_timer != null) return;
     _onPing = onPing;
-    _lastEmit = null;
+    _deviceId = await sl<DeviceIdentity>().getOrCreate();
 
-    const settings = LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 25,
-    );
-    _sub = Geolocator.getPositionStream(locationSettings: settings)
-        .listen(_onPosition, onError: (_) {/* transient GPS error — skip */});
+    await _capture();
+    _timer = Timer.periodic(_interval, (_) => _capture());
   }
 
   Future<void> stop() async {
-    await _sub?.cancel();
-    _sub = null;
+    _timer?.cancel();
+    _timer = null;
     _onPing = null;
-    _lastEmit = null;
+    _deviceId = null;
+    _capturing = false;
   }
 
-  Future<void> _onPosition(Position pos) async {
-    final now = DateTime.now();
-    // Time throttle: the distance filter can still fire faster than we want
-    // when the operator is moving; cap uploads to one per interval.
-    if (_lastEmit != null && now.difference(_lastEmit!) < _interval) return;
-    _lastEmit = now;
-
-    int? battery;
+  Future<void> _capture() async {
+    // Guard against overlap: a slow fix must not stack onto the next tick.
+    if (_capturing) return;
+    _capturing = true;
     try {
-      battery = await _battery.batteryLevel;
-    } catch (_) {
-      battery = null; // battery read is best-effort
-    }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          // Bound the fix so a cold GPS lock can't hang the timer indefinitely.
+          timeLimit: Duration(seconds: 30),
+        ),
+      );
 
-    final deviceId = await sl<DeviceIdentity>().getOrCreate();
-    final ping = LocationPing(
-      // clientRef scopes to device + capture instant so retried uploads dedupe.
-      clientRef: 'ping-$deviceId-${now.microsecondsSinceEpoch}',
-      latitude: pos.latitude,
-      longitude: pos.longitude,
-      capturedAt: now,
-      accuracy: pos.accuracy,
-      speed: pos.speed,
-      batteryLevel: battery,
-      provider: pos.isMocked ? 'mock' : 'gps',
-    );
-    _onPing?.call(ping);
+      final now = DateTime.now();
+
+      int? battery;
+      try {
+        battery = await _battery.batteryLevel;
+      } catch (_) {
+        battery = null; // battery read is best-effort
+      }
+
+      final ping = LocationPing(
+        // clientRef scopes to device + capture instant so retried uploads dedupe.
+        clientRef: 'ping-$_deviceId-${now.microsecondsSinceEpoch}',
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        capturedAt: now,
+        accuracy: pos.accuracy,
+        speed: pos.speed,
+        batteryLevel: battery,
+        provider: pos.isMocked ? 'mock' : 'gps',
+      );
+      _onPing?.call(ping);
+    } catch (_) {
+      // Transient GPS error / timeout — skip this tick, try again next interval.
+    } finally {
+      _capturing = false;
+    }
   }
 }

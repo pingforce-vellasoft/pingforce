@@ -2,9 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../core/auth/auth_session.dart';
+import '../../../core/hardware/background_location_permission.dart';
+import '../../../core/navigation/nav_destinations.dart';
 import '../../../core/theme/theme.dart';
+import '../../../injection_container.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PERMISSIONS FLOW SCREEN  (AUDIT §20 — Missing Screens)
@@ -178,6 +183,11 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
     super.dispose();
   }
 
+  /// Field roles are subject to background tracking; office roles (manager,
+  /// admin) are not and so are never shown the "Allow all the time" prompt.
+  bool get _isFieldRole =>
+      AppUserRoleX.fromRoleCode(AuthSession.instance.roleCode).isFieldRole;
+
   AppPermission get _current => _states[_currentIndex].permission;
   _PermState get _currentState => _states[_currentIndex];
 
@@ -222,12 +232,16 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
     // the background-location system dialog, describing background collection
     // in its own right and allowing the user to decline. Requesting
     // locationAlways without it is grounds for rejection.
-    if (result == PermissionGrantStatus.granted && perms.length > 1) {
+    // Escalate to background location only for field roles — office roles
+    // (manager, admin) are never tracked, so they must not see the "Allow all
+    // the time" prompt here. Field roles get the shared acquisition path, which
+    // shows the Play prominent disclosure before the OS dialog (same helper the
+    // in-context check-in gate uses, so the disclosure text stays single-sourced).
+    if (result == PermissionGrantStatus.granted &&
+        perms.length > 1 &&
+        _isFieldRole) {
       if (!mounted) return;
-      final accepted = await _showBackgroundLocationDisclosure();
-      if (accepted == true) {
-        await perms[1].request();
-      }
+      await BackgroundLocationPermission.ensure(context);
     }
 
     if (!mounted) return;
@@ -241,45 +255,6 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
 
     await Future<void>.delayed(const Duration(milliseconds: 400));
     if (mounted && result == PermissionGrantStatus.granted) _advance();
-  }
-
-  /// Google Play prominent disclosure for background location.
-  ///
-  /// Must state: what data is collected, that collection continues in the
-  /// background, and what it is used for — before the OS dialog appears.
-  /// Declining leaves foreground-only tracking working.
-  Future<bool?> _showBackgroundLocationDisclosure() {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        icon: Icon(
-          Icons.my_location_rounded,
-          color: Theme.of(ctx).colorScheme.primary,
-          size: 36,
-        ),
-        title: const Text('Allow background location?'),
-        content: const Text(
-          'PingForce collects location data to record your route and visit '
-          'sites for your employer while you are clocked in.\n\n'
-          'This collection continues in the background — while the app is '
-          'closed or not in use — and only between your check-in and '
-          'check-out. It stops when you clock out.\n\n'
-          'You can decline and still use GPS check-in; only background route '
-          'tracking will be unavailable.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('No thanks'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _skipPermission() {
@@ -300,9 +275,19 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
       setState(() => _currentIndex++);
       _entryCtrl.forward(from: 0);
     } else {
-      // All permissions processed — go home
-      context.go('/home');
+      // All permissions processed — record the flow as seen (device-local) so
+      // the router does not bounce back here, then go home. Marking happens
+      // regardless of grant outcome: this flow is skippable and the check-in
+      // gate re-requests background location in-context later.
+      unawaited(_finishAndGoHome());
     }
+  }
+
+  Future<void> _finishAndGoHome() async {
+    await AuthSession.instance
+        .markPermissionsFlowSeen(sl<FlutterSecureStorage>());
+    if (!mounted) return;
+    context.go('/home');
   }
 
   void _openSettings() {

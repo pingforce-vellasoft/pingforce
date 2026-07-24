@@ -1,4 +1,8 @@
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { TrackingService } from './tracking.service';
 import type { RbacService, ResolvedDataScope } from '../rbac/rbac.service';
 
@@ -18,7 +22,7 @@ interface PrismaMock {
 }
 
 function makeService(opts: {
-  employee?: { id: string } | null;
+  employee?: { id: string; isFieldStaff?: boolean } | null;
   scope?: ResolvedDataScope;
   createdCount?: number;
   liveRows?: unknown[];
@@ -29,7 +33,9 @@ function makeService(opts: {
       findUnique: jest
         .fn()
         .mockResolvedValue(
-          opts.employee === undefined ? { id: 'e1' } : opts.employee,
+          opts.employee === undefined
+            ? { id: 'e1', isFieldStaff: true }
+            : opts.employee,
         ),
     },
     employeeLocation: {
@@ -84,6 +90,17 @@ describe('TrackingService.ingestBatch', () => {
     await expect(
       service.ingestBatch(user, { pings: [ping()] } as never),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('rejects a non-field (office) employee with Forbidden', async () => {
+    const { service, prisma } = makeService({
+      employee: { id: 'e1', isFieldStaff: false },
+    });
+    await expect(
+      service.ingestBatch(user, { pings: [ping()] } as never),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    // No writes for a rejected caller.
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('writes pings scoped to the caller tenant + employee, idempotent on clientRef', async () => {

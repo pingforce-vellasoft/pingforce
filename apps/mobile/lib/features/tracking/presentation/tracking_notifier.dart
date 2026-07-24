@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
+
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -69,7 +71,10 @@ class TrackingNotifier extends Notifier<TrackingState> {
 
     await _startForegroundService();
 
-    _service = sl<LocationTrackingService>()..start(onPing: _enqueuePing);
+    _service = sl<LocationTrackingService>();
+    // Fire-and-forget: the first fix runs in the background while the UI marks
+    // tracking active immediately. Errors are swallowed inside the service.
+    unawaited(_service!.start(onPing: _enqueuePing));
     state = state.copyWith(isActive: true, sessionId: sessionId);
   }
 

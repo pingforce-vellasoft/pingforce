@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -33,9 +34,17 @@ export class TrackingService {
   async ingestBatch(user: AuthUser, dto: PingBatchDto) {
     const employee = await this.prisma.employee.findUnique({
       where: { userId: user.userId },
-      select: { id: true },
+      select: { id: true, isFieldStaff: true },
     });
     if (!employee) throw new UnauthorizedException('Not an employee');
+
+    // Authoritative field-vs-office gate. Office staff (managers, admins) may
+    // punch attendance but are never tracked; the mobile app already refuses to
+    // send their pings, but the API is the security boundary — a crafted request
+    // must be rejected here too.
+    if (!employee.isFieldStaff) {
+      throw new ForbiddenException('Location tracking is not enabled for this employee');
+    }
 
     // Newest ping in the batch drives the live-map position. Batches can arrive
     // out of order after an offline flush, so pick the max capturedAt.

@@ -721,6 +721,19 @@ class RouteGuard {
       return '/auth/profile-setup';
     }
 
+    // 1d. Permissions flow — after the account is fully set up, show the
+    // location + notification permissions flow once per device. Skippable, so
+    // it records "seen" not "granted"; the in-context check-in gate re-requests
+    // background location later behind its Play disclosure. Gated on isOnboarded
+    // so it runs only after profile setup, never in front of it.
+    final isOnPermissions = state.matchedLocation == '/permissions';
+    if (isAuthenticated &&
+        _isOnboarded() &&
+        !AuthSession.instance.permissionsFlowSeen &&
+        !isOnPermissions) {
+      return '/permissions';
+    }
+
     // 2. Session expired
     if (_isSessionExpired()) {
       return '/auth/session-expired';

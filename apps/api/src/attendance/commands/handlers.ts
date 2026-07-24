@@ -64,16 +64,6 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
     // can never create two open sessions (state machine principle: one active
     // session per employee).
     const result = await this.prisma.$transaction(async (tx) => {
-      const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
-      const recentSession = await tx.attendanceSession.findFirst({
-        where: { employeeId: employee.id, punchIn: { gte: fifteenMinsAgo } },
-      });
-      if (recentSession) {
-        throw new BadRequestException(
-          'You have already punched recently. Please wait 15 minutes.',
-        );
-      }
-
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -115,6 +105,19 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
         });
         await creditWorkedMinutes(tx, openSession, punchOut);
         return { session, direction: 'OUT' as const };
+      }
+
+      // Debounce duplicate check-ins only — a check-out (openSession above)
+      // must never be blocked by a recent punch-in. Guards double-tap that
+      // would otherwise open two sessions.
+      const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+      const recentSession = await tx.attendanceSession.findFirst({
+        where: { employeeId: employee.id, punchIn: { gte: fifteenMinsAgo } },
+      });
+      if (recentSession) {
+        throw new BadRequestException(
+          'You have already punched recently. Please wait 15 minutes.',
+        );
       }
 
       // CHECKING_IN → CHECKED_IN

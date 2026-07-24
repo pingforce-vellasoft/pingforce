@@ -518,6 +518,24 @@ const EMPLOYEE_GRANTS: readonly GrantDef[] = [
   { module: 'TICKETS', action: 'CREATE', dataScope: 'OWN' },
 ];
 
+/**
+ * Whether a role code denotes an office role (admin / manager) rather than a
+ * field role. Office staff punch attendance but are never subject to background
+ * location tracking. Single source of truth for deriving Employee.isFieldStaff
+ * at provisioning; the same rule is applied once, offline, in the
+ * 20260724120000_employee_is_field_staff backfill migration. Custom tenant
+ * roles that aren't clearly admin/manager fall through as field (tracked).
+ */
+export function isOfficeRoleCode(roleCode: string | null | undefined): boolean {
+  const code = (roleCode ?? '').toUpperCase();
+  if (!code) return false;
+  return (
+    code === 'ADMIN_MANAGER' ||
+    code.startsWith('ADMIN') ||
+    code.includes('MANAGER')
+  );
+}
+
 /** Permissions each built-in system role receives at provisioning time. */
 export const SYSTEM_ROLE_GRANTS: Readonly<Record<string, readonly GrantDef[]>> =
   {

@@ -5,6 +5,7 @@ import {
   IsEmail,
   IsDateString,
   IsEnum,
+  IsBoolean,
 } from 'class-validator';
 
 export class CreateEmployeeDto {
@@ -120,6 +121,13 @@ export class CreateEmployeeDto {
   @IsString()
   @IsOptional()
   workLocation?: string;
+
+  // Whether this employee does field work and is subject to background location
+  // tracking. Optional on create: when omitted it is derived from the role
+  // (office roles → false, else true); when provided it overrides that.
+  @IsBoolean()
+  @IsOptional()
+  isFieldStaff?: boolean;
 
   @IsString()
   @IsOptional()

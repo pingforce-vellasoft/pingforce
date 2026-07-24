@@ -11,7 +11,10 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeeRepository, IPrismaService } from '@pingforce-monorepo/shared';
 import { PaginationDto } from '@pingforce-monorepo/dto';
 import { RbacService } from '../rbac/rbac.service';
-import { syncSystemRolePermissions } from '../rbac/permission-catalog';
+import {
+  isOfficeRoleCode,
+  syncSystemRolePermissions,
+} from '../rbac/permission-catalog';
 import { NotificationsService } from '../notifications/notifications.service';
 
 /**
@@ -123,6 +126,13 @@ export class EmployeeService {
           ...basePayload,
           tenantId,
           userId: user.id,
+          // Office roles (admins, managers) punch attendance but are never
+          // tracked; everyone else is field staff. Derived from the role code
+          // at provisioning so the tracking ingest gate is correct without an
+          // admin having to toggle the flag — unless the request set it
+          // explicitly, which wins. Editable later via update().
+          isFieldStaff:
+            employeeData.isFieldStaff ?? !isOfficeRoleCode(role.code),
         },
       });
     });

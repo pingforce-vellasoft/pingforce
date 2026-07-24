@@ -804,6 +804,13 @@ model Employee {
   emergencyContactNumber String?
   employmentType         String? // Permanent, Contract, etc.
   employmentStatus       String    @default("ACTIVE") // ACTIVE, RESIGNED, SUSPENDED
+  // Whether this employee does field work and is therefore subject to background
+  // location tracking while checked in. Office staff (managers, admins) punch
+  // attendance but are never tracked. The tracking ingest endpoint rejects pings
+  // from employees with this false — the authoritative field-vs-office gate,
+  // above the mobile UX gate. Defaults true (most mobile users are field staff);
+  // office employees are flipped false at provisioning / by an admin.
+  isFieldStaff           Boolean   @default(true)
   joiningDate            DateTime?
   confirmationDate       DateTime?
   workLocation           String?

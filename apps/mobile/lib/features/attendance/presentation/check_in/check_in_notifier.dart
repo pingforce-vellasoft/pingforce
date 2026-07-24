@@ -7,7 +7,10 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:local_auth/local_auth.dart';
 
+import '../../../../core/auth/auth_session.dart';
+import '../../../../core/hardware/background_location_permission.dart';
 import '../../../../core/hardware/device_identity.dart';
+import '../../../../core/navigation/nav_destinations.dart';
 import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/sync/sync_provider.dart';
 import '../../../../core/sync/sync_state.dart';
@@ -34,6 +37,13 @@ final checkInNotifierProvider =
 class CheckInNotifier extends Notifier<CheckInState> {
   @override
   CheckInState build() => const CheckInState();
+
+  /// Whether the signed-in account is a field role subject to background
+  /// tracking. Office roles (manager, admin) check in but are neither prompted
+  /// for background location nor tracked. Single gate for both the permission
+  /// request and starting the tracking service.
+  bool get _isFieldRole =>
+      AppUserRoleX.fromRoleCode(AuthSession.instance.roleCode).isFieldRole;
 
   // ── S1: initialise shift + policy + GPS ────────────────────────────────────
 
@@ -260,6 +270,21 @@ class CheckInNotifier extends Notifier<CheckInState> {
     final authed = await _verifyBiometric();
     if (!authed) return;
 
+    // Background-tracking consent gate — field roles only. Field staff move
+    // between sites and are tracked while on shift; office roles (manager,
+    // admin) may still punch attendance but must never be prompted for
+    // background location or tracked. Check-in starts the location foreground
+    // service, so for field roles this is the in-context moment Play wants the
+    // "Allow all the time" request made — behind our prominent disclosure.
+    // Declining does not block check-in; only durable background route tracking
+    // is unavailable. Also ensures the Android 13+ notification grant the
+    // service needs.
+    if (_isFieldRole) {
+      await BackgroundLocationPermission.ensureNotifications();
+      if (!context.mounted) return;
+      await BackgroundLocationPermission.ensure(context);
+    }
+
     state = state.copyWith(
       status: CheckInScreenStatus.submitting,
       buttonMode: CheckInButtonMode.submitting,
@@ -272,7 +297,7 @@ class CheckInNotifier extends Notifier<CheckInState> {
       // Track the on-shift operator even for an offline check-in — pings buffer
       // in the sync queue and upload on reconnect.
       final offlineSessionId = state.activeSession?.sessionId;
-      if (offlineSessionId != null) {
+      if (offlineSessionId != null && _isFieldRole) {
         unawaited(ref.read(trackingProvider.notifier).start(offlineSessionId));
       }
       return;
@@ -308,6 +333,20 @@ class CheckInNotifier extends Notifier<CheckInState> {
         );
       },
       (session) {
+        // The punch endpoint toggles: a returned session carrying a punchOut
+        // is a check-OUT, not a check-in. Treat it as a completed session so
+        // the UI clears the active session and stops tracking instead of
+        // faking a fresh check-in.
+        if (session.punchOut != null) {
+          state = state.copyWith(
+            status: CheckInScreenStatus.readyToCheckIn,
+            buttonMode: CheckInButtonMode.enabledNormal,
+            activeSession: null,
+          );
+          unawaited(ref.read(trackingProvider.notifier).stop());
+          return;
+        }
+
         state = state.copyWith(
           status: CheckInScreenStatus.success,
           buttonMode: CheckInButtonMode.success,
@@ -327,8 +366,11 @@ class CheckInNotifier extends Notifier<CheckInState> {
             checkInGeofenceName: state.geofence?.name,
           ),
         );
-        // Begin background location tracking for the on-shift operator.
-        unawaited(ref.read(trackingProvider.notifier).start(session.id));
+        // Begin background location tracking for the on-shift operator —
+        // field roles only. Office roles punch in without being tracked.
+        if (_isFieldRole) {
+          unawaited(ref.read(trackingProvider.notifier).start(session.id));
+        }
       },
     );
   }

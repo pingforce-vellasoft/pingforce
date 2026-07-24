@@ -59,7 +59,16 @@ class AuthRepositoryImpl implements AuthRepository {
 
     // Securely store token (Hardness)
     await secureStorage.write(key: 'jwt_token', value: token);
-    
+
+    // Persist the refresh token so TokenInterceptor can silently renew the
+    // 15-minute access token. Without it every request 401s once the access
+    // token expires and the app cannot recover until re-login.
+    final refresh =
+        responseData['refresh_token'] ?? responseData['refreshToken'];
+    if (refresh is String && refresh.isNotEmpty) {
+      await secureStorage.write(key: 'refresh_token', value: refresh);
+    }
+
     final user = UserModel.fromJson(userData);
     
     // Cache user info securely
@@ -90,6 +99,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, void>> logout() async {
     try {
       await secureStorage.delete(key: 'jwt_token');
+      await secureStorage.delete(key: 'refresh_token');
       await secureStorage.delete(key: 'user_cache');
       return const Right(null);
     } catch (e) {
@@ -176,6 +186,7 @@ class AuthRepositoryImpl implements AuthRepository {
       // The server revoked this session; clear the local token/cache so the
       // router sends the user back to a clean login.
       await secureStorage.delete(key: 'jwt_token');
+      await secureStorage.delete(key: 'refresh_token');
       await secureStorage.delete(key: 'user_cache');
       return const Right(null);
     } catch (e) {

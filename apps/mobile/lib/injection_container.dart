@@ -54,8 +54,9 @@ Future<void> init() async {
     // Note: If testing locally, use 'http://10.0.2.2:3000' for emulator
     // Or run 'adb reverse tcp:3000 tcp:3000' and use 'http://localhost:3000'
     // For Production / Staging, use the real OCI Server IP (NGINX will forward this to 3000):
-    final dio = Dio(BaseOptions(baseUrl: 'https://api.pingforce.in'));
-    dio.interceptors.add(TokenInterceptor(secureStorage: sl()));
+    const baseUrl = 'https://api.pingforce.in';
+    final dio = Dio(BaseOptions(baseUrl: baseUrl));
+    dio.interceptors.add(TokenInterceptor(secureStorage: sl(), baseUrl: baseUrl));
     return dio;
   });
 
