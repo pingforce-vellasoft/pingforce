@@ -43,7 +43,9 @@ export class TrackingService {
     // send their pings, but the API is the security boundary — a crafted request
     // must be rejected here too.
     if (!employee.isFieldStaff) {
-      throw new ForbiddenException('Location tracking is not enabled for this employee');
+      throw new ForbiddenException(
+        'Location tracking is not enabled for this employee',
+      );
     }
 
     // Newest ping in the batch drives the live-map position. Batches can arrive
