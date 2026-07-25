@@ -40,12 +40,19 @@ final lastSyncedLabelProvider = Provider<String>(
   (ref) => ref.watch(syncProvider).lastSyncedLabel,
 );
 
+/// Hive box backing the offline sync queue.
+///
+/// Exported because session teardown must be able to empty it from outside
+/// this notifier (TokenInterceptor has no Riverpod scope), and a second copy
+/// of the literal would silently drift.
+const String syncQueueBoxName = 'sync_queue';
+
 // ── Notifier ───────────────────────────────────────────────────────────────
 
 class SyncNotifier extends Notifier<SyncState> {
   Timer? _syncDebounce;
 
-  static const _boxName = 'sync_queue';
+  static const _boxName = syncQueueBoxName;
 
   /// Items are sent to the idempotent /sync endpoints in chunks of this size
   /// — one HTTP round-trip per chunk instead of per item.
@@ -98,6 +105,21 @@ class SyncNotifier extends Notifier<SyncState> {
       }
     } catch (_) {
       // Corrupt box — start clean rather than blocking the app
+    }
+  }
+
+  /// Drops every queued item and its persisted copy.
+  ///
+  /// Called on sign-out: queued punches are attributed by the bearer token used
+  /// at upload time, so items left behind by one user would drain under the
+  /// next account signed in on this device and land on the wrong employee.
+  Future<void> clearQueue() async {
+    state = const SyncState();
+    try {
+      final box = await Hive.openBox<Map>(_boxName);
+      await box.clear();
+    } catch (_) {
+      // Best-effort; the in-memory queue is already cleared above.
     }
   }
 

@@ -120,7 +120,9 @@ export class LeadService {
     dto: ConvertLeadDto,
   ) {
     const { result, converted } = await this.prisma.$transaction(async (tx) => {
-      const lead = await tx.lead.findFirst({ where: { id, tenantId } });
+      const lead = await tx.lead.findFirst({
+        where: { id, tenantId, deletedAt: null },
+      });
       if (!lead) throw new NotFoundException(`Lead ${id} not found`);
       if (lead.convertedCustomerId) {
         throw new ConflictException(
@@ -131,7 +133,7 @@ export class LeadService {
       // Duplicate resolution: merge into an existing customer (§7)
       if (dto.mergeWithCustomerId) {
         const existing = await tx.customer.findFirst({
-          where: { id: dto.mergeWithCustomerId, tenantId },
+          where: { id: dto.mergeWithCustomerId, tenantId, deletedAt: null },
           select: { id: true },
         });
         if (!existing) {

@@ -220,7 +220,8 @@ export class AttendanceService {
     const sessions = attendance?.sessions ?? [];
     const openSession = sessions.find((s) => s.punchOut === null) ?? null;
     const allBreaks = sessions.flatMap((s) => s.breaks);
-    const openBreak = openSession?.breaks.find((b) => b.endTime === null) ?? null;
+    const openBreak =
+      openSession?.breaks.find((b) => b.endTime === null) ?? null;
 
     // `sessionStatus` is authoritative for break state, not the presence of an
     // unclosed break row. StartBreak/EndBreak gate on the column via
@@ -324,7 +325,17 @@ export class AttendanceService {
     sortBy?: string,
     sortDir?: string,
   ) {
-    const skip = (page - 1) * limit;
+    // `page`/`limit` arrive as raw query strings coerced with Number(), so a
+    // missing/garbage value yields NaN and `?page=0` yields a negative skip —
+    // both reach Prisma as invalid arguments. Clamp here (the service owns the
+    // invariant) and cap the page size like every other list endpoint, so
+    // `?limit=999999` cannot pull every session with its full include tree.
+    const safeLimit = Math.min(
+      Math.max(Number.isFinite(limit) ? Math.trunc(limit) : 10, 1),
+      200,
+    );
+    const safePage = Math.max(Number.isFinite(page) ? Math.trunc(page) : 1, 1);
+    const skip = (safePage - 1) * safeLimit;
 
     // Data scope (DataScope.md §9 "Attendance"): employees see own logs,
     // managers their team, HR/tenant admins the whole tenant. Broadest of
@@ -393,7 +404,7 @@ export class AttendanceService {
         },
         orderBy,
         skip,
-        take: limit,
+        take: safeLimit,
       }),
       this.prisma.attendanceSession.count({ where }),
     ]);
@@ -412,7 +423,10 @@ export class AttendanceService {
       },
     }));
 
-    return { data: mappedData, total, page, limit };
+    // Echo the effective values, not the requested ones — a client that asked
+    // for limit=999999 receives 200 rows and must be told the real page size
+    // or its pager arithmetic breaks.
+    return { data: mappedData, total, page: safePage, limit: safeLimit };
   }
 
   /**
@@ -438,7 +452,7 @@ export class AttendanceService {
     todayStart.setHours(0, 0, 0, 0);
 
     const policy = await this.prisma.attendancePolicy.findFirst({
-      where: { tenantId },
+      where: { tenantId, deletedAt: null },
     });
     const requiredMinutes = (policy?.workingHours ?? 8) * 60;
 
@@ -486,7 +500,13 @@ export class AttendanceService {
 
     // Check for duplicate name
     const existingName = await this.prisma.geofence.findFirst({
-      where: { tenantId: user.tenantId, name: dto.name, active: true },
+      // Deleted geofences must not reserve their name forever.
+      where: {
+        tenantId: user.tenantId,
+        name: dto.name,
+        active: true,
+        deletedAt: null,
+      },
     });
     if (existingName) {
       throw new BadRequestException(
@@ -501,6 +521,7 @@ export class AttendanceService {
         latitude: dto.latitude,
         longitude: dto.longitude,
         active: true,
+        deletedAt: null,
       },
     });
     if (existingCoords) {
@@ -533,7 +554,7 @@ export class AttendanceService {
 
   async getGeofences(user: any) {
     return this.prisma.geofence.findMany({
-      where: { tenantId: user.tenantId, active: true },
+      where: { tenantId: user.tenantId, active: true, deletedAt: null },
     });
   }
 

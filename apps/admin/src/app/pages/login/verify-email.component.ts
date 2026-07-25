@@ -6,13 +6,13 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AuthService } from '../../core/auth/auth.service';
 
 /**
  * Second step of website self-signup: the admin enters the OTP emailed after
@@ -132,7 +132,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 })
 export class VerifyEmailComponent implements OnInit {
   private fb = inject(FormBuilder);
-  private http = inject(HttpClient);
+  private authService = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private snackBar = inject(MatSnackBar);
@@ -166,8 +166,8 @@ export class VerifyEmailComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.http
-      .post('/api/v1/auth/verify-email', {
+    this.authService
+      .verifyEmail({
         tenantCode: this.tenantCode,
         email: this.form.value.email,
         otp: this.form.value.otp,

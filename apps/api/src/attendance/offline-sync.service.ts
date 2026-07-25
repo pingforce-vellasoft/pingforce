@@ -109,7 +109,9 @@ export class OfflineSyncService {
       const windowEnd = new Date(punchAt.getTime() + 60_000);
       const nearDuplicate = await tx.attendanceSession.findFirst({
         where: {
+          tenantId: employee.tenantId,
           employeeId: employee.id,
+          deletedAt: null,
           OR: [
             { deviceSignature: item.signature },
             { punchIn: { gte: windowStart, lte: windowEnd } },
@@ -126,7 +128,12 @@ export class OfflineSyncService {
       day.setHours(0, 0, 0, 0);
 
       let attendance = await tx.attendance.findFirst({
-        where: { employeeId: employee.id, attendanceDate: day },
+        where: {
+          tenantId: employee.tenantId,
+          employeeId: employee.id,
+          attendanceDate: day,
+          deletedAt: null,
+        },
       });
       if (!attendance) {
         attendance = await tx.attendance.create({
@@ -140,7 +147,12 @@ export class OfflineSyncService {
       }
 
       const openSession = await tx.attendanceSession.findFirst({
-        where: { attendanceId: attendance.id, punchOut: null },
+        where: {
+          tenantId: employee.tenantId,
+          attendanceId: attendance.id,
+          punchOut: null,
+          deletedAt: null,
+        },
       });
 
       if (

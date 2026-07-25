@@ -281,8 +281,22 @@ export class ProvisioningDialogComponent {
       </div>
       <h2 mat-dialog-title>{{ data.title }}</h2>
       <mat-dialog-content>
+        <!--
+          Interpolation, never [innerHTML]: the message embeds tenant-supplied
+          names (tenantName is self-service at signup and only IsString() on
+          the API), so binding it as HTML let a tenant store markup that
+          executed in the platform super-admin's console. The emphasis field
+          carries the highlighted subject separately so the bold styling
+          survives without an HTML sink.
+        -->
         <p class="dialog-message">
-          <span [innerHTML]="data.message"></span>
+          <span>{{ data.message }}</span>
+          @if (data.emphasis) {
+            <strong>{{ data.emphasis }}</strong>
+          }
+          @if (data.messageSuffix) {
+            <span>{{ data.messageSuffix }}</span>
+          }
         </p>
         @if (data.subMessage) {
           <p class="dialog-sub-message">
@@ -387,6 +401,10 @@ export class ConfirmActionDialogComponent {
     public data: {
       title: string;
       message: string;
+      /** Highlighted subject (e.g. tenant name) rendered in <strong>. */
+      emphasis?: string;
+      /** Text rendered after the emphasis, completing the sentence. */
+      messageSuffix?: string;
       subMessage?: string;
       confirmText: string;
       isDanger: boolean;
@@ -1026,7 +1044,10 @@ export class TenantsComponent implements OnInit {
         width: '450px',
         data: {
           title: 'Disable Attendance Module?',
-          message: `You are about to disable the GPS & Biometric Attendance module for <strong>${tenant.name}</strong>.`,
+          message:
+            'You are about to disable the GPS & Biometric Attendance module for ',
+          emphasis: tenant.name,
+          messageSuffix: '.',
           subMessage:
             'Field staff will no longer be able to punch in/out. This action will not delete historical data, but active tracking will be suspended immediately.',
           confirmText: 'Yes, Disable',
@@ -1089,7 +1110,9 @@ export class TenantsComponent implements OnInit {
       width: '460px',
       data: {
         title: 'Resend Welcome Email?',
-        message: `Send the onboarding email again to <strong>${tenant.name}</strong>?`,
+        message: 'Send the onboarding email again to ',
+        emphasis: tenant.name,
+        messageSuffix: '?',
         subMessage:
           'A new temporary password will be generated and emailed to the tenant admin. Their previous temporary password will stop working. Use this when the original email failed to arrive.',
         confirmText: 'Yes, Resend',
@@ -1127,7 +1150,9 @@ export class TenantsComponent implements OnInit {
       width: '460px',
       data: {
         title: 'Activate Without Email Verification?',
-        message: `Activate <strong>${tenant.name}</strong> immediately?`,
+        message: 'Activate ',
+        emphasis: tenant.name,
+        messageSuffix: ' immediately?',
         subMessage:
           'The tenant admin will be able to sign in without entering the emailed verification code. Use this when the verification email never arrived or the tenant was onboarded manually.',
         confirmText: 'Yes, Activate',
@@ -1164,7 +1189,9 @@ export class TenantsComponent implements OnInit {
         width: '450px',
         data: {
           title: 'Suspend Tenant?',
-          message: `You are about to suspend the account for <strong>${tenant.name}</strong>.`,
+          message: 'You are about to suspend the account for ',
+          emphasis: tenant.name,
+          messageSuffix: '.',
           subMessage:
             'Their users will immediately lose access to the platform. No data will be deleted.',
           confirmText: 'Yes, Suspend',
@@ -1211,7 +1238,9 @@ export class TenantsComponent implements OnInit {
       width: '450px',
       data: {
         title: 'Delete Tenant?',
-        message: `Are you absolutely sure you want to delete <strong>${tenant.name}</strong>?`,
+        message: 'Are you absolutely sure you want to delete ',
+        emphasis: tenant.name,
+        messageSuffix: '?',
         subMessage:
           'This action will soft-delete the tenant and they will be removed from your active roster. This cannot be undone from the UI.',
         confirmText: 'Yes, Delete',

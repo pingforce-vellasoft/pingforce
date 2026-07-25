@@ -158,6 +158,29 @@ export class AuthService {
       .pipe(tap(() => this.logout()));
   }
 
+  /**
+   * Self-service workspace signup. Creates the tenant plus its super-admin and
+   * emails a verification code; no session is established until that code is
+   * confirmed.
+   */
+  registerTenant(payload: unknown): Observable<any> {
+    return this.http.post<any>('/api/v1/auth/register-tenant', payload);
+  }
+
+  /** Confirms the emailed signup code and activates the workspace. */
+  verifyEmail(payload: {
+    tenantCode: string;
+    email: string;
+    otp: string;
+  }): Observable<any> {
+    return this.http.post<any>('/api/v1/auth/verify-email', payload);
+  }
+
+  /** Completes the tenant profile after first sign-in (onboarding wizard). */
+  submitOnboarding(payload: unknown): Observable<any> {
+    return this.http.post<any>('/api/v1/auth/onboarding/tenant', payload);
+  }
+
   private setTokens(accessToken: string, refreshToken: string) {
     localStorage.setItem(this.TOKEN_KEY, accessToken);
     if (refreshToken) {

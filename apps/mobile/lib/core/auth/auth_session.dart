@@ -103,6 +103,11 @@ class AuthSession {
     mustChangePassword = false;
     isOnboarded = false;
     await storage.delete(key: 'jwt_token');
+    // The refresh token MUST go too. Leaving it behind meant an explicit sign
+    // out still left a live credential on the device: TokenInterceptor renews
+    // from it on the next 401, silently restoring the previous user's session
+    // on a device someone else may now be holding.
+    await storage.delete(key: 'refresh_token');
     await storage.delete(key: 'user_cache');
   }
 }

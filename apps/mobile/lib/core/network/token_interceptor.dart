@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import '../auth/auth_session.dart';
+import '../sync/sync_provider.dart';
 
 /// Attaches the JWT access token to every request and silently renews it on a
 /// 401 using the stored refresh token.
@@ -65,10 +67,18 @@ class TokenInterceptor extends QueuedInterceptor {
     }
 
     // Replay the original request once with the fresh token.
+    //
+    // The replay Dio must carry the same baseUrl as the original client:
+    // datasources issue relative paths ('/api/v1/...'), and a bare `Dio()`
+    // resolves those against an empty base, so every retry failed and the
+    // caller saw the original 401 — defeating the silent renewal this
+    // interceptor exists to provide. Interceptors are still omitted so the
+    // replay cannot recurse back into onError.
     try {
       options.extra['__retried__'] = true;
       options.headers['Authorization'] = 'Bearer $newToken';
-      final response = await Dio().fetch<dynamic>(options);
+      final response = await Dio(BaseOptions(baseUrl: baseUrl))
+          .fetch<dynamic>(options);
       return handler.resolve(response);
     } on DioException catch (retryErr) {
       return handler.next(retryErr);
@@ -113,6 +123,19 @@ class TokenInterceptor extends QueuedInterceptor {
     await secureStorage.delete(key: _accessKey);
     await secureStorage.delete(key: _refreshKey);
     await secureStorage.delete(key: 'user_cache');
+
+    // Queued offline work belongs to the session being torn down; it uploads
+    // under whatever token is current at drain time, so leaving it would
+    // attribute this user's punches to whoever signs in next. Cleared via Hive
+    // directly because this interceptor has no Riverpod scope — the queue is
+    // rehydrated from this box on the next launch, so emptying it is enough.
+    try {
+      final box = await Hive.openBox<Map>(syncQueueBoxName);
+      await box.clear();
+    } catch (_) {
+      // Best-effort; never block session teardown on cache cleanup.
+    }
+
     AuthSession.instance.isAuthenticated = false;
     AuthSession.instance.roleCode = null;
     AuthSession.instance.mustChangePassword = false;

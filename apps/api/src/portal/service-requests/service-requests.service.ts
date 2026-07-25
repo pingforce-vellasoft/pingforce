@@ -364,7 +364,11 @@ export class ServiceRequestsService {
 
         const currentPlan = connection?.servicePlanId
           ? await this.prisma.servicePlan.findFirst({
-              where: { id: connection.servicePlanId, tenantId },
+              where: {
+                id: connection.servicePlanId,
+                tenantId,
+                deletedAt: null,
+              },
               select: { price: true },
             })
           : null;

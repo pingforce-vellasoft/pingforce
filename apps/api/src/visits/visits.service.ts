@@ -109,6 +109,7 @@ export class VisitsService {
     return this.prisma.visit.findMany({
       where: {
         tenantId,
+        deletedAt: null,
         ...scopeWhere,
         ...(filters.status && { status: filters.status }),
         ...(filters.employeeId && { employeeId: filters.employeeId }),
@@ -149,7 +150,7 @@ export class VisitsService {
 
   async findOne(tenantId: string, id: string) {
     const visit = await this.prisma.visit.findFirst({
-      where: { id, tenantId },
+      where: { id, tenantId, deletedAt: null },
       include: {
         customer: { select: { id: true, customerCode: true, legalName: true } },
         employee: SAFE_EMPLOYEE_SELECT,
@@ -292,7 +293,7 @@ export class VisitsService {
     dto: AssignVisitDto,
   ) {
     const employee = await this.prisma.employee.findFirst({
-      where: { id: dto.employeeId, tenantId },
+      where: { id: dto.employeeId, tenantId, deletedAt: null },
       select: { id: true },
     });
     if (!employee) {
@@ -471,7 +472,11 @@ export class VisitsService {
     opts: TransitionOptions = {},
   ) {
     const updated = await this.prisma.$transaction(async (tx) => {
-      const visit = await tx.visit.findFirst({ where: { id, tenantId } });
+      // A soft-deleted visit must not be transitionable — without the filter
+      // the state machine would happily advance a deleted row.
+      const visit = await tx.visit.findFirst({
+        where: { id, tenantId, deletedAt: null },
+      });
       if (!visit) throw new NotFoundException(`Visit ${id} not found`);
 
       const from = resolveState(visit.status);
@@ -479,7 +484,7 @@ export class VisitsService {
 
       if (opts.assigneeOnly) {
         const employee = await tx.employee.findFirst({
-          where: { userId: actor.userId, tenantId },
+          where: { userId: actor.userId, tenantId, deletedAt: null },
           select: { id: true },
         });
         if (!employee || visit.employeeId !== employee.id) {
@@ -507,6 +512,9 @@ export class VisitsService {
               employeeId: visit.employeeId,
               status: { in: [...ACTIVE_STATES] },
               id: { not: id },
+              // A deleted visit must not block the employee from starting a
+              // new one — otherwise the one-active-visit rule wedges them.
+              deletedAt: null,
             },
             select: { id: true, visitNumber: true },
           });
@@ -592,7 +600,7 @@ export class VisitsService {
 
   private async getVisitOrThrow(tenantId: string, id: string) {
     const visit = await this.prisma.visit.findFirst({
-      where: { id, tenantId },
+      where: { id, tenantId, deletedAt: null },
     });
     if (!visit) throw new NotFoundException(`Visit ${id} not found`);
     return visit;
@@ -600,7 +608,7 @@ export class VisitsService {
 
   private async resolveEmployee(tenantId: string, userId: string) {
     const employee = await this.prisma.employee.findFirst({
-      where: { userId, tenantId },
+      where: { userId, tenantId, deletedAt: null },
       select: { id: true },
     });
     if (!employee) {
@@ -614,23 +622,26 @@ export class VisitsService {
     tenantId: string,
     dto: Pick<UpdateVisitDto, 'customerId' | 'employeeId' | 'geofenceId'>,
   ): Promise<void> {
+    // Soft-deleted references are not valid targets: without the deletedAt
+    // filter a visit could be assigned to a deleted customer, employee or
+    // geofence, which then renders as a dangling row everywhere downstream.
     if (dto.customerId) {
       const customer = await this.prisma.customer.findFirst({
-        where: { id: dto.customerId, tenantId },
+        where: { id: dto.customerId, tenantId, deletedAt: null },
         select: { id: true },
       });
       if (!customer) throw new BadRequestException('Invalid customerId');
     }
     if (dto.employeeId) {
       const employee = await this.prisma.employee.findFirst({
-        where: { id: dto.employeeId, tenantId },
+        where: { id: dto.employeeId, tenantId, deletedAt: null },
         select: { id: true },
       });
       if (!employee) throw new BadRequestException('Invalid employeeId');
     }
     if (dto.geofenceId) {
       const geofence = await this.prisma.geofence.findFirst({
-        where: { id: dto.geofenceId, tenantId },
+        where: { id: dto.geofenceId, tenantId, deletedAt: null },
         select: { id: true },
       });
       if (!geofence) throw new BadRequestException('Invalid geofenceId');

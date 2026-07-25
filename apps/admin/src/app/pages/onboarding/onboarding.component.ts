@@ -6,7 +6,6 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -224,7 +223,6 @@ import { AuthService } from '../../core/auth/auth.service';
 })
 export class OnboardingComponent {
   private fb = inject(FormBuilder);
-  private http = inject(HttpClient);
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
   private auth = inject(AuthService);
@@ -273,7 +271,7 @@ export class OnboardingComponent {
       ...(this.logoBase64 ? { logoBase64: this.logoBase64 } : {}),
     };
 
-    this.http.post('/api/v1/auth/onboarding/tenant', payload).subscribe({
+    this.auth.submitOnboarding(payload).subscribe({
       next: () => {
         this.snackBar.open('Workspace ready. Welcome to PingForce!', 'Close', {
           duration: 6000,
