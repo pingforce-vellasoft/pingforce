@@ -137,7 +137,7 @@ export class NotificationsService {
 
     // recipientId is a userId — resolve the delivery address
     const recipient = await this.prisma.user.findFirst({
-      where: { id: recipientId, tenantId },
+      where: { id: recipientId, tenantId, deletedAt: null },
       select: { email: true },
     });
 
@@ -212,7 +212,7 @@ export class NotificationsService {
     });
 
     const recipient = await this.prisma.user.findFirst({
-      where: { id: recipientId, tenantId },
+      where: { id: recipientId, tenantId, deletedAt: null },
       select: { phone: true },
     });
 

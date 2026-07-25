@@ -28,7 +28,11 @@ export class VisitAssignedHandler implements IEventHandler<VisitAssignedEvent> {
     );
     // Recipient is the assigned employee's linked user account
     const employee = await this.prisma.employee.findFirst({
-      where: { id: event.employeeId, tenantId: event.tenantId },
+      where: {
+        id: event.employeeId,
+        tenantId: event.tenantId,
+        deletedAt: null,
+      },
       select: { userId: true },
     });
     if (!employee?.userId) return;

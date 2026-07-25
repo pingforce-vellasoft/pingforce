@@ -38,7 +38,7 @@ export class ShiftService {
     }
 
     const shifts = await this.prisma.shift.findMany({
-      where: { tenantId },
+      where: { tenantId, deletedAt: null },
     });
 
     await this.cacheManager.set(cacheKey, shifts, 600000); // 10 minutes cache

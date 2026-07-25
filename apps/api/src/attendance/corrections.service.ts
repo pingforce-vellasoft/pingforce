@@ -69,7 +69,12 @@ export class CorrectionsService {
     // Corrections are always filed as self — the attendance record must
     // belong to the caller (ATTENDANCE_CORRECTION.md §5)
     const attendance = await this.prisma.attendance.findFirst({
-      where: { id: dto.attendanceId, tenantId, employeeId: employee.id },
+      where: {
+        id: dto.attendanceId,
+        tenantId,
+        employeeId: employee.id,
+        deletedAt: null,
+      },
       select: { id: true },
     });
     if (!attendance) {
@@ -93,6 +98,9 @@ export class CorrectionsService {
         attendanceId: dto.attendanceId,
         correctionType: dto.correctionType,
         workflowStatus: { in: [...OPEN_STATUSES] },
+        // A deleted correction must not block a fresh request for the same
+        // record and type.
+        deletedAt: null,
       },
       select: { id: true },
     });
@@ -155,6 +163,7 @@ export class CorrectionsService {
       where: {
         tenantId,
         workflowStatus: { in: [...OPEN_STATUSES] },
+        deletedAt: null,
         ...scopeFilter,
       },
       include: {
@@ -189,7 +198,7 @@ export class CorrectionsService {
     notes?: string,
   ) {
     const correction = await this.prisma.attendanceCorrection.findFirst({
-      where: { id: correctionId, tenantId },
+      where: { id: correctionId, tenantId, deletedAt: null },
     });
     if (!correction) {
       throw new NotFoundException('Correction request not found');
@@ -217,7 +226,7 @@ export class CorrectionsService {
           const applied =
             decision === 'APPROVED' &&
             TIME_CORRECTION_TYPES.has(correction.correctionType)
-              ? await this.applyTimeCorrection(tx, correction)
+              ? await this.applyTimeCorrection(tx, tenantId, correction)
               : false;
 
           return tx.attendanceCorrection.update({
@@ -261,7 +270,7 @@ export class CorrectionsService {
     }
 
     const correction = await this.prisma.attendanceCorrection.findFirst({
-      where: { id: correctionId, tenantId },
+      where: { id: correctionId, tenantId, deletedAt: null },
     });
     if (!correction) {
       throw new NotFoundException('Correction request not found');
@@ -317,6 +326,7 @@ export class CorrectionsService {
    */
   private async applyTimeCorrection(
     tx: Parameters<Parameters<ExtendedPrismaClient['$transaction']>[0]>[0],
+    tenantId: string,
     correction: {
       attendanceId: string;
       correctionType: string;
@@ -326,7 +336,11 @@ export class CorrectionsService {
     const correctedTime = new Date(correction.requestedValue);
 
     const session = await tx.attendanceSession.findFirst({
-      where: { attendanceId: correction.attendanceId },
+      where: {
+        tenantId,
+        attendanceId: correction.attendanceId,
+        deletedAt: null,
+      },
       orderBy: { punchIn: 'desc' },
     });
     // Nothing to apply — request stays APPROVED, recorded for audit anyway

@@ -25,9 +25,10 @@ export class CreateFaultHandler implements ICommandHandler<CreateFaultCommand> {
   async execute(command: CreateFaultCommand) {
     const { tenantId, currentUser, createFaultDto } = command;
     try {
+      // Soft-deleted customers/users are not valid fault references.
       if (createFaultDto.customerId) {
         const customer = await this.prisma.customer.findFirst({
-          where: { id: createFaultDto.customerId, tenantId },
+          where: { id: createFaultDto.customerId, tenantId, deletedAt: null },
         });
         if (!customer)
           throw new BadRequestException(
@@ -36,7 +37,7 @@ export class CreateFaultHandler implements ICommandHandler<CreateFaultCommand> {
       }
       if (createFaultDto.assignedToId) {
         const user = await this.prisma.user.findFirst({
-          where: { id: createFaultDto.assignedToId, tenantId },
+          where: { id: createFaultDto.assignedToId, tenantId, deletedAt: null },
         });
         if (!user)
           throw new BadRequestException(

@@ -163,7 +163,9 @@ export class FaultsRepository extends PrismaRepository<
     clientRef?: string,
   ) {
     return this.prismaService.$transaction(async (tx: any) => {
-      const fault = await tx.fault.findFirst({ where: { id, tenantId } });
+      const fault = await tx.fault.findFirst({
+        where: { id, tenantId, deletedAt: null },
+      });
       if (!fault) throw new NotFoundException(`Fault with ID ${id} not found`);
       if (fault.status === FaultStatus.CLOSED)
         throw new BadRequestException('Cannot update a closed fault');

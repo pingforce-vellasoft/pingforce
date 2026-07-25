@@ -70,7 +70,12 @@ export class AttendanceSchedulerService {
         // the whole nightly run
         await this.prisma.$transaction(async (tx) => {
           const openBreak = await tx.attendanceBreak.findFirst({
-            where: { attendanceSessionId: session.id, endTime: null },
+            where: {
+              tenantId: session.tenantId,
+              attendanceSessionId: session.id,
+              endTime: null,
+              deletedAt: null,
+            },
           });
           if (openBreak) {
             await tx.attendanceBreak.update({

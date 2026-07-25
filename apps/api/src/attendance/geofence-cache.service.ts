@@ -56,7 +56,7 @@ export class GeofenceCacheService {
     if (cached) return cached;
 
     const geofences = await this.prisma.geofence.findMany({
-      where: { tenantId, active: true },
+      where: { tenantId, active: true, deletedAt: null },
       select: { id: true, latitude: true, longitude: true, radiusMeters: true },
     });
 

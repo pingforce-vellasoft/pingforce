@@ -52,6 +52,9 @@ export class LeaveService {
           employeeId,
           status: { in: ['PENDING', 'APPROVED'] },
           OR: [{ startDate: { lte: endDate }, endDate: { gte: startDate } }],
+          // A withdrawn/deleted request must not block a new one for the
+          // same dates.
+          deletedAt: null,
         },
       });
 
@@ -113,9 +116,10 @@ export class LeaveService {
     take = 50,
   ) {
     return this.prisma.leaveBalance.findMany({
-      where: { tenantId, employeeId, year },
+      where: { tenantId, employeeId, year, deletedAt: null },
       skip,
-      take,
+      // `take` is client-supplied; cap it like the other list endpoints.
+      take: Math.min(take, 200),
     });
   }
 
@@ -216,7 +220,7 @@ export class LeaveService {
     if (scopeFilter === null) return [];
 
     return this.prisma.leaveRequest.findMany({
-      where: { tenantId, status: 'PENDING', ...scopeFilter },
+      where: { tenantId, status: 'PENDING', deletedAt: null, ...scopeFilter },
       include: {
         employee: {
           select: {
@@ -256,7 +260,7 @@ export class LeaveService {
     // Tenants with an active leave_request workflow route through its
     // stages; the leave record only changes on the finalizing decision.
     const pending = await this.prisma.leaveRequest.findFirst({
-      where: { id: leaveId, tenantId },
+      where: { id: leaveId, tenantId, deletedAt: null },
       select: {
         employeeId: true,
         leaveTypeId: true,
@@ -364,7 +368,7 @@ export class LeaveService {
 
     // Notify the employee (ApprovalWorkflow.md — notification on decision)
     const owner = await this.prisma.employee.findFirst({
-      where: { id: pending.employeeId, tenantId },
+      where: { id: pending.employeeId, tenantId, deletedAt: null },
       select: {
         firstName: true,
         user: { select: { id: true, email: true } },
