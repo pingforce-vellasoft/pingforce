@@ -10,6 +10,7 @@ import '../../../core/notifications/push_notifications_service.dart';
 import '../../../injection_container.dart';
 import '../domain/repositories/auth_repository.dart';
 import '../domain/usecases/login_command.dart';
+import 'current_user_provider.dart';
 import 'auth_state.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -156,6 +157,10 @@ class LoginNotifier extends Notifier<LoginState> {
           mustChangePassword: user.mustChangePassword,
           isOnboarded: user.isOnboarded,
         );
+        // currentUserProvider is a FutureProvider that may have resolved to null
+        // during the signed-out session (splash/shell read it). Invalidate it so
+        // widgets re-read the freshly written user_cache instead of a stale null.
+        ref.invalidate(currentUserProvider);
         // Point the shell's bottom-nav at the role we just signed in as (the
         // shell notifier may have been built during the signed-out session).
         ref.read(appShellProvider.notifier).syncRoleFromSession();

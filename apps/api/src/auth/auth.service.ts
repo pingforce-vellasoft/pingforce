@@ -1107,21 +1107,29 @@ export class AuthService implements IAuthService {
     });
 
     if (!user) throw new NotFoundException('User not found');
-    if (user.profile)
-      throw new BadRequestException('User is already onboarded');
 
     // Here we can validate if the dto.tenantCode matches the invite code or the tenant they belong to.
     // If they were created in a temporary tenant (e.g. from generic signup), we would move them to the target tenant here.
     // For now, assuming they signed up via invite link and just need to fill profile.
 
+    // Idempotent: an admin-provisioned employee already has a profile (see
+    // EmployeeService.create), so re-running onboarding must not fail — otherwise
+    // the mobile profile-setup gate traps them (can't complete, can't skip). Upsert
+    // the profile and update the phone instead of throwing "already onboarded".
     await this.prisma.user.update({
       where: { id: userId },
       data: {
         phone: dto.phone,
         profile: {
-          create: {
-            firstName: dto.firstName,
-            lastName: dto.lastName,
+          upsert: {
+            create: {
+              firstName: dto.firstName,
+              lastName: dto.lastName,
+            },
+            update: {
+              firstName: dto.firstName,
+              lastName: dto.lastName,
+            },
           },
         },
       },

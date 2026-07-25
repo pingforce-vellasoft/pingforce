@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -698,6 +699,20 @@ class RouteGuard {
 
     // 1. Auth guard — redirect unauthenticated users to login
     final isAuthenticated = _isAuthenticated();
+
+    // Gate diagnostics — makes a post-login stall visible in `flutter logs`.
+    // The app parks on the first gate whose condition holds; without this the
+    // stuck gate is invisible (gate screens issue no API calls).
+    if (kDebugMode) {
+      debugPrint(
+        '[RouteGuard] loc=${state.matchedLocation} '
+        'authed=$isAuthenticated '
+        'mustChangePw=${_mustChangePassword()} '
+        'onboarded=${_isOnboarded()} '
+        'permsSeen=${AuthSession.instance.permissionsFlowSeen} '
+        'role=${AuthSession.instance.roleCode}',
+      );
+    }
     final isOnChangePassword =
         state.matchedLocation == '/auth/change-password';
     final isOnProfileSetup = state.matchedLocation == '/auth/profile-setup';
@@ -709,7 +724,7 @@ class RouteGuard {
         (state.matchedLocation.startsWith('/auth') && !isOnGatedAuthRoute) ||
             state.matchedLocation == '/splash';
     if (!isAuthenticated && !isOnAuthRoute && !isOnGatedAuthRoute) {
-      return '/auth/login';
+      return _gate('/auth/login', 'not-authenticated');
     }
     if (isAuthenticated && isOnAuthRoute) {
       return '/home';
@@ -718,7 +733,7 @@ class RouteGuard {
     // 1b. Forced password change — an admin-provisioned temporary password
     // must be rotated before the rest of the app is reachable.
     if (isAuthenticated && _mustChangePassword() && !isOnChangePassword) {
-      return '/auth/change-password';
+      return _gate('/auth/change-password', 'must-change-password');
     }
 
     // 1c. First-login profile setup — an account with no profile yet must
@@ -726,7 +741,7 @@ class RouteGuard {
     // rest of the app is reachable. Runs after 1b so a temporary password is
     // always rotated first.
     if (isAuthenticated && !_isOnboarded() && !isOnProfileSetup) {
-      return '/auth/profile-setup';
+      return _gate('/auth/profile-setup', 'not-onboarded');
     }
 
     // 1d. Permissions flow — after the account is fully set up, show the
@@ -739,7 +754,7 @@ class RouteGuard {
         _isOnboarded() &&
         !AuthSession.instance.permissionsFlowSeen &&
         !isOnPermissions) {
-      return '/permissions';
+      return _gate('/permissions', 'permissions-flow-not-seen');
     }
 
     // 2. Session expired
@@ -767,13 +782,22 @@ class RouteGuard {
       if (requiredPermission != null) {
         final role = AppUserRoleX.fromRoleCode(AuthSession.instance.roleCode);
         if (!NavDestinations.roleHasPermission(role, requiredPermission)) {
-          return '/home';
+          return _gate('/home', 'role-missing-permission:$requiredPermission');
         }
       }
     }
 
     // 6. No specific redirect needed
     return null;
+  }
+
+  /// Logs (debug only) the gate that fired and its destination, then returns the
+  /// destination unchanged. Central place so every redirect is traceable.
+  static String _gate(String destination, String reason) {
+    if (kDebugMode) {
+      debugPrint('[RouteGuard] → $destination  (reason: $reason)');
+    }
+    return destination;
   }
 
   // ── Session-backed checks ─────────────────────────────────────────────────

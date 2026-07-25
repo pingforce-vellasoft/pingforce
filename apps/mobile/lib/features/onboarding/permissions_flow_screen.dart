@@ -184,6 +184,18 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
       begin: const Offset(0, 0.08),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut));
+
+    // No permissions to request for this role/config (e.g. a non-field role
+    // whose only configured permission is Location, filtered out above). The
+    // card-based UI indexes _states[_currentIndex] and divides by
+    // _states.length, so an empty list would RangeError to a blank screen and
+    // never mark the flow seen — trapping the user on /permissions forever.
+    // Mark it seen and continue straight to home instead.
+    if (_states.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_finishAndGoHome());
+      });
+    }
   }
 
   @override
@@ -344,6 +356,13 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Empty flow (handled in initState → _finishAndGoHome): render a neutral
+    // placeholder for the one frame before the post-frame redirect fires, rather
+    // than indexing an empty _states list.
+    if (_states.isEmpty) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     final isDenied =
         _currentState.status == PermissionGrantStatus.permanentlyDenied;
 
