@@ -6,7 +6,6 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -14,6 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-tenant-register',
@@ -213,7 +213,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 })
 export class TenantRegisterComponent implements OnInit {
   private fb = inject(FormBuilder);
-  private http = inject(HttpClient);
+  private authService = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private snackBar = inject(MatSnackBar);
@@ -256,7 +256,7 @@ export class TenantRegisterComponent implements OnInit {
         ...(this.subscriptionId ? { subscriptionId: this.subscriptionId } : {}),
       };
 
-      this.http.post('/api/v1/auth/register-tenant', payload).subscribe({
+      this.authService.registerTenant(payload).subscribe({
         next: (response: any) => {
           this.isLoading = false;
           this.snackBar.open(
