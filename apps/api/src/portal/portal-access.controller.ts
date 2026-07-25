@@ -12,6 +12,7 @@ import { IsBoolean, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
+import { PlatformAdminGuard } from '../rbac/guards/platform-admin.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import {
   IPrismaService,
@@ -43,11 +44,13 @@ export class UpdatePortalAccessDto {
 
 /**
  * Super Admin controls for Customer Portal feature gating
- * (3.8_CustomerPortal BR-8.1). Guarded by the platform-only TENANTS module
- * permission — tenant roles never receive it, so a tenant cannot enable the
- * portal for itself. Mirrors NetworkAccessController (3.7).
+ * (3.8_CustomerPortal BR-8.1). Restricted to platform identities: routes take
+ * a `:tenantId` path param and write feature access for it, so the TENANTS
+ * permission being absent from tenant role grants was the only barrier.
+ * PlatformAdminGuard enforces it at the request layer instead.
+ * Mirrors NetworkAccessController (3.7).
  */
-@UseGuards(JwtAuthGuard, RbacGuard)
+@UseGuards(JwtAuthGuard, RbacGuard, PlatformAdminGuard)
 @Controller('portal-access')
 export class PortalAccessController {
   constructor(

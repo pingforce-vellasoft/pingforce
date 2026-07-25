@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
+import { PlatformAdminGuard } from '../rbac/guards/platform-admin.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import { PlansService } from './plans.service';
 import { SubscriptionsService } from './subscriptions.service';
@@ -29,7 +30,7 @@ interface AuthRequest {
  * RbacGuard treats as full access; the permission decorators document intent.
  */
 @Controller('billing')
-@UseGuards(JwtAuthGuard, RbacGuard)
+@UseGuards(JwtAuthGuard, RbacGuard, PlatformAdminGuard)
 export class BillingController {
   constructor(
     private readonly plans: PlansService,

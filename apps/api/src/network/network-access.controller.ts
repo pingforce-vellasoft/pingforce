@@ -11,6 +11,7 @@ import {
 import { IsBoolean, IsIn, IsOptional } from 'class-validator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
+import { PlatformAdminGuard } from '../rbac/guards/platform-admin.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import {
   IPrismaService,
@@ -34,10 +35,13 @@ export class UpdateNetworkAccessDto {
 
 /**
  * Super Admin controls for Connection Map feature gating (BRD BR-4.1/4.2).
- * Guarded by the platform-only TENANTS module permission — tenant roles
- * never receive it, so a tenant cannot enable the feature for itself.
+ * Restricted to platform identities: every route takes a `:tenantId` path
+ * param and writes feature access for it, so the TENANTS permission not being
+ * in any tenant role's grants was the only thing preventing a tenant from
+ * enabling the feature for itself (or for another tenant). PlatformAdminGuard
+ * makes that boundary explicit rather than seed-data-dependent.
  */
-@UseGuards(JwtAuthGuard, RbacGuard)
+@UseGuards(JwtAuthGuard, RbacGuard, PlatformAdminGuard)
 @Controller('network/access')
 export class NetworkAccessController {
   constructor(
