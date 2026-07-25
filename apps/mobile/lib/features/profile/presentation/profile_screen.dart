@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_session.dart';
+import '../../../core/sync/sync_provider.dart';
 import '../../../injection_container.dart';
 import '../data/profile_remote_data_source.dart';
 import 'profile_models.dart';
@@ -151,6 +152,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _finishSignOut() async {
+    // Drop any queued offline work before clearing credentials: the queue is
+    // uploaded with whatever bearer token is current at drain time, so items
+    // surviving a sign-out would be attributed to the next user of this device.
+    await ref.read(syncProvider.notifier).clearQueue();
     await AuthSession.instance.signOut(sl<FlutterSecureStorage>());
     if (mounted) context.go('/auth/login');
   }
