@@ -332,7 +332,11 @@ export class RbacRolesComponent implements OnInit {
       panelClass: 'premium-dialog',
       data: {
         title: 'Delete Role',
-        message: `Are you sure you want to delete the role <strong>${role.name}</strong>?<br><br><span style="color: var(--text-secondary)">This action cannot be undone and will permanently remove this role.</span>`,
+        message: 'Are you sure you want to delete the role ',
+        emphasis: role.name,
+        messageSuffix: '?',
+        subMessage:
+          'This action cannot be undone and will permanently remove this role.',
         confirmText: 'Delete Role',
         cancelText: 'Keep Role',
         color: 'warn',

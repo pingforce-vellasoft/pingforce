@@ -178,7 +178,9 @@ export class EmployeesComponent implements OnInit {
     const ref = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Delete Employee',
-        message: `Delete <strong>${e.firstName} ${e.lastName}</strong>? This can be restored by an administrator.`,
+        message: 'Delete ',
+        emphasis: `${e.firstName} ${e.lastName}`,
+        messageSuffix: '? This can be restored by an administrator.',
         confirmText: 'Delete',
         color: 'warn',
         icon: 'delete',

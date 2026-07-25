@@ -11,6 +11,12 @@ import { NgClass } from '@angular/common';
 export interface ConfirmDialogData {
   title: string;
   message: string;
+  /** Highlighted subject (role name, employee name…) rendered in <strong>. */
+  emphasis?: string;
+  /** Text rendered after the emphasis, completing the sentence. */
+  messageSuffix?: string;
+  /** Secondary line, e.g. "This action cannot be undone." */
+  subMessage?: string;
   confirmText?: string;
   cancelText?: string;
   color?: 'primary' | 'warn' | 'accent';
@@ -30,7 +36,24 @@ export interface ConfirmDialogData {
         <h2 mat-dialog-title>{{ data.title }}</h2>
       </div>
       <mat-dialog-content>
-        <p class="dialog-message" [innerHTML]="data.message"></p>
+        <!--
+          Interpolation, never [innerHTML]: callers embed user-editable values
+          (role names, employee names) in the message, so binding it as HTML
+          made this dialog a stored-XSS sink. The emphasis and messageSuffix
+          fields keep the bold styling without one.
+        -->
+        <p class="dialog-message">
+          <span>{{ data.message }}</span>
+          @if (data.emphasis) {
+            <strong>{{ data.emphasis }}</strong>
+          }
+          @if (data.messageSuffix) {
+            <span>{{ data.messageSuffix }}</span>
+          }
+        </p>
+        @if (data.subMessage) {
+          <p class="dialog-sub-message">{{ data.subMessage }}</p>
+        }
       </mat-dialog-content>
       <mat-dialog-actions align="end" class="dialog-actions">
         <button mat-button mat-dialog-close class="cancel-btn">
