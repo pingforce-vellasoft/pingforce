@@ -133,6 +133,7 @@
     "seed": "npx tsx prisma/seed.ts"
   },
   "overrides": {
-    "find-my-way": "^9.7.0"
+    "find-my-way": "^9.7.0",
+    "brace-expansion": "^5.0.8"
   }
 }
