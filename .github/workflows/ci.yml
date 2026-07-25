@@ -61,11 +61,13 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
 
-      # Destructive DDL in a migration deletes production data the moment it is
+      # Destructive SQL in a migration deletes production data the moment it is
       # applied, and no infrastructure fix can prevent that — `migrate deploy`
       # faithfully runs whatever SQL the file contains. Prisma emits DROP COLUMN
       # for any field removed from schema.prisma, including a rename it reads as
-      # drop + add, so this is easy to merge by accident.
+      # drop + add, so this is easy to merge by accident. Hand-written
+      # migrations add the other common case: a DELETE that de-duplicates rows
+      # so a new unique constraint can be created.
       #
       # Intentional drops are allowed, but must be opted into explicitly by
       # putting the marker below in the migration file, which forces a reviewer
@@ -75,11 +77,19 @@ jobs:
         run: |
           set -euo pipefail
           fail=0
+          # DELETE FROM is included: it destroys production rows just as surely
+          # as a DROP, and a de-duplicating DELETE is exactly the kind of
+          # statement a hand-written migration adds to satisfy a new unique
+          # constraint. The original pattern only matched DDL, so such a
+          # migration reached prod without a reviewer ever opting in.
+          pattern='(DROP[[:space:]]+(COLUMN|TABLE)|TRUNCATE|DELETE[[:space:]]+FROM)'
           for f in $(git ls-files 'prisma/migrations/**/*.sql'); do
-            if grep -qiE '(DROP[[:space:]]+(COLUMN|TABLE)|TRUNCATE)' "$f"; then
+            # Strip SQL line comments so prose like "drop the rest" never trips
+            # the guard — only real statements should.
+            if sed 's/--.*$//' "$f" | grep -qiE "$pattern"; then
               if ! grep -q 'pingforce:allow-destructive' "$f"; then
-                echo "::error file=$f::destructive DDL without a pingforce:allow-destructive marker"
-                grep -niE '(DROP[[:space:]]+(COLUMN|TABLE)|TRUNCATE)' "$f" | sed 's/^/    /'
+                echo "::error file=$f::destructive SQL without a pingforce:allow-destructive marker"
+                sed 's/--.*$//' "$f" | grep -niE "$pattern" | sed 's/^/    /'
                 fail=1
               fi
             fi
@@ -230,6 +240,21 @@ jobs:
 
             # Fail before touching the stack if the synced compose is invalid.
             docker compose config >/dev/null
+
+            # Snapshot before any migration runs. Backups are otherwise a
+            # nightly cron, so a deploy could apply schema changes up to ~24h
+            # after the last known-good dump — and `migrate deploy` executes
+            # whatever SQL the migration contains, including the row-deleting
+            # statements the destructive-SQL guard gates on. Labelled so it
+            # never overwrites that day's nightly dump.
+            #
+            # Skipped on the very first deploy, when no postgres container
+            # exists yet and there is nothing to lose.
+            if docker compose ps --status running postgres | grep -q postgres; then
+              sudo /usr/local/bin/pingforce-backup "predeploy-${GITHUB_SHA::7}"
+            else
+              echo "postgres not running yet — skipping pre-deploy backup"
+            fi
 
             # api + migrate share the GHCR image built by the package job; the
             # rest are third-party. `up -d` runs jwt-keygen and migrate as gated

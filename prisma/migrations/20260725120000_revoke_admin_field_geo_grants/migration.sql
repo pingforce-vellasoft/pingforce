@@ -1,3 +1,10 @@
+-- pingforce:allow-destructive reason=Intentional RBAC backfill. Removes only
+-- the three field-only grants (ATTENDANCE:CREATE, ATTENDANCE:READ_OWN,
+-- VISITS:EXECUTE) from system admin/manager roles, matching
+-- FIELD_ONLY_GEO_GRANTS in permission-catalog.ts. Grants are re-derivable from
+-- that catalog by re-running provisioning; no tenant data is affected and
+-- custom roles are untouched.
+--
 -- Revoke self-service geolocation grants from office (admin/manager) roles.
 --
 -- Geolocation attendance (punch in/out) and self-visit execution are scoped to
