@@ -54,6 +54,9 @@ class DashboardNotifier extends Notifier<DashboardState> {
     final user = cached.fold((_) => null, (u) => u);
     final isAdmin = user != null &&
         AppUserRoleX.fromRoleCode(user.role) == AppUserRole.admin;
+    // Geolocation actions (visit logging) are field-employee only.
+    final isFieldRole =
+        user != null && AppUserRoleX.fromRoleCode(user.role).isFieldRole;
     final attendanceEnabled = user?.isAttendanceEnabled ?? false;
 
     final result = await _repo.getSummary();
@@ -76,6 +79,7 @@ class DashboardNotifier extends Notifier<DashboardState> {
           quickActions: _buildQuickActions(
             summary,
             isAdmin: isAdmin,
+            isFieldRole: isFieldRole,
             attendanceEnabled: attendanceEnabled,
           ),
           activityFeed: _mapActivity(summary.activityFeed),
@@ -217,6 +221,7 @@ class DashboardNotifier extends Notifier<DashboardState> {
   List<QuickAction> _buildQuickActions(
     DashboardSummaryModel summary, {
     bool isAdmin = false,
+    bool isFieldRole = false,
     bool attendanceEnabled = false,
   }) {
     final actions = <QuickAction>[];
@@ -238,26 +243,30 @@ class DashboardNotifier extends Notifier<DashboardState> {
     // check-out, break and resume. A tile duplicating it just competed with the
     // hero's primary button.
 
-    actions.addAll(const [
-      QuickAction(
-        id: 'fault',
-        label: 'Report Fault',
-        iconName: 'report_problem',
-        route: '/faults/new',
-      ),
-      QuickAction(
+    actions.add(const QuickAction(
+      id: 'fault',
+      label: 'Report Fault',
+      iconName: 'report_problem',
+      route: '/faults/new',
+    ));
+
+    // Log Visit is geolocation visit tracking — field-employee only. Non-field
+    // roles have no visits.view, so RouteGuard would bounce the tap; hide it.
+    if (isFieldRole) {
+      actions.add(const QuickAction(
         id: 'visit',
         label: 'Log Visit',
         iconName: 'map',
         route: '/visits/new',
-      ),
-      QuickAction(
-        id: 'network-map',
-        label: 'Network Map',
-        iconName: 'share_location',
-        route: '/network-map',
-      ),
-    ]);
+      ));
+    }
+
+    actions.add(const QuickAction(
+      id: 'network-map',
+      label: 'Network Map',
+      iconName: 'share_location',
+      route: '/network-map',
+    ));
 
     return actions;
   }

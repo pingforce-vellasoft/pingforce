@@ -240,11 +240,19 @@ class _AppShellState extends ConsumerState<AppShell>
       return;
     }
 
+    // Branch 2 hosts five role-feature routes (/faults, /visits, /leads,
+    // /team, /reports). goBranch(2) alone lands on the branch's DEFAULT
+    // location — its first route, /faults — which the RouteGuard then bounces
+    // home for any role lacking faults.view (e.g. a field employee whose tab is
+    // Visits). So switch the branch AND navigate to the destination's own route
+    // so the correct feature screen actually shows.
     if (branch == widget.navigationShell.currentIndex) {
-      // Tap active tab → scroll to top (pop to root)
+      // Tap active tab → reset to this destination's root.
       widget.navigationShell.goBranch(branch, initialLocation: true);
+      if (dest.rootRoute.isNotEmpty) context.go(dest.rootRoute);
     } else {
       widget.navigationShell.goBranch(branch);
+      if (dest.rootRoute.isNotEmpty) context.go(dest.rootRoute);
     }
   }
 }

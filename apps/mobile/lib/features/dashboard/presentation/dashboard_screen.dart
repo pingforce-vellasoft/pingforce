@@ -252,14 +252,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   List<Widget> _buildContent(BuildContext context, DashboardState state) {
     final widgets = <Widget>[];
 
-    // Tenant admins/owners do not clock in, so the attendance hero (and its
-    // "No Shift Assigned" empty state) is meaningless for them — hide it.
+    // Geolocation attendance (check-in / check-out) is for field-employee
+    // logins only. Office roles (manager, admin) do not clock in, so the
+    // attendance hero — and its "No Shift Assigned" empty state — is
+    // meaningless for them. Gate on isFieldRole, the single source of truth
+    // for the geolocation-attendance scope (same predicate the check-in and
+    // permissions flows use).
     final user = ref.watch(currentUserProvider).valueOrNull;
-    final isAdmin = user != null &&
-        AppUserRoleX.fromRoleCode(user.role) == AppUserRole.admin;
+    final isFieldRole =
+        user != null && AppUserRoleX.fromRoleCode(user.role).isFieldRole;
 
     // ── Attendance Hero Card ─────────────────────────────────────────────
-    if (!isAdmin) {
+    if (isFieldRole) {
       widgets.add(AttendanceHeroCard(
         data: state.attendanceHero,
         isLoading: state.isLoading,

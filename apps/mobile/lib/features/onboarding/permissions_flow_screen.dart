@@ -162,8 +162,17 @@ class _PermissionsFlowScreenState extends State<PermissionsFlowScreen>
   @override
   void initState() {
     super.initState();
+    // Location (GPS) is only requested for field roles — they are the only
+    // logins that check in / are tracked. Office roles (manager, admin) never
+    // do geolocation attendance, so drop the Location step for them entirely
+    // rather than prompting for a permission the app will never use.
+    final isFieldRole =
+        AppUserRoleX.fromRoleCode(AuthSession.instance.roleCode).isFieldRole;
+    final scoped = widget.permissions.where(
+      (p) => p != AppPermission.location || isFieldRole,
+    );
     _states.addAll(
-      widget.permissions.map((p) => _PermState(permission: p)),
+      scoped.map((p) => _PermState(permission: p)),
     );
     _entryCtrl = AnimationController(
       vsync: this,

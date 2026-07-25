@@ -38,6 +38,7 @@ enum AppUserRole {
   salesRep,
   manager,
   admin,
+  customer,
 }
 
 extension AppUserRoleX on AppUserRole {
@@ -47,6 +48,7 @@ extension AppUserRoleX on AppUserRole {
         AppUserRole.salesRep => 'Sales Rep',
         AppUserRole.manager => 'Manager',
         AppUserRole.admin => 'Admin',
+        AppUserRole.customer => 'Customer',
       };
 
   /// Maps a backend RBAC role code (JWT `role` claim / `user.role`) to the
@@ -55,15 +57,20 @@ extension AppUserRoleX on AppUserRole {
   /// roles fall back to the least-privileged field-employee layout so a new
   /// role never accidentally exposes admin nav. Super admins never reach the
   /// mobile app (the API rejects them), so they are not mapped here.
+  ///
+  /// CUSTOMER is a portal identity, not field staff — it must NEVER land on the
+  /// employee layout, which exposes Visits/Attendance field tabs and their
+  /// permissions. It maps to a dedicated customer shell.
   static AppUserRole fromRoleCode(String? roleCode) {
     final code = (roleCode ?? '').toUpperCase();
     if (code == 'ADMIN_MANAGER' || code.startsWith('ADMIN')) {
       return AppUserRole.admin;
     }
+    if (code == 'CUSTOMER') return AppUserRole.customer;
     if (code.contains('MANAGER')) return AppUserRole.manager;
     if (code.contains('SALES')) return AppUserRole.salesRep;
     if (code.contains('TECHNICIAN')) return AppUserRole.fieldTechnician;
-    // EMPLOYEE_FIELD_STAFF, CUSTOMER and any unknown/custom role.
+    // EMPLOYEE_FIELD_STAFF and any unknown/custom role.
     return AppUserRole.fieldEmployee;
   }
 
@@ -77,7 +84,10 @@ extension AppUserRoleX on AppUserRole {
         AppUserRole.fieldTechnician ||
         AppUserRole.salesRep =>
           true,
-        AppUserRole.manager || AppUserRole.admin => false,
+        AppUserRole.manager ||
+        AppUserRole.admin ||
+        AppUserRole.customer =>
+          false,
       };
 }
 
@@ -375,6 +385,11 @@ class NavDestinations {
           reports(),
           settings(),
         ],
+      // Customer is a portal identity — no field-work tabs (no Visits,
+      // Attendance, Faults, etc.). Only the shared shell surfaces.
+      AppUserRole.customer => [
+          home(),
+        ],
     };
   }
 
@@ -425,7 +440,6 @@ class NavDestinations {
   /// the always-available shell surfaces.
   static const Set<String> _commonPermissions = {
     'home.view',
-    'attendance.view',
     'notifications.view',
     'profile.view',
     'settings.view',
@@ -434,12 +448,25 @@ class NavDestinations {
     'announcements.view',
   };
 
+  /// Geolocation attendance (check-in / check-out) is only for field-employee
+  /// logins — the roles that actually move between sites and are tracked. Office
+  /// roles (manager, admin) and non-employee logins (super admin, customer,
+  /// which never reach the mobile app) must never see the Attendance tab, the
+  /// check-in FAB, or reach /attendance. `attendance.view` is therefore granted
+  /// per field role below, not in `_commonPermissions`.
+  static const Set<String> _fieldRoleGeoPermissions = {
+    'attendance.view',
+  };
+
   /// The full set of RBAC permission keys a role may access.
   static Set<String> permissionsFor(AppUserRole role) {
     final roleSpecific = switch (role) {
-      AppUserRole.fieldEmployee => const {'visits.view'},
-      AppUserRole.fieldTechnician => const {'faults.view'},
-      AppUserRole.salesRep => const {'leads.view'},
+      // Field roles carry attendance + visit geolocation.
+      AppUserRole.fieldEmployee => {..._fieldRoleGeoPermissions, 'visits.view'},
+      AppUserRole.fieldTechnician => {..._fieldRoleGeoPermissions, 'faults.view'},
+      AppUserRole.salesRep => {..._fieldRoleGeoPermissions, 'leads.view'},
+      // Office roles: no attendance, no visit tracking. Faults/leads stay for
+      // oversight but geolocation attendance and visits are field-only.
       AppUserRole.manager => const {'team.view', 'reports.view'},
       AppUserRole.admin => const {
           'team.view',
@@ -448,6 +475,9 @@ class NavDestinations {
           'faults.view',
           'visits.view',
         },
+      // Customer portal identity: no field features at all. Only the shared
+      // shell surfaces from `_commonPermissions` — never visits/attendance/etc.
+      AppUserRole.customer => const <String>{},
     };
     return {..._commonPermissions, ...roleSpecific};
   }
@@ -466,6 +496,7 @@ class NavDestinations {
   // listed and are therefore never bounced by role.
 
   static const Map<String, String> _routePermissionKeys = {
+    '/attendance': 'attendance.view',
     '/visits': 'visits.view',
     '/faults': 'faults.view',
     '/leads': 'leads.view',

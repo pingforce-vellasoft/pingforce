@@ -485,9 +485,35 @@ interface GrantDef {
   readonly dataScope: GrantScope;
 }
 
-/** Every tenant-scope permission in the catalog, granted with ALL scope. */
+/**
+ * Self-service geolocation actions reserved for field-employee logins. These
+ * are the "I am on site, punch me in / run my own visit" actions — they only
+ * make sense for staff who physically do field work and are GPS-verified.
+ * Office roles (tenant admin, manager) manage and oversee attendance/visits
+ * (READ, APPROVE, ASSIGN, live tracking) but never perform them, so they must
+ * NOT receive these grants — otherwise an admin login could punch check-ins and
+ * execute visits, which the product scopes to employees only.
+ *
+ * Note READ_OWN attendance is included: an admin has ATTENDANCE:READ (all logs
+ * across the tenant), so the self-only view is redundant for them and only
+ * exists to back the employee "my attendance" screen.
+ */
+const FIELD_ONLY_GEO_GRANTS: readonly { module: string; action: string }[] = [
+  { module: 'ATTENDANCE', action: 'CREATE' },
+  { module: 'ATTENDANCE', action: 'READ_OWN' },
+  { module: 'VISITS', action: 'EXECUTE' },
+];
+
+/**
+ * Every tenant-scope permission in the catalog, granted with ALL scope, EXCEPT
+ * the field-only self-service geolocation actions (see FIELD_ONLY_GEO_GRANTS).
+ */
 const ADMIN_MANAGER_GRANTS: readonly GrantDef[] = PERMISSION_CATALOG.filter(
-  (p) => !(PLATFORM_MODULES as readonly string[]).includes(p.module),
+  (p) =>
+    !(PLATFORM_MODULES as readonly string[]).includes(p.module) &&
+    !FIELD_ONLY_GEO_GRANTS.some(
+      (g) => g.module === p.module && g.action === p.action,
+    ),
 ).map((p) => ({
   module: p.module,
   action: p.action,
