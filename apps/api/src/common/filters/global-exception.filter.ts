@@ -36,15 +36,28 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       exception instanceof Error ? exception.stack : undefined,
     );
 
+    const body =
+      typeof message === 'object' && message !== null
+        ? (message as Record<string, unknown>)
+        : null;
+
+    // `errorCode` is a stable machine-readable discriminator clients branch on
+    // (e.g. the mobile register+retry on UNTRUSTED_DEVICE). It must survive
+    // this filter — the response previously kept only `message`, so any code a
+    // handler attached was silently dropped and clients were forced to match
+    // on human-readable text.
+    const errorCode =
+      body && typeof body['errorCode'] === 'string'
+        ? (body['errorCode'] as string)
+        : undefined;
+
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       requestId,
-      message:
-        typeof message === 'object' && message !== null && 'message' in message
-          ? message['message']
-          : message,
+      ...(errorCode ? { errorCode } : {}),
+      message: body && 'message' in body ? body['message'] : message,
     });
   }
 }

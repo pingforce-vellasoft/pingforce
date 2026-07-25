@@ -10,6 +10,7 @@ import 'widgets/check_in_success_overlay.dart';
 import 'widgets/mock_location_blocker.dart';
 import 'widgets/offline_banner.dart';
 import 'widgets/attendance_active_session_card.dart';
+import 'widgets/attendance_day_summary_card.dart';
 import 'check_in_notifier.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -164,13 +165,21 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         session: state.activeSession!,
                         isCheckingOut: state.isCheckingOut,
                         checkOutError: state.checkOutError,
+                        isBreakUpdating: state.isBreakUpdating,
+                        breakError: state.breakError,
                         onBreak: () => ref
                             .read(checkInNotifierProvider.notifier)
-                            .startBreak(),
+                            .toggleBreak(),
                         onCheckOut: () => ref
                             .read(checkInNotifierProvider.notifier)
                             .initiateCheckOut(),
                       ),
+                      AppSpacing.sectionGapBox,
+                    ],
+
+                    // ── Today's summary: punches, breaks, leave balance ─
+                    if (state.today != null) ...[
+                      AttendanceDaySummaryCard(today: state.today!),
                       AppSpacing.sectionGapBox,
                     ],
 

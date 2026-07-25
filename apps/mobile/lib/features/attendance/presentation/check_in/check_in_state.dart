@@ -1,6 +1,10 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../domain/entities/attendance_today.dart';
+
+export '../../domain/entities/attendance_today.dart';
+
 part 'check_in_state.freezed.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -227,6 +231,15 @@ class CheckInState with _$CheckInState {
     // Check-out
     @Default(false) bool isCheckingOut,
     String? checkOutError,
+
+    // Break — server-backed (POST /attendance/break/start | /break/end)
+    @Default(false) bool isBreakUpdating,
+    String? breakError,
+
+    /// Today's snapshot from GET /attendance/today: punch history, totals and
+    /// leave balances. Reloaded on every screen open so a returning employee
+    /// resumes their open session rather than seeing a fresh check-in page.
+    AttendanceToday? today,
 
     // Error
     String? errorMessage,

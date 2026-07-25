@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dartz/dartz.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -8,6 +9,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:local_auth/local_auth.dart';
 
 import '../../../../core/auth/auth_session.dart';
+import '../../../../core/error/failures.dart';
 import '../../../../core/hardware/background_location_permission.dart';
 import '../../../../core/hardware/device_identity.dart';
 import '../../../../core/navigation/nav_destinations.dart';
@@ -18,6 +20,9 @@ import '../../../../injection_container.dart';
 import '../../../geofences/domain/entities/geofence.dart';
 import '../../../geofences/domain/repositories/geofence_repository.dart';
 import '../../../tracking/presentation/tracking_notifier.dart';
+import '../../../../core/usecases/usecase.dart';
+import '../../domain/usecases/break_commands.dart';
+import '../../domain/usecases/get_today_query.dart';
 import '../../domain/usecases/punch_command.dart' as punch_uc;
 import '../../domain/usecases/register_device_command.dart';
 import 'check_in_state.dart';
@@ -69,7 +74,98 @@ class CheckInNotifier extends Notifier<CheckInState> {
       isOnline: ref.read(isOnlineProvider),
     );
 
+    // Restore any open session BEFORE acquiring GPS. Attendance state lives on
+    // the server, not in this notifier — without this, re-opening the screen
+    // (or restarting the app) showed a fresh check-in page to someone who was
+    // already checked in, and let them open a second session.
+    await refreshToday();
+
     await _acquireGps();
+  }
+
+  /// Loads today's snapshot and rehydrates the active session.
+  ///
+  /// Offline is not an error here: the cached/optimistic local session stays
+  /// as-is and the screen carries on, since punches queue for later sync.
+  Future<void> refreshToday() async {
+    if (!ref.read(isOnlineProvider)) return;
+
+    final result = await sl<GetTodayQuery>()(NoParams());
+
+    // Snapshot unavailable (offline, server error): leave existing state
+    // untouched rather than wrongly clearing an active session.
+    final today = result.fold<AttendanceToday?>((_) => null, (t) => t);
+    if (today == null) return;
+
+    final remote = today.activeSession;
+
+    if (remote == null) {
+      // Server says no open session: the day is done (or never started).
+      state = state.copyWith(
+        today: today,
+        activeSession: null,
+        status: CheckInScreenStatus.readyToCheckIn,
+        buttonMode: CheckInButtonMode.enabledNormal,
+      );
+      return;
+    }
+
+    // Re-resolve the check-in geofence from the coordinates the punch was
+    // recorded at. On a cold start `state.activeSession` is null, so carrying
+    // the id forward from it loses the zone — and `_isInsideCheckInFence`
+    // treats a null id as "any fence will do", quietly turning the
+    // same-location check-out rule off for the rest of the session.
+    var geofenceId = state.activeSession?.checkInGeofenceId;
+    var geofenceName = state.activeSession?.checkInGeofenceName;
+    if (geofenceId == null &&
+        remote.checkInLatitude != null &&
+        remote.checkInLongitude != null) {
+      final fence = await _fenceContaining(
+        remote.checkInLatitude!,
+        remote.checkInLongitude!,
+      );
+      geofenceId = fence?.id;
+      geofenceName = fence?.name;
+    }
+
+    state = state.copyWith(
+      today: today,
+      activeSession: ActiveSession(
+        sessionId: remote.id,
+        checkInTime: remote.punchIn,
+        shiftName: state.shift?.shiftName ?? 'Shift',
+        breaksTaken: remote.breaksTaken,
+        isOnBreak: remote.isOnBreak,
+        lastBreakStart: remote.currentBreakStartedAt,
+        checkInGeofenceId: geofenceId,
+        checkInGeofenceName: geofenceName,
+      ),
+      status: CheckInScreenStatus.alreadyCheckedIn,
+      buttonMode: CheckInButtonMode.alreadyCheckedIn,
+    );
+
+    // Resume background tracking for field roles — a restarted app must
+    // not silently stop tracking an on-shift operator.
+    if (_isFieldRole) {
+      unawaited(ref.read(trackingProvider.notifier).start(remote.id));
+    }
+  }
+
+  /// The tenant geofence containing the given point, or null if none does.
+  Future<Geofence?> _fenceContaining(double latitude, double longitude) async {
+    final result = await sl<GeofenceRepository>().getGeofences();
+    final fences = result.getOrElse(() => const <Geofence>[]);
+
+    final point = LatLng(latitude, longitude);
+    const distance = Distance();
+
+    for (final fence in fences) {
+      final center = LatLng(fence.latitude, fence.longitude);
+      if (distance.as(LengthUnit.Meter, point, center) <= fence.radiusMeters) {
+        return fence;
+      }
+    }
+    return null;
   }
 
   Future<void> _acquireGps() async {
@@ -313,9 +409,12 @@ class CheckInNotifier extends Notifier<CheckInState> {
 
     var result = await sl<punch_uc.PunchCommand>()(params);
 
-    // First punch on a fresh install fails with an untrusted device —
-    // register this device once, then retry.
-    if (result.isLeft()) {
+    // First punch on a fresh install fails with an untrusted device — register
+    // this device once, then retry. Scoped to device-trust failures only:
+    // retrying on any error re-registered the device (revoking the previous
+    // one) for unrelated faults like a geofence refusal or a 500, and replaced
+    // the real message with a misleading one.
+    if (result.isLeft() && _isUntrustedDeviceFailure(result)) {
       final registered = await sl<RegisterDeviceCommand>()(
         const RegisterDeviceParams(publicKey: 'mobile-client'),
       );
@@ -344,6 +443,8 @@ class CheckInNotifier extends Notifier<CheckInState> {
             activeSession: null,
           );
           unawaited(ref.read(trackingProvider.notifier).stop());
+          // Pull the closed session into today's history and totals.
+          unawaited(refreshToday());
           return;
         }
 
@@ -371,7 +472,24 @@ class CheckInNotifier extends Notifier<CheckInState> {
         if (_isFieldRole) {
           unawaited(ref.read(trackingProvider.notifier).start(session.id));
         }
+        unawaited(refreshToday());
       },
+    );
+  }
+
+  /// True when the punch was refused because this device is not registered —
+  /// the API throws `UnauthorizedException('Untrusted device')`, which the
+  /// repository maps to [UntrustedDeviceFailure]. The message check is a
+  /// fallback for failures raised outside that mapping. Only this case
+  /// warrants a register+retry.
+  bool _isUntrustedDeviceFailure(
+    Either<Failure, dynamic> result,
+  ) {
+    return result.fold(
+      (failure) =>
+          failure is UntrustedDeviceFailure ||
+          failure.message.toLowerCase().contains('untrusted device'),
+      (_) => false,
     );
   }
 
@@ -479,18 +597,60 @@ class CheckInNotifier extends Notifier<CheckInState> {
 
   // ── S6: active session actions ─────────────────────────────────────────────
 
-  Future<void> startBreak() async {
+  /// Toggles break state against the server.
+  ///
+  /// Breaks are persisted (`attendance_breaks`) because unpaid break minutes
+  /// are deducted from worked time at check-out — a local-only toggle would
+  /// silently pay for break time and vanish on restart.
+  Future<void> toggleBreak() async {
     final session = state.activeSession;
-    if (session == null) return;
-    // TODO(phase-2): call break API.
+    if (session == null || state.isBreakUpdating || state.isCheckingOut) return;
+
+    if (!ref.read(isOnlineProvider)) {
+      state = state.copyWith(
+        breakError: 'Breaks need a connection. Try again once you are online.',
+      );
+      return;
+    }
+
+    state = state.copyWith(isBreakUpdating: true, breakError: null);
+
+    final result = session.isOnBreak
+        ? await sl<EndBreakCommand>()(NoParams())
+        : await sl<StartBreakCommand>()(const StartBreakParams());
+
+    // `fold` drops the Future an async callback returns, so the refresh must be
+    // awaited outside it — otherwise toggleBreak() completes with the refresh
+    // still in flight and callers race it.
+    final failure = result.fold<Failure?>((f) => f, (_) => null);
+    if (failure != null) {
+      state = state.copyWith(
+        isBreakUpdating: false,
+        breakError: failure.message,
+      );
+      return;
+    }
+
+    // Apply the toggle locally before refreshing. The server accepted it, so
+    // this is a fact, not a guess — and refreshToday() deliberately no-ops on
+    // failure, which would otherwise leave the button showing the pre-toggle
+    // label. The employee then taps again and the API rejects it with
+    // "A break is already in progress".
+    final wasOnBreak = session.isOnBreak;
     state = state.copyWith(
+      isBreakUpdating: false,
       activeSession: session.copyWith(
-        isOnBreak: !session.isOnBreak,
-        lastBreakStart: session.isOnBreak ? session.lastBreakStart : DateTime.now(),
-        breaksTaken:
-            session.isOnBreak ? session.breaksTaken : (session.breaksTaken ?? 0) + 1,
+        isOnBreak: !wasOnBreak,
+        lastBreakStart: wasOnBreak ? null : DateTime.now(),
+        breaksTaken: wasOnBreak
+            ? session.breaksTaken
+            : (session.breaksTaken ?? 0) + 1,
       ),
     );
+
+    // Re-read the snapshot so break count and timings come from the server
+    // rather than staying on the optimistic values above.
+    await refreshToday();
   }
 
   /// Check-out must happen inside the SAME geofence the employee checked in

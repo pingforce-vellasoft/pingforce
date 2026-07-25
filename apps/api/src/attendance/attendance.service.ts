@@ -8,6 +8,7 @@ import { ExtendedPrismaClient } from '../prisma/prisma.module';
 import { RegisterDeviceDto, CreateGeofenceDto } from './dto/attendance.dto';
 import { RbacService } from '../rbac/rbac.service';
 import { creditWorkedMinutes } from './domain/work-minutes';
+import { resolveState, SessionState } from './domain/session-state';
 import { GeofenceCacheService } from './geofence-cache.service';
 import * as crypto from 'crypto';
 
@@ -54,20 +55,42 @@ export class AttendanceService {
     if (!employee) throw new UnauthorizedException('User is not an employee');
 
     // Revoke-then-register atomically so the 1-device policy can't be
-    // violated by concurrent registrations (PRISMA_GUIDELINES.md §10)
+    // violated by concurrent registrations (PRISMA_GUIDELINES.md §10).
+    // Both writes are tenant-scoped: deviceId comes from the client, so an
+    // unscoped revoke could clear rows belonging to another tenant.
     const [, device] = await this.prisma.$transaction([
       this.prisma.employeeDevice.updateMany({
-        where: { employeeId: employee.id, isTrusted: true },
+        where: {
+          tenantId: employee.tenantId,
+          employeeId: employee.id,
+          isTrusted: true,
+        },
         data: { isTrusted: false, revokedAt: new Date() },
       }),
-      this.prisma.employeeDevice.create({
-        data: {
+      // Upsert, not create: the mobile client re-registers on first punch after
+      // a reinstall, and with per-tenant uniqueness that same deviceId already
+      // exists. A plain create raised P2002 and the retry never recovered.
+      this.prisma.employeeDevice.upsert({
+        where: {
+          tenantId_deviceId: {
+            tenantId: employee.tenantId,
+            deviceId: dto.deviceId,
+          },
+        },
+        create: {
           tenantId: employee.tenantId,
           employeeId: employee.id,
           deviceId: dto.deviceId,
           publicKey: dto.publicKey,
           isTrusted: true,
           createdBy: user.userId,
+        },
+        update: {
+          employeeId: employee.id,
+          publicKey: dto.publicKey,
+          isTrusted: true,
+          revokedAt: null,
+          updatedBy: user.userId,
         },
       }),
     ]);
@@ -85,8 +108,8 @@ export class AttendanceService {
     }
 
     return this.prisma.employeeDevice.updateMany({
-      where: { employeeId, deviceId, employee: { tenantId: admin.tenantId } },
-      data: { isTrusted: false },
+      where: { tenantId: admin.tenantId, employeeId, deviceId },
+      data: { isTrusted: false, revokedAt: new Date() },
     });
   }
 
@@ -145,6 +168,152 @@ export class AttendanceService {
 
       return updatedSession;
     });
+  }
+
+  /**
+   * Today's attendance snapshot for the signed-in employee — the mobile
+   * attendance screen calls this on every open so a returning user resumes
+   * their open session instead of being shown a fresh check-in page.
+   *
+   * Returns the open session (if any) with its break state, today's totals,
+   * and current leave balances.
+   */
+  async getToday(user: any) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId: user.userId },
+      select: { id: true, tenantId: true },
+    });
+    if (!employee) throw new UnauthorizedException('User is not an employee');
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Half-open day range rather than an exact `attendanceDate` equality match.
+    // Writers normalise to midnight in the server's local tz, but offline-sync
+    // derives the day from a client-supplied `punchAt` and DST shifts move the
+    // boundary — an exact match then returns nothing and the mobile screen
+    // reports "not checked in" for an employee with an open session.
+    const attendance = await this.prisma.attendance.findFirst({
+      where: {
+        tenantId: employee.tenantId,
+        employeeId: employee.id,
+        attendanceDate: { gte: today, lt: tomorrow },
+        deletedAt: null,
+      },
+      orderBy: { attendanceDate: 'desc' },
+      include: {
+        sessions: {
+          where: { deletedAt: null },
+          orderBy: { punchIn: 'asc' },
+          include: {
+            breaks: {
+              where: { deletedAt: null },
+              orderBy: { startTime: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    const sessions = attendance?.sessions ?? [];
+    const openSession = sessions.find((s) => s.punchOut === null) ?? null;
+    const allBreaks = sessions.flatMap((s) => s.breaks);
+    const openBreak = openSession?.breaks.find((b) => b.endTime === null) ?? null;
+
+    // `sessionStatus` is authoritative for break state, not the presence of an
+    // unclosed break row. StartBreak/EndBreak gate on the column via
+    // assertTransition, so reporting isOnBreak from a stray open row would let
+    // the client show "On Break" for a WORKING session and then call endBreak
+    // into a rejected transition. The row only supplies the start time.
+    const openSessionState = openSession
+      ? resolveState(openSession.sessionStatus)
+      : null;
+    const isOnBreak = openSessionState === SessionState.ON_BREAK;
+
+    const closedPunchOuts = sessions
+      .map((s) => s.punchOut)
+      .filter((p): p is Date => p !== null)
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    const breakMinutes = allBreaks.reduce(
+      (sum, b) => sum + (b.durationMinutes ?? 0),
+      0,
+    );
+
+    const leaveBalances = await this.prisma.leaveBalance.findMany({
+      where: {
+        tenantId: employee.tenantId,
+        employeeId: employee.id,
+        year: today.getFullYear(),
+        deletedAt: null,
+      },
+      select: {
+        totalDays: true,
+        usedDays: true,
+        availableDays: true,
+        leaveType: { select: { id: true, name: true, code: true } },
+      },
+    });
+
+    return {
+      date: today.toISOString(),
+      status: attendance?.status ?? null,
+      // Open session drives the mobile UI's "resume" path; null means the
+      // employee has not checked in today (or already checked out).
+      activeSession: openSession
+        ? {
+            id: openSession.id,
+            punchIn: openSession.punchIn,
+            sessionStatus: openSessionState,
+            isOnBreak,
+            currentBreakStartedAt: isOnBreak
+              ? (openBreak?.startTime ?? null)
+              : null,
+            breaksTaken: openSession.breaks.length,
+            checkInLatitude: openSession.checkInLatitude,
+            checkInLongitude: openSession.checkInLongitude,
+          }
+        : null,
+      sessions: sessions.map((s) => ({
+        id: s.id,
+        punchIn: s.punchIn,
+        punchOut: s.punchOut,
+        sessionStatus: resolveState(s.sessionStatus),
+        breaks: s.breaks.map((b) => ({
+          id: b.id,
+          breakType: b.breakType,
+          paidBreak: b.paidBreak,
+          startTime: b.startTime,
+          endTime: b.endTime,
+          durationMinutes: b.durationMinutes,
+        })),
+      })),
+      totals: {
+        // Credited on check-out only, so an open session contributes 0 here.
+        workedMinutes: attendance?.totalWorkMinutes ?? 0,
+        overtimeMinutes: attendance?.overtimeMinutes ?? 0,
+        breaksTaken: allBreaks.length,
+        breakMinutes,
+        firstPunchIn: sessions.length > 0 ? sessions[0].punchIn : null,
+        // Last *closed* session's punch-out. Reading the final element blindly
+        // yields null whenever the day ends with an open session, hiding an
+        // earlier real check-out.
+        lastPunchOut:
+          closedPunchOuts.length > 0
+            ? closedPunchOuts[closedPunchOuts.length - 1]
+            : null,
+      },
+      leaveBalances: leaveBalances.map((b) => ({
+        leaveTypeId: b.leaveType.id,
+        leaveTypeName: b.leaveType.name,
+        leaveTypeCode: b.leaveType.code,
+        totalDays: b.totalDays,
+        usedDays: b.usedDays,
+        availableDays: b.availableDays,
+      })),
+    };
   }
 
   async getLogs(

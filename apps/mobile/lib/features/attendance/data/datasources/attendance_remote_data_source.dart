@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../models/attendance_model.dart';
+import '../models/attendance_today_model.dart';
 
 abstract class AttendanceRemoteDataSource {
   Future<void> registerDevice(String deviceId, String publicKey);
@@ -10,6 +11,15 @@ abstract class AttendanceRemoteDataSource {
     String signature,
   );
   Future<void> syncPunches(List<Map<String, dynamic>> punches);
+
+  /// Today's snapshot — open session, punch history, totals, leave balances.
+  Future<AttendanceTodayModel> getToday();
+
+  /// WORKING → ON_BREAK.
+  Future<void> startBreak(String breakType);
+
+  /// ON_BREAK → WORKING.
+  Future<void> endBreak();
 }
 
 class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
@@ -54,6 +64,36 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
       return AttendanceModel.fromJson(response.data);
     } else {
       throw Exception('Server Error');
+    }
+  }
+
+  @override
+  Future<AttendanceTodayModel> getToday() async {
+    final response = await dio.get('/api/v1/attendance/today');
+    if (response.statusCode == 200) {
+      return AttendanceTodayModel.fromJson(
+        response.data as Map<String, dynamic>,
+      );
+    }
+    throw Exception('Failed to load today\'s attendance');
+  }
+
+  @override
+  Future<void> startBreak(String breakType) async {
+    final response = await dio.post(
+      '/api/v1/attendance/break/start',
+      data: {'breakType': breakType},
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to start break');
+    }
+  }
+
+  @override
+  Future<void> endBreak() async {
+    final response = await dio.post('/api/v1/attendance/break/end');
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to end break');
     }
   }
 

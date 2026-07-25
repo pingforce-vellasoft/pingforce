@@ -1139,7 +1139,7 @@ model EmployeeDevice {
   id         String    @id @default(uuid())
   tenantId   String
   employeeId String
-  deviceId   String    @unique
+  deviceId   String
   publicKey  String
   isTrusted  Boolean   @default(true)
   createdAt  DateTime  @default(now())
@@ -1150,6 +1150,10 @@ model EmployeeDevice {
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  // Device identifiers are client-supplied, so a global unique on deviceId let
+  // one tenant's registration collide with another's — a cross-tenant
+  // existence oracle. Uniqueness is per tenant; every lookup is tenant-scoped.
+  @@unique([tenantId, deviceId])
   @@index([employeeId])
   @@index([tenantId])
   @@map("employee_devices")

@@ -191,11 +191,10 @@ class NavDestinations {
         permissionKey: 'attendance.view',
         showInBottomNav: true,
         badgeCount: badgeCount,
-        fab: const DestinationFabConfig(
-          tooltip: 'Check In',
-          icon: Icons.login_rounded,
-          route: '/attendance/check-in',
-        ),
+        // No FAB: the attendance screen IS the check-in screen, and its primary
+        // button already toggles check-in/check-out with the correct label. The
+        // FAB duplicated that route and always read "Check In" even while the
+        // employee was checked in.
       );
 
   static NavDestination visits({int badgeCount = 0}) => NavDestination(

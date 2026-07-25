@@ -29,3 +29,10 @@ class BiometricFailure extends Failure {
 class LocationFailure extends Failure {
   const LocationFailure(super.message);
 }
+
+/// The punch was refused because this device is not registered/trusted.
+/// Typed so the check-in flow can trigger register+retry without pattern
+/// matching on server message text, which is not a stable contract.
+class UntrustedDeviceFailure extends Failure {
+  const UntrustedDeviceFailure(super.message);
+}

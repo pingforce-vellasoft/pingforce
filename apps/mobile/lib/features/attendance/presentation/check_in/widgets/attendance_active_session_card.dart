@@ -20,6 +20,8 @@ class AttendanceActiveSessionCard extends StatefulWidget {
     required this.onCheckOut,
     this.isCheckingOut = false,
     this.checkOutError,
+    this.isBreakUpdating = false,
+    this.breakError,
   });
 
   final ActiveSession session;
@@ -32,6 +34,12 @@ class AttendanceActiveSessionCard extends StatefulWidget {
   /// Message shown when check-out is refused (e.g. outside the check-in zone).
   final String? checkOutError;
 
+  /// Break start/end API call in flight.
+  final bool isBreakUpdating;
+
+  /// Message shown when a break start/end is refused.
+  final String? breakError;
+
   @override
   State<AttendanceActiveSessionCard> createState() =>
       _AttendanceActiveSessionCardState();
@@ -42,16 +50,35 @@ class _AttendanceActiveSessionCardState
   late Timer _timer;
   late Duration _elapsed;
 
+  /// Wall-clock time since check-in, minus the break currently in progress.
+  ///
+  /// Unpaid break minutes are deducted from worked time server-side at
+  /// check-out, so a timer that keeps counting through a break shows the
+  /// employee a "Working" figure their payslip will not agree with. Only the
+  /// live break is subtracted here — minutes from completed breaks are already
+  /// reflected once the server credits them.
+  Duration _computeElapsed() {
+    final now = DateTime.now();
+    var elapsed = now.difference(widget.session.checkInTime);
+
+    final breakStart = widget.session.lastBreakStart;
+    if (widget.session.isOnBreak && breakStart != null) {
+      elapsed -= now.difference(breakStart);
+    }
+
+    return elapsed.isNegative ? Duration.zero : elapsed;
+  }
+
   @override
   void initState() {
     super.initState();
-    _elapsed = DateTime.now().difference(widget.session.checkInTime);
+    _elapsed = _computeElapsed();
 
     // Update timer every second
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
         setState(() {
-          _elapsed = DateTime.now().difference(widget.session.checkInTime);
+          _elapsed = _computeElapsed();
         });
       }
     });
@@ -110,7 +137,9 @@ class _AttendanceActiveSessionCardState
                       borderRadius: AppRadius.pillAll,
                     ),
                     child: Text(
-                      '● On Break',
+                      widget.session.lastBreakStart != null
+                          ? '● On Break · ${_elapsedLabel(DateTime.now().difference(widget.session.lastBreakStart!))}'
+                          : '● On Break',
                       style: AppTypography.labelSmall.copyWith(
                         color: PingForceColors.statusWarning,
                       ),
@@ -130,7 +159,7 @@ class _AttendanceActiveSessionCardState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Working',
+                  widget.session.isOnBreak ? 'Working · paused' : 'Working',
                   style: AppTypography.labelSmall.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -158,8 +187,11 @@ class _AttendanceActiveSessionCardState
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     AppSpacing.iconGapBox,
+                    // Scoped to THIS session. The day summary card's "Breaks"
+                    // metric counts every break across all of today's
+                    // sessions — two different numbers, so each says which.
                     Text(
-                      '${widget.session.breaksTaken ?? 0} break(s) taken',
+                      '${widget.session.breaksTaken ?? 0} break(s) this session',
                       style: AppTypography.bodySmall.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -171,6 +203,41 @@ class _AttendanceActiveSessionCardState
           ),
 
           const Divider(height: 1),
+
+          // ── Break error ────────────────────────────────────────────────
+          if (widget.breakError != null)
+            Container(
+              margin: const EdgeInsets.fromLTRB(
+                AppSpacing.cardPadding,
+                AppSpacing.space3,
+                AppSpacing.cardPadding,
+                0,
+              ),
+              padding: const EdgeInsets.all(AppSpacing.space3),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer,
+                borderRadius: AppRadius.mdAll,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    size: AppIconSize.sm,
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                  AppSpacing.iconGapBox,
+                  Expanded(
+                    child: Text(
+                      widget.breakError!,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // ── Check-out location error ───────────────────────────────────
           if (widget.checkOutError != null)
@@ -212,16 +279,49 @@ class _AttendanceActiveSessionCardState
             padding: const EdgeInsets.all(AppSpacing.cardPadding),
             child: Row(
               children: [
-                // Break button
+                // Break toggle. On break this becomes "End Break" — the only
+                // way back to WORKING. It previously rendered as a disabled
+                // "On Break" label, which stranded the employee on break and
+                // duplicated the status pill already shown in the header.
                 Expanded(
-                  child: FilledButton.tonal(
-                    onPressed: (widget.session.isOnBreak || widget.isCheckingOut)
-                        ? null
-                        : widget.onBreak,
-                    child: Text(
-                      widget.session.isOnBreak ? 'On Break' : 'Start Break',
-                    ),
-                  ),
+                  child: widget.session.isOnBreak
+                      ? FilledButton.tonalIcon(
+                          onPressed:
+                              (widget.isBreakUpdating || widget.isCheckingOut)
+                                  ? null
+                                  : widget.onBreak,
+                          icon: widget.isBreakUpdating
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.play_arrow_rounded,
+                                  size: AppIconSize.sm),
+                          label: const Text('End Break'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: PingForceColors.statusWarning
+                                .withValues(alpha: 0.16),
+                            foregroundColor: PingForceColors.statusWarning,
+                          ),
+                        )
+                      : FilledButton.tonalIcon(
+                          onPressed:
+                              (widget.isBreakUpdating || widget.isCheckingOut)
+                                  ? null
+                                  : widget.onBreak,
+                          icon: widget.isBreakUpdating
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.coffee_rounded,
+                                  size: AppIconSize.sm),
+                          label: const Text('Start Break'),
+                        ),
                 ),
                 const SizedBox(width: AppSpacing.space3),
                 // Check-out button

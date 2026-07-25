@@ -179,6 +179,17 @@ export class AttendanceController {
     return this.attendanceService.manualCheckout(req.user, dto);
   }
 
+  /**
+   * Today's snapshot for the signed-in employee: open session + break state,
+   * today's punch history, totals and leave balances. Drives the mobile
+   * attendance screen's resume-on-open behaviour.
+   */
+  @Get('today')
+  @RequirePermission('ATTENDANCE', 'READ_OWN')
+  async getToday(@Req() req: AuthRequest) {
+    return this.attendanceService.getToday(req.user);
+  }
+
   @Get('device')
   @RequirePermission('ATTENDANCE', 'READ')
   async getDevices(@Req() req: AuthRequest) {

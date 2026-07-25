@@ -1928,7 +1928,15 @@ mixin _$CheckInState {
   bool get isProcessingBiometric => throw _privateConstructorUsedError;
   bool get isCapturingSelfie => throw _privateConstructorUsedError; // Check-out
   bool get isCheckingOut => throw _privateConstructorUsedError;
-  String? get checkOutError => throw _privateConstructorUsedError; // Error
+  String? get checkOutError =>
+      throw _privateConstructorUsedError; // Break — server-backed (POST /attendance/break/start | /break/end)
+  bool get isBreakUpdating => throw _privateConstructorUsedError;
+  String? get breakError => throw _privateConstructorUsedError;
+
+  /// Today's snapshot from GET /attendance/today: punch history, totals and
+  /// leave balances. Reloaded on every screen open so a returning employee
+  /// resumes their open session rather than seeing a fresh check-in page.
+  AttendanceToday? get today => throw _privateConstructorUsedError; // Error
   String? get errorMessage => throw _privateConstructorUsedError;
   String? get errorCode => throw _privateConstructorUsedError;
 
@@ -1965,6 +1973,9 @@ abstract class $CheckInStateCopyWith<$Res> {
     bool isCapturingSelfie,
     bool isCheckingOut,
     String? checkOutError,
+    bool isBreakUpdating,
+    String? breakError,
+    AttendanceToday? today,
     String? errorMessage,
     String? errorCode,
   });
@@ -2010,6 +2021,9 @@ class _$CheckInStateCopyWithImpl<$Res, $Val extends CheckInState>
     Object? isCapturingSelfie = null,
     Object? isCheckingOut = null,
     Object? checkOutError = freezed,
+    Object? isBreakUpdating = null,
+    Object? breakError = freezed,
+    Object? today = freezed,
     Object? errorMessage = freezed,
     Object? errorCode = freezed,
   }) {
@@ -2087,6 +2101,18 @@ class _$CheckInStateCopyWithImpl<$Res, $Val extends CheckInState>
                 ? _value.checkOutError
                 : checkOutError // ignore: cast_nullable_to_non_nullable
                       as String?,
+            isBreakUpdating: null == isBreakUpdating
+                ? _value.isBreakUpdating
+                : isBreakUpdating // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            breakError: freezed == breakError
+                ? _value.breakError
+                : breakError // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            today: freezed == today
+                ? _value.today
+                : today // ignore: cast_nullable_to_non_nullable
+                      as AttendanceToday?,
             errorMessage: freezed == errorMessage
                 ? _value.errorMessage
                 : errorMessage // ignore: cast_nullable_to_non_nullable
@@ -2213,6 +2239,9 @@ abstract class _$$CheckInStateImplCopyWith<$Res>
     bool isCapturingSelfie,
     bool isCheckingOut,
     String? checkOutError,
+    bool isBreakUpdating,
+    String? breakError,
+    AttendanceToday? today,
     String? errorMessage,
     String? errorCode,
   });
@@ -2263,6 +2292,9 @@ class __$$CheckInStateImplCopyWithImpl<$Res>
     Object? isCapturingSelfie = null,
     Object? isCheckingOut = null,
     Object? checkOutError = freezed,
+    Object? isBreakUpdating = null,
+    Object? breakError = freezed,
+    Object? today = freezed,
     Object? errorMessage = freezed,
     Object? errorCode = freezed,
   }) {
@@ -2340,6 +2372,18 @@ class __$$CheckInStateImplCopyWithImpl<$Res>
             ? _value.checkOutError
             : checkOutError // ignore: cast_nullable_to_non_nullable
                   as String?,
+        isBreakUpdating: null == isBreakUpdating
+            ? _value.isBreakUpdating
+            : isBreakUpdating // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        breakError: freezed == breakError
+            ? _value.breakError
+            : breakError // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        today: freezed == today
+            ? _value.today
+            : today // ignore: cast_nullable_to_non_nullable
+                  as AttendanceToday?,
         errorMessage: freezed == errorMessage
             ? _value.errorMessage
             : errorMessage // ignore: cast_nullable_to_non_nullable
@@ -2375,6 +2419,9 @@ class _$CheckInStateImpl extends _CheckInState {
     this.isCapturingSelfie = false,
     this.isCheckingOut = false,
     this.checkOutError,
+    this.isBreakUpdating = false,
+    this.breakError,
+    this.today,
     this.errorMessage,
     this.errorCode,
   }) : super._();
@@ -2432,6 +2479,18 @@ class _$CheckInStateImpl extends _CheckInState {
   final bool isCheckingOut;
   @override
   final String? checkOutError;
+  // Break — server-backed (POST /attendance/break/start | /break/end)
+  @override
+  @JsonKey()
+  final bool isBreakUpdating;
+  @override
+  final String? breakError;
+
+  /// Today's snapshot from GET /attendance/today: punch history, totals and
+  /// leave balances. Reloaded on every screen open so a returning employee
+  /// resumes their open session rather than seeing a fresh check-in page.
+  @override
+  final AttendanceToday? today;
   // Error
   @override
   final String? errorMessage;
@@ -2440,7 +2499,7 @@ class _$CheckInStateImpl extends _CheckInState {
 
   @override
   String toString() {
-    return 'CheckInState(status: $status, shift: $shift, location: $location, geofence: $geofence, activeSession: $activeSession, checkInResult: $checkInResult, policy: $policy, nearestGeofenceName: $nearestGeofenceName, gpsAccuracy: $gpsAccuracy, geofenceStatus: $geofenceStatus, isMockLocationDetected: $isMockLocationDetected, isOnline: $isOnline, buttonMode: $buttonMode, showSuccessOverlay: $showSuccessOverlay, isProcessingBiometric: $isProcessingBiometric, isCapturingSelfie: $isCapturingSelfie, isCheckingOut: $isCheckingOut, checkOutError: $checkOutError, errorMessage: $errorMessage, errorCode: $errorCode)';
+    return 'CheckInState(status: $status, shift: $shift, location: $location, geofence: $geofence, activeSession: $activeSession, checkInResult: $checkInResult, policy: $policy, nearestGeofenceName: $nearestGeofenceName, gpsAccuracy: $gpsAccuracy, geofenceStatus: $geofenceStatus, isMockLocationDetected: $isMockLocationDetected, isOnline: $isOnline, buttonMode: $buttonMode, showSuccessOverlay: $showSuccessOverlay, isProcessingBiometric: $isProcessingBiometric, isCapturingSelfie: $isCapturingSelfie, isCheckingOut: $isCheckingOut, checkOutError: $checkOutError, isBreakUpdating: $isBreakUpdating, breakError: $breakError, today: $today, errorMessage: $errorMessage, errorCode: $errorCode)';
   }
 
   @override
@@ -2481,6 +2540,11 @@ class _$CheckInStateImpl extends _CheckInState {
                 other.isCheckingOut == isCheckingOut) &&
             (identical(other.checkOutError, checkOutError) ||
                 other.checkOutError == checkOutError) &&
+            (identical(other.isBreakUpdating, isBreakUpdating) ||
+                other.isBreakUpdating == isBreakUpdating) &&
+            (identical(other.breakError, breakError) ||
+                other.breakError == breakError) &&
+            (identical(other.today, today) || other.today == today) &&
             (identical(other.errorMessage, errorMessage) ||
                 other.errorMessage == errorMessage) &&
             (identical(other.errorCode, errorCode) ||
@@ -2508,6 +2572,9 @@ class _$CheckInStateImpl extends _CheckInState {
     isCapturingSelfie,
     isCheckingOut,
     checkOutError,
+    isBreakUpdating,
+    breakError,
+    today,
     errorMessage,
     errorCode,
   ]);
@@ -2541,6 +2608,9 @@ abstract class _CheckInState extends CheckInState {
     final bool isCapturingSelfie,
     final bool isCheckingOut,
     final String? checkOutError,
+    final bool isBreakUpdating,
+    final String? breakError,
+    final AttendanceToday? today,
     final String? errorMessage,
     final String? errorCode,
   }) = _$CheckInStateImpl;
@@ -2584,7 +2654,17 @@ abstract class _CheckInState extends CheckInState {
   @override
   bool get isCheckingOut;
   @override
-  String? get checkOutError; // Error
+  String? get checkOutError; // Break — server-backed (POST /attendance/break/start | /break/end)
+  @override
+  bool get isBreakUpdating;
+  @override
+  String? get breakError;
+
+  /// Today's snapshot from GET /attendance/today: punch history, totals and
+  /// leave balances. Reloaded on every screen open so a returning employee
+  /// resumes their open session rather than seeing a fresh check-in page.
+  @override
+  AttendanceToday? get today; // Error
   @override
   String? get errorMessage;
   @override

@@ -42,7 +42,11 @@ export class OfflineSyncService {
     // Device trust validated once for the batch (§8 local+server validation)
     const deviceIds = [...new Set(dto.punches.map((p) => p.deviceId))];
     const devices = await this.prisma.employeeDevice.findMany({
-      where: { deviceId: { in: deviceIds }, employeeId: employee.id },
+      where: {
+        tenantId: employee.tenantId,
+        employeeId: employee.id,
+        deviceId: { in: deviceIds },
+      },
     });
     const trusted = new Set(
       devices.filter((d) => d.isTrusted).map((d) => d.deviceId),

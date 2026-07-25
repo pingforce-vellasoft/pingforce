@@ -1,7 +1,9 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/hardware/device_identity.dart';
 import '../../domain/entities/attendance_session.dart';
+import '../../domain/entities/attendance_today.dart';
 import '../../domain/repositories/attendance_repository.dart';
 import '../datasources/attendance_remote_data_source.dart';
 
@@ -14,10 +16,92 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
     required this.deviceIdentity,
   });
 
+  /// Turns a thrown error into a Failure that says what actually went wrong.
+  ///
+  /// The API returns `{ message }` (or `{ message: [...] }` from the global
+  /// ValidationPipe) on 4xx, so a refused punch already carries a precise
+  /// reason — geofence violation, spoofed location, debounce window, invalid
+  /// state transition. Surfacing it verbatim beats guessing: the previous
+  /// blanket "geofence violation or spoofing detected" was reported for every
+  /// failure including timeouts and 500s, which made real faults undiagnosable.
+  Failure _mapError(Object e, String fallback) {
+    if (e is DioException) {
+      switch (e.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+          return const NetworkFailure(
+            'The server took too long to respond. Check your connection and try again.',
+          );
+        case DioExceptionType.connectionError:
+          return const NetworkFailure(
+            'Cannot reach the server. Check your internet connection.',
+          );
+        default:
+          break;
+      }
+
+      final status = e.response?.statusCode;
+      final data = e.response?.data;
+
+      String? serverMessage;
+      String? errorCode;
+      if (data is Map<String, dynamic>) {
+        final message = data['message'];
+        if (message is String && message.isNotEmpty) {
+          serverMessage = message;
+        } else if (message is List && message.isNotEmpty) {
+          serverMessage = message.join('\n');
+        }
+        final code = data['errorCode'];
+        if (code is String && code.isNotEmpty) errorCode = code;
+      } else if (data is String && data.isNotEmpty) {
+        serverMessage = data;
+      }
+
+      // Device-trust refusal is a distinct, recoverable case (register+retry),
+      // so it gets its own Failure type. Keyed on the server's stable
+      // `errorCode`; the status+message match is a fallback for older API
+      // builds that predate the code, since matching human-readable text
+      // breaks whenever the wording or the error body shape changes.
+      final isUntrustedDevice = errorCode == 'UNTRUSTED_DEVICE' ||
+          (status == 401 &&
+              (serverMessage ?? '').toLowerCase().contains('untrusted device'));
+      if (isUntrustedDevice) {
+        return UntrustedDeviceFailure(
+          serverMessage ?? 'This device is not registered.',
+        );
+      }
+
+      // Auth failures are checked before the server message: NestJS always
+      // sets `message`, and on a 401 that message is the bare "Unauthorized",
+      // which tells the employee nothing. Returning the actionable sign-in
+      // text here is the point of this branch — ordering it after the generic
+      // message passthrough made it unreachable.
+      if (status == 401 || status == 403) {
+        return const ServerFailure(
+          'You are not authorised to perform this action. Sign in again.',
+        );
+      }
+
+      if (serverMessage != null) {
+        return ServerFailure(serverMessage);
+      }
+
+      if (status != null && status >= 500) {
+        return const ServerFailure(
+          'The server encountered an error. Please try again shortly.',
+        );
+      }
+    }
+
+    return ServerFailure(fallback);
+  }
+
   @override
   Future<Either<Failure, bool>> isDeviceRegistered() async {
     // In a real scenario, check secure storage to see if the private key exists
-    return const Right(true); 
+    return const Right(true);
   }
 
   @override
@@ -27,7 +111,7 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       await remoteDataSource.registerDevice(deviceId, publicKey);
       return const Right(null);
     } catch (e) {
-      return const Left(ServerFailure('Failed to register device'));
+      return Left(_mapError(e, 'Failed to register this device.'));
     }
   }
 
@@ -44,7 +128,36 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       );
       return Right(remoteSession);
     } catch (e) {
-      return const Left(ServerFailure('Failed to record punch. Geofence violation or spoofing detected.'));
+      return Left(_mapError(e, 'Failed to record punch. Please try again.'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AttendanceToday>> getToday() async {
+    try {
+      return Right(await remoteDataSource.getToday());
+    } catch (e) {
+      return Left(_mapError(e, 'Could not load today\'s attendance.'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> startBreak(String breakType) async {
+    try {
+      await remoteDataSource.startBreak(breakType);
+      return const Right(null);
+    } catch (e) {
+      return Left(_mapError(e, 'Could not start your break.'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> endBreak() async {
+    try {
+      await remoteDataSource.endBreak();
+      return const Right(null);
+    } catch (e) {
+      return Left(_mapError(e, 'Could not end your break.'));
     }
   }
 }

@@ -39,12 +39,28 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
     });
     if (!employee) throw new UnauthorizedException('Not an employee');
 
-    // Device trust (VALIDATING_* pipeline, STATE_MACHINE.md §5)
+    // Device trust (VALIDATING_* pipeline, STATE_MACHINE.md §5).
+    // Scoped to the caller's tenant: deviceId is client-supplied, so resolving
+    // it globally made the trust decision from a cross-tenant lookup.
     const device = await this.prisma.employeeDevice.findUnique({
-      where: { deviceId: dto.deviceId },
+      where: {
+        tenantId_deviceId: {
+          tenantId: employee.tenantId,
+          deviceId: dto.deviceId,
+        },
+      },
     });
     if (!device || !device.isTrusted || device.employeeId !== employee.id) {
-      throw new UnauthorizedException('Untrusted device');
+      // `errorCode` is the contract the mobile client keys its register+retry
+      // on. The human-readable message is for display only — matching on it
+      // would break the moment the wording changes or an exception filter
+      // reshapes the body.
+      throw new UnauthorizedException({
+        statusCode: 401,
+        error: 'Unauthorized',
+        errorCode: 'UNTRUSTED_DEVICE',
+        message: 'Untrusted device',
+      });
     }
 
     // Geofence validation — Redis-cached tenant geofences + in-process
@@ -68,7 +84,12 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
       today.setHours(0, 0, 0, 0);
 
       let attendance = await tx.attendance.findFirst({
-        where: { employeeId: employee.id, attendanceDate: today },
+        where: {
+          tenantId: employee.tenantId,
+          employeeId: employee.id,
+          attendanceDate: today,
+          deletedAt: null,
+        },
       });
       if (!attendance) {
         attendance = await tx.attendance.create({
@@ -82,7 +103,12 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
       }
 
       const openSession = await tx.attendanceSession.findFirst({
-        where: { attendanceId: attendance.id, punchOut: null },
+        where: {
+          tenantId: employee.tenantId,
+          attendanceId: attendance.id,
+          punchOut: null,
+          deletedAt: null,
+        },
       });
 
       if (openSession) {
@@ -112,7 +138,12 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
       // would otherwise open two sessions.
       const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
       const recentSession = await tx.attendanceSession.findFirst({
-        where: { employeeId: employee.id, punchIn: { gte: fifteenMinsAgo } },
+        where: {
+          tenantId: employee.tenantId,
+          employeeId: employee.id,
+          punchIn: { gte: fifteenMinsAgo },
+          deletedAt: null,
+        },
       });
       if (recentSession) {
         throw new BadRequestException(
@@ -178,7 +209,12 @@ export class StartBreakHandler implements ICommandHandler<StartBreakCommand> {
 
     const result = await this.prisma.$transaction(async (tx) => {
       const session = await tx.attendanceSession.findFirst({
-        where: { employeeId: employee.id, punchOut: null },
+        where: {
+          tenantId: employee.tenantId,
+          employeeId: employee.id,
+          punchOut: null,
+          deletedAt: null,
+        },
       });
       if (!session) {
         throw new BadRequestException('No active attendance session');
@@ -190,10 +226,29 @@ export class StartBreakHandler implements ICommandHandler<StartBreakCommand> {
       );
 
       const openBreak = await tx.attendanceBreak.findFirst({
-        where: { attendanceSessionId: session.id, endTime: null },
+        where: {
+          tenantId: employee.tenantId,
+          attendanceSessionId: session.id,
+          endTime: null,
+          deletedAt: null,
+        },
       });
       if (openBreak) {
-        throw new BadRequestException('A break is already in progress');
+        // The transition above already established that the session is not
+        // ON_BREAK, so an unclosed row here is orphaned state (a crash between
+        // the break insert and the status update, or a direct DB edit). Close
+        // it out rather than refusing forever: the employee would otherwise be
+        // unable to take another break for the rest of the session.
+        const endTime = new Date();
+        await tx.attendanceBreak.update({
+          where: { id: openBreak.id },
+          data: {
+            endTime,
+            durationMinutes: Math.round(
+              (endTime.getTime() - openBreak.startTime.getTime()) / 60000,
+            ),
+          },
+        });
       }
 
       const breakRecord = await tx.attendanceBreak.create({
@@ -242,7 +297,12 @@ export class EndBreakHandler implements ICommandHandler<EndBreakCommand> {
 
     const result = await this.prisma.$transaction(async (tx) => {
       const session = await tx.attendanceSession.findFirst({
-        where: { employeeId: employee.id, punchOut: null },
+        where: {
+          tenantId: employee.tenantId,
+          employeeId: employee.id,
+          punchOut: null,
+          deletedAt: null,
+        },
       });
       if (!session) {
         throw new BadRequestException('No active attendance session');
@@ -254,10 +314,24 @@ export class EndBreakHandler implements ICommandHandler<EndBreakCommand> {
       );
 
       const openBreak = await tx.attendanceBreak.findFirst({
-        where: { attendanceSessionId: session.id, endTime: null },
+        where: {
+          tenantId: employee.tenantId,
+          attendanceSessionId: session.id,
+          endTime: null,
+          deletedAt: null,
+        },
       });
       if (!openBreak) {
-        throw new BadRequestException('No break in progress');
+        // The transition check passed, so the session column says ON_BREAK
+        // while no break row is open — orphaned state from a crash between the
+        // two writes. Refusing here would pin the session in ON_BREAK for good
+        // (check-out would be the only way out), so resynchronise the status
+        // and report success with nothing to credit.
+        await tx.attendanceSession.update({
+          where: { id: session.id },
+          data: { sessionStatus: SessionState.WORKING },
+        });
+        return { session, breakRecord: null, durationMinutes: 0 };
       }
 
       const endTime = new Date();
@@ -278,15 +352,20 @@ export class EndBreakHandler implements ICommandHandler<EndBreakCommand> {
       return { session, breakRecord, durationMinutes };
     });
 
-    this.eventBus.publish(
-      new BreakEndedEvent(
-        employee.tenantId,
-        employee.id,
-        result.session.id,
-        result.breakRecord.id,
-        result.durationMinutes,
-      ),
-    );
+    // No event when there was no real break to end — the recovery path above
+    // only resynchronised the session status, and downstream consumers must
+    // not see a zero-length break that never happened.
+    if (result.breakRecord) {
+      this.eventBus.publish(
+        new BreakEndedEvent(
+          employee.tenantId,
+          employee.id,
+          result.session.id,
+          result.breakRecord.id,
+          result.durationMinutes,
+        ),
+      );
+    }
 
     return result.breakRecord;
   }
