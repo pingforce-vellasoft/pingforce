@@ -1,3 +1,11 @@
+-- pingforce:allow-destructive reason=The DELETE below only removes duplicate
+-- (tenantId, deviceId) rows, keeping the newest per pair, and is required
+-- before the composite unique index can be created. The previous global unique
+-- on deviceId made such duplicates impossible, so on any database that ran
+-- with that constraint this DELETE is expected to match zero rows. Devices are
+-- re-registered automatically by the mobile client on next punch, so even an
+-- unexpected match is self-healing and costs no user-visible data.
+--
 -- EmployeeDevice.deviceId was globally unique across every tenant. Device
 -- identifiers are client-supplied, so one tenant's registration could collide
 -- with another tenant's row: the resulting constraint violation surfaced as a

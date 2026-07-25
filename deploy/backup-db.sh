@@ -28,7 +28,17 @@ DB_NAME=$(grep -E '^DB_NAME=' .env | cut -d= -f2-)
 
 mkdir -p "$BACKUP_DIR"
 
+# An optional label distinguishes ad-hoc runs from the nightly one. Without it
+# a pre-deploy backup taken on the same day would overwrite that day's nightly
+# dump — replacing a known-good snapshot with one taken seconds before a
+# migration is about to modify the schema.
+#   pingforce-backup                  → pingforce-YYYY-MM-DD.sql.gz
+#   pingforce-backup predeploy-abc123 → pingforce-YYYY-MM-DD-predeploy-abc123.sql.gz
+LABEL="${1:-}"
 STAMP=$(date +%F)
+if [ -n "$LABEL" ]; then
+  STAMP="$STAMP-$(echo "$LABEL" | tr -cd '[:alnum:]._-' | cut -c1-40)"
+fi
 OUT="$BACKUP_DIR/pingforce-$STAMP.sql.gz"
 
 # Write to a temp file first so an interrupted run never leaves a truncated
