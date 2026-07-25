@@ -62,7 +62,7 @@ export class ReportsService {
     }
     const scopeFilter =
       scope.kind === 'IDS'
-        ? Prisma.sql`AND e."id" IN (${Prisma.join([...scope.employeeIds])})`
+        ? Prisma.sql`AND ${this.idsIn('id', scope.employeeIds, 'e')}`
         : Prisma.empty;
     const employeeFilter = query.employeeId
       ? Prisma.sql`AND e."id" = ${query.employeeId}`
@@ -172,11 +172,7 @@ export class ReportsService {
       : Prisma.empty;
     const scopeFilter =
       scope.kind === 'IDS'
-        ? Prisma.sql`AND (${
-            scope.employeeIds.length
-              ? Prisma.sql`"employeeId" IN (${Prisma.join([...scope.employeeIds])})`
-              : Prisma.sql`FALSE`
-          } OR "createdBy" IN (${Prisma.join([...scope.userIds])}))`
+        ? Prisma.sql`AND (${this.idsIn('employeeId', scope.employeeIds)} OR ${this.idsIn('createdBy', scope.userIds)})`
         : Prisma.empty;
     const avg = await this.prisma.$queryRaw<{ avgMinutes: number | null }[]>`
       SELECT ROUND((AVG(EXTRACT(EPOCH FROM ("actualEndAt" - "actualStartAt"))) / 60)::numeric, 1)::float AS "avgMinutes"
@@ -243,7 +239,7 @@ export class ReportsService {
       : Prisma.empty;
     const scopeFilter =
       scope.kind === 'IDS'
-        ? Prisma.sql`AND ("assignedToId" IN (${Prisma.join([...scope.userIds])}) OR "createdBy" IN (${Prisma.join([...scope.userIds])}))`
+        ? Prisma.sql`AND (${this.idsIn('assignedToId', scope.userIds)} OR ${this.idsIn('createdBy', scope.userIds)})`
         : Prisma.empty;
     const resolution = await this.prisma.$queryRaw<
       { avgHours: number | null }[]
@@ -496,6 +492,26 @@ export class ReportsService {
         { createdBy: { in: [...scope.userIds] } },
       ],
     };
+  }
+
+  /**
+   * `col IN (...)` for a raw-SQL scope filter, or `FALSE` when the id set is
+   * empty. `Prisma.join([])` renders `IN ()`, which is a Postgres syntax
+   * error — and an empty scope set means "matches nothing", never "matches
+   * everything", so FALSE is also the correct semantics. Today every IDS
+   * scope seeds userIds with the caller (see RbacService.toIdsScope), so the
+   * empty case is unreachable; this keeps it that way if that changes.
+   */
+  private idsIn(
+    column: string,
+    ids: readonly string[],
+    alias?: string,
+  ): Prisma.Sql {
+    if (ids.length === 0) return Prisma.sql`FALSE`;
+    // Prisma.raw is safe here only because column/alias are hardcoded literals
+    // at every call site — never request data.
+    const ref = alias ? `${alias}."${column}"` : `"${column}"`;
+    return Prisma.sql`${Prisma.raw(ref)} IN (${Prisma.join([...ids])})`;
   }
 
   private resolveRange(query: ReportQueryDto): DateRange {

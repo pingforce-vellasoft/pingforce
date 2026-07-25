@@ -59,7 +59,8 @@ export class PayrollService {
       where: { tenantId },
       orderBy: [{ year: 'desc' }, { month: 'desc' }],
       skip,
-      take,
+      // `take` is client-supplied; cap it like the other list endpoints.
+      take: Math.min(take, 200),
     });
   }
 
