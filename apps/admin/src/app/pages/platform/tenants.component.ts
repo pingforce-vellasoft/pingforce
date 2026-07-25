@@ -1044,7 +1044,8 @@ export class TenantsComponent implements OnInit {
         width: '450px',
         data: {
           title: 'Disable Attendance Module?',
-          message: 'You are about to disable the GPS & Biometric Attendance module for ',
+          message:
+            'You are about to disable the GPS & Biometric Attendance module for ',
           emphasis: tenant.name,
           messageSuffix: '.',
           subMessage:
