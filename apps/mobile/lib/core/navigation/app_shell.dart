@@ -709,6 +709,7 @@ class RouteGuard {
         'authed=$isAuthenticated '
         'mustChangePw=${_mustChangePassword()} '
         'onboarded=${_isOnboarded()} '
+        'deviceBound=${AuthSession.instance.deviceBound} '
         'permsSeen=${AuthSession.instance.permissionsFlowSeen} '
         'role=${AuthSession.instance.roleCode}',
       );
@@ -742,6 +743,26 @@ class RouteGuard {
     // always rotated first.
     if (isAuthenticated && !_isOnboarded() && !isOnProfileSetup) {
       return _gate('/auth/profile-setup', 'not-onboarded');
+    }
+
+    // 1c-bis. Device binding — an employee is bound to one handset, and only an
+    // admin can move that binding, so the binding has to exist before the app
+    // (and attendance) is reachable. Runs after profile setup so the employee
+    // record exists, and before the permissions flow so a device is on file
+    // before any location capture starts.
+    //
+    // The change-request screen is exempt: an employee whose binding was
+    // revoked, or who is on a replacement handset, reaches the app on a device
+    // that is not bound and must be able to ask for one.
+    final isOnDeviceBinding = state.matchedLocation == '/auth/device-binding';
+    final isOnDeviceChangeRequest =
+        state.matchedLocation == '/device/change-request';
+    if (isAuthenticated &&
+        _isOnboarded() &&
+        !AuthSession.instance.deviceBound &&
+        !isOnDeviceBinding &&
+        !isOnDeviceChangeRequest) {
+      return _gate('/auth/device-binding', 'device-not-bound');
     }
 
     // 1d. Permissions flow — after the account is fully set up, show the

@@ -62,6 +62,17 @@ dependencies:
   permission_handler: ^11.3.1
   flutter_foreground_task: ^8.17.0
   battery_plus: ^6.2.1
+  # Device binding: a reinstall must resolve to the same device id, otherwise
+  # every app reinstall looks like a new handset and forces an admin-approved
+  # device change. device_info_plus supplies the platform id, package_info_plus
+  # the app version reported to the binding, crypto hashes the id before it
+  # leaves the device.
+  # ^13: earlier majors pin win32 ^5, which collides with package_info_plus ^10.
+  device_info_plus: ^13.2.0
+  # Pinned to ^10: geolocator_linux constrains package_info_plus to ^10.0.0, so
+  # a newer major breaks version solving.
+  package_info_plus: ^10.0.0
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:

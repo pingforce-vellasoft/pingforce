@@ -12,6 +12,8 @@ import '../../features/auth/presentation/biometric_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/permissions_flow_screen.dart';
 import '../../features/onboarding/profile_setup_screen.dart';
+import '../../features/devices/presentation/device_binding_screen.dart';
+import '../../features/devices/presentation/device_change_request_screen.dart';
 import '../../features/system/system_screens.dart';
 import '../../features/leave/leave_screen.dart';
 import '../../features/documents/document_screen.dart';
@@ -139,6 +141,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/auth/profile-setup',
         name: 'profile-setup',
         builder: (context, state) => const ProfileSetupScreen(),
+      ),
+
+      // Device binding — the last onboarding gate. RouteGuard holds an
+      // employee here until a handset is bound to their account.
+      GoRoute(
+        path: '/auth/device-binding',
+        name: 'device-binding',
+        builder: (context, state) => const DeviceBindingScreen(),
+      ),
+
+      // Reachable while unbound: an employee on a replacement handset must be
+      // able to ask for the binding to be moved.
+      GoRoute(
+        path: '/device/change-request',
+        name: 'device-change-request',
+        builder: (context, state) => const DeviceChangeRequestScreen(),
       ),
 
       GoRoute(

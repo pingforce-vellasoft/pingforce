@@ -126,7 +126,30 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   {
     module: 'ATTENDANCE',
     action: 'CREATE',
-    description: 'Punch in/out and register own device',
+    description: 'Punch in/out',
+  },
+  // Devices — an employee is bound to one handset; moving that binding is an
+  // admin action, so BIND/REQUEST_CHANGE are self-service and READ/APPROVE are
+  // not.
+  {
+    module: 'DEVICES',
+    action: 'BIND',
+    description: 'Bind own device during onboarding (once, while unbound)',
+  },
+  {
+    module: 'DEVICES',
+    action: 'REQUEST_CHANGE',
+    description: 'Request that own device binding be moved to a new handset',
+  },
+  {
+    module: 'DEVICES',
+    action: 'READ',
+    description: 'View the tenant device inventory and change requests',
+  },
+  {
+    module: 'DEVICES',
+    action: 'APPROVE',
+    description: 'Approve or reject device change requests, and revoke devices',
   },
   // Employees
   { module: 'EMPLOYEES', action: 'READ', description: 'View employee records' },
@@ -502,6 +525,11 @@ const FIELD_ONLY_GEO_GRANTS: readonly { module: string; action: string }[] = [
   { module: 'ATTENDANCE', action: 'CREATE' },
   { module: 'ATTENDANCE', action: 'READ_OWN' },
   { module: 'VISITS', action: 'EXECUTE' },
+  // Binding a handset is what makes a login able to punch. An admin holding
+  // these could bind itself a device and self-approve its own change requests,
+  // which is exactly the separation this module exists to enforce.
+  { module: 'DEVICES', action: 'BIND' },
+  { module: 'DEVICES', action: 'REQUEST_CHANGE' },
 ];
 
 /**
@@ -524,6 +552,8 @@ const ADMIN_MANAGER_GRANTS: readonly GrantDef[] = PERMISSION_CATALOG.filter(
 const EMPLOYEE_GRANTS: readonly GrantDef[] = [
   { module: 'ATTENDANCE', action: 'READ_OWN', dataScope: 'OWN' },
   { module: 'ATTENDANCE', action: 'CREATE', dataScope: 'OWN' },
+  { module: 'DEVICES', action: 'BIND', dataScope: 'OWN' },
+  { module: 'DEVICES', action: 'REQUEST_CHANGE', dataScope: 'OWN' },
   { module: 'LEAVES', action: 'READ_OWN', dataScope: 'OWN' },
   { module: 'LEAVES', action: 'CREATE', dataScope: 'OWN' },
   { module: 'CLAIMS', action: 'CREATE', dataScope: 'OWN' },

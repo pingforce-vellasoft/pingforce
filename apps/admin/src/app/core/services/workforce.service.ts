@@ -139,16 +139,6 @@ export class WorkforceService {
     return this.http.delete(`/api/v1/attendance/geofence/${id}`);
   }
 
-  // ── Devices ────────────────────────────────────────────────────────────────
-
-  getDevices() {
-    return this.http.get<any[]>('/api/v1/attendance/device');
-  }
-
-  revokeDevice(employeeId: string, deviceId: string) {
-    return this.http.post('/api/v1/attendance/device/revoke', {
-      employeeId,
-      deviceId,
-    });
-  }
+  // Device binding moved to DevicesService (/api/v1/devices) when binding
+  // became an onboarding step with an admin-approved change queue.
 }

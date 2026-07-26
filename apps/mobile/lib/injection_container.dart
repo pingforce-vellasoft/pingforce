@@ -9,7 +9,7 @@ import 'features/attendance/domain/repositories/attendance_repository.dart';
 import 'features/attendance/domain/usecases/break_commands.dart';
 import 'features/attendance/domain/usecases/get_today_query.dart';
 import 'features/attendance/domain/usecases/punch_command.dart';
-import 'features/attendance/domain/usecases/register_device_command.dart';
+import 'features/devices/data/devices_remote_data_source.dart';
 import 'features/auth/data/datasources/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
@@ -82,12 +82,15 @@ Future<void> init() async {
   // --- Features: Attendance ---
   // Use Cases
   sl.registerLazySingleton(() => PunchCommand(sl()));
-  sl.registerLazySingleton(() => RegisterDeviceCommand(sl()));
   sl.registerLazySingleton(() => GetTodayQuery(sl()));
   sl.registerLazySingleton(() => StartBreakCommand(sl()));
   sl.registerLazySingleton(() => EndBreakCommand(sl()));
 
   // Repository
+  sl.registerLazySingleton<DevicesRemoteDataSource>(
+    () => DevicesRemoteDataSourceImpl(dio: sl()),
+  );
+
   sl.registerLazySingleton<AttendanceRepository>(
     () => AttendanceRepositoryImpl(remoteDataSource: sl(), deviceIdentity: sl()),
   );

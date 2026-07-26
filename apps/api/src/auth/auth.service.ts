@@ -306,7 +306,14 @@ export class AuthService implements IAuthService {
     } else {
       const u = await this.prisma.user.findUnique({
         where: { id: userId },
-        include: { tenant: true, role: true, profile: true },
+        include: {
+          tenant: true,
+          role: true,
+          profile: true,
+          // deviceBoundAt drives the mobile onboarding gate: an employee with
+          // no bound handset is sent to the binding step and cannot punch.
+          employee: { select: { deviceBoundAt: true } },
+        },
       });
       if (u) {
         userDetails = {
@@ -320,6 +327,9 @@ export class AuthService implements IAuthService {
           tenantCode: u.tenant.code,
           tenantName: u.tenant.name,
           isOnboarded: !!u.profile,
+          // Non-employee logins (tenant admins, back-office users) never bind a
+          // device — reported bound so the gate does not trap them.
+          deviceBound: u.employee ? !!u.employee.deviceBoundAt : true,
           mustChangePassword: u.mustChangePassword,
           isAttendanceEnabled: u.tenant.isAttendanceEnabled,
         };

@@ -9,6 +9,7 @@ class UserModel extends User {
     required super.tenantId,
     required super.tenantCode,
     super.isOnboarded = false,
+    super.deviceBound = true,
     super.mustChangePassword = false,
     super.isAttendanceEnabled = false,
   });
@@ -22,6 +23,9 @@ class UserModel extends User {
       tenantId: json['tenantId'],
       tenantCode: json['tenantCode'] ?? 'DEFAULT',
       isOnboarded: json['isOnboarded'] ?? false,
+      // Absent means an API that predates device binding — treat as bound
+      // rather than trapping the user behind a gate the server cannot clear.
+      deviceBound: json['deviceBound'] ?? true,
       mustChangePassword: json['mustChangePassword'] ?? false,
       isAttendanceEnabled: json['isAttendanceEnabled'] ?? false,
     );

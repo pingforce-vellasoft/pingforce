@@ -185,6 +185,15 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'workforce/device-requests',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN_MANAGER'] },
+        loadComponent: () =>
+          import('./pages/workforce/device-change-requests.component').then(
+            (m) => m.DeviceChangeRequestsComponent,
+          ),
+      },
+      {
         path: 'finance/payroll',
         canActivate: [roleGuard],
         data: { roles: ['ADMIN_MANAGER'] },

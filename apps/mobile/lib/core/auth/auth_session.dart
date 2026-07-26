@@ -25,6 +25,15 @@ class AuthSession {
   /// setup screen — the mobile counterpart of the admin portal's /onboarding.
   bool isOnboarded = false;
 
+  /// True once a handset is bound to this employee. Until then the router gates
+  /// the app behind the device-binding step: attendance is punchable only from
+  /// the bound device, and only an admin can move that binding, so binding has
+  /// to happen before the employee reaches the app.
+  ///
+  /// Defaults true so a non-employee account, or a payload from an API that
+  /// predates binding, is never trapped behind a gate it cannot clear.
+  bool deviceBound = true;
+
   /// True once the post-login permissions flow (location + notifications) has
   /// been shown on this device. Device-local — persisted separately from the
   /// JWT-backed account state so a reinstall re-runs it. The router shows the
@@ -63,11 +72,13 @@ class AuthSession {
           roleCode = (data['role'] ?? data['roleCode']) as String?;
           mustChangePassword = data['mustChangePassword'] == true;
           isOnboarded = data['isOnboarded'] == true;
+          deviceBound = data['deviceBound'] != false;
         }
       } else {
         roleCode = null;
         mustChangePassword = false;
         isOnboarded = false;
+        deviceBound = true;
       }
     } catch (_) {
       // Storage unavailable (fresh install edge cases, tests) — stay signed out
@@ -75,6 +86,7 @@ class AuthSession {
       roleCode = null;
       mustChangePassword = false;
       isOnboarded = false;
+      deviceBound = true;
     }
   }
 
@@ -82,11 +94,13 @@ class AuthSession {
     String? roleCode,
     bool mustChangePassword = false,
     bool isOnboarded = false,
+    bool deviceBound = true,
   }) {
     isAuthenticated = true;
     this.roleCode = roleCode;
     this.mustChangePassword = mustChangePassword;
     this.isOnboarded = isOnboarded;
+    this.deviceBound = deviceBound;
   }
 
   /// Marks the permissions flow shown for this device and persists it so the
@@ -102,6 +116,10 @@ class AuthSession {
     roleCode = null;
     mustChangePassword = false;
     isOnboarded = false;
+    // Note: the device id itself is deliberately NOT cleared here — it is a
+    // property of the handset, not the session. Clearing it would make the next
+    // sign-in look like a new device and require an admin-approved change.
+    deviceBound = true;
     await storage.delete(key: 'jwt_token');
     // The refresh token MUST go too. Leaving it behind meant an explicit sign
     // out still left a live credential on the device: TokenInterceptor renews
