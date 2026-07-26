@@ -772,9 +772,14 @@ class RouteGuard {
     // it records "seen" not "granted"; the in-context check-in gate re-requests
     // background location later behind its Play disclosure. Gated on isOnboarded
     // so it runs only after profile setup, never in front of it.
+    // Skipped while the device-binding gate is still outstanding: 1c-bis lets
+    // the user sit on the binding/change-request screens, so pulling them to
+    // /permissions from there would bounce straight back through 1c-bis
+    // (/auth/device-binding => /permissions => /auth/device-binding).
     final isOnPermissions = state.matchedLocation == '/permissions';
     if (isAuthenticated &&
         _isOnboarded() &&
+        AuthSession.instance.deviceBound &&
         !AuthSession.instance.permissionsFlowSeen &&
         !isOnPermissions) {
       return _gate('/permissions', 'permissions-flow-not-seen');
