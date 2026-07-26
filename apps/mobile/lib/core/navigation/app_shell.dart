@@ -717,10 +717,13 @@ class RouteGuard {
     final isOnChangePassword =
         state.matchedLocation == '/auth/change-password';
     final isOnProfileSetup = state.matchedLocation == '/auth/profile-setup';
-    // The forced change-password and profile-setup screens are authenticated
-    // routes despite their /auth prefix, so exclude them from the auth-route
-    // bounce below.
-    final isOnGatedAuthRoute = isOnChangePassword || isOnProfileSetup;
+    final isOnDeviceBinding = state.matchedLocation == '/auth/device-binding';
+    // The forced change-password, profile-setup and device-binding screens are
+    // authenticated routes despite their /auth prefix, so exclude them from the
+    // auth-route bounce below — otherwise gate 1 bounces them to /home and the
+    // gate that sent the user there bounces straight back (redirect loop).
+    final isOnGatedAuthRoute =
+        isOnChangePassword || isOnProfileSetup || isOnDeviceBinding;
     final isOnAuthRoute =
         (state.matchedLocation.startsWith('/auth') && !isOnGatedAuthRoute) ||
             state.matchedLocation == '/splash';
@@ -754,7 +757,6 @@ class RouteGuard {
     // The change-request screen is exempt: an employee whose binding was
     // revoked, or who is on a replacement handset, reaches the app on a device
     // that is not bound and must be able to ask for one.
-    final isOnDeviceBinding = state.matchedLocation == '/auth/device-binding';
     final isOnDeviceChangeRequest =
         state.matchedLocation == '/device/change-request';
     if (isAuthenticated &&
