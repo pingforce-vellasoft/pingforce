@@ -6,6 +6,7 @@ import {
   OnInit,
   ViewChild,
   inject,
+  signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -16,11 +17,17 @@ import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { WorkforceService } from '../../core/services/workforce.service';
 import { NetworkService } from '../../core/services/network.service';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { DomSanitizer } from '@angular/platform-browser';
 import { OverlayModule } from '@angular/cdk/overlay';
+import { Router } from '@angular/router';
 import * as L from 'leaflet';
 import { buildTileLayer } from '../network/map-tile-providers';
+import { GeofenceCoverage } from './geofence-assignment.model';
+import { GeofenceEmployeesDialogComponent } from './geofence-employees-dialog.component';
 
 @Component({
   selector: 'app-geofence-settings',
@@ -34,6 +41,8 @@ import { buildTileLayer } from '../network/map-tile-providers';
     MatIconModule,
     FormsModule,
     MatDialogModule,
+    MatSlideToggleModule,
+    MatTooltipModule,
     OverlayModule,
   ],
   template: `
@@ -45,7 +54,66 @@ import { buildTileLayer } from '../network/map-tile-providers';
             Configure spatial boundaries for biometric attendance
           </p>
         </div>
+
+        <!-- One-vs-many policy. Turning it off does not strip assignments
+             employees already hold; it governs what may be newly assigned. -->
+        <div class="policy-toggle">
+          <mat-slide-toggle
+            [ngModel]="allowMultiple()"
+            (ngModelChange)="onPolicyChange($event)"
+            [disabled]="policySaving()"
+          >
+            Allow multiple geofences per employee
+          </mat-slide-toggle>
+          <span class="policy-hint">
+            {{
+              allowMultiple()
+                ? 'Employees can be assigned to several sites.'
+                : 'Each employee belongs to exactly one geofence.'
+            }}
+          </span>
+        </div>
       </div>
+
+      <!-- Employees with no geofence cannot punch anywhere. That is the single
+           most consequential state on this page, so it leads. -->
+      @if (coverage(); as cov) {
+        @if (!cov.tenantHasEmployees) {
+          <div class="coverage-banner empty">
+            <mat-icon>person_off</mat-icon>
+            <div>
+              <strong>No employees yet.</strong>
+              Geofences do nothing until employees exist and are assigned to
+              them. Create employees first, then assign them here.
+            </div>
+            <button mat-flat-button color="primary" (click)="goToEmployees()">
+              <mat-icon>person_add</mat-icon> Create Employees
+            </button>
+          </div>
+        } @else if (cov.unassignedEmployees > 0) {
+          <div class="coverage-banner warn">
+            <mat-icon>warning_amber</mat-icon>
+            <div>
+              <strong>{{ cov.unassignedEmployees }}</strong> of
+              {{ cov.totalEmployees }}
+              {{
+                cov.unassignedEmployees === 1 ? 'employee is' : 'employees are'
+              }}
+              not assigned to any geofence and
+              <strong>cannot punch attendance</strong>. Assign them to a
+              location below.
+            </div>
+          </div>
+        } @else {
+          <div class="coverage-banner ok">
+            <mat-icon>check_circle</mat-icon>
+            <div>
+              All {{ cov.totalEmployees }} active employees are assigned to a
+              geofence.
+            </div>
+          </div>
+        }
+      }
 
       <div class="content-grid">
         <!-- Left Side: Form -->
@@ -196,6 +264,30 @@ import { buildTileLayer } from '../network/map-tile-providers';
                 </td>
               </ng-container>
 
+              <ng-container matColumnDef="staff">
+                <th mat-header-cell *matHeaderCellDef>
+                  <mat-icon class="header-icon">groups</mat-icon> Employees
+                </th>
+                <td mat-cell *matCellDef="let element">
+                  <button
+                    mat-stroked-button
+                    class="staff-btn"
+                    [class.unstaffed]="assignedCount(element.id) === 0"
+                    (click)="manageEmployees(element)"
+                    [matTooltip]="
+                      assignedCount(element.id) === 0
+                        ? 'Nobody can punch attendance here yet — assign employees'
+                        : 'Manage the employees assigned to this geofence'
+                    "
+                  >
+                    <mat-icon>{{
+                      assignedCount(element.id) === 0 ? 'person_off' : 'group'
+                    }}</mat-icon>
+                    {{ assignedCount(element.id) }}
+                  </button>
+                </td>
+              </ng-container>
+
               <ng-container matColumnDef="actions">
                 <th
                   mat-header-cell
@@ -249,6 +341,67 @@ import { buildTileLayer } from '../network/map-tile-providers';
 
       .header-section {
         margin-bottom: 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+
+      .policy-toggle {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 12px;
+        padding: 14px 18px;
+      }
+      .policy-hint {
+        font-size: 12px;
+        color: #94a3b8;
+      }
+
+      .coverage-banner {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 24px;
+        font-size: 14px;
+        line-height: 1.5;
+        border: 1px solid transparent;
+      }
+      .coverage-banner div {
+        flex: 1;
+      }
+      .coverage-banner.warn {
+        background: rgba(234, 179, 8, 0.12);
+        border-color: rgba(234, 179, 8, 0.35);
+        color: #fde68a;
+      }
+      .coverage-banner.empty {
+        background: rgba(96, 165, 250, 0.12);
+        border-color: rgba(96, 165, 250, 0.35);
+        color: #bfdbfe;
+      }
+      .coverage-banner.ok {
+        background: rgba(34, 197, 94, 0.1);
+        border-color: rgba(34, 197, 94, 0.3);
+        color: #bbf7d0;
+      }
+
+      .staff-btn {
+        border-color: rgba(148, 163, 184, 0.3) !important;
+        color: #e2e8f0 !important;
+        min-width: 64px;
+      }
+      /* An unstaffed geofence is inert — nobody can punch there. */
+      .staff-btn.unstaffed {
+        border-color: rgba(234, 179, 8, 0.5) !important;
+        color: #fde68a !important;
       }
       .page-title {
         font-size: 32px;
@@ -602,9 +755,24 @@ export class GeofenceSettingsComponent
 
   @ViewChild('pickerMap') private pickerMapEl?: ElementRef<HTMLDivElement>;
 
-  displayedColumns: string[] = ['name', 'coordinates', 'radius', 'actions'];
+  private dialog = inject(MatDialog);
+  private snack = inject(MatSnackBar);
+  private router = inject(Router);
+
+  displayedColumns: string[] = [
+    'name',
+    'coordinates',
+    'radius',
+    'staff',
+    'actions',
+  ];
   geofences: any[] = [];
   newGeofence = { name: '', latitude: 0, longitude: 0, radiusMeters: 50 };
+
+  /** Assigned counts per geofence plus the unassigned-employee warning. */
+  readonly coverage = signal<GeofenceCoverage | null>(null);
+  readonly allowMultiple = signal(false);
+  readonly policySaving = signal(false);
 
   private map?: L.Map;
   private tileLayer?: L.TileLayer;
@@ -613,6 +781,8 @@ export class GeofenceSettingsComponent
 
   ngOnInit() {
     this.loadGeofences();
+    this.loadCoverage();
+    this.loadPolicy();
   }
 
   ngAfterViewInit() {
@@ -768,10 +938,98 @@ export class GeofenceSettingsComponent
 
   deleteGeofence(id: string) {
     if (!id) return;
+
+    // Deleting a geofence releases everyone assigned to it, and anyone left
+    // without another one can no longer punch. Say so before it happens.
+    const staffed = this.assignedCount(id);
+    if (staffed > 0) {
+      const ok = confirm(
+        `${staffed} ${staffed === 1 ? 'employee is' : 'employees are'} assigned to this geofence. ` +
+          `Deleting it removes those assignments, and anyone left without another geofence will be unable to punch attendance.\n\nDelete anyway?`,
+      );
+      if (!ok) return;
+    }
+
     this.workforceService.deleteGeofence(id).subscribe({
-      next: () => this.loadGeofences(),
+      next: (res: any) => {
+        const stranded = res?.leftWithoutGeofence ?? 0;
+        if (stranded > 0) {
+          this.snack.open(
+            `Geofence deleted. ${stranded} ${stranded === 1 ? 'employee has' : 'employees have'} no geofence left and cannot punch attendance.`,
+            'Dismiss',
+            { duration: 8000 },
+          );
+        }
+        this.loadGeofences();
+        this.loadCoverage();
+      },
       error: (err) => console.error('Failed to delete geofence', err),
     });
+  }
+
+  // ── Employee assignment ────────────────────────────────────────────────────
+
+  private loadCoverage() {
+    this.workforceService.getGeofenceCoverage().subscribe({
+      next: (data) => this.coverage.set(data),
+      error: (err) => console.error('Failed to load geofence coverage', err),
+    });
+  }
+
+  private loadPolicy() {
+    this.workforceService.getGeofenceAssignmentPolicy().subscribe({
+      next: (p) => this.allowMultiple.set(p.allowMultipleGeofencesPerEmployee),
+      error: (err) => console.error('Failed to load geofence policy', err),
+    });
+  }
+
+  assignedCount(geofenceId: string): number {
+    return this.coverage()?.countsByGeofence?.[geofenceId] ?? 0;
+  }
+
+  onPolicyChange(allow: boolean) {
+    this.policySaving.set(true);
+    this.workforceService.updateGeofenceAssignmentPolicy(allow).subscribe({
+      next: (res) => {
+        this.allowMultiple.set(res.allowMultipleGeofencesPerEmployee);
+        this.policySaving.set(false);
+        // Switching to single-geofence mode leaves existing multi-assignments
+        // in place rather than arbitrarily revoking sites people work at. Flag
+        // them so the admin resolves it deliberately.
+        const over = res.employeesOverLimit ?? 0;
+        if (!allow && over > 0) {
+          this.snack.open(
+            `Saved. ${over} ${over === 1 ? 'employee still holds' : 'employees still hold'} more than one geofence — existing assignments were kept. Remove the extras manually.`,
+            'Dismiss',
+            { duration: 8000 },
+          );
+        }
+      },
+      error: (err) => {
+        console.error('Failed to update geofence policy', err);
+        // Snap the toggle back so it never shows a state the server rejected.
+        this.allowMultiple.set(!allow);
+        this.policySaving.set(false);
+        this.snack.open('Could not update the policy.', 'Dismiss', {
+          duration: 4000,
+        });
+      },
+    });
+  }
+
+  manageEmployees(geofence: { id: string; name: string }) {
+    this.dialog
+      .open(GeofenceEmployeesDialogComponent, {
+        data: { geofenceId: geofence.id, geofenceName: geofence.name },
+        width: '640px',
+        maxHeight: '86vh',
+      })
+      .afterClosed()
+      .subscribe(() => this.loadCoverage());
+  }
+
+  goToEmployees() {
+    void this.router.navigate(['/workforce/employees']);
   }
 
   /**

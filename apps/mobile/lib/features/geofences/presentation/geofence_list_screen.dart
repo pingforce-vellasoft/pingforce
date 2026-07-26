@@ -10,7 +10,9 @@ import '../../../core/theme/theme.dart';
 import '../../../core/widgets/app_states.dart';
 import '../../../injection_container.dart';
 import '../domain/entities/geofence.dart';
+import 'geofence_assignment_notifier.dart';
 import 'geofence_notifier.dart';
+import 'widgets/geofence_employees_sheet.dart';
 
 /// How the admin supplies the geofence centre.
 ///
@@ -39,6 +41,7 @@ class _GeofenceListScreenState extends ConsumerState<GeofenceListScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(geofenceNotifierProvider.notifier).load();
+      ref.read(geofenceCoverageProvider.notifier).load();
     });
   }
 
@@ -47,14 +50,26 @@ class _GeofenceListScreenState extends ConsumerState<GeofenceListScreen> {
     final state = ref.watch(geofenceNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Geofences')),
+      appBar: AppBar(
+        title: const Text('Geofences'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.tune_rounded),
+            tooltip: 'Assignment policy',
+            onPressed: () => _openPolicySheet(context),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openAddSheet(context),
         icon: const Icon(Icons.add_location_alt_rounded),
         label: const Text('Add geofence'),
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.read(geofenceNotifierProvider.notifier).refresh(),
+        onRefresh: () async {
+          await ref.read(geofenceNotifierProvider.notifier).refresh();
+          await ref.read(geofenceCoverageProvider.notifier).load();
+        },
         child: _buildBody(context, state),
       ),
     );
@@ -94,22 +109,107 @@ class _GeofenceListScreenState extends ConsumerState<GeofenceListScreen> {
         AppSpacing.screenHorizontal,
         AppSpacing.space20,
       ),
-      itemCount: state.items.length,
+      // One extra leading item for the coverage banner.
+      itemCount: state.items.length + 1,
       separatorBuilder: (_, i) => const SizedBox(height: AppSpacing.space3),
-      itemBuilder: (_, i) => _GeofenceTile(
-        geofence: state.items[i],
-        onDelete: () => _confirmDelete(context, state.items[i]),
+      itemBuilder: (_, i) {
+        if (i == 0) return _buildCoverageBanner(context);
+        final g = state.items[i - 1];
+        return _GeofenceTile(
+          geofence: g,
+          assignedCount:
+              ref.watch(geofenceCoverageProvider).coverage.countFor(g.id),
+          onDelete: () => _confirmDelete(context, g),
+          onManageEmployees: () => _openEmployeesSheet(context, g),
+        );
+      },
+    );
+  }
+
+  /// Employees with no geofence cannot punch at all — the most consequential
+  /// state on this screen, so it leads the list rather than hiding in a tile.
+  Widget _buildCoverageBanner(BuildContext context) {
+    final coverageState = ref.watch(geofenceCoverageProvider);
+    final cov = coverageState.coverage;
+    final scheme = Theme.of(context).colorScheme;
+
+    if (coverageState.isLoading) return const SizedBox.shrink();
+
+    final IconData icon;
+    final Color bg;
+    final Color fg;
+    final String message;
+
+    if (!cov.tenantHasEmployees) {
+      icon = Icons.person_off_rounded;
+      bg = scheme.secondaryContainer;
+      fg = scheme.onSecondaryContainer;
+      message = 'No employees exist yet. Geofences do nothing until employees '
+          'are created in the admin portal and assigned here.';
+    } else if (cov.unassignedEmployees > 0) {
+      icon = Icons.warning_amber_rounded;
+      bg = scheme.errorContainer;
+      fg = scheme.onErrorContainer;
+      message = '${cov.unassignedEmployees} of ${cov.totalEmployees} '
+          '${cov.unassignedEmployees == 1 ? 'employee is' : 'employees are'} '
+          'not assigned to any geofence and cannot punch attendance.';
+    } else {
+      icon = Icons.check_circle_rounded;
+      bg = scheme.primaryContainer;
+      fg = scheme.onPrimaryContainer;
+      message = 'All ${cov.totalEmployees} active employees are assigned to a '
+          'geofence.';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.space1),
+      padding: const EdgeInsets.all(AppSpacing.space3),
+      decoration: BoxDecoration(color: bg, borderRadius: AppRadius.lgAll),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: fg),
+          const SizedBox(width: AppSpacing.space2),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTypography.bodySmall.copyWith(color: fg),
+            ),
+          ),
+        ],
       ),
     );
   }
 
+  void _openEmployeesSheet(BuildContext context, Geofence g) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => GeofenceEmployeesSheet(geofence: g),
+    );
+  }
+
   Future<void> _confirmDelete(BuildContext context, Geofence g) async {
+    // Deleting releases everyone assigned here; anyone left without another
+    // geofence can no longer punch. Say so before it happens, not after.
+    final staffed =
+        ref.read(geofenceCoverageProvider).coverage.countFor(g.id);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete geofence?'),
-        content: Text('"${g.name}" will be removed. Check-ins will no longer '
-            'validate against this zone.'),
+        content: Text(
+          '"${g.name}" will be removed. Check-ins will no longer validate '
+          'against this zone.'
+          '${staffed > 0 ? '\n\n$staffed ${staffed == 1 ? 'employee is' : 'employees are'} assigned here. '
+              'Their assignments will be removed, and anyone left without another '
+              'geofence will be unable to punch attendance.' : ''}',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -131,7 +231,62 @@ class _GeofenceListScreenState extends ConsumerState<GeofenceListScreen> {
       AppSnackBar.showError(context, error);
     } else {
       AppSnackBar.showSuccess(context, 'Geofence deleted');
+      // Counts and the unassigned warning both shift after a delete.
+      ref.read(geofenceCoverageProvider.notifier).load();
     }
+  }
+
+  /// One-vs-many geofences per employee. Turning it off leaves existing
+  /// multi-assignments in place — it governs what may be newly assigned.
+  Future<void> _openPolicySheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => Consumer(
+        builder: (ctx, sheetRef, _) {
+          final state = sheetRef.watch(geofenceCoverageProvider);
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.space5,
+              0,
+              AppSpacing.space5,
+              AppSpacing.space6,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Assignment policy',
+                  style: Theme.of(ctx).textTheme.titleMedium,
+                ),
+                const SizedBox(height: AppSpacing.space3),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: state.allowMultiple,
+                  onChanged: state.isPolicySaving
+                      ? null
+                      : (v) async {
+                          final err = await sheetRef
+                              .read(geofenceCoverageProvider.notifier)
+                              .setAllowMultiple(v);
+                          if (!ctx.mounted) return;
+                          if (err != null) AppSnackBar.showError(ctx, err);
+                        },
+                  title: const Text('Allow multiple geofences per employee'),
+                  subtitle: Text(
+                    state.allowMultiple
+                        ? 'Employees can be assigned to several sites.'
+                        : 'Each employee belongs to exactly one geofence.',
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _openAddSheet(BuildContext context) {
@@ -153,10 +308,19 @@ class _GeofenceListScreenState extends ConsumerState<GeofenceListScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _GeofenceTile extends StatelessWidget {
-  const _GeofenceTile({required this.geofence, required this.onDelete});
+  const _GeofenceTile({
+    required this.geofence,
+    required this.onDelete,
+    required this.assignedCount,
+    required this.onManageEmployees,
+  });
 
   final Geofence geofence;
   final VoidCallback onDelete;
+
+  /// Employees allowed to punch here. Zero means the zone is inert.
+  final int assignedCount;
+  final VoidCallback onManageEmployees;
 
   @override
   Widget build(BuildContext context) {
@@ -198,8 +362,53 @@ class _GeofenceTile extends StatelessWidget {
                   style: AppTypography.bodySmall
                       .copyWith(color: scheme.onSurfaceVariant),
                 ),
+                const SizedBox(height: AppSpacing.space2),
+                // Staffing is the difference between a live zone and an inert
+                // one, so it sits on the tile rather than behind a tap.
+                InkWell(
+                  onTap: onManageEmployees,
+                  borderRadius: AppRadius.smAll,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          assignedCount == 0
+                              ? Icons.person_off_rounded
+                              : Icons.groups_rounded,
+                          size: 15,
+                          color: assignedCount == 0
+                              ? scheme.error
+                              : scheme.primary,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          assignedCount == 0
+                              ? 'No employees — nobody can punch here'
+                              : '$assignedCount '
+                                  '${assignedCount == 1 ? 'employee' : 'employees'}',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: assignedCount == 0
+                                ? scheme.error
+                                : scheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.group_add_rounded),
+            tooltip: 'Manage employees',
+            onPressed: onManageEmployees,
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded),

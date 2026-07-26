@@ -82,17 +82,36 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
       });
     }
 
-    // Geofence validation — Redis-cached tenant geofences + in-process
-    // haversine, no DB round-trip on the punch hot path (SCALABILITY_AUDIT)
-    const insideGeofence = await this.geofenceCache.isInsideAny(
+    // Geofence validation — scoped to the geofences this employee is actually
+    // assigned to, not every geofence in the tenant. Redis-cached per employee
+    // + in-process haversine, so no DB round-trip on the punch hot path
+    // (SCALABILITY_AUDIT).
+    const geofenceCheck = await this.geofenceCache.checkAssigned(
       employee.tenantId,
+      employee.id,
       dto.latitude,
       dto.longitude,
     );
-    if (!insideGeofence) {
-      throw new BadRequestException(
-        'You are outside the authorized geofence area.',
-      );
+    if (geofenceCheck.status === 'NO_ASSIGNMENT') {
+      // Distinct from OUTSIDE: standing somewhere else cannot fix this, only an
+      // admin assigning a work location can. The mobile client keys on
+      // `errorCode` to show the "contact your administrator" path instead of
+      // the "move closer" one.
+      throw new BadRequestException({
+        statusCode: 400,
+        error: 'Bad Request',
+        errorCode: 'GEOFENCE-001',
+        message:
+          'No work location is assigned to your account. Contact your administrator.',
+      });
+    }
+    if (geofenceCheck.status === 'OUTSIDE') {
+      throw new BadRequestException({
+        statusCode: 400,
+        error: 'Bad Request',
+        errorCode: 'GEOFENCE-005',
+        message: 'You are outside the authorized geofence area.',
+      });
     }
 
     // Debounce + attendance/session writes are transactional so a double-tap

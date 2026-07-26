@@ -78,6 +78,17 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
         );
       }
 
+      // No geofence assigned to this employee. Typed separately from a normal
+      // geofence rejection because the remedy is different: the employee
+      // cannot fix it by moving, only an admin assigning them a work location
+      // can, so the screen must not tell them to walk closer.
+      if (errorCode == 'GEOFENCE-001') {
+        return NoGeofenceAssignedFailure(
+          serverMessage ??
+              'No work location is assigned to your account. Contact your administrator.',
+        );
+      }
+
       // Auth failures are checked before the server message: NestJS always
       // sets `message`, and on a 401 that message is the bare "Unauthorized",
       // which tells the employee nothing. Returning the actionable sign-in

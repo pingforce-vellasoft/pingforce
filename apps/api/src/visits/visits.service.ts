@@ -652,6 +652,12 @@ export class VisitsService {
    * Haversine check of the punch coordinate against the visit's geofence
    * (GEOFENCING.md); falls back to any active tenant geofence when the visit
    * has none. Logs the result to gps_validation_logs.
+   *
+   * Deliberately NOT scoped to the employee's geofence assignments, unlike
+   * attendance punches. A visit names the site being visited, and field staff
+   * routinely attend customer sites they are not stationed at — restricting
+   * this to assigned geofences would reject legitimate visits. Attendance asks
+   * "are you at one of your workplaces"; a visit asks "are you at this job".
    */
   private async validateGeofence(
     tx: Pick<ExtendedPrismaClient, '$queryRaw' | 'gpsValidationLog'>,

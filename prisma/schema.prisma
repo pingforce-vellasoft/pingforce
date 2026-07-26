@@ -84,6 +84,7 @@ model Tenant {
   attendanceCorrections AttendanceCorrection[]
   shiftAssignments      ShiftAssignment[]
   geofences             Geofence[]
+  employeeGeofences     EmployeeGeofence[]
   employeeLocations     EmployeeLocation[]
   latestEmployeeLocations LatestEmployeeLocation[]
   dailyLocationSummaries DailyLocationSummary[]
@@ -859,6 +860,7 @@ model Employee {
   devices               EmployeeDevice[]
   deviceChangeRequests  DeviceChangeRequest[]
   visits                Visit[]
+  geofenceAssignments   EmployeeGeofence[]
 
   @@unique([tenantId, employeeCode])
   @@unique([id, tenantId])
@@ -1286,6 +1288,11 @@ model AttendancePolicy {
   correctionWindowDays Int       @default(7)
   autoCheckout         Boolean   @default(true)
   multipleBreaks       Boolean   @default(true)
+  /// When false (default) an employee may hold exactly one geofence
+  /// assignment — assigning them to a second one is rejected unless the caller
+  /// passes `reassign`, which moves them. Tenants whose staff cover multiple
+  /// sites turn this on to allow many assignments per employee.
+  allowMultipleGeofencesPerEmployee Boolean @default(false)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   deletedAt            DateTime?
@@ -1383,8 +1390,9 @@ model Geofence {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  visits Visit[]
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  visits      Visit[]
+  assignments EmployeeGeofence[]
 
   location Unsupported("geography(Point, 4326)")?
 
@@ -1392,6 +1400,41 @@ model Geofence {
   @@index([tenantId])
   @@index([tenantId, active])
   @@map("geofences")
+}
+
+/// Which employees may punch attendance at which geofence. Enforcement is
+/// strict: an employee with zero live assignments cannot check in anywhere
+/// (punch returns GEOFENCE-001). Before this table existed any employee could
+/// punch at any tenant geofence, so the migration backfills every active
+/// employee against every active geofence to preserve that behaviour until an
+/// admin narrows it.
+///
+/// Whether one employee may hold more than one assignment is governed by
+/// AttendancePolicy.allowMultipleGeofencesPerEmployee — the join table always
+/// permits many rows, the service layer enforces the tenant's choice.
+model EmployeeGeofence {
+  id         String    @id @default(uuid())
+  tenantId   String
+  employeeId String
+  geofenceId String
+  assignedAt DateTime  @default(now())
+  assignedBy String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  geofence Geofence @relation(fields: [geofenceId], references: [id], onDelete: Cascade)
+
+  // A pair may exist only once. Re-assigning after an unassign revives the
+  // existing row (deletedAt = null) rather than inserting a duplicate, which
+  // keeps this constraint valid across soft deletes.
+  @@unique([employeeId, geofenceId])
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, geofenceId])
+  @@map("employee_geofences")
 }
 
 model EmployeeLocation {
