@@ -8,7 +8,6 @@ abstract class AttendanceRepository {
   Future<Either<Failure, bool>> isDeviceRegistered();
 
   /// Registers this device's public key with the backend.
-  Future<Either<Failure, void>> registerDevice(String publicKey);
 
   /// Performs a Geofenced + Biometric Punch (In or Out).
   Future<Either<Failure, AttendanceSession>> punch(

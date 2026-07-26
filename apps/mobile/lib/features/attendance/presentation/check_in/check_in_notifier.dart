@@ -24,7 +24,6 @@ import '../../../../core/usecases/usecase.dart';
 import '../../domain/usecases/break_commands.dart';
 import '../../domain/usecases/get_today_query.dart';
 import '../../domain/usecases/punch_command.dart' as punch_uc;
-import '../../domain/usecases/register_device_command.dart';
 import 'check_in_state.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -407,20 +406,26 @@ class CheckInNotifier extends Notifier<CheckInState> {
       cryptographicSignature: 'gps:${location.timestamp.toIso8601String()}',
     );
 
-    var result = await sl<punch_uc.PunchCommand>()(params);
+    final result = await sl<punch_uc.PunchCommand>()(params);
 
-    // First punch on a fresh install fails with an untrusted device — register
-    // this device once, then retry. Scoped to device-trust failures only:
-    // retrying on any error re-registered the device (revoking the previous
-    // one) for unrelated faults like a geofence refusal or a 500, and replaced
-    // the real message with a misleading one.
+    // A device-trust failure used to trigger a silent re-register + retry. That
+    // was the client half of self-service rebinding: any handset could claim
+    // the employee's binding on a failed punch and immediately punch from it.
+    // Binding now happens once at onboarding, and moving it needs an
+    // admin-approved change request — so an untrusted device is surfaced to the
+    // employee, never resolved behind their back.
     if (result.isLeft() && _isUntrustedDeviceFailure(result)) {
-      final registered = await sl<RegisterDeviceCommand>()(
-        const RegisterDeviceParams(publicKey: 'mobile-client'),
+      state = state.copyWith(
+        status: CheckInScreenStatus.error,
+        buttonMode: CheckInButtonMode.error,
+        errorMessage:
+            'This device is not registered to your account. Request a device '
+            'change from your profile to punch from this handset.',
+        // The screen keys the "Request device change" action off this code —
+        // matching the message text would break on any wording change.
+        errorCode: 'UNTRUSTED_DEVICE',
       );
-      if (registered.isRight()) {
-        result = await sl<punch_uc.PunchCommand>()(params);
-      }
+      return;
     }
 
     result.fold(
@@ -477,11 +482,12 @@ class CheckInNotifier extends Notifier<CheckInState> {
     );
   }
 
-  /// True when the punch was refused because this device is not registered —
-  /// the API throws `UnauthorizedException('Untrusted device')`, which the
-  /// repository maps to [UntrustedDeviceFailure]. The message check is a
-  /// fallback for failures raised outside that mapping. Only this case
-  /// warrants a register+retry.
+  /// True when the punch was refused because this handset is not the one bound
+  /// to the account — the API returns errorCode `UNTRUSTED_DEVICE` (or
+  /// `DEVICE-007` when nothing is bound at all), which the repository maps to
+  /// [UntrustedDeviceFailure]. The message check is a fallback for failures
+  /// raised outside that mapping. Resolving it needs an admin-approved device
+  /// change; the client must never re-bind on its own.
   bool _isUntrustedDeviceFailure(
     Either<Failure, dynamic> result,
   ) {
