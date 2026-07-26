@@ -8,6 +8,7 @@ import { GeofenceCacheService } from './geofence-cache.service';
 import { AttendanceLogService } from './attendance-log.service';
 import { AttendanceAdminService } from './attendance-admin.service';
 import { TrackingGapService } from './tracking-gap.service';
+import { GeofenceAssignmentService } from './geofence-assignment.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AttendanceCommandHandlers } from './commands/handlers';
 import { AttendanceEventHandlers } from './events/handlers';
@@ -23,9 +24,10 @@ import { AttendanceEventHandlers } from './events/handlers';
     AttendanceLogService,
     AttendanceAdminService,
     TrackingGapService,
+    GeofenceAssignmentService,
     ...AttendanceCommandHandlers,
     ...AttendanceEventHandlers,
   ],
-  exports: [AttendanceService, GeofenceCacheService],
+  exports: [AttendanceService, GeofenceCacheService, GeofenceAssignmentService],
 })
 export class AttendanceModule {}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/navigation/gate_debug_panel.dart';
 import '../../../core/theme/theme.dart';
 import 'auth_state.dart';
 import 'widgets/auth_widgets.dart';
@@ -205,17 +206,23 @@ class _LoginForm extends StatelessWidget {
         if (showLogo) ...[
           const SizedBox(height: AppSpacing.space6),
           Center(
-            child: Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primaryContainer,
-              ),
-              child: Image.asset(
-                'assets/branding/logo_1024.png',
-                width: AppIconSize.xl,
-                height: AppIconSize.xl,
+            // Long-press the logo to inspect the gate chain. Debug builds only
+            // — GateDebugPanel.show is a no-op in release, so this gesture is
+            // dead weight there rather than a hidden surface.
+            child: GestureDetector(
+              onLongPress: () => GateDebugPanel.show(context),
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                ),
+                child: Image.asset(
+                  'assets/branding/logo_1024.png',
+                  width: AppIconSize.xl,
+                  height: AppIconSize.xl,
+                ),
               ),
             ),
           ),

@@ -6,7 +6,8 @@
     "postinstall": "npx prisma generate",
     "start:infra": "docker-compose up -d",
     "start:apps": "nx run-many --target=serve --projects=api,admin --parallel=2",
-    "start:all": "npm run start:infra && npm run start:apps"
+    "start:all": "npm run start:infra && npm run start:apps",
+    "seed:gate-test": "npx tsx prisma/seed-gate-test.ts"
   },
   "private": true,
   "devDependencies": {

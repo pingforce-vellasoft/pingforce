@@ -111,6 +111,17 @@ class AuthSession {
     await storage.write(key: _permissionsSeenKey, value: 'true');
   }
 
+  /// Re-arms the permissions gate on this device.
+  ///
+  /// The flag is device-local by design (a reinstall re-runs the flow), so the
+  /// server-side gate-chain reset cannot clear it — without this, replaying the
+  /// chain means clearing app storage by hand. Debug builds only: the debug
+  /// panel is the sole caller.
+  Future<void> resetPermissionsFlowSeen(FlutterSecureStorage storage) async {
+    permissionsFlowSeen = false;
+    await storage.delete(key: _permissionsSeenKey);
+  }
+
   Future<void> signOut(FlutterSecureStorage storage) async {
     isAuthenticated = false;
     roleCode = null;

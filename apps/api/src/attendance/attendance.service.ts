@@ -475,11 +475,62 @@ export class AttendanceService {
     if (user.roleCode !== 'SUPER_ADMIN' && user.roleCode !== 'ADMIN_MANAGER') {
       throw new UnauthorizedException('Only admins can delete geofences');
     }
-    const result = await this.prisma.geofence.updateMany({
-      where: { id, tenantId: user.tenantId },
-      data: { active: false }, // Soft delete
+    // Employees assigned here lose a work location the moment the geofence
+    // goes inactive. Capture them before the update so their per-employee
+    // punch caches can be dropped and the caller can be told how many are now
+    // unable to punch anywhere.
+    const assignments = await this.prisma.employeeGeofence.findMany({
+      where: { tenantId: user.tenantId, geofenceId: id, deletedAt: null },
+      select: { id: true, employeeId: true },
     });
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.geofence.updateMany({
+        where: { id, tenantId: user.tenantId },
+        data: { active: false }, // Soft delete
+      });
+      if (assignments.length > 0) {
+        // Assignments to a dead geofence are released rather than left
+        // dangling — otherwise re-activating the geofence would silently
+        // restore a roster the admin believes they dismantled.
+        await tx.employeeGeofence.updateMany({
+          where: {
+            id: { in: assignments.map((a) => a.id) },
+            tenantId: user.tenantId,
+          },
+          data: { deletedAt: new Date() },
+        });
+      }
+      return updated;
+    });
+
+    const affectedEmployeeIds = assignments.map((a) => a.employeeId);
     await this.geofenceCache.invalidate(user.tenantId);
-    return result;
+    await this.geofenceCache.invalidateEmployees(
+      user.tenantId,
+      affectedEmployeeIds,
+    );
+
+    // Employees left with no geofence at all cannot punch until reassigned —
+    // surfaced so the admin UI can warn instead of the workers discovering it
+    // at the next shift start.
+    const stillAssigned = await this.prisma.employeeGeofence.groupBy({
+      by: ['employeeId'],
+      where: {
+        tenantId: user.tenantId,
+        employeeId: { in: affectedEmployeeIds },
+        deletedAt: null,
+      },
+      _count: { _all: true },
+    });
+    const stillAssignedIds = new Set(stillAssigned.map((s) => s.employeeId));
+
+    return {
+      ...result,
+      releasedAssignments: assignments.length,
+      leftWithoutGeofence: affectedEmployeeIds.filter(
+        (id2) => !stillAssignedIds.has(id2),
+      ).length,
+    };
   }
 }

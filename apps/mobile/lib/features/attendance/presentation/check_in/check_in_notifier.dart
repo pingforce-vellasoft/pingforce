@@ -428,6 +428,23 @@ class CheckInNotifier extends Notifier<CheckInState> {
       return;
     }
 
+    // No work location assigned. Unlike standing outside a geofence, this is
+    // not something the employee can walk off — retrying or moving will fail
+    // identically until an admin assigns them a geofence, so the message says
+    // that rather than implying a location problem.
+    if (result.isLeft() && _isNoGeofenceAssignedFailure(result)) {
+      state = state.copyWith(
+        status: CheckInScreenStatus.error,
+        buttonMode: CheckInButtonMode.error,
+        errorMessage:
+            'No work location is assigned to your account, so attendance '
+            'cannot be recorded. Ask your administrator to assign you to a '
+            'geofence.',
+        errorCode: 'GEOFENCE-001',
+      );
+      return;
+    }
+
     result.fold(
       (failure) {
         state = state.copyWith(
@@ -495,6 +512,19 @@ class CheckInNotifier extends Notifier<CheckInState> {
       (failure) =>
           failure is UntrustedDeviceFailure ||
           failure.message.toLowerCase().contains('untrusted device'),
+      (_) => false,
+    );
+  }
+
+  /// True when the punch was refused because the employee holds no geofence
+  /// assignment at all — API errorCode `GEOFENCE-001`, mapped by the
+  /// repository to [NoGeofenceAssignedFailure]. Only an admin can resolve it,
+  /// so the screen must not suggest moving closer to a zone.
+  bool _isNoGeofenceAssignedFailure(
+    Either<Failure, dynamic> result,
+  ) {
+    return result.fold(
+      (failure) => failure is NoGeofenceAssignedFailure,
       (_) => false,
     );
   }

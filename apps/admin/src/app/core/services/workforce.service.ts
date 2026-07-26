@@ -1,11 +1,19 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import {
   AttendanceLog,
   LeaveRequest,
   PaginationDto,
 } from '@pingforce-monorepo/dto';
 import { DailyAttendanceResponse } from '../models/daily-attendance.model';
+import {
+  AssignResult,
+  AssignableEmployeesResponse,
+  AssignedEmployeesResponse,
+  GeofenceAssignmentPolicy,
+  GeofenceCoverage,
+  UnassignResult,
+} from '../../pages/settings/geofence-assignment.model';
 
 @Injectable({
   providedIn: 'root',
@@ -137,6 +145,71 @@ export class WorkforceService {
 
   deleteGeofence(id: string) {
     return this.http.delete(`/api/v1/attendance/geofence/${id}`);
+  }
+
+  // ── Geofence ↔ employee assignment ─────────────────────────────────────────
+
+  getGeofenceCoverage() {
+    return this.http.get<GeofenceCoverage>(
+      '/api/v1/attendance/geofence/assignments/summary',
+    );
+  }
+
+  getGeofenceAssignmentPolicy() {
+    return this.http.get<GeofenceAssignmentPolicy>(
+      '/api/v1/attendance/geofence/assignment-policy',
+    );
+  }
+
+  updateGeofenceAssignmentPolicy(allowMultipleGeofencesPerEmployee: boolean) {
+    return this.http.put<GeofenceAssignmentPolicy>(
+      '/api/v1/attendance/geofence/assignment-policy',
+      { allowMultipleGeofencesPerEmployee },
+    );
+  }
+
+  getGeofenceEmployees(geofenceId: string) {
+    return this.http.get<AssignedEmployeesResponse>(
+      `/api/v1/attendance/geofence/${geofenceId}/employees`,
+    );
+  }
+
+  getAssignableEmployees(
+    geofenceId: string,
+    opts: { search?: string; scope?: 'ASSIGNABLE' | 'ALL'; pageSize?: number },
+  ) {
+    let params = new HttpParams();
+    if (opts.search) params = params.set('search', opts.search);
+    if (opts.scope) params = params.set('scope', opts.scope);
+    if (opts.pageSize) params = params.set('pageSize', String(opts.pageSize));
+    return this.http.get<AssignableEmployeesResponse>(
+      `/api/v1/attendance/geofence/${geofenceId}/assignable-employees`,
+      { params },
+    );
+  }
+
+  /**
+   * `reassign` is only consulted when the tenant allows one geofence per
+   * employee; without it the API returns 409 listing who is already assigned
+   * elsewhere so the admin confirms the move rather than doing it blindly.
+   */
+  assignEmployeesToGeofence(
+    geofenceId: string,
+    employeeIds: string[],
+    reassign = false,
+  ) {
+    return this.http.post<AssignResult>(
+      `/api/v1/attendance/geofence/${geofenceId}/employees`,
+      { employeeIds, reassign },
+    );
+  }
+
+  unassignEmployeesFromGeofence(geofenceId: string, employeeIds: string[]) {
+    // DELETE with a body — Angular's HttpClient requires the `body` option.
+    return this.http.delete<UnassignResult>(
+      `/api/v1/attendance/geofence/${geofenceId}/employees`,
+      { body: { employeeIds } },
+    );
   }
 
   // Device binding moved to DevicesService (/api/v1/devices) when binding

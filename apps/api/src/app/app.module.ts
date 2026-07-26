@@ -43,6 +43,8 @@ import { NetworkModule } from '../network/network.module';
 import { PortalModule } from '../portal/portal.module';
 import { BillingModule } from '../billing/billing.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
+import { TestingModule } from '../testing/testing.module';
+import { TestingService } from '../testing/testing.service';
 
 @Module({
   imports: [
@@ -117,6 +119,11 @@ import { DashboardModule } from '../dashboard/dashboard.module';
     BillingModule,
     PortalModule,
     DashboardModule,
+    // Mobile gate-chain test support. Rewinding an account undoes auth state
+    // (forced-password flag, profile, handset binding), so the module is only
+    // mounted in a non-production environment that opted in explicitly —
+    // outside those, the routes do not exist at all.
+    ...(TestingService.isEnabled() ? [TestingModule] : []),
   ],
   controllers: [AppController, HealthController],
   providers: [

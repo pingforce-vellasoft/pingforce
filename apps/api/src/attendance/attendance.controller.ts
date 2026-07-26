@@ -1,10 +1,12 @@
 import {
   Controller,
   Post,
+  Put,
   Body,
   Get,
   Delete,
   Param,
+  ParseUUIDPipe,
   UseGuards,
   Query,
   Req,
@@ -28,6 +30,13 @@ import { OfflineSyncService } from './offline-sync.service';
 import { AttendanceLogService } from './attendance-log.service';
 import { AttendanceAdminService } from './attendance-admin.service';
 import { TrackingGapService } from './tracking-gap.service';
+import { GeofenceAssignmentService } from './geofence-assignment.service';
+import {
+  AssignEmployeesDto,
+  AssignableEmployeesQueryDto,
+  UnassignEmployeesDto,
+  UpdateGeofencePolicyDto,
+} from './dto/geofence-assignment.dto';
 import { AttendanceDailyLogQueryDto } from './dto/attendance-daily-log.dto';
 import {
   AdjustSessionTimesDto,
@@ -57,6 +66,7 @@ export class AttendanceController {
     private readonly attendanceLogService: AttendanceLogService,
     private readonly attendanceAdminService: AttendanceAdminService,
     private readonly trackingGapService: TrackingGapService,
+    private readonly geofenceAssignmentService: GeofenceAssignmentService,
     private readonly commandBus: CommandBus,
   ) {}
 
@@ -311,5 +321,88 @@ export class AttendanceController {
   @RequirePermission('GEOFENCES', 'DELETE')
   async deleteGeofence(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.attendanceService.deleteGeofence(req.user, id);
+  }
+
+  // ── Geofence ↔ employee assignment ────────────────────────────────────────
+  //
+  // Attendance is scoped to the geofences an employee is assigned to. An
+  // employee with no assignment cannot punch anywhere, so these routes are the
+  // difference between a working and a locked-out workforce — all of them are
+  // permission-gated and tenant-scoped in the service.
+
+  /** Coverage counts for the geofence list, including unassigned employees. */
+  @Get('geofence/assignments/summary')
+  @RequirePermission('GEOFENCES', 'READ')
+  async geofenceCoverage(@Req() req: AuthRequest) {
+    return this.geofenceAssignmentService.coverageSummary(req.user);
+  }
+
+  /** Current one-vs-many geofence policy for the tenant. */
+  @Get('geofence/assignment-policy')
+  @RequirePermission('GEOFENCES', 'READ')
+  async getGeofencePolicy(@Req() req: AuthRequest) {
+    return {
+      allowMultipleGeofencesPerEmployee:
+        await this.geofenceAssignmentService.allowsMultiple(req.user.tenantId),
+    };
+  }
+
+  @Put('geofence/assignment-policy')
+  @RequirePermission('GEOFENCES', 'ASSIGN')
+  async updateGeofencePolicy(
+    @Req() req: AuthRequest,
+    @Body() dto: UpdateGeofencePolicyDto,
+  ) {
+    return this.geofenceAssignmentService.updatePolicy(req.user, dto);
+  }
+
+  /** Geofences one employee may punch at. Empty means they are blocked. */
+  @Get('geofence/employee/:employeeId')
+  @RequirePermission('GEOFENCES', 'READ')
+  async getEmployeeGeofences(
+    @Req() req: AuthRequest,
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+  ) {
+    return this.geofenceAssignmentService.listForEmployee(req.user, employeeId);
+  }
+
+  @Get('geofence/:id/employees')
+  @RequirePermission('GEOFENCES', 'READ')
+  async getGeofenceEmployees(
+    @Req() req: AuthRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.geofenceAssignmentService.listAssigned(req.user, id);
+  }
+
+  /** Picker candidates. `tenantHasEmployees: false` drives the empty state. */
+  @Get('geofence/:id/assignable-employees')
+  @RequirePermission('GEOFENCES', 'READ')
+  async getAssignableEmployees(
+    @Req() req: AuthRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: AssignableEmployeesQueryDto,
+  ) {
+    return this.geofenceAssignmentService.listAssignable(req.user, id, query);
+  }
+
+  @Post('geofence/:id/employees')
+  @RequirePermission('GEOFENCES', 'ASSIGN')
+  async assignEmployeesToGeofence(
+    @Req() req: AuthRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AssignEmployeesDto,
+  ) {
+    return this.geofenceAssignmentService.assign(req.user, id, dto);
+  }
+
+  @Delete('geofence/:id/employees')
+  @RequirePermission('GEOFENCES', 'ASSIGN')
+  async unassignEmployeesFromGeofence(
+    @Req() req: AuthRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UnassignEmployeesDto,
+  ) {
+    return this.geofenceAssignmentService.unassign(req.user, id, dto);
   }
 }

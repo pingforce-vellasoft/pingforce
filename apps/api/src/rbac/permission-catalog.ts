@@ -106,6 +106,12 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
     description: 'Modify geofence boundaries',
   },
   { module: 'GEOFENCES', action: 'DELETE', description: 'Remove geofences' },
+  {
+    module: 'GEOFENCES',
+    action: 'ASSIGN',
+    description:
+      'Assign employees to geofences and set the one-vs-many geofence policy',
+  },
   // Attendance
   {
     module: 'ATTENDANCE',

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/geofence.dart';
+import '../../domain/entities/geofence_assignment.dart';
 import '../../domain/repositories/geofence_repository.dart';
 import '../datasources/geofence_remote_data_source.dart';
 import '../models/geofence_model.dart';
@@ -56,6 +57,127 @@ class GeofenceRepositoryImpl implements GeofenceRepository {
       return Left(ServerFailure(_message(e, 'Failed to delete geofence')));
     } catch (_) {
       return const Left(ServerFailure('Failed to delete geofence'));
+    }
+  }
+
+  // ── Employee assignment ────────────────────────────────────────────────────
+
+  @override
+  Future<Either<Failure, GeofenceCoverage>> getCoverage() async {
+    try {
+      return Right(await remoteDataSource.getCoverage());
+    } on DioException catch (e) {
+      return Left(ServerFailure(_message(e, 'Failed to load coverage')));
+    } catch (_) {
+      return const Left(ServerFailure('Failed to load coverage'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> getAllowMultiple() async {
+    try {
+      return Right(await remoteDataSource.getAllowMultiple());
+    } on DioException catch (e) {
+      return Left(ServerFailure(_message(e, 'Failed to load geofence policy')));
+    } catch (_) {
+      return const Left(ServerFailure('Failed to load geofence policy'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> setAllowMultiple(bool allow) async {
+    try {
+      return Right(await remoteDataSource.setAllowMultiple(allow));
+    } on DioException catch (e) {
+      return Left(
+        ServerFailure(_message(e, 'Failed to update geofence policy')),
+      );
+    } catch (_) {
+      return const Left(ServerFailure('Failed to update geofence policy'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<AssignedEmployee>>> getAssignedEmployees(
+    String geofenceId,
+  ) async {
+    try {
+      final list = await remoteDataSource.getAssignedEmployees(geofenceId);
+      return Right(list);
+    } on DioException catch (e) {
+      return Left(
+        ServerFailure(_message(e, 'Failed to load assigned employees')),
+      );
+    } catch (_) {
+      return const Left(ServerFailure('Failed to load assigned employees'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AssignableEmployeesPage>> getAssignableEmployees(
+    String geofenceId, {
+    String? search,
+    bool showAll = false,
+  }) async {
+    try {
+      final page = await remoteDataSource.getAssignableEmployees(
+        geofenceId,
+        search: search,
+        showAll: showAll,
+      );
+      return Right(page);
+    } on DioException catch (e) {
+      return Left(ServerFailure(_message(e, 'Failed to load employees')));
+    } catch (_) {
+      return const Left(ServerFailure('Failed to load employees'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AssignResult>> assignEmployees(
+    String geofenceId,
+    List<String> employeeIds, {
+    bool reassign = false,
+  }) async {
+    try {
+      final result = await remoteDataSource.assignEmployees(
+        geofenceId,
+        employeeIds,
+        reassign: reassign,
+      );
+      return Right(result);
+    } on GeofenceAssignmentConflict catch (e) {
+      // Typed rather than a generic server failure: the caller needs the names
+      // to ask "move them?" and retry with reassign.
+      return Left(
+        GeofenceConflictFailure(
+          'Already assigned to another geofence.',
+          e.conflicts
+              .map((c) =>
+                  '${c.employeeName ?? 'Employee'} (on ${c.currentGeofenceName})')
+              .toList(),
+        ),
+      );
+    } on DioException catch (e) {
+      return Left(ServerFailure(_message(e, 'Failed to assign employees')));
+    } catch (_) {
+      return const Left(ServerFailure('Failed to assign employees'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, UnassignResult>> unassignEmployees(
+    String geofenceId,
+    List<String> employeeIds,
+  ) async {
+    try {
+      final result =
+          await remoteDataSource.unassignEmployees(geofenceId, employeeIds);
+      return Right(result);
+    } on DioException catch (e) {
+      return Left(ServerFailure(_message(e, 'Failed to remove employees')));
+    } catch (_) {
+      return const Left(ServerFailure('Failed to remove employees'));
     }
   }
 
