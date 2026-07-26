@@ -9,6 +9,9 @@ import 'widgets/check_in_button.dart';
 import 'widgets/check_in_success_overlay.dart';
 import 'widgets/mock_location_blocker.dart';
 import 'widgets/offline_banner.dart';
+import '../../../../core/hardware/hardware_service.dart';
+import '../../../../injection_container.dart';
+import '../../../tracking/presentation/tracking_notifier.dart';
 import 'widgets/attendance_active_session_card.dart';
 import 'widgets/attendance_day_summary_card.dart';
 import 'check_in_notifier.dart';
@@ -143,6 +146,15 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
       children: [
         // ── Offline banner (CHECKIN_FLOW_SPEC.md S7) ────────────────────
         if (!state.isOnline) const OfflineBanner(),
+
+        // ── Tracking unavailable ────────────────────────────────────────
+        // Shown while checked in but background capture is down (location
+        // switched off, permission revoked). Without it tracking stops
+        // silently and the employee only finds out when the gap is queried.
+        if (ref.watch(trackingProvider).failureMessage != null)
+          _TrackingWarningBanner(
+            message: ref.watch(trackingProvider).failureMessage!,
+          ),
 
         // ── Scrollable content ──────────────────────────────────────────
         Expanded(
@@ -410,6 +422,51 @@ class _GeofenceMessageCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// This widget is overlaid on the bottom of the screen so it stays fixed
+/// Warns that background location capture has stopped while the employee is
+/// on shift, with a shortcut to the OS location settings.
+class _TrackingWarningBanner extends StatelessWidget {
+  const _TrackingWarningBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: PingForceColors.statusWarningContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: AppSpacing.space3,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.location_off_rounded,
+              size: AppIconSize.sm,
+              color: PingForceColors.statusWarning,
+            ),
+            AppSpacing.iconGapBox,
+            Expanded(
+              child: Text(
+                message,
+                style: AppTypography.bodySmall.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => sl<HardwareService>().openLocationSettings(),
+              child: const Text('Turn on'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// regardless of scroll position.
 class AttendanceCheckInBar extends ConsumerWidget {
   const AttendanceCheckInBar({super.key});

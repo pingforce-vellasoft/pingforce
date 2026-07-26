@@ -1,8 +1,12 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/error/failures.dart';
 import '../../../core/navigation/nav_destinations.dart';
+import '../../../core/usecases/usecase.dart';
+import '../../attendance/domain/usecases/break_commands.dart';
 import '../../../core/network/connectivity_provider.dart';
 import '../../../core/sync/sync_provider.dart';
 import '../../../core/sync/sync_state.dart';
@@ -159,10 +163,20 @@ class DashboardNotifier extends Notifier<DashboardState> {
       progressFraction: progress,
       workingDuration: worked,
       breaksTaken: a.breaksTaken,
+      breakStartTime: a.breakStartTime,
+      totalOvertime: a.overtimeMinutes > 0
+          ? _fmtMinutes(a.overtimeMinutes)
+          : null,
       isLate: a.isLate,
       minutesLate: a.minutesLate,
       isOnTime: !a.isLate,
     );
+  }
+
+  static String _fmtMinutes(int minutes) {
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    return h > 0 ? '${h}h ${m}m' : '${m}m';
   }
 
   List<KpiCard> _mapKpis(List<DashboardKpiModel> cards) {
@@ -303,6 +317,66 @@ class DashboardNotifier extends Notifier<DashboardState> {
 
   void goToAttendance(BuildContext context) {
     context.go('/attendance');
+  }
+
+  // ── Inline attendance actions ──────────────────────────────────────────────
+  //
+  // Break start/end need no GPS fix or biometric prompt, so they complete on
+  // the home screen. Previously every hero-card button just navigated to the
+  // attendance screen, where the employee had to press the same button again.
+  //
+  // Check-in and check-out still navigate: both require a GPS fix, geofence
+  // evaluation and (per policy) biometric verification, which is the whole
+  // purpose of the attendance screen.
+
+  /// Starts a break on the open session, then refreshes the hero card.
+  Future<void> startBreak() async {
+    await _runBreakAction(() => sl<StartBreakCommand>()(const StartBreakParams()));
+  }
+
+  /// Ends the in-progress break and resumes work.
+  Future<void> resumeWork() async {
+    await _runBreakAction(() => sl<EndBreakCommand>()(NoParams()));
+  }
+
+  Future<void> _runBreakAction(
+    Future<Either<Failure, void>> Function() action,
+  ) async {
+    if (state.isAttendanceActionInFlight) return;
+
+    if (!ref.read(connectivityProvider).isOnline) {
+      state = state.copyWith(
+        attendanceActionError:
+            'Breaks need a connection. Try again once you are online.',
+      );
+      return;
+    }
+
+    state = state.copyWith(
+      isAttendanceActionInFlight: true,
+      attendanceActionError: null,
+    );
+
+    final result = await action();
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(
+          isAttendanceActionInFlight: false,
+          attendanceActionError: failure.message,
+        );
+      },
+      (_) async {
+        // Re-read the summary so status, break count and timers come from the
+        // server rather than being guessed locally.
+        await load();
+        state = state.copyWith(isAttendanceActionInFlight: false);
+      },
+    );
+  }
+
+  void dismissAttendanceActionError() {
+    state = state.copyWith(attendanceActionError: null);
   }
 
   void goToAttendanceHistory(BuildContext context) {

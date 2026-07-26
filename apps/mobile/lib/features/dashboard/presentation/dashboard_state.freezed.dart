@@ -2465,7 +2465,13 @@ mixin _$DashboardState {
   bool get isOnline => throw _privateConstructorUsedError; // User
   DashboardUserInfo? get user =>
       throw _privateConstructorUsedError; // Attendance hero
-  AttendanceHeroData? get attendanceHero =>
+  AttendanceHeroData? get attendanceHero => throw _privateConstructorUsedError;
+
+  /// A break start/end triggered from the hero card is in flight.
+  bool get isAttendanceActionInFlight => throw _privateConstructorUsedError;
+
+  /// Message shown when an inline attendance action is refused.
+  String? get attendanceActionError =>
       throw _privateConstructorUsedError; // KPI cards (ordered, RBAC-gated)
   List<KpiCard> get kpiCards =>
       throw _privateConstructorUsedError; // Quick actions (ordered, RBAC-gated)
@@ -2502,6 +2508,8 @@ abstract class $DashboardStateCopyWith<$Res> {
     bool isOnline,
     DashboardUserInfo? user,
     AttendanceHeroData? attendanceHero,
+    bool isAttendanceActionInFlight,
+    String? attendanceActionError,
     List<KpiCard> kpiCards,
     List<QuickAction> quickActions,
     List<ActivityFeedItem> activityFeed,
@@ -2539,6 +2547,8 @@ class _$DashboardStateCopyWithImpl<$Res, $Val extends DashboardState>
     Object? isOnline = null,
     Object? user = freezed,
     Object? attendanceHero = freezed,
+    Object? isAttendanceActionInFlight = null,
+    Object? attendanceActionError = freezed,
     Object? kpiCards = null,
     Object? quickActions = null,
     Object? activityFeed = null,
@@ -2571,6 +2581,14 @@ class _$DashboardStateCopyWithImpl<$Res, $Val extends DashboardState>
                 ? _value.attendanceHero
                 : attendanceHero // ignore: cast_nullable_to_non_nullable
                       as AttendanceHeroData?,
+            isAttendanceActionInFlight: null == isAttendanceActionInFlight
+                ? _value.isAttendanceActionInFlight
+                : isAttendanceActionInFlight // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            attendanceActionError: freezed == attendanceActionError
+                ? _value.attendanceActionError
+                : attendanceActionError // ignore: cast_nullable_to_non_nullable
+                      as String?,
             kpiCards: null == kpiCards
                 ? _value.kpiCards
                 : kpiCards // ignore: cast_nullable_to_non_nullable
@@ -2680,6 +2698,8 @@ abstract class _$$DashboardStateImplCopyWith<$Res>
     bool isOnline,
     DashboardUserInfo? user,
     AttendanceHeroData? attendanceHero,
+    bool isAttendanceActionInFlight,
+    String? attendanceActionError,
     List<KpiCard> kpiCards,
     List<QuickAction> quickActions,
     List<ActivityFeedItem> activityFeed,
@@ -2720,6 +2740,8 @@ class __$$DashboardStateImplCopyWithImpl<$Res>
     Object? isOnline = null,
     Object? user = freezed,
     Object? attendanceHero = freezed,
+    Object? isAttendanceActionInFlight = null,
+    Object? attendanceActionError = freezed,
     Object? kpiCards = null,
     Object? quickActions = null,
     Object? activityFeed = null,
@@ -2752,6 +2774,14 @@ class __$$DashboardStateImplCopyWithImpl<$Res>
             ? _value.attendanceHero
             : attendanceHero // ignore: cast_nullable_to_non_nullable
                   as AttendanceHeroData?,
+        isAttendanceActionInFlight: null == isAttendanceActionInFlight
+            ? _value.isAttendanceActionInFlight
+            : isAttendanceActionInFlight // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        attendanceActionError: freezed == attendanceActionError
+            ? _value.attendanceActionError
+            : attendanceActionError // ignore: cast_nullable_to_non_nullable
+                  as String?,
         kpiCards: null == kpiCards
             ? _value._kpiCards
             : kpiCards // ignore: cast_nullable_to_non_nullable
@@ -2802,6 +2832,8 @@ class _$DashboardStateImpl extends _DashboardState {
     this.isOnline = true,
     this.user,
     this.attendanceHero,
+    this.isAttendanceActionInFlight = false,
+    this.attendanceActionError,
     final List<KpiCard> kpiCards = const [],
     final List<QuickAction> quickActions = const [],
     final List<ActivityFeedItem> activityFeed = const [],
@@ -2833,6 +2865,15 @@ class _$DashboardStateImpl extends _DashboardState {
   // Attendance hero
   @override
   final AttendanceHeroData? attendanceHero;
+
+  /// A break start/end triggered from the hero card is in flight.
+  @override
+  @JsonKey()
+  final bool isAttendanceActionInFlight;
+
+  /// Message shown when an inline attendance action is refused.
+  @override
+  final String? attendanceActionError;
   // KPI cards (ordered, RBAC-gated)
   final List<KpiCard> _kpiCards;
   // KPI cards (ordered, RBAC-gated)
@@ -2889,7 +2930,7 @@ class _$DashboardStateImpl extends _DashboardState {
 
   @override
   String toString() {
-    return 'DashboardState(isLoading: $isLoading, isRefreshing: $isRefreshing, isOnline: $isOnline, user: $user, attendanceHero: $attendanceHero, kpiCards: $kpiCards, quickActions: $quickActions, activityFeed: $activityFeed, isLoadingMoreFeed: $isLoadingMoreFeed, hasMoreFeed: $hasMoreFeed, teamStatus: $teamStatus, syncInfo: $syncInfo, unreadNotifications: $unreadNotifications, errorMessage: $errorMessage)';
+    return 'DashboardState(isLoading: $isLoading, isRefreshing: $isRefreshing, isOnline: $isOnline, user: $user, attendanceHero: $attendanceHero, isAttendanceActionInFlight: $isAttendanceActionInFlight, attendanceActionError: $attendanceActionError, kpiCards: $kpiCards, quickActions: $quickActions, activityFeed: $activityFeed, isLoadingMoreFeed: $isLoadingMoreFeed, hasMoreFeed: $hasMoreFeed, teamStatus: $teamStatus, syncInfo: $syncInfo, unreadNotifications: $unreadNotifications, errorMessage: $errorMessage)';
   }
 
   @override
@@ -2906,6 +2947,14 @@ class _$DashboardStateImpl extends _DashboardState {
             (identical(other.user, user) || other.user == user) &&
             (identical(other.attendanceHero, attendanceHero) ||
                 other.attendanceHero == attendanceHero) &&
+            (identical(
+                  other.isAttendanceActionInFlight,
+                  isAttendanceActionInFlight,
+                ) ||
+                other.isAttendanceActionInFlight ==
+                    isAttendanceActionInFlight) &&
+            (identical(other.attendanceActionError, attendanceActionError) ||
+                other.attendanceActionError == attendanceActionError) &&
             const DeepCollectionEquality().equals(other._kpiCards, _kpiCards) &&
             const DeepCollectionEquality().equals(
               other._quickActions,
@@ -2937,6 +2986,8 @@ class _$DashboardStateImpl extends _DashboardState {
     isOnline,
     user,
     attendanceHero,
+    isAttendanceActionInFlight,
+    attendanceActionError,
     const DeepCollectionEquality().hash(_kpiCards),
     const DeepCollectionEquality().hash(_quickActions),
     const DeepCollectionEquality().hash(_activityFeed),
@@ -2967,6 +3018,8 @@ abstract class _DashboardState extends DashboardState {
     final bool isOnline,
     final DashboardUserInfo? user,
     final AttendanceHeroData? attendanceHero,
+    final bool isAttendanceActionInFlight,
+    final String? attendanceActionError,
     final List<KpiCard> kpiCards,
     final List<QuickAction> quickActions,
     final List<ActivityFeedItem> activityFeed,
@@ -2989,7 +3042,15 @@ abstract class _DashboardState extends DashboardState {
   @override
   DashboardUserInfo? get user; // Attendance hero
   @override
-  AttendanceHeroData? get attendanceHero; // KPI cards (ordered, RBAC-gated)
+  AttendanceHeroData? get attendanceHero;
+
+  /// A break start/end triggered from the hero card is in flight.
+  @override
+  bool get isAttendanceActionInFlight;
+
+  /// Message shown when an inline attendance action is refused.
+  @override
+  String? get attendanceActionError; // KPI cards (ordered, RBAC-gated)
   @override
   List<KpiCard> get kpiCards; // Quick actions (ordered, RBAC-gated)
   @override

@@ -113,6 +113,15 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'workforce/attendance-log',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN_MANAGER'] },
+        loadComponent: () =>
+          import('./pages/workforce/attendance-daily-log.component').then(
+            (m) => m.AttendanceDailyLogComponent,
+          ),
+      },
+      {
         path: 'workforce/employee/:id',
         canActivate: [roleGuard],
         data: { roles: ['ADMIN_MANAGER'] },
@@ -173,6 +182,15 @@ export const appRoutes: Route[] = [
         loadComponent: () =>
           import('./pages/workforce/device-management.component').then(
             (m) => m.DeviceManagementComponent,
+          ),
+      },
+      {
+        path: 'workforce/device-requests',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN_MANAGER'] },
+        loadComponent: () =>
+          import('./pages/workforce/device-change-requests.component').then(
+            (m) => m.DeviceChangeRequestsComponent,
           ),
       },
       {

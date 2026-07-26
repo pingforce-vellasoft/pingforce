@@ -88,6 +88,8 @@ model Tenant {
   latestEmployeeLocations LatestEmployeeLocation[]
   dailyLocationSummaries DailyLocationSummary[]
   gpsValidationLogs     GpsValidationLog[]
+  trackingGaps          TrackingGap[]
+  deviceTrackingExemptions DeviceTrackingExemption[]
   offlineQueues         OfflineQueue[]
   syncLogs              SyncLog[]
   auditLogs             AuditLog[]
@@ -811,6 +813,10 @@ model Employee {
   // above the mobile UX gate. Defaults true (most mobile users are field staff);
   // office employees are flipped false at provisioning / by an admin.
   isFieldStaff           Boolean   @default(true)
+  /// Set when the employee completes device binding during onboarding. Null
+  /// means "not yet bound" — the mobile RouteGuard hard-gates the app on this,
+  /// so attendance cannot be punched before a handset is on record.
+  deviceBoundAt          DateTime?
   joiningDate            DateTime?
   confirmationDate       DateTime?
   workLocation           String?
@@ -844,11 +850,14 @@ model Employee {
   latestEmployeeLocation LatestEmployeeLocation?
   dailyLocationSummaries DailyLocationSummary[]
   gpsValidationLogs     GpsValidationLog[]
+  trackingGaps          TrackingGap[]
+  deviceTrackingExemptions DeviceTrackingExemption[]
   offlineQueues         OfflineQueue[]
   salaryStructures      SalaryStructure[]
   payslips              Payslip[]
   expenseClaims         ExpenseClaim[]
   devices               EmployeeDevice[]
+  deviceChangeRequests  DeviceChangeRequest[]
   visits                Visit[]
 
   @@unique([tenantId, employeeCode])
@@ -1135,6 +1144,11 @@ model Attendance {
   @@map("attendances")
 }
 
+/// The single handset an employee is bound to. One active (isTrusted) row per
+/// employee, ever — attendance is punched from a bound device only, so allowing
+/// an employee to silently re-bind would let a lent phone punch for a colleague.
+/// Binding happens once at onboarding; every later change goes through an
+/// admin-approved DeviceChangeRequest.
 model EmployeeDevice {
   id         String    @id @default(uuid())
   tenantId   String
@@ -1142,6 +1156,19 @@ model EmployeeDevice {
   deviceId   String
   publicKey  String
   isTrusted  Boolean   @default(true)
+  /// Device fingerprint (DeviceManagement.md §6). Admin-readable identification
+  /// — a raw `dev-a3f9…` id tells a reviewer nothing when approving a change.
+  deviceName   String?
+  platform     String? // ANDROID, IOS
+  osVersion    String?
+  appVersion   String?
+  model        String?
+  manufacturer String?
+  /// When this device became the employee's active binding. Distinct from
+  /// createdAt: an approved change re-binds an existing row.
+  boundAt      DateTime  @default(now())
+  /// REPLACED | ADMIN_REVOKED | EMPLOYEE_EXIT — why trust was withdrawn.
+  revokedReason String?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   revokedAt  DateTime?
@@ -1156,7 +1183,54 @@ model EmployeeDevice {
   @@unique([tenantId, deviceId])
   @@index([employeeId])
   @@index([tenantId])
+  @@index([tenantId, employeeId, isTrusted])
   @@map("employee_devices")
+}
+
+/// An employee's request to move their binding to a new handset (lost, stolen,
+/// damaged, upgraded). Employees cannot re-bind themselves — that is the whole
+/// control — so this queue is the only path, and only an admin/HR holder of
+/// DEVICE:APPROVE can clear it.
+model DeviceChangeRequest {
+  id              String    @id @default(uuid())
+  tenantId        String
+  employeeId      String
+  /// The binding being replaced. Null when the employee has no active device
+  /// (e.g. the old row was already admin-revoked).
+  currentDeviceId String?
+  newDeviceId     String
+  newDeviceName   String?
+  newPlatform     String?
+  newOsVersion    String?
+  newAppVersion   String?
+  newModel        String?
+  newManufacturer String?
+  /// LOST | STOLEN | DAMAGED | UPGRADED | OTHER
+  reason          String
+  /// Free-text justification from the employee.
+  notes           String?
+  /// PENDING | APPROVED | REJECTED | CANCELLED | EXPIRED
+  status          String    @default("PENDING")
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  /// Mandatory when status is REJECTED — the employee is told why.
+  rejectionReason String?
+  /// Requests go stale; past this the queue auto-expires them rather than
+  /// leaving an approvable request for a handset nobody remembers.
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+  deletedAt       DateTime?
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId, status])
+  @@index([employeeId])
+  @@index([tenantId, employeeId, createdAt])
+  @@map("device_change_requests")
 }
 
 model AttendanceSession {
@@ -1411,6 +1485,85 @@ model GpsValidationLog {
   @@index([tenantId])
   @@index([employeeId])
   @@map("gps_validation_logs")
+}
+
+/// A period during which background tracking could not capture fixes for a
+/// checked-in employee — location services off, permission revoked, or the OS
+/// killing the service. Recorded so a payroll or conduct dispute has evidence
+/// instead of an unexplained blank stretch on the live map.
+///
+/// A gap is opened on the first failed capture and closed when capture
+/// resumes or the session ends; `endedAt == null` means still ongoing.
+model TrackingGap {
+  id                  String    @id @default(uuid())
+  tenantId            String
+  employeeId          String
+  attendanceSessionId String?
+  /// LOCATION_DISABLED | PERMISSION_DENIED | SERVICE_STOPPED | FIX_TIMEOUT
+  reason              String
+  startedAt           DateTime
+  endedAt             DateTime?
+  durationMinutes     Int?
+  /// Battery percentage at gap start, when the device reported it. Used by
+  /// admins assessing a low-battery exemption request.
+  batteryLevel        Int?
+  deviceId            String?
+  /// Set when an approved DeviceTrackingExemption covered this gap, so
+  /// reviewed gaps stop resurfacing as exceptions.
+  isExcused           Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@index([employeeId, startedAt])
+  @@index([tenantId, endedAt])
+  @@map("tracking_gaps")
+}
+
+/// Per-device relief from tracking-gap enforcement, for handsets whose battery
+/// genuinely cannot sustain a full shift of periodic GPS fixes.
+///
+/// Deliberately NOT advertised in the employee UI: surfacing "request an
+/// exemption" as a normal option invites it to be used to avoid tracking. The
+/// employee raises a request through support/their manager; an admin verifies
+/// the hardware and grants it for one device, with an expiry.
+model DeviceTrackingExemption {
+  id         String    @id @default(uuid())
+  tenantId   String
+  employeeId String
+  /// Scoped to a single handset — an exemption must not follow the employee
+  /// to a replacement device.
+  deviceId   String
+  /// LOW_BATTERY_HARDWARE | OEM_BACKGROUND_RESTRICTION | OTHER
+  reason     String
+  /// Free-text justification captured when the request was raised.
+  notes      String?
+  /// PENDING | APPROVED | REJECTED | REVOKED
+  status     String    @default("PENDING")
+  requestedBy String?
+  requestedAt DateTime @default(now())
+  reviewedBy String?
+  reviewedAt DateTime?
+  reviewNotes String?
+  /// Exemptions expire so they are re-justified rather than granted forever.
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId, status])
+  @@index([employeeId])
+  @@index([tenantId, deviceId])
+  @@map("device_tracking_exemptions")
 }
 
 model OfflineQueue {
@@ -2149,6 +2302,11 @@ model TenantSetting {
   customerPortalEnabled       Boolean @default(false) // Super Admin controlled
   portalMaxContacts           Int     @default(5) // max portal users per customer account
   portalFaultReopenHours      Int     @default(72) // window to reopen a resolved fault
+  // Device binding policy (DeviceManagement.md §10). Employees are bound to one
+  // handset; these bound how often that binding may be moved, so a serial
+  // "lost my phone" pattern surfaces instead of silently repeating.
+  deviceChangeRequestsPer90Days Int   @default(2)
+  deviceChangeRequestExpiryDays Int   @default(7)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

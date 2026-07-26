@@ -8,6 +8,11 @@ class User extends Equatable {
   final String tenantId;
   final String tenantCode;
   final bool isOnboarded;
+
+  /// True once a handset is bound to this employee. Non-employee accounts never
+  /// bind, so the API reports them bound. Defaults true: a payload from an older
+  /// API that omits the field must not lock the user out of the app.
+  final bool deviceBound;
   final bool mustChangePassword;
   final bool isAttendanceEnabled;
 
@@ -19,6 +24,7 @@ class User extends Equatable {
     required this.tenantId,
     required this.tenantCode,
     this.isOnboarded = false,
+    this.deviceBound = true,
     this.mustChangePassword = false,
     this.isAttendanceEnabled = false,
   });
@@ -32,6 +38,7 @@ class User extends Equatable {
         tenantId,
         tenantCode,
         isOnboarded,
+        deviceBound,
         mustChangePassword,
         isAttendanceEnabled,
       ];

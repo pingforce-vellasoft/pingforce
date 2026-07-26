@@ -97,6 +97,9 @@ export class DashboardService {
         gracePeriodMinutes: null,
         workedMinutes: null,
         breaksTaken: 0,
+        breakMinutes: 0,
+        breakStartTime: null,
+        overtimeMinutes: 0,
         isLate: false,
         minutesLate: null,
       };
@@ -111,13 +114,19 @@ export class DashboardService {
       0,
     );
 
-    // Status: no session yet → notCheckedIn; an open session → working;
-    // every session closed → checkedOut.
+    // An open break on the open session means the employee is on break, not
+    // working. Without this the hero card never reached its onBreak state, so
+    // it kept offering "Start Break" to someone already on one.
+    const openBreak =
+      firstOpen?.breaks?.find((b) => b.endTime === null) ?? null;
+
+    // Status: no session yet → notCheckedIn; an open session → working (or
+    // onBreak); every session closed → checkedOut.
     let status: string;
     if (sessions.length === 0) {
       status = 'notCheckedIn';
     } else if (firstOpen) {
-      status = 'working';
+      status = openBreak ? 'onBreak' : 'working';
     } else {
       status = 'checkedOut';
     }
@@ -132,14 +141,58 @@ export class DashboardService {
       ? this.shiftMinutes(shift.startTime, shift.endTime)
       : null;
 
-    // Elapsed worked minutes across all sessions, capping open sessions at now.
-    const workedMinutes = sessions.reduce((sum, s) => {
+    // Elapsed session minutes across all sessions, capping open sessions at now.
+    const sessionMinutes = sessions.reduce((sum, s) => {
       const end = s.punchOut ?? now;
       return (
         sum +
         Math.max(0, Math.round((end.getTime() - s.punchIn.getTime()) / 60000))
       );
     }, 0);
+
+    // Break minutes today. An open break is measured up to `now` and a closed
+    // one prefers its stored duration, falling back to its own timestamps.
+    const breakMinutesFor = (b: {
+      startTime: Date;
+      endTime: Date | null;
+      durationMinutes: number | null;
+    }): number => {
+      if (b.endTime === null) {
+        return Math.max(
+          0,
+          Math.round((now.getTime() - b.startTime.getTime()) / 60000),
+        );
+      }
+      return (
+        b.durationMinutes ??
+        Math.max(
+          0,
+          Math.round((b.endTime.getTime() - b.startTime.getTime()) / 60000),
+        )
+      );
+    };
+
+    const allBreaks = sessions.flatMap((s) => s.breaks ?? []);
+    const breakMinutes = allBreaks.reduce(
+      (sum, b) => sum + breakMinutesFor(b),
+      0,
+    );
+
+    // Worked = session time minus UNPAID breaks, matching creditWorkedMinutes
+    // (the figure actually persisted at check-out). Counting break time as
+    // worked here made the home card disagree with the attendance screen and
+    // overstated the shift-progress bar.
+    const unpaidBreakMinutes = allBreaks
+      .filter((b) => !b.paidBreak)
+      .reduce((sum, b) => sum + breakMinutesFor(b), 0);
+
+    const workedMinutes = Math.max(0, sessionMinutes - unpaidBreakMinutes);
+
+    // Overtime is worked time beyond the scheduled shift length.
+    const overtimeMinutes =
+      totalShiftMinutes && totalShiftMinutes > 0
+        ? Math.max(0, workedMinutes - totalShiftMinutes)
+        : 0;
 
     const { isLate, minutesLate } = this.lateness(
       checkInTime,
@@ -159,6 +212,9 @@ export class DashboardService {
       gracePeriodMinutes: shift?.gracePeriod ?? null,
       workedMinutes: sessions.length > 0 ? workedMinutes : null,
       breaksTaken,
+      breakMinutes,
+      breakStartTime: openBreak?.startTime.toISOString() ?? null,
+      overtimeMinutes,
       isLate,
       minutesLate,
     };

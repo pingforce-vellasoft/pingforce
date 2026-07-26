@@ -156,6 +156,7 @@ class LoginNotifier extends Notifier<LoginState> {
           roleCode: user.role,
           mustChangePassword: user.mustChangePassword,
           isOnboarded: user.isOnboarded,
+          deviceBound: user.deviceBound,
         );
         // currentUserProvider is a FutureProvider that may have resolved to null
         // during the signed-out session (splash/shell read it). Invalidate it so

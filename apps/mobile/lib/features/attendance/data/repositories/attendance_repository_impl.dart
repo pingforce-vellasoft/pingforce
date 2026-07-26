@@ -59,12 +59,17 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
         serverMessage = data;
       }
 
-      // Device-trust refusal is a distinct, recoverable case (register+retry),
-      // so it gets its own Failure type. Keyed on the server's stable
-      // `errorCode`; the status+message match is a fallback for older API
-      // builds that predate the code, since matching human-readable text
-      // breaks whenever the wording or the error body shape changes.
+      // Device-trust refusal gets its own Failure type so the screen can offer
+      // the device-change route. Keyed on the server's stable `errorCode`; the
+      // status+message match is a fallback for older API builds that predate
+      // the code, since matching human-readable text breaks whenever the
+      // wording or the error body shape changes.
+      //
+      // DEVICE-007 (nothing bound to the account) lands here too: both end at
+      // the same place for the employee — this handset cannot punch until an
+      // admin binds it.
       final isUntrustedDevice = errorCode == 'UNTRUSTED_DEVICE' ||
+          errorCode == 'DEVICE-007' ||
           (status == 401 &&
               (serverMessage ?? '').toLowerCase().contains('untrusted device'));
       if (isUntrustedDevice) {
@@ -104,16 +109,6 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
     return const Right(true);
   }
 
-  @override
-  Future<Either<Failure, void>> registerDevice(String publicKey) async {
-    try {
-      final deviceId = await deviceIdentity.getOrCreate();
-      await remoteDataSource.registerDevice(deviceId, publicKey);
-      return const Right(null);
-    } catch (e) {
-      return Left(_mapError(e, 'Failed to register this device.'));
-    }
-  }
 
   @override
   Future<Either<Failure, AttendanceSession>> punch(

@@ -50,11 +50,30 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
         },
       },
     });
-    if (!device || !device.isTrusted || device.employeeId !== employee.id) {
-      // `errorCode` is the contract the mobile client keys its register+retry
-      // on. The human-readable message is for display only — matching on it
-      // would break the moment the wording changes or an exception filter
-      // reshapes the body.
+    // An employee who never completed onboarding binding is a different case
+    // from one punching off a foreign handset: the first is sent to the binding
+    // step, the second to the admin-approved change-request queue. Collapsing
+    // both into UNTRUSTED_DEVICE told the client to re-register, which is the
+    // self-service rebind that device binding exists to prevent.
+    if (!employee.deviceBoundAt) {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        error: 'Unauthorized',
+        errorCode: 'DEVICE-007',
+        message: 'No device is bound to this account',
+      });
+    }
+    if (
+      !device ||
+      !device.isTrusted ||
+      device.revokedAt ||
+      !device.publicKey ||
+      device.employeeId !== employee.id
+    ) {
+      // `errorCode` is the contract the mobile client keys on. The
+      // human-readable message is for display only — matching on it would break
+      // the moment the wording changes or an exception filter reshapes the
+      // body.
       throw new UnauthorizedException({
         statusCode: 401,
         error: 'Unauthorized',

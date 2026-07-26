@@ -10,12 +10,8 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class RegisterDeviceDto {
-  @IsString()
-  deviceId!: string;
-  @IsString()
-  publicKey!: string;
-}
+// RegisterDeviceDto moved to devices/dto/device.dto.ts as BindDeviceDto, with
+// the self-service registration endpoint it belonged to.
 
 export class PunchDto {
   @IsNumber()

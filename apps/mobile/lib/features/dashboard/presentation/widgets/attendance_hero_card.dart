@@ -20,10 +20,19 @@ class AttendanceHeroCard extends StatefulWidget {
     required this.onResume,
     required this.onViewDetails,
     this.onRequestCorrection,
+    this.isActionInFlight = false,
+    this.actionError,
   });
 
   final AttendanceHeroData? data;
   final bool isLoading;
+
+  /// An inline break start/end is in flight — disables the action buttons and
+  /// swaps their icon for a spinner.
+  final bool isActionInFlight;
+
+  /// Message shown when an inline attendance action is refused.
+  final String? actionError;
   final VoidCallback onCheckIn;
   final VoidCallback onCheckOut;
   final VoidCallback onBreak;
@@ -253,25 +262,46 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
 
         AppSpacing.space4.toSizedBox,
 
-        // Action row
+        // Action row. Break completes inline (no GPS needed); check-out opens
+        // the attendance screen because it requires a GPS fix + geofence check.
         Row(
           children: [
             Expanded(
-              child: FilledButton.tonal(
-                onPressed: widget.onBreak,
-                child: const Text('Start Break'),
+              child: SizedBox(
+                height: 48,
+                child: FilledButton.tonalIcon(
+                  onPressed: widget.isActionInFlight ? null : widget.onBreak,
+                  icon: widget.isActionInFlight
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.coffee_rounded, size: AppIconSize.sm),
+                  label: const Text('Start Break'),
+                ),
               ),
             ),
             const SizedBox(width: AppSpacing.space3),
             Expanded(
               flex: 2,
-              child: FilledButton(
-                onPressed: widget.onCheckOut,
-                child: const Text('Check Out'),
+              child: SizedBox(
+                height: 48,
+                child: FilledButton.icon(
+                  onPressed:
+                      widget.isActionInFlight ? null : widget.onCheckOut,
+                  icon: const Icon(Icons.logout_rounded, size: AppIconSize.sm),
+                  label: const Text('Check Out'),
+                ),
               ),
             ),
           ],
         ),
+
+        if (widget.actionError != null) ...[
+          AppSpacing.space2.toSizedBox,
+          _ActionErrorText(message: widget.actionError!),
+        ],
       ],
     );
   }
@@ -318,8 +348,14 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
           width: double.infinity,
           height: 48,
           child: FilledButton.icon(
-            onPressed: widget.onResume,
-            icon: const Icon(Icons.play_arrow_rounded),
+            onPressed: widget.isActionInFlight ? null : widget.onResume,
+            icon: widget.isActionInFlight
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.play_arrow_rounded),
             label: const Text('Resume Work'),
             style: FilledButton.styleFrom(
               backgroundColor: PingForceColors.statusWarning,
@@ -327,6 +363,10 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
             ),
           ),
         ),
+        if (widget.actionError != null) ...[
+          AppSpacing.space2.toSizedBox,
+          _ActionErrorText(message: widget.actionError!),
+        ],
       ],
     );
   }
@@ -364,9 +404,11 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
         AppSpacing.space2.toSizedBox,
         Row(
           children: [
+            // Completed day: show worked time as h/m, not a running clock —
+            // the h:mm:ss form reads as a live timer on a finished shift.
             _StatBadge(
-              label: 'Total',
-              value: _fmtDuration(data.workingDuration),
+              label: 'Worked',
+              value: _fmtWorked(data.workingDuration),
             ),
             const SizedBox(width: AppSpacing.space3),
             _StatBadge(
@@ -473,6 +515,15 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
     final min = dt.minute.toString().padLeft(2, '0');
     final amPm = dt.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$min $amPm';
+  }
+
+  /// Completed-day worked time: "7h 45m". Distinct from [_fmtDuration], which
+  /// is the running h:mm:ss form used while a session is still open.
+  String _fmtWorked(Duration? d) {
+    if (d == null) return '—';
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60);
+    return h > 0 ? '${h}h ${m}m' : '${m}m';
   }
 
   String _fmtDuration(Duration? d) {
@@ -634,6 +685,35 @@ class _CompletedChip extends StatelessWidget {
           color: Theme.of(context).colorScheme.onPrimaryContainer,
         ),
       ),
+    );
+  }
+}
+
+class _ActionErrorText extends StatelessWidget {
+  const _ActionErrorText({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.error_outline_rounded,
+          size: AppIconSize.xs,
+          color: theme.colorScheme.error,
+        ),
+        AppSpacing.iconGapBox,
+        Expanded(
+          child: Text(
+            message,
+            style: AppTypography.labelSmall.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

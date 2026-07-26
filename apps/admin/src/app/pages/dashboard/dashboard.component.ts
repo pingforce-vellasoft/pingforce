@@ -171,6 +171,22 @@ import { AuthService } from '../../core/auth/auth.service';
               </a>
               <a
                 mat-list-item
+                routerLink="/dashboard/workforce/devices"
+                routerLinkActive="active-link"
+              >
+                <mat-icon matListItemIcon>smartphone</mat-icon>
+                <span matListItemTitle>Devices</span>
+              </a>
+              <a
+                mat-list-item
+                routerLink="/dashboard/workforce/device-requests"
+                routerLinkActive="active-link"
+              >
+                <mat-icon matListItemIcon>phonelink_setup</mat-icon>
+                <span matListItemTitle>Device Requests</span>
+              </a>
+              <a
+                mat-list-item
                 routerLink="/dashboard/customers"
                 routerLinkActive="active-link"
               >
@@ -187,6 +203,14 @@ import { AuthService } from '../../core/auth/auth.service';
               >
                 <mat-icon matListItemIcon>access_time</mat-icon>
                 <span matListItemTitle>Attendance Logs</span>
+              </a>
+              <a
+                mat-list-item
+                routerLink="/dashboard/workforce/attendance-log"
+                routerLinkActive="active-link"
+              >
+                <mat-icon matListItemIcon>fact_check</mat-icon>
+                <span matListItemTitle>Daily Attendance</span>
               </a>
               <a
                 mat-list-item

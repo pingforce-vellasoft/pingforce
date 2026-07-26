@@ -184,6 +184,12 @@ class DashboardState with _$DashboardState {
     // Attendance hero
     AttendanceHeroData? attendanceHero,
 
+    /// A break start/end triggered from the hero card is in flight.
+    @Default(false) bool isAttendanceActionInFlight,
+
+    /// Message shown when an inline attendance action is refused.
+    String? attendanceActionError,
+
     // KPI cards (ordered, RBAC-gated)
     @Default([]) List<KpiCard> kpiCards,
 

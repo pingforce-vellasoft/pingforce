@@ -267,14 +267,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       widgets.add(AttendanceHeroCard(
         data: state.attendanceHero,
         isLoading: state.isLoading,
+        isActionInFlight: state.isAttendanceActionInFlight,
+        actionError: state.attendanceActionError,
+        // Check-in/out need a GPS fix, geofence check and possibly biometrics,
+        // so they open the attendance screen. Breaks need none of that and
+        // complete here.
         onCheckIn: () =>
             ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
         onCheckOut: () =>
             ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
         onBreak: () =>
-            ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
+            ref.read(dashboardNotifierProvider.notifier).startBreak(),
         onResume: () =>
-            ref.read(dashboardNotifierProvider.notifier).goToAttendance(context),
+            ref.read(dashboardNotifierProvider.notifier).resumeWork(),
         onViewDetails: () => ref
             .read(dashboardNotifierProvider.notifier)
             .goToAttendanceHistory(context),
