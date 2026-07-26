@@ -114,6 +114,36 @@ export class AttendanceSchedulerService {
               workflowStatus: 'APPROVED',
             },
           });
+
+          // The stamped 23:59:59 is a placeholder, not an observed punch, so
+          // the day is also flagged MISSING_CHECK_OUT for a human to confirm
+          // or correct. Without this the auto-close silently invents a
+          // check-out time that then flows into payroll unreviewed.
+          await tx.attendanceCorrection.create({
+            data: {
+              tenantId: session.tenantId,
+              attendanceId: session.attendanceId,
+              employeeId: session.employeeId,
+              correctionType: 'MISSING_CHECK_OUT',
+              currentValue: null,
+              requestedValue: punchOut.toISOString(),
+              reason:
+                'No check-out was recorded. Auto-close time is provisional — please verify the actual departure time.',
+              workflowStatus: 'PENDING',
+            },
+          });
+
+          // Close any tracking gap still open on this session so it does not
+          // accumulate duration indefinitely after the session ends.
+          await tx.trackingGap.updateMany({
+            where: {
+              tenantId: session.tenantId,
+              employeeId: session.employeeId,
+              endedAt: null,
+              deletedAt: null,
+            },
+            data: { endedAt: punchOut },
+          });
         });
         closed++;
       } catch (err) {

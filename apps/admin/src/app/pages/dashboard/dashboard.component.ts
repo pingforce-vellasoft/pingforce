@@ -190,6 +190,14 @@ import { AuthService } from '../../core/auth/auth.service';
               </a>
               <a
                 mat-list-item
+                routerLink="/dashboard/workforce/attendance-log"
+                routerLinkActive="active-link"
+              >
+                <mat-icon matListItemIcon>fact_check</mat-icon>
+                <span matListItemTitle>Daily Attendance</span>
+              </a>
+              <a
+                mat-list-item
                 routerLink="/dashboard/workforce/leaves"
                 routerLinkActive="active-link"
               >

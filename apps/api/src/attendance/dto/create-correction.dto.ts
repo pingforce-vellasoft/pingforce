@@ -21,6 +21,18 @@ export const CORRECTION_TYPES = [
   'BREAK_TIME_ADJUSTMENT',
   'MANUAL_ATTENDANCE_REQUEST',
 ] as const;
+
+/**
+ * Types written by the system or an admin rather than requested by an
+ * employee: the nightly auto-checkout and admin manual checkout. Listed
+ * separately because they are never valid input to CreateCorrectionDto — they
+ * are outcomes, not requests — but readers of the correction log need to
+ * recognise them.
+ */
+export const SYSTEM_CORRECTION_TYPES = [
+  'AUTO_CHECKOUT',
+  'MANUAL_CHECKOUT',
+] as const;
 export type CorrectionType = (typeof CORRECTION_TYPES)[number];
 
 export class CreateCorrectionDto {

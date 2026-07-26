@@ -5,6 +5,9 @@ import { AttendanceService } from './attendance.service';
 import { CorrectionsService } from './corrections.service';
 import { OfflineSyncService } from './offline-sync.service';
 import { GeofenceCacheService } from './geofence-cache.service';
+import { AttendanceLogService } from './attendance-log.service';
+import { AttendanceAdminService } from './attendance-admin.service';
+import { TrackingGapService } from './tracking-gap.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AttendanceCommandHandlers } from './commands/handlers';
 import { AttendanceEventHandlers } from './events/handlers';
@@ -17,6 +20,9 @@ import { AttendanceEventHandlers } from './events/handlers';
     CorrectionsService,
     OfflineSyncService,
     GeofenceCacheService,
+    AttendanceLogService,
+    AttendanceAdminService,
+    TrackingGapService,
     ...AttendanceCommandHandlers,
     ...AttendanceEventHandlers,
   ],

@@ -113,6 +113,15 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'workforce/attendance-log',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN_MANAGER'] },
+        loadComponent: () =>
+          import('./pages/workforce/attendance-daily-log.component').then(
+            (m) => m.AttendanceDailyLogComponent,
+          ),
+      },
+      {
         path: 'workforce/employee/:id',
         canActivate: [roleGuard],
         data: { roles: ['ADMIN_MANAGER'] },

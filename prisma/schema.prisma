@@ -88,6 +88,8 @@ model Tenant {
   latestEmployeeLocations LatestEmployeeLocation[]
   dailyLocationSummaries DailyLocationSummary[]
   gpsValidationLogs     GpsValidationLog[]
+  trackingGaps          TrackingGap[]
+  deviceTrackingExemptions DeviceTrackingExemption[]
   offlineQueues         OfflineQueue[]
   syncLogs              SyncLog[]
   auditLogs             AuditLog[]
@@ -1411,6 +1413,85 @@ model GpsValidationLog {
   @@index([tenantId])
   @@index([employeeId])
   @@map("gps_validation_logs")
+}
+
+/// A period during which background tracking could not capture fixes for a
+/// checked-in employee — location services off, permission revoked, or the OS
+/// killing the service. Recorded so a payroll or conduct dispute has evidence
+/// instead of an unexplained blank stretch on the live map.
+///
+/// A gap is opened on the first failed capture and closed when capture
+/// resumes or the session ends; `endedAt == null` means still ongoing.
+model TrackingGap {
+  id                  String    @id @default(uuid())
+  tenantId            String
+  employeeId          String
+  attendanceSessionId String?
+  /// LOCATION_DISABLED | PERMISSION_DENIED | SERVICE_STOPPED | FIX_TIMEOUT
+  reason              String
+  startedAt           DateTime
+  endedAt             DateTime?
+  durationMinutes     Int?
+  /// Battery percentage at gap start, when the device reported it. Used by
+  /// admins assessing a low-battery exemption request.
+  batteryLevel        Int?
+  deviceId            String?
+  /// Set when an approved DeviceTrackingExemption covered this gap, so
+  /// reviewed gaps stop resurfacing as exceptions.
+  isExcused           Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@index([employeeId, startedAt])
+  @@index([tenantId, endedAt])
+  @@map("tracking_gaps")
+}
+
+/// Per-device relief from tracking-gap enforcement, for handsets whose battery
+/// genuinely cannot sustain a full shift of periodic GPS fixes.
+///
+/// Deliberately NOT advertised in the employee UI: surfacing "request an
+/// exemption" as a normal option invites it to be used to avoid tracking. The
+/// employee raises a request through support/their manager; an admin verifies
+/// the hardware and grants it for one device, with an expiry.
+model DeviceTrackingExemption {
+  id         String    @id @default(uuid())
+  tenantId   String
+  employeeId String
+  /// Scoped to a single handset — an exemption must not follow the employee
+  /// to a replacement device.
+  deviceId   String
+  /// LOW_BATTERY_HARDWARE | OEM_BACKGROUND_RESTRICTION | OTHER
+  reason     String
+  /// Free-text justification captured when the request was raised.
+  notes      String?
+  /// PENDING | APPROVED | REJECTED | REVOKED
+  status     String    @default("PENDING")
+  requestedBy String?
+  requestedAt DateTime @default(now())
+  reviewedBy String?
+  reviewedAt DateTime?
+  reviewNotes String?
+  /// Exemptions expire so they are re-justified rather than granted forever.
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([id, tenantId])
+  @@index([tenantId, status])
+  @@index([employeeId])
+  @@index([tenantId, deviceId])
+  @@map("device_tracking_exemptions")
 }
 
 model OfflineQueue {

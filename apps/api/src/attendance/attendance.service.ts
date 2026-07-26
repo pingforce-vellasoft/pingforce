@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
-import { RegisterDeviceDto, CreateGeofenceDto } from './dto/attendance.dto';
+import { CreateGeofenceDto } from './dto/attendance.dto';
 import { RbacService } from '../rbac/rbac.service';
 import { creditWorkedMinutes } from './domain/work-minutes';
 import { resolveState, SessionState } from './domain/session-state';
@@ -20,98 +20,11 @@ export class AttendanceService {
     private readonly geofenceCache: GeofenceCacheService,
   ) {}
 
-  async getDevices(user: any, skip = 0, take = 50) {
-    return this.prisma.employeeDevice.findMany({
-      where: { tenantId: user.tenantId },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            employeeCode: true,
-            firstName: true,
-            lastName: true,
-            // Never include the full user record — it carries passwordHash
-            user: {
-              select: {
-                id: true,
-                email: true,
-                profile: { select: { firstName: true, lastName: true } },
-              },
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: Math.min(take, 200),
-    });
-  }
-
-  async registerDevice(user: any, dto: RegisterDeviceDto) {
-    // Only employees can register a device
-    const employee = await this.prisma.employee.findUnique({
-      where: { userId: user.userId },
-    });
-    if (!employee) throw new UnauthorizedException('User is not an employee');
-
-    // Revoke-then-register atomically so the 1-device policy can't be
-    // violated by concurrent registrations (PRISMA_GUIDELINES.md §10).
-    // Both writes are tenant-scoped: deviceId comes from the client, so an
-    // unscoped revoke could clear rows belonging to another tenant.
-    const [, device] = await this.prisma.$transaction([
-      this.prisma.employeeDevice.updateMany({
-        where: {
-          tenantId: employee.tenantId,
-          employeeId: employee.id,
-          isTrusted: true,
-        },
-        data: { isTrusted: false, revokedAt: new Date() },
-      }),
-      // Upsert, not create: the mobile client re-registers on first punch after
-      // a reinstall, and with per-tenant uniqueness that same deviceId already
-      // exists. A plain create raised P2002 and the retry never recovered.
-      this.prisma.employeeDevice.upsert({
-        where: {
-          tenantId_deviceId: {
-            tenantId: employee.tenantId,
-            deviceId: dto.deviceId,
-          },
-        },
-        create: {
-          tenantId: employee.tenantId,
-          employeeId: employee.id,
-          deviceId: dto.deviceId,
-          publicKey: dto.publicKey,
-          isTrusted: true,
-          createdBy: user.userId,
-        },
-        update: {
-          employeeId: employee.id,
-          publicKey: dto.publicKey,
-          isTrusted: true,
-          revokedAt: null,
-          updatedBy: user.userId,
-        },
-      }),
-    ]);
-
-    return device;
-  }
-
-  async revokeDevice(admin: any, employeeId: string, deviceId: string) {
-    // Basic check for admin (assume proper RBAC guard in real app)
-    if (
-      admin.roleCode !== 'SUPER_ADMIN' &&
-      admin.roleCode !== 'ADMIN_MANAGER'
-    ) {
-      throw new UnauthorizedException('Only admins can revoke devices');
-    }
-
-    return this.prisma.employeeDevice.updateMany({
-      where: { tenantId: admin.tenantId, employeeId, deviceId },
-      data: { isTrusted: false, revokedAt: new Date() },
-    });
-  }
+  // Device binding lives in DevicesModule (devices.service.ts).
+  // getDevices / registerDevice / revokeDevice were removed together with the
+  // self-service registration path they served: it revoked the current binding
+  // and trusted a new handset on request, so an employee could re-bind to a
+  // colleague phone and punch from it.
 
   async manualCheckout(
     admin: any,
