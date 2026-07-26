@@ -37,6 +37,251 @@ jobs:
       - run: npx nx format:check
       - run: npx nx affected -t lint test build
 
+  # ── 1b. Migrations against a real Postgres ────────────────────────────────
+  #
+  # Nobody develops against a local database here, so before this job the very
+  # first execution of any migration was `migrate deploy` on the production
+  # volume — a syntax error, a bad constraint or a backfill that silently
+  # matched nothing would surface in prod, minutes after the pre-deploy backup
+  # and with the API already gated on the migrate container succeeding.
+  #
+  # Runs on kartoza/postgis:16-3.4, the same image as prod, because the schema
+  # depends on PostGIS (geofences.location is geography(Point,4326)) and a
+  # plain postgres image would pass here and fail there.
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: kartoza/postgis:16-3.4
+        env:
+          POSTGRES_USER: pingforce_ci
+          POSTGRES_PASS: pingforce_ci
+          POSTGRES_DBNAME: pingforce_ci
+          # Same knob prod sets. Irrelevant to a throwaway CI container, but
+          # keeping it identical means this job exercises the prod config
+          # rather than a variant that happens to work.
+          DATADIR: /var/lib/postgresql/data/pgdata
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pingforce_ci -d pingforce_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      # Prisma needs ?schema=public; libpq rejects it as an unknown URI query
+      # parameter, so the psql steps use PSQL_URL instead of DATABASE_URL.
+      # Same database, two spellings.
+      DATABASE_URL: postgresql://pingforce_ci:pingforce_ci@localhost:5432/pingforce_ci?schema=public
+      PSQL_URL: postgresql://pingforce_ci:pingforce_ci@localhost:5432/pingforce_ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - run: npm install --no-fund --no-audit
+
+      # The real assertion: every migration applies cleanly, in order, from an
+      # empty database. `migrate deploy` is the exact command the deploy runs.
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      # Diffs the database the migrations just built against schema.prisma, to
+      # catch the classic Prisma mistake: editing schema.prisma without
+      # generating the matching migration. That drift is invisible until a
+      # query references a column prod never created.
+      #
+      # Two classes of diff are expected and must NOT fail the build, or this
+      # check would be red on every run and get switched off:
+      #
+      #  1. GiST indexes on PostGIS columns. `location` / `path` are
+      #     Unsupported("geography"/"geometry") in schema.prisma, so Prisma
+      #     cannot model their indexes and always proposes dropping them. They
+      #     are created deliberately in hand-written migrations.
+      #  2. `ALTER COLUMN "updatedAt" DROP DEFAULT`. Hand-written migrations
+      #     give updatedAt a DEFAULT so existing rows are valid; Prisma's
+      #     @updatedAt carries no database default and the client always sets
+      #     it. Harmless and long-standing.
+      #
+      # Anything else is real drift and fails.
+      - name: Check schema and migrations agree
+        run: |
+          set -euo pipefail
+          status=0
+          npx prisma migrate diff \
+            --from-config-datasource \
+            --to-schema prisma/schema.prisma \
+            --script > /tmp/drift.sql 2>/dev/null || status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "::error::migrate diff failed to run (exit $status)"
+            cat /tmp/drift.sql || true
+            exit 1
+          fi
+
+          # Strip comments, blank lines, and the two known-benign statements.
+          unexpected=$(
+            grep -v '^--' /tmp/drift.sql \
+              | grep -v '^[[:space:]]*$' \
+              | grep -viE 'DROP INDEX "[a-z_]+_(location|path)_(gist|pattern)_idx";' \
+              | grep -viE 'ALTER TABLE "[a-z_]+" ALTER COLUMN "updatedAt" DROP DEFAULT;' \
+              || true
+          )
+
+          if [ -n "$unexpected" ]; then
+            echo "::error::schema.prisma has changes with no corresponding migration."
+            echo "Run: npx prisma migrate dev --name <description>"
+            echo "$unexpected"
+            exit 1
+          fi
+          echo "Schema and migration history agree (only known-benign diffs)."
+
+      # A seed that throws leaves the migrate container failing and the API
+      # gated behind it, so a broken seed is a full outage. It is also where
+      # the permission catalog is synced — a new permission that never reaches
+      # existing tenants means the feature is invisible to everyone already
+      # using the product.
+      - name: Run seed
+        env:
+          SEED_SUPER_ADMIN_PASSWORD: ci-only-not-a-real-secret
+        run: npx prisma db seed
+
+      # Seeds are upserts and deploy re-runs them on every push, so running
+      # twice must be a no-op rather than a duplicate-key crash.
+      - name: Run seed again (idempotency)
+        env:
+          SEED_SUPER_ADMIN_PASSWORD: ci-only-not-a-real-secret
+        run: npx prisma db seed
+
+      # Backfills are the dangerous class of migration: they are silent when
+      # wrong. The employee_geofences backfill has to reproduce the old
+      # tenant-wide geofence permission exactly, because attendance is now
+      # strict — an employee it misses cannot punch anywhere.
+      #
+      # Asserted against a purpose-built fixture rather than seed data, so the
+      # check keeps meaning even if the seed changes.
+      - name: Verify employee_geofences backfill
+        run: |
+          set -euo pipefail
+          psql "$PSQL_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          BEGIN;
+
+          -- One tenant, three employees, two geofences. The inactive employee
+          -- and the soft-deleted geofence must both be excluded.
+          INSERT INTO tenants (id, name, code, "createdAt", "updatedAt")
+          VALUES ('11111111-1111-1111-1111-111111111111', 'Backfill Co', 'BACKFILL-CI', now(), now());
+
+          INSERT INTO employees (id, "tenantId", "employeeCode", "firstName", "lastName", "employmentStatus", "createdAt", "updatedAt")
+          VALUES
+            ('22222222-2222-2222-2222-222222222221', '11111111-1111-1111-1111-111111111111', 'E1', 'Ana', 'Diaz',  'ACTIVE',   now(), now()),
+            ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'E2', 'Bo',  'Khan',  'ACTIVE',   now(), now()),
+            ('22222222-2222-2222-2222-222222222223', '11111111-1111-1111-1111-111111111111', 'E3', 'Cy',  'Roy',   'RESIGNED', now(), now());
+
+          INSERT INTO geofences (id, "tenantId", name, latitude, longitude, "radiusMeters", active, "createdAt", "updatedAt", "deletedAt")
+          VALUES
+            ('33333333-3333-3333-3333-333333333331', '11111111-1111-1111-1111-111111111111', 'HQ',    13.08, 80.27, 100, true,  now(), now(), NULL),
+            ('33333333-3333-3333-3333-333333333332', '11111111-1111-1111-1111-111111111111', 'Depot', 13.12, 80.27, 100, true,  now(), now(), NULL),
+            ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Old',   13.15, 80.27, 100, false, now(), now(), now());
+
+          -- Re-run the backfill statement verbatim from the migration.
+          INSERT INTO "employee_geofences" ("id", "tenantId", "employeeId", "geofenceId", "assignedAt", "assignedBy", "createdAt", "updatedAt")
+          SELECT gen_random_uuid(), e."tenantId", e."id", g."id", CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          FROM "employees" e
+          JOIN "geofences" g
+            ON g."tenantId" = e."tenantId" AND g."deletedAt" IS NULL AND g."active" = true
+          WHERE e."deletedAt" IS NULL AND e."employmentStatus" = 'ACTIVE';
+
+          -- 2 active employees x 2 live geofences = 4. Anything else means the
+          -- backfill either missed people (who then cannot punch) or granted
+          -- access through a deleted geofence.
+          DO $$
+          DECLARE n int;
+          BEGIN
+            SELECT count(*) INTO n FROM employee_geofences
+            WHERE "tenantId" = '11111111-1111-1111-1111-111111111111';
+            IF n <> 4 THEN
+              RAISE EXCEPTION 'backfill produced % assignments, expected 4', n;
+            END IF;
+
+            -- The resigned employee must not be granted anything.
+            SELECT count(*) INTO n FROM employee_geofences
+            WHERE "employeeId" = '22222222-2222-2222-2222-222222222223';
+            IF n <> 0 THEN
+              RAISE EXCEPTION 'inactive employee received % assignments, expected 0', n;
+            END IF;
+
+            -- Nor may a soft-deleted geofence appear.
+            SELECT count(*) INTO n FROM employee_geofences
+            WHERE "geofenceId" = '33333333-3333-3333-3333-333333333333';
+            IF n <> 0 THEN
+              RAISE EXCEPTION 'deleted geofence received % assignments, expected 0', n;
+            END IF;
+          END $$;
+
+          -- The unique pair constraint must hold: re-running the backfill is
+          -- an error, which is why the service upserts rather than inserts.
+          DO $$
+          BEGIN
+            INSERT INTO "employee_geofences" ("id", "tenantId", "employeeId", "geofenceId", "assignedAt", "createdAt", "updatedAt")
+            VALUES (gen_random_uuid(), '11111111-1111-1111-1111-111111111111',
+                    '22222222-2222-2222-2222-222222222221',
+                    '33333333-3333-3333-3333-333333333331', now(), now(), now());
+            RAISE EXCEPTION 'duplicate (employeeId, geofenceId) was accepted — unique index missing';
+          EXCEPTION WHEN unique_violation THEN
+            RAISE NOTICE 'unique constraint holds';
+          END $$;
+
+          ROLLBACK;
+          SQL
+          echo "Backfill verified."
+
+      # A new permission that never reaches existing tenants leaves the feature
+      # invisible to everyone already using the product. Two separate things
+      # have to work, and only the first is obvious:
+      #
+      #  1. the permission row exists in the catalog, and
+      #  2. tenants that already have an ADMIN_MANAGER role — created before
+      #     the permission existed — get a grant for it.
+      #
+      # (2) is what makes a new admin capability usable after deploy rather
+      # than only for tenants provisioned afterwards, so it is asserted against
+      # a role inserted before the seed runs, mimicking an existing customer.
+      - name: Verify permission catalog reaches existing tenants
+        run: |
+          set -euo pipefail
+          psql "$PSQL_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO tenants (id, name, code, "createdAt", "updatedAt")
+          VALUES ('99999999-9999-9999-9999-999999999999', 'Existing Co', 'EXIST-CI', now(), now());
+          INSERT INTO roles (id, "tenantId", code, name, "isSystem", "createdAt", "updatedAt")
+          VALUES ('88888888-8888-8888-8888-888888888888', '99999999-9999-9999-9999-999999999999',
+                  'ADMIN_MANAGER', 'Admin Manager', true, now(), now());
+          SQL
+
+          # Re-run the seed now that a pre-existing tenant role is present —
+          # this is the deploy-time path for a customer already on the product.
+          npx prisma db seed
+
+          catalog=$(psql "$PSQL_URL" -tAc \
+            "SELECT count(*) FROM permissions WHERE module = 'GEOFENCES' AND action = 'ASSIGN'")
+          if [ "$catalog" != "1" ]; then
+            echo "::error::GEOFENCES:ASSIGN missing from the permission catalog (found $catalog)"
+            exit 1
+          fi
+
+          granted=$(psql "$PSQL_URL" -tAc \
+            "SELECT count(*) FROM role_permissions rp
+             JOIN permissions p ON p.id = rp.\"permissionId\"
+             WHERE rp.\"roleId\" = '88888888-8888-8888-8888-888888888888'
+               AND p.module = 'GEOFENCES' AND p.action = 'ASSIGN'")
+          if [ "$granted" != "1" ]; then
+            echo "::error::existing tenant's ADMIN_MANAGER did not receive GEOFENCES:ASSIGN (found $granted)"
+            echo "A new admin permission must be backfilled onto existing system roles by the seed."
+            exit 1
+          fi
+          echo "Permission catalog synced and backfilled onto existing tenant roles."
+
   # ── 2. Security scan ──────────────────────────────────────────────────────
   security:
     runs-on: ubuntu-latest
@@ -106,7 +351,7 @@ jobs:
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       github.event_name == 'workflow_dispatch'
-    needs: [quality, security]
+    needs: [quality, security, migrations]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -138,7 +383,7 @@ jobs:
   #       FIREBASE_SERVICE_ACCOUNT repo secret — skips gracefully until set) ──
   deploy-frontends:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [quality, security]
+    needs: [quality, security, migrations]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
