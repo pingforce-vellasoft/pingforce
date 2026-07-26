@@ -74,7 +74,8 @@ export class DevicesController {
   @Post('claim')
   @RequirePermission('DEVICES', 'BIND')
   @ApiOperation({
-    summary: 'Activate a binding an administrator approved, with this device key',
+    summary:
+      'Activate a binding an administrator approved, with this device key',
   })
   async claimDevice(@Req() req: AuthRequest, @Body() dto: ClaimDeviceDto) {
     return this.devicesService.claimApprovedDevice(
@@ -85,7 +86,9 @@ export class DevicesController {
   }
 
   @Get('me')
-  @ApiOperation({ summary: 'Own device binding and any pending change request' })
+  @ApiOperation({
+    summary: 'Own device binding and any pending change request',
+  })
   async getMyDevice(@Req() req: AuthRequest) {
     return this.devicesService.getMyDevice(this.actor(req));
   }
@@ -103,10 +106,7 @@ export class DevicesController {
   @Post('change-requests/:id/cancel')
   @RequirePermission('DEVICES', 'REQUEST_CHANGE')
   @ApiOperation({ summary: 'Cancel own pending change request' })
-  async cancelChangeRequest(
-    @Req() req: AuthRequest,
-    @Param('id') id: string,
-  ) {
+  async cancelChangeRequest(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.devicesService.cancelChangeRequest(this.actor(req), id);
   }
 
@@ -144,10 +144,7 @@ export class DevicesController {
   @ApiOperation({
     summary: 'Approve a change request: rebind the employee and cut sessions',
   })
-  async approveChangeRequest(
-    @Req() req: AuthRequest,
-    @Param('id') id: string,
-  ) {
+  async approveChangeRequest(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.devicesService.approveChangeRequest(this.actor(req), id);
   }
 

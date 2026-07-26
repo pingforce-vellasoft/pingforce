@@ -61,7 +61,9 @@ export class AttendanceLogService {
       };
     }
 
-    const to = query.to ? startOfDay(new Date(query.to)) : startOfDay(new Date());
+    const to = query.to
+      ? startOfDay(new Date(query.to))
+      : startOfDay(new Date());
     const from = query.from
       ? startOfDay(new Date(query.from))
       : startOfDay(new Date(to.getTime() - 29 * 86400000));
@@ -188,9 +190,7 @@ export class AttendanceLogService {
 
   private buildDay(row: any, gaps: any[], now: Date) {
     const sessions = row.sessions ?? [];
-    const allBreaks: BreakRow[] = sessions.flatMap(
-      (s: any) => s.breaks ?? [],
-    );
+    const allBreaks: BreakRow[] = sessions.flatMap((s: any) => s.breaks ?? []);
 
     const openSession = sessions.find((s: any) => s.punchOut === null) ?? null;
     const isOngoing = openSession !== null;
@@ -221,7 +221,8 @@ export class AttendanceLogService {
     // check-out, so it is authoritative for closed days and zero for open ones.
     const workedMinutes = isOngoing
       ? Math.max(0, sessionMinutes - unpaidBreakMinutes)
-      : (row.totalWorkMinutes ?? Math.max(0, sessionMinutes - unpaidBreakMinutes));
+      : (row.totalWorkMinutes ??
+        Math.max(0, sessionMinutes - unpaidBreakMinutes));
 
     const shiftMinutes = row.shift
       ? this.shiftMinutes(row.shift.startTime, row.shift.endTime)
@@ -333,8 +334,7 @@ export class AttendanceLogService {
         gapMinutes: trackingGapMinutes,
         // An excused gap still shows, but flagged, so admins can tell a
         // reviewed low-battery device from an unexplained blackout.
-        allExcused:
-          dayGaps.length > 0 && dayGaps.every((g) => g.isExcused),
+        allExcused: dayGaps.length > 0 && dayGaps.every((g) => g.isExcused),
       },
 
       corrections: row.corrections ?? [],
@@ -371,8 +371,11 @@ export class AttendanceLogService {
       });
     }
 
-    if (ctx.openSession && resolveState(ctx.openSession.sessionStatus) ===
-        SessionState.ON_BREAK && !isToday) {
+    if (
+      ctx.openSession &&
+      resolveState(ctx.openSession.sessionStatus) === SessionState.ON_BREAK &&
+      !isToday
+    ) {
       out.push({
         code: 'BREAK_NOT_ENDED',
         severity: 'medium',
@@ -478,7 +481,10 @@ export class AttendanceLogService {
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   /** Scheduled shift length in minutes, handling overnight shifts. */
-  private shiftMinutes(start: string | null, end: string | null): number | null {
+  private shiftMinutes(
+    start: string | null,
+    end: string | null,
+  ): number | null {
     if (!start || !end) return null;
     const toMin = (hhmm: string) => {
       const [h, m] = hhmm.split(':').map(Number);

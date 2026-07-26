@@ -321,9 +321,7 @@ export class DevicesService {
       throw new NotFoundException('Device change request not found');
     }
     if (request.status !== DeviceChangeStatus.PENDING) {
-      throw new BadRequestException(
-        'Only a pending request can be cancelled.',
-      );
+      throw new BadRequestException('Only a pending request can be cancelled.');
     }
 
     const updated = await this.prisma.deviceChangeRequest.update({
@@ -407,7 +405,8 @@ export class DevicesService {
     requestId: string,
   ): Promise<DeviceChangeRequest> {
     const request = await this.repo.findRequest(actor.tenantId, requestId);
-    if (!request) throw new NotFoundException('Device change request not found');
+    if (!request)
+      throw new NotFoundException('Device change request not found');
     if (request.status !== DeviceChangeStatus.PENDING) {
       throw new BadRequestException('This request has already been reviewed.');
     }
@@ -547,7 +546,8 @@ export class DevicesService {
     rejectionReason: string,
   ): Promise<DeviceChangeRequest> {
     const request = await this.repo.findRequest(actor.tenantId, requestId);
-    if (!request) throw new NotFoundException('Device change request not found');
+    if (!request)
+      throw new NotFoundException('Device change request not found');
     if (request.status !== DeviceChangeStatus.PENDING) {
       throw new BadRequestException('This request has already been reviewed.');
     }

@@ -35,9 +35,7 @@ function makeService(o: Overrides = {}) {
     employee: {
       findFirst: jest
         .fn()
-        .mockResolvedValue(
-          o.employee === undefined ? EMPLOYEE : o.employee,
-        ),
+        .mockResolvedValue(o.employee === undefined ? EMPLOYEE : o.employee),
       update: jest.fn().mockResolvedValue({}),
     },
     employeeDevice: {
@@ -71,9 +69,7 @@ function makeService(o: Overrides = {}) {
     findPendingRequestForEmployee: jest
       .fn()
       .mockResolvedValue(o.pendingRequest ?? null),
-    countRequestsSince: jest
-      .fn()
-      .mockResolvedValue(o.recentRequestCount ?? 0),
+    countRequestsSince: jest.fn().mockResolvedValue(o.recentRequestCount ?? 0),
     findRequest: jest.fn().mockResolvedValue(o.request ?? null),
     listDevices: jest.fn().mockResolvedValue({ rows: [], total: 0 }),
     listRequests: jest.fn().mockResolvedValue({ rows: [], total: 0 }),

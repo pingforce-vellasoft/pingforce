@@ -51,9 +51,7 @@ export class AttendanceAdminService {
     if (!session) throw new NotFoundException('Attendance session not found');
 
     const punchIn = dto.punchIn ? new Date(dto.punchIn) : session.punchIn;
-    const punchOut = dto.punchOut
-      ? new Date(dto.punchOut)
-      : session.punchOut;
+    const punchOut = dto.punchOut ? new Date(dto.punchOut) : session.punchOut;
 
     if (punchOut && punchOut.getTime() <= punchIn.getTime()) {
       throw new BadRequestException('Check-out must be after check-in.');

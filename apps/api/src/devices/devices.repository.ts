@@ -50,7 +50,9 @@ export class DevicesRepository {
         ? {
             OR: [
               { deviceId: { contains: search, mode: 'insensitive' as const } },
-              { deviceName: { contains: search, mode: 'insensitive' as const } },
+              {
+                deviceName: { contains: search, mode: 'insensitive' as const },
+              },
               {
                 employee: {
                   is: {
