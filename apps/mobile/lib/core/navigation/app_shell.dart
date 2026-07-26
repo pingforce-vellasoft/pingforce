@@ -691,33 +691,85 @@ class _BackNavigationHandlerState extends State<BackNavigationHandler> {
 //     ...
 //   )
 
+/// The gate-chain inputs, snapshotted at one point in time.
+///
+/// Exists so the redirect decision is a pure function of explicit state rather
+/// than of `AuthSession.instance` + `GoRouterState`, neither of which a unit
+/// test can easily fabricate. `RouteGuard.redirect` reads the live session into
+/// one of these and delegates; tests construct them directly.
+@immutable
+class GateState {
+  const GateState({
+    required this.location,
+    required this.isAuthenticated,
+    this.mustChangePassword = false,
+    this.isOnboarded = false,
+    this.deviceBound = true,
+    this.permissionsFlowSeen = false,
+    this.roleCode,
+  });
+
+  /// `GoRouterState.matchedLocation` — the route being navigated to.
+  final String location;
+  final bool isAuthenticated;
+  final bool mustChangePassword;
+  final bool isOnboarded;
+  final bool deviceBound;
+  final bool permissionsFlowSeen;
+  final String? roleCode;
+
+  /// Snapshots the live singleton for the route being entered.
+  factory GateState.fromSession(String location) {
+    final session = AuthSession.instance;
+    return GateState(
+      location: location,
+      isAuthenticated: session.isAuthenticated,
+      mustChangePassword: session.mustChangePassword,
+      isOnboarded: session.isOnboarded,
+      deviceBound: session.deviceBound,
+      permissionsFlowSeen: session.permissionsFlowSeen,
+      roleCode: session.roleCode,
+    );
+  }
+
+  @override
+  String toString() => 'loc=$location authed=$isAuthenticated '
+      'mustChangePw=$mustChangePassword onboarded=$isOnboarded '
+      'deviceBound=$deviceBound permsSeen=$permissionsFlowSeen '
+      'role=$roleCode';
+}
+
 class RouteGuard {
   RouteGuard._();
 
   static String? redirect(BuildContext context, GoRouterState state) {
-    // These checks must run in order — first match wins.
-
-    // 1. Auth guard — redirect unauthenticated users to login
-    final isAuthenticated = _isAuthenticated();
+    final gates = GateState.fromSession(state.matchedLocation);
 
     // Gate diagnostics — makes a post-login stall visible in `flutter logs`.
     // The app parks on the first gate whose condition holds; without this the
     // stuck gate is invisible (gate screens issue no API calls).
     if (kDebugMode) {
-      debugPrint(
-        '[RouteGuard] loc=${state.matchedLocation} '
-        'authed=$isAuthenticated '
-        'mustChangePw=${_mustChangePassword()} '
-        'onboarded=${_isOnboarded()} '
-        'deviceBound=${AuthSession.instance.deviceBound} '
-        'permsSeen=${AuthSession.instance.permissionsFlowSeen} '
-        'role=${AuthSession.instance.roleCode}',
-      );
+      debugPrint('[RouteGuard] $gates');
     }
-    final isOnChangePassword =
-        state.matchedLocation == '/auth/change-password';
-    final isOnProfileSetup = state.matchedLocation == '/auth/profile-setup';
-    final isOnDeviceBinding = state.matchedLocation == '/auth/device-binding';
+
+    return resolve(gates);
+  }
+
+  /// The gate chain itself — pure, so `test/navigation/route_guard_test.dart`
+  /// can assert the ordering (which gate wins when several conditions hold at
+  /// once) without a widget tree, a router, or secure storage.
+  ///
+  /// Returns the destination to redirect to, or null to allow the navigation.
+  static String? resolve(GateState gates) {
+    // These checks must run in order — first match wins.
+    final location = gates.location;
+
+    // 1. Auth guard — redirect unauthenticated users to login
+    final isAuthenticated = gates.isAuthenticated;
+
+    final isOnChangePassword = location == '/auth/change-password';
+    final isOnProfileSetup = location == '/auth/profile-setup';
+    final isOnDeviceBinding = location == '/auth/device-binding';
     // The forced change-password, profile-setup and device-binding screens are
     // authenticated routes despite their /auth prefix, so exclude them from the
     // auth-route bounce below — otherwise gate 1 bounces them to /home and the
@@ -725,8 +777,8 @@ class RouteGuard {
     final isOnGatedAuthRoute =
         isOnChangePassword || isOnProfileSetup || isOnDeviceBinding;
     final isOnAuthRoute =
-        (state.matchedLocation.startsWith('/auth') && !isOnGatedAuthRoute) ||
-            state.matchedLocation == '/splash';
+        (location.startsWith('/auth') && !isOnGatedAuthRoute) ||
+            location == '/splash';
     if (!isAuthenticated && !isOnAuthRoute && !isOnGatedAuthRoute) {
       return _gate('/auth/login', 'not-authenticated');
     }
@@ -736,7 +788,7 @@ class RouteGuard {
 
     // 1b. Forced password change — an admin-provisioned temporary password
     // must be rotated before the rest of the app is reachable.
-    if (isAuthenticated && _mustChangePassword() && !isOnChangePassword) {
+    if (isAuthenticated && gates.mustChangePassword && !isOnChangePassword) {
       return _gate('/auth/change-password', 'must-change-password');
     }
 
@@ -744,7 +796,7 @@ class RouteGuard {
     // complete it (and, for a tenant owner, company + branding) before the
     // rest of the app is reachable. Runs after 1b so a temporary password is
     // always rotated first.
-    if (isAuthenticated && !_isOnboarded() && !isOnProfileSetup) {
+    if (isAuthenticated && !gates.isOnboarded && !isOnProfileSetup) {
       return _gate('/auth/profile-setup', 'not-onboarded');
     }
 
@@ -757,11 +809,10 @@ class RouteGuard {
     // The change-request screen is exempt: an employee whose binding was
     // revoked, or who is on a replacement handset, reaches the app on a device
     // that is not bound and must be able to ask for one.
-    final isOnDeviceChangeRequest =
-        state.matchedLocation == '/device/change-request';
+    final isOnDeviceChangeRequest = location == '/device/change-request';
     if (isAuthenticated &&
-        _isOnboarded() &&
-        !AuthSession.instance.deviceBound &&
+        gates.isOnboarded &&
+        !gates.deviceBound &&
         !isOnDeviceBinding &&
         !isOnDeviceChangeRequest) {
       return _gate('/auth/device-binding', 'device-not-bound');
@@ -776,11 +827,11 @@ class RouteGuard {
     // the user sit on the binding/change-request screens, so pulling them to
     // /permissions from there would bounce straight back through 1c-bis
     // (/auth/device-binding => /permissions => /auth/device-binding).
-    final isOnPermissions = state.matchedLocation == '/permissions';
+    final isOnPermissions = location == '/permissions';
     if (isAuthenticated &&
-        _isOnboarded() &&
-        AuthSession.instance.deviceBound &&
-        !AuthSession.instance.permissionsFlowSeen &&
+        gates.isOnboarded &&
+        gates.deviceBound &&
+        !gates.permissionsFlowSeen &&
         !isOnPermissions) {
       return _gate('/permissions', 'permissions-flow-not-seen');
     }
@@ -806,9 +857,9 @@ class RouteGuard {
     // tab; this closes the gap for routes reached without the nav.
     if (isAuthenticated) {
       final requiredPermission =
-          NavDestinations.permissionKeyForRoute(state.matchedLocation);
+          NavDestinations.permissionKeyForRoute(location);
       if (requiredPermission != null) {
-        final role = AppUserRoleX.fromRoleCode(AuthSession.instance.roleCode);
+        final role = AppUserRoleX.fromRoleCode(gates.roleCode);
         if (!NavDestinations.roleHasPermission(role, requiredPermission)) {
           return _gate('/home', 'role-missing-permission:$requiredPermission');
         }
@@ -829,18 +880,6 @@ class RouteGuard {
   }
 
   // ── Session-backed checks ─────────────────────────────────────────────────
-
-  static bool _isAuthenticated() {
-    return AuthSession.instance.isAuthenticated;
-  }
-
-  static bool _mustChangePassword() {
-    return AuthSession.instance.mustChangePassword;
-  }
-
-  static bool _isOnboarded() {
-    return AuthSession.instance.isOnboarded;
-  }
 
   static bool _isSessionExpired() {
     // TODO: ref.read(authProvider).isSessionExpired
