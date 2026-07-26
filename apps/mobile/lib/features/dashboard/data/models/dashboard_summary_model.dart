@@ -87,6 +87,9 @@ class DashboardAttendanceModel {
     required this.gracePeriodMinutes,
     required this.workedMinutes,
     required this.breaksTaken,
+    required this.breakMinutes,
+    required this.breakStartTime,
+    required this.overtimeMinutes,
     required this.isLate,
     required this.minutesLate,
   });
@@ -102,11 +105,19 @@ class DashboardAttendanceModel {
   final int? gracePeriodMinutes;
   final int? workedMinutes;
   final int breaksTaken;
+  final int breakMinutes;
+  final DateTime? breakStartTime;
+  final int overtimeMinutes;
   final bool isLate;
   final int? minutesLate;
 
   factory DashboardAttendanceModel.fromJson(Map<String, dynamic> json) {
-    DateTime? parse(String? s) => s == null ? null : DateTime.tryParse(s);
+    // The API sends UTC ISO-8601. Without toLocal() every punch time rendered
+    // in UTC, so check-in/check-out clock times were wrong by the device's
+    // offset while the elapsed-time counters (computed from the same values)
+    // stayed right — which is why the numbers looked inconsistent.
+    DateTime? parse(String? s) =>
+        s == null ? null : DateTime.tryParse(s)?.toLocal();
     return DashboardAttendanceModel(
       status: (json['status'] as String?) ?? 'noShift',
       sessionId: json['sessionId'] as String?,
@@ -119,6 +130,9 @@ class DashboardAttendanceModel {
       gracePeriodMinutes: json['gracePeriodMinutes'] as int?,
       workedMinutes: json['workedMinutes'] as int?,
       breaksTaken: (json['breaksTaken'] as int?) ?? 0,
+      breakMinutes: (json['breakMinutes'] as int?) ?? 0,
+      breakStartTime: parse(json['breakStartTime'] as String?),
+      overtimeMinutes: (json['overtimeMinutes'] as int?) ?? 0,
       isLate: (json['isLate'] as bool?) ?? false,
       minutesLate: json['minutesLate'] as int?,
     );

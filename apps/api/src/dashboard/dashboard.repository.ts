@@ -83,7 +83,20 @@ export class DashboardRepository {
             punchIn: true,
             punchOut: true,
             sessionStatus: true,
-            breaks: { select: { id: true } },
+            // startTime/endTime drive the "on break" status and the live break
+            // timer; durationMinutes feeds the break/worked split. Selecting
+            // only `id` made every one of those unavailable to the hero card.
+            breaks: {
+              where: { deletedAt: null },
+              orderBy: { startTime: 'asc' },
+              select: {
+                id: true,
+                startTime: true,
+                endTime: true,
+                durationMinutes: true,
+                paidBreak: true,
+              },
+            },
           },
         },
       },

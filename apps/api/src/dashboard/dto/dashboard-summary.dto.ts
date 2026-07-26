@@ -18,7 +18,7 @@ export interface DashboardUserDto {
 }
 
 export interface DashboardAttendanceDto {
-  // 'notCheckedIn' | 'working' | 'checkedOut' | 'noShift'
+  // 'notCheckedIn' | 'working' | 'onBreak' | 'checkedOut' | 'noShift'
   readonly status: string;
   readonly sessionId: string | null;
   readonly checkInTime: string | null; // ISO 8601
@@ -28,8 +28,16 @@ export interface DashboardAttendanceDto {
   readonly shiftEnd: string | null; // "HH:mm"
   readonly totalShiftMinutes: number | null;
   readonly gracePeriodMinutes: number | null;
+  /// Paid time: elapsed session time minus unpaid break minutes.
   readonly workedMinutes: number | null; // elapsed at response time
   readonly breaksTaken: number;
+  /// Total minutes spent on break today (closed breaks + the open one).
+  readonly breakMinutes: number;
+  /// Start of the in-progress break, when status === 'onBreak'. Drives the
+  /// live break timer on the home-screen hero card.
+  readonly breakStartTime: string | null; // ISO 8601
+  /// Minutes worked beyond the scheduled shift length; 0 when not over.
+  readonly overtimeMinutes: number;
   readonly isLate: boolean;
   readonly minutesLate: number | null;
 }
