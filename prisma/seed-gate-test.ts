@@ -53,7 +53,7 @@ function assertEnabled(): void {
   if ((env !== 'development' && env !== 'test') || !optedIn) {
     throw new Error(
       'Refusing to seed gate-chain test accounts. Requires ' +
-        "NODE_ENV=development|test and ALLOW_TEST_RESET_ENDPOINT=true. " +
+        'NODE_ENV=development|test and ALLOW_TEST_RESET_ENDPOINT=true. ' +
         `Got NODE_ENV=${env ?? '<unset>'}, ` +
         `ALLOW_TEST_RESET_ENDPOINT=${process.env.ALLOW_TEST_RESET_ENDPOINT ?? '<unset>'}.`,
     );
@@ -137,7 +137,9 @@ async function main(): Promise<void> {
   console.log('Account A — walks gates 1 → 1d');
   console.log(`  email       : ${WALKER_EMAIL}`);
   console.log(`  userId      : ${walker}`);
-  console.log('  state       : password change + profile + device binding armed');
+  console.log(
+    '  state       : password change + profile + device binding armed',
+  );
   console.log('');
   console.log('Account B — gate 5 (RBAC)');
   console.log(`  email       : ${RBAC_EMAIL}`);
