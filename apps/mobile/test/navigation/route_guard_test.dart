@@ -107,6 +107,37 @@ void main() {
       );
     });
 
+    // Regression: 1b stands down once the user is parked on its own screen, so
+    // a downstream gate used to fire from there and pull them away — 1b then
+    // fired again and sent them back. A brand-new account trips this, because
+    // it is behind 1b and 1c at once:
+    //   /auth/change-password => /auth/profile-setup => /auth/change-password
+    test('holds the user on its screen while later gates are also open', () {
+      expect(
+        RouteGuard.resolve(clear(
+          location: '/auth/change-password',
+          mustChangePassword: true,
+          isOnboarded: false,
+          deviceBound: false,
+          permissionsFlowSeen: false,
+        )),
+        isNull,
+      );
+    });
+
+    // The other half of that loop: nothing should route to a later gate's
+    // screen while the password is still unrotated.
+    test('reclaims a user who reaches a later gate screen first', () {
+      expect(
+        RouteGuard.resolve(clear(
+          location: '/auth/profile-setup',
+          mustChangePassword: true,
+          isOnboarded: false,
+        )),
+        '/auth/change-password',
+      );
+    });
+
     test('outranks profile setup, device binding and permissions', () {
       expect(
         RouteGuard.resolve(clear(

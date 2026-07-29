@@ -796,7 +796,16 @@ class RouteGuard {
     // complete it (and, for a tenant owner, company + branding) before the
     // rest of the app is reachable. Runs after 1b so a temporary password is
     // always rotated first.
-    if (isAuthenticated && !gates.isOnboarded && !isOnProfileSetup) {
+    //
+    // Skipped while 1b is still outstanding. Ordering alone is not enough:
+    // 1b stands down once the user is parked on /auth/change-password, so
+    // without this 1c would pull them to /auth/profile-setup, where 1b fires
+    // again and sends them back — an infinite
+    // (/auth/change-password => /auth/profile-setup) loop.
+    if (isAuthenticated &&
+        !gates.mustChangePassword &&
+        !gates.isOnboarded &&
+        !isOnProfileSetup) {
       return _gate('/auth/profile-setup', 'not-onboarded');
     }
 
@@ -811,6 +820,7 @@ class RouteGuard {
     // that is not bound and must be able to ask for one.
     final isOnDeviceChangeRequest = location == '/device/change-request';
     if (isAuthenticated &&
+        !gates.mustChangePassword &&
         gates.isOnboarded &&
         !gates.deviceBound &&
         !isOnDeviceBinding &&
@@ -829,6 +839,7 @@ class RouteGuard {
     // (/auth/device-binding => /permissions => /auth/device-binding).
     final isOnPermissions = location == '/permissions';
     if (isAuthenticated &&
+        !gates.mustChangePassword &&
         gates.isOnboarded &&
         gates.deviceBound &&
         !gates.permissionsFlowSeen &&
