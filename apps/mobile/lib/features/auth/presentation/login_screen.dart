@@ -72,9 +72,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     // entry so the screen always starts from a signed-out state.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (ref.read(loginProvider).isAuthenticated) {
-        ref.invalidate(loginProvider);
-      }
+      ref.read(loginProvider.notifier).clearAuthenticatedFlag();
     });
   }
 
