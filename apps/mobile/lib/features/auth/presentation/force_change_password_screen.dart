@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/auth_session.dart';
 import '../../../injection_container.dart';
 import '../domain/repositories/auth_repository.dart';
+import 'auth_notifier.dart';
 
 /// Forced password-change screen shown to accounts provisioned with an
 /// admin-chosen temporary password (e.g. the tenant admin from the welcome
@@ -66,6 +67,12 @@ class _ForceChangePasswordScreenState
         // send the user back to a clean login.
         AuthSession.instance.mustChangePassword = false;
         AuthSession.instance.isAuthenticated = false;
+        // The login notifier is keep-alive, so it still holds
+        // isAuthenticated: true from the sign-in that landed here. The login
+        // screen navigates on the false => true edge, so leaving it set means
+        // the second sign-in is a true => true no-op and the button does
+        // nothing. Reset it before handing the user back.
+        ref.invalidate(loginProvider);
         context.go('/auth/login');
       },
     );
