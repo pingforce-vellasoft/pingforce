@@ -63,6 +63,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     // pre-fill the workspace and move focus to the credentials. Runs after the
     // first frame so GoRouterState is available, and only once per screen.
     WidgetsBinding.instance.addPostFrameCallback((_) => _consumeInviteLink());
+
+    // The login notifier is keep-alive: reaching this screen again after a
+    // signed-in session (forced password change, sign-out, session expiry)
+    // finds isAuthenticated still true from the previous sign-in. The listen
+    // below fires on a state change, so a stale true makes the next successful
+    // sign-in a true => true no-op and the button appears dead. Clear it on
+    // entry so the screen always starts from a signed-out state.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (ref.read(loginProvider).isAuthenticated) {
+        ref.invalidate(loginProvider);
+      }
+    });
   }
 
   void _consumeInviteLink() {
@@ -100,8 +113,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       if (next.hasBanner && prev?.authError != next.authError) {
         _shakeCtrl.forward(from: 0);
       }
-      // Login succeeded → enter the app
-      if (next.isAuthenticated && prev?.isAuthenticated != true) {
+      // Login succeeded → enter the app. Deliberately not gated on the
+      // false => true edge: this screen is reachable with the keep-alive
+      // notifier already flagged authenticated, and an edge check would then
+      // never fire. initState clears a stale flag, so any authenticated state
+      // seen here is a fresh sign-in.
+      if (next.isAuthenticated) {
         context.go('/home');
       }
     });
