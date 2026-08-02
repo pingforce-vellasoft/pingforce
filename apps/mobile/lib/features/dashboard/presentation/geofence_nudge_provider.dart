@@ -1,13 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 
+import '../../../injection_container.dart';
+import '../../geofences/domain/repositories/geofence_repository.dart';
+
 /// Persists whether the "configure a geofence" setup reminder has been
 /// dismissed on this device, keyed per tenant so each workspace's admin sees
 /// it once. Backed by a lightweight Hive box so no extra dependency is needed.
 ///
-/// Mobile has no in-app geofence management (that lives in the web admin), so
-/// this is an informational, permanently dismissible reminder rather than a
-/// live zero-geofence check.
+/// Dismissal is only half the story — the banner also disappears on its own
+/// once the tenant actually has a geofence (see [tenantHasGeofenceProvider]).
 class GeofenceNudgeDismissal
     extends StateNotifier<Map<String, bool>> {
   GeofenceNudgeDismissal() : super(const {});
@@ -44,3 +46,19 @@ final geofenceNudgeDismissalProvider =
     StateNotifierProvider<GeofenceNudgeDismissal, Map<String, bool>>(
   (ref) => GeofenceNudgeDismissal(),
 );
+
+/// Whether the signed-in tenant already has at least one geofence.
+///
+/// The setup reminder is a "you have nothing configured yet" prompt, so it must
+/// be driven by the live count, not only by the dismissal flag: an admin who
+/// creates their first geofence from the banner's own Set up action has to see
+/// it disappear when they come back to the dashboard. Invalidate this provider
+/// after a create/delete to re-check.
+///
+/// On failure it resolves to `true` (i.e. "assume configured"), so a transient
+/// API or offline error never shows a false "set up a geofence first" prompt to
+/// a tenant that has them.
+final tenantHasGeofenceProvider = FutureProvider<bool>((ref) async {
+  final result = await sl<GeofenceRepository>().getGeofences();
+  return result.fold((_) => true, (items) => items.isNotEmpty);
+});
