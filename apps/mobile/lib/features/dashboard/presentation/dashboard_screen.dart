@@ -54,6 +54,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(dashboardNotifierProvider.notifier).refresh();
+      ref.invalidate(tenantHasGeofenceProvider);
     }
   }
 
@@ -68,7 +69,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       body: RefreshIndicator(
         color: Theme.of(context).colorScheme.primary,
         strokeWidth: 2.5,
-        onRefresh: () => ref.read(dashboardNotifierProvider.notifier).refresh(),
+        onRefresh: () async {
+          ref.invalidate(tenantHasGeofenceProvider);
+          await ref.read(dashboardNotifierProvider.notifier).refresh();
+        },
         child: CustomScrollView(
           controller: _scrollController,
           physics: const BouncingScrollPhysics(
@@ -213,15 +217,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
   // ── Geofence setup reminder ─────────────────────────────────────────────────
   //
-  // Shown only to tenant admins while the attendance module is enabled. Mobile
-  // has no in-app geofence management, so this points admins to the web portal
-  // and is permanently dismissible per tenant (no live geofence count here).
+  // Shown only to tenant admins while the attendance module is enabled, and
+  // only while the tenant has NO geofence yet. It is also dismissible per
+  // tenant, for an admin who does not want to configure one right now.
   Widget _buildGeofenceNudge(BuildContext context) {
     final user = ref.watch(currentUserProvider).valueOrNull;
     if (user == null || !user.isAttendanceEnabled) {
       return const SizedBox.shrink();
     }
     if (AppUserRoleX.fromRoleCode(user.role) != AppUserRole.admin) {
+      return const SizedBox.shrink();
+    }
+
+    // Live geofence check. The reminder is a "nothing configured yet" prompt,
+    // so once the admin creates their first geofence it must stop showing —
+    // dismissal alone left it up forever. While loading (or on error, which
+    // resolves to true) nothing is rendered, so it never flashes wrongly.
+    final hasGeofence = ref.watch(tenantHasGeofenceProvider).valueOrNull;
+    if (hasGeofence == null || hasGeofence) {
       return const SizedBox.shrink();
     }
 
@@ -243,7 +256,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
     return _GeofenceNudgeBanner(
       onDismiss: () => dismissal.dismiss(user.tenantId),
-      onSetup: () => context.push('/geofences'),
+      // Re-check on return: the admin most likely came back having created the
+      // geofence this banner asked for, and it must be gone by then.
+      onSetup: () async {
+        await context.push('/geofences');
+        ref.invalidate(tenantHasGeofenceProvider);
+      },
     );
   }
 

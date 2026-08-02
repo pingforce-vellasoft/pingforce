@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../injection_container.dart';
+import '../../dashboard/presentation/geofence_nudge_provider.dart';
 import '../domain/entities/geofence.dart';
 import '../domain/repositories/geofence_repository.dart';
 
@@ -84,6 +85,10 @@ class GeofenceNotifier extends Notifier<GeofenceState> {
       },
       (created) {
         state = state.copyWith(isSaving: false, items: [...state.items, created]);
+        // The dashboard's "set up a geofence first" reminder is driven by the
+        // live count, so drop its cached answer — otherwise it keeps showing
+        // after the admin creates the very geofence it asked for.
+        ref.invalidate(tenantHasGeofenceProvider);
         return null;
       },
     );
@@ -99,7 +104,11 @@ class GeofenceNotifier extends Notifier<GeofenceState> {
         state = state.copyWith(items: previous);
         return f.message;
       },
-      (_) => null,
+      (_) {
+        // Deleting the last geofence must bring the dashboard reminder back.
+        ref.invalidate(tenantHasGeofenceProvider);
+        return null;
+      },
     );
   }
 }

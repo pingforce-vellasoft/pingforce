@@ -68,11 +68,11 @@ class _ForceChangePasswordScreenState
         AuthSession.instance.mustChangePassword = false;
         AuthSession.instance.isAuthenticated = false;
         // The login notifier is keep-alive, so it still holds
-        // isAuthenticated: true from the sign-in that landed here. The login
-        // screen navigates on the false => true edge, so leaving it set means
-        // the second sign-in is a true => true no-op and the button does
-        // nothing. Reset it before handing the user back.
-        ref.invalidate(loginProvider);
+        // isAuthenticated: true from the sign-in that landed here, which would
+        // make the next sign-in a true => true no-op. Clear just that flag —
+        // invalidating the provider would also wipe the workspace code the user
+        // typed, which the login screen's text controllers would keep showing.
+        ref.read(loginProvider.notifier).clearAuthenticatedFlag();
         context.go('/auth/login');
       },
     );

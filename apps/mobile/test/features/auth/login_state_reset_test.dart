@@ -31,17 +31,52 @@ void main() {
       expect(container.read(loginProvider).isAuthenticated, isTrue);
     });
 
-    test('invalidate clears it, so the next sign-in is a real transition', () {
+    test('clearAuthenticatedFlag drops the flag', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       container.read(loginProvider.notifier).state =
           const LoginState(isAuthenticated: true);
-      expect(container.read(loginProvider).isAuthenticated, isTrue);
+
+      container.read(loginProvider.notifier).clearAuthenticatedFlag();
+
+      expect(container.read(loginProvider).isAuthenticated, isFalse);
+    });
+
+    test('clearAuthenticatedFlag keeps the typed workspace and username', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(loginProvider.notifier).state = const LoginState(
+        isAuthenticated: true,
+        tenantCode: 'GATE100',
+        username: 'gatetest@pingforce.test',
+      );
+
+      container.read(loginProvider.notifier).clearAuthenticatedFlag();
+
+      // submitLogin() reads these off the state, but the visible text lives in
+      // the screen's own TextEditingControllers. Wiping the state (as a blanket
+      // ref.invalidate does) leaves a form that looks filled and submits an
+      // empty workspace code — the API answers that with 404 Tenant not found.
+      final state = container.read(loginProvider);
+      expect(state.isAuthenticated, isFalse);
+      expect(state.tenantCode, 'GATE100');
+      expect(state.username, 'gatetest@pingforce.test');
+    });
+
+    test('invalidate clears the flag but also loses the form contents', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(loginProvider.notifier).state =
+          const LoginState(isAuthenticated: true, tenantCode: 'GATE100');
 
       container.invalidate(loginProvider);
 
+      // Why clearAuthenticatedFlag exists rather than an invalidate call.
       expect(container.read(loginProvider).isAuthenticated, isFalse);
+      expect(container.read(loginProvider).tenantCode, isEmpty);
     });
 
     test('a stale flag makes an edge-gated listener miss the second sign-in',

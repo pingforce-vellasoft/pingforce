@@ -29,6 +29,23 @@ class LoginNotifier extends Notifier<LoginState> {
     return const LoginState();
   }
 
+  /// Drops the authenticated flag while leaving the form contents alone.
+  ///
+  /// The notifier is keep-alive, so `isAuthenticated: true` from one sign-in
+  /// outlives the session that set it. Returning to the login screen with it
+  /// still set makes the next sign-in a `true => true` no-op, and the login
+  /// screen never navigates.
+  ///
+  /// Deliberately narrower than `ref.invalidate(loginProvider)`: the typed
+  /// workspace code and username live in this state, while the text fields have
+  /// their own controllers. Resetting the whole state empties `tenantCode`
+  /// without clearing the visible text, so the form looks filled but submits an
+  /// empty workspace — which the API answers with "Tenant not found".
+  void clearAuthenticatedFlag() {
+    if (!state.isAuthenticated) return;
+    state = state.copyWith(isAuthenticated: false);
+  }
+
   Future<void> _refreshBiometricState() async {
     final available = await _checkBiometricAvailability();
     final enrolled = await _checkBiometricEnrolled();

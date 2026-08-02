@@ -109,6 +109,7 @@ enum NavDestinationId {
   leave,
   documents,
   announcements,
+  geofences,
 }
 
 // ── FAB Action per destination ─────────────────────────────────────────────
@@ -346,6 +347,19 @@ class NavDestinations {
         badgeCount: badgeCount,
       );
 
+  /// Attendance zones. Admin-only: the geofence API is admin-scoped, and the
+  /// dashboard setup reminder deep-links here, so it needs a permanent home in
+  /// the drawer rather than being reachable only from a dismissible banner.
+  static NavDestination geofences() => const NavDestination(
+        id: NavDestinationId.geofences,
+        label: 'Geofences',
+        icon: Icons.location_on_outlined,
+        selectedIcon: Icons.location_on_rounded,
+        rootRoute: '/geofences',
+        permissionKey: 'geofences.view',
+        showInMoreSheet: true,
+      );
+
   // ─────────────────────────────────────────────────────────────────────────
   // ROLE → BOTTOM NAV CONFIGURATION
   // ─────────────────────────────────────────────────────────────────────────
@@ -414,6 +428,7 @@ class NavDestinations {
       leave(),
       announcements(),
       syncMonitor(badgeCount: pendingSyncBadge),
+      geofences(),
       settings(),
     ];
     return all
@@ -473,6 +488,9 @@ class NavDestinations {
           'leads.view',
           'faults.view',
           'visits.view',
+          // Attendance zones are configured by admins only. Field roles punch
+          // against geofences but never create or edit them.
+          'geofences.view',
         },
       // Customer portal identity: no field features at all. Only the shared
       // shell surfaces from `_commonPermissions` — never visits/attendance/etc.
@@ -501,6 +519,7 @@ class NavDestinations {
     '/leads': 'leads.view',
     '/team': 'team.view',
     '/reports': 'reports.view',
+    '/geofences': 'geofences.view',
     // No role carries 'documents.view', so this bounces every /documents
     // deep link home until the module is re-enabled.
     '/documents': 'documents.view',
