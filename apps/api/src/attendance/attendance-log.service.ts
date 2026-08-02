@@ -371,18 +371,6 @@ export class AttendanceLogService {
       });
     }
 
-    if (
-      ctx.openSession &&
-      resolveState(ctx.openSession.sessionStatus) === SessionState.ON_BREAK &&
-      !isToday
-    ) {
-      out.push({
-        code: 'BREAK_NOT_ENDED',
-        severity: 'medium',
-        detail: 'Break was never ended before the day closed.',
-      });
-    }
-
     if (ctx.sessions.some((s: any) => s.isSpoofed)) {
       out.push({
         code: 'MOCK_LOCATION',

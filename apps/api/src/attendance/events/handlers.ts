@@ -1,11 +1,6 @@
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 import { AuditService } from '../../audit/audit.service';
-import {
-  EmployeeCheckedInEvent,
-  EmployeeCheckedOutEvent,
-  BreakStartedEvent,
-  BreakEndedEvent,
-} from './impl';
+import { EmployeeCheckedInEvent, EmployeeCheckedOutEvent } from './impl';
 
 // Business-event audit trail (AuditLogs.md §4 "Attendance Check-In/Out").
 // Notification fan-out hooks in here later (3.6 EVENT_CATALOG.md).
@@ -46,47 +41,7 @@ export class CheckedOutAuditHandler
   }
 }
 
-@EventsHandler(BreakStartedEvent)
-export class BreakStartedAuditHandler
-  implements IEventHandler<BreakStartedEvent>
-{
-  constructor(private readonly auditService: AuditService) {}
-
-  async handle(event: BreakStartedEvent): Promise<void> {
-    await this.auditService.log({
-      tenantId: event.tenantId,
-      module: 'ATTENDANCE',
-      entityName: 'attendance_break',
-      entityId: event.breakId,
-      action: 'BREAK_STARTED',
-      newValue: { employeeId: event.employeeId, sessionId: event.sessionId },
-    });
-  }
-}
-
-@EventsHandler(BreakEndedEvent)
-export class BreakEndedAuditHandler implements IEventHandler<BreakEndedEvent> {
-  constructor(private readonly auditService: AuditService) {}
-
-  async handle(event: BreakEndedEvent): Promise<void> {
-    await this.auditService.log({
-      tenantId: event.tenantId,
-      module: 'ATTENDANCE',
-      entityName: 'attendance_break',
-      entityId: event.breakId,
-      action: 'BREAK_ENDED',
-      newValue: {
-        employeeId: event.employeeId,
-        sessionId: event.sessionId,
-        durationMinutes: event.durationMinutes,
-      },
-    });
-  }
-}
-
 export const AttendanceEventHandlers = [
   CheckedInAuditHandler,
   CheckedOutAuditHandler,
-  BreakStartedAuditHandler,
-  BreakEndedAuditHandler,
 ];

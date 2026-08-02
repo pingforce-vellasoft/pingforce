@@ -1,12 +1,8 @@
-import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/error/failures.dart';
 import '../../../core/navigation/nav_destinations.dart';
-import '../../../core/usecases/usecase.dart';
-import '../../attendance/domain/usecases/break_commands.dart';
 import '../../../core/network/connectivity_provider.dart';
 import '../../../core/sync/sync_provider.dart';
 import '../../../core/sync/sync_state.dart';
@@ -28,9 +24,7 @@ import 'dashboard_state.dart';
 // carry no server data.
 
 final dashboardNotifierProvider =
-    NotifierProvider<DashboardNotifier, DashboardState>(
-  DashboardNotifier.new,
-);
+    NotifierProvider<DashboardNotifier, DashboardState>(DashboardNotifier.new);
 
 class DashboardNotifier extends Notifier<DashboardState> {
   DashboardRepository get _repo => sl<DashboardRepository>();
@@ -56,7 +50,8 @@ class DashboardNotifier extends Notifier<DashboardState> {
     // does not, used to gate admin-only quick actions (e.g. Geofences).
     final cached = await sl<AuthRepository>().getCachedUser();
     final user = cached.fold((_) => null, (u) => u);
-    final isAdmin = user != null &&
+    final isAdmin =
+        user != null &&
         AppUserRoleX.fromRoleCode(user.role) == AppUserRole.admin;
     // Geolocation actions (visit logging) are field-employee only.
     final isFieldRole =
@@ -69,10 +64,7 @@ class DashboardNotifier extends Notifier<DashboardState> {
       (failure) {
         // Keep any previously loaded content on a network failure — the offline
         // banner (driven by connectivityProvider) already explains the state.
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: failure.message,
-        );
+        state = state.copyWith(isLoading: false, errorMessage: failure.message);
       },
       (summary) {
         state = state.copyWith(
@@ -133,15 +125,15 @@ class DashboardNotifier extends Notifier<DashboardState> {
   AttendanceHeroData _mapAttendance(DashboardAttendanceModel a) {
     final status = switch (a.status) {
       'working' => AttendanceHeroStatus.working,
-      'onBreak' => AttendanceHeroStatus.onBreak,
       'checkedOut' => AttendanceHeroStatus.checkedOut,
       'notCheckedIn' => AttendanceHeroStatus.notCheckedIn,
       'absent' => AttendanceHeroStatus.absent,
       _ => AttendanceHeroStatus.noShift,
     };
 
-    final worked =
-        a.workedMinutes != null ? Duration(minutes: a.workedMinutes!) : null;
+    final worked = a.workedMinutes != null
+        ? Duration(minutes: a.workedMinutes!)
+        : null;
 
     // Progress across the shift = elapsed worked / total shift minutes.
     double? progress;
@@ -162,8 +154,6 @@ class DashboardNotifier extends Notifier<DashboardState> {
       gracePeriodMinutes: a.gracePeriodMinutes,
       progressFraction: progress,
       workingDuration: worked,
-      breaksTaken: a.breaksTaken,
-      breakStartTime: a.breakStartTime,
       totalOvertime: a.overtimeMinutes > 0
           ? _fmtMinutes(a.overtimeMinutes)
           : null,
@@ -181,33 +171,37 @@ class DashboardNotifier extends Notifier<DashboardState> {
 
   List<KpiCard> _mapKpis(List<DashboardKpiModel> cards) {
     return cards
-        .map((c) => KpiCard(
-              id: c.id,
-              title: c.title,
-              primaryValue: c.primaryValue,
-              label: c.label,
-              iconName: c.iconName,
-              secondaryLabel: c.secondaryLabel,
-              severity: switch (c.severity) {
-                'critical' => KpiCardSeverity.critical,
-                'warning' => KpiCardSeverity.warning,
-                _ => KpiCardSeverity.normal,
-              },
-              route: c.route,
-            ))
+        .map(
+          (c) => KpiCard(
+            id: c.id,
+            title: c.title,
+            primaryValue: c.primaryValue,
+            label: c.label,
+            iconName: c.iconName,
+            secondaryLabel: c.secondaryLabel,
+            severity: switch (c.severity) {
+              'critical' => KpiCardSeverity.critical,
+              'warning' => KpiCardSeverity.warning,
+              _ => KpiCardSeverity.normal,
+            },
+            route: c.route,
+          ),
+        )
         .toList();
   }
 
   List<ActivityFeedItem> _mapActivity(List<DashboardActivityModel> items) {
     return items
-        .map((i) => ActivityFeedItem(
-              id: i.id,
-              type: _activityType(i.type),
-              title: i.title,
-              subtitle: i.subtitle,
-              timestamp: i.timestamp,
-              route: i.route,
-            ))
+        .map(
+          (i) => ActivityFeedItem(
+            id: i.id,
+            type: _activityType(i.type),
+            title: i.title,
+            subtitle: i.subtitle,
+            timestamp: i.timestamp,
+            route: i.route,
+          ),
+        )
         .toList();
   }
 
@@ -215,8 +209,6 @@ class DashboardNotifier extends Notifier<DashboardState> {
     return switch (type) {
       'checkIn' => ActivityType.checkIn,
       'checkOut' => ActivityType.checkOut,
-      'breakStart' => ActivityType.breakStart,
-      'breakEnd' => ActivityType.breakEnd,
       'faultCreated' => ActivityType.faultCreated,
       'faultAssigned' => ActivityType.faultAssigned,
       'faultResolved' => ActivityType.faultResolved,
@@ -243,13 +235,46 @@ class DashboardNotifier extends Notifier<DashboardState> {
     // Admins with the attendance module enabled get a fast path to geofence
     // setup — they configure zones, they don't clock in.
     if (isAdmin && attendanceEnabled) {
-      actions.add(const QuickAction(
-        id: 'geofence',
-        label: 'Geofences',
-        iconName: 'add_location_alt',
-        route: '/geofences',
-        isHighlighted: true,
-      ));
+      actions.add(
+        const QuickAction(
+          id: 'geofence',
+          label: 'Geofences',
+          iconName: 'add_location_alt',
+          route: '/geofences',
+          isHighlighted: true,
+        ),
+      );
+    }
+
+    // Workforce management shortcuts. These are the screens an admin opens
+    // most, and the drawer is two taps away; the tiles make them one.
+    if (isAdmin) {
+      actions.addAll(const [
+        QuickAction(
+          id: 'employees',
+          label: 'Employees',
+          iconName: 'badge',
+          route: '/employees',
+        ),
+        QuickAction(
+          id: 'attendance-admin',
+          label: 'Attendance',
+          iconName: 'fact_check',
+          route: '/attendance-admin',
+        ),
+        QuickAction(
+          id: 'devices-admin',
+          label: 'Devices',
+          iconName: 'smartphone',
+          route: '/devices',
+        ),
+        QuickAction(
+          id: 'customers',
+          label: 'Customers',
+          iconName: 'groups',
+          route: '/customers',
+        ),
+      ]);
     }
 
     // No Check In / Check Out tile here: the Attendance Hero Card sits directly
@@ -257,30 +282,36 @@ class DashboardNotifier extends Notifier<DashboardState> {
     // check-out, break and resume. A tile duplicating it just competed with the
     // hero's primary button.
 
-    actions.add(const QuickAction(
-      id: 'fault',
-      label: 'Report Fault',
-      iconName: 'report_problem',
-      route: '/faults/new',
-    ));
+    actions.add(
+      const QuickAction(
+        id: 'fault',
+        label: 'Report Fault',
+        iconName: 'report_problem',
+        route: '/faults/new',
+      ),
+    );
 
     // Log Visit is geolocation visit tracking — field-employee only. Non-field
     // roles have no visits.view, so RouteGuard would bounce the tap; hide it.
     if (isFieldRole) {
-      actions.add(const QuickAction(
-        id: 'visit',
-        label: 'Log Visit',
-        iconName: 'map',
-        route: '/visits/new',
-      ));
+      actions.add(
+        const QuickAction(
+          id: 'visit',
+          label: 'Log Visit',
+          iconName: 'map',
+          route: '/visits/new',
+        ),
+      );
     }
 
-    actions.add(const QuickAction(
-      id: 'network-map',
-      label: 'Network Map',
-      iconName: 'share_location',
-      route: '/network-map',
-    ));
+    actions.add(
+      const QuickAction(
+        id: 'network-map',
+        label: 'Network Map',
+        iconName: 'share_location',
+        route: '/network-map',
+      ),
+    );
 
     return actions;
   }
@@ -317,66 +348,6 @@ class DashboardNotifier extends Notifier<DashboardState> {
 
   void goToAttendance(BuildContext context) {
     context.go('/attendance');
-  }
-
-  // ── Inline attendance actions ──────────────────────────────────────────────
-  //
-  // Break start/end need no GPS fix or biometric prompt, so they complete on
-  // the home screen. Previously every hero-card button just navigated to the
-  // attendance screen, where the employee had to press the same button again.
-  //
-  // Check-in and check-out still navigate: both require a GPS fix, geofence
-  // evaluation and (per policy) biometric verification, which is the whole
-  // purpose of the attendance screen.
-
-  /// Starts a break on the open session, then refreshes the hero card.
-  Future<void> startBreak() async {
-    await _runBreakAction(() => sl<StartBreakCommand>()(const StartBreakParams()));
-  }
-
-  /// Ends the in-progress break and resumes work.
-  Future<void> resumeWork() async {
-    await _runBreakAction(() => sl<EndBreakCommand>()(NoParams()));
-  }
-
-  Future<void> _runBreakAction(
-    Future<Either<Failure, void>> Function() action,
-  ) async {
-    if (state.isAttendanceActionInFlight) return;
-
-    if (!ref.read(connectivityProvider).isOnline) {
-      state = state.copyWith(
-        attendanceActionError:
-            'Breaks need a connection. Try again once you are online.',
-      );
-      return;
-    }
-
-    state = state.copyWith(
-      isAttendanceActionInFlight: true,
-      attendanceActionError: null,
-    );
-
-    final result = await action();
-
-    result.fold(
-      (failure) {
-        state = state.copyWith(
-          isAttendanceActionInFlight: false,
-          attendanceActionError: failure.message,
-        );
-      },
-      (_) async {
-        // Re-read the summary so status, break count and timers come from the
-        // server rather than being guessed locally.
-        await load();
-        state = state.copyWith(isAttendanceActionInFlight: false);
-      },
-    );
-  }
-
-  void dismissAttendanceActionError() {
-    state = state.copyWith(attendanceActionError: null);
   }
 
   void goToAttendanceHistory(BuildContext context) {

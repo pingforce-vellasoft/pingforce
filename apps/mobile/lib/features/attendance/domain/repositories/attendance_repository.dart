@@ -19,10 +19,4 @@ abstract class AttendanceRepository {
   /// Today's snapshot: any open session (so the screen can resume it), the
   /// day's punch history, totals and leave balances.
   Future<Either<Failure, AttendanceToday>> getToday();
-
-  /// Starts a break on the open session (WORKING → ON_BREAK).
-  Future<Either<Failure, void>> startBreak(String breakType);
-
-  /// Ends the in-progress break (ON_BREAK → WORKING).
-  Future<Either<Failure, void>> endBreak();
 }

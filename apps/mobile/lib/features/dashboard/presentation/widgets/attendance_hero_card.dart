@@ -16,27 +16,14 @@ class AttendanceHeroCard extends StatefulWidget {
     required this.isLoading,
     required this.onCheckIn,
     required this.onCheckOut,
-    required this.onBreak,
-    required this.onResume,
     required this.onViewDetails,
     this.onRequestCorrection,
-    this.isActionInFlight = false,
-    this.actionError,
   });
 
   final AttendanceHeroData? data;
   final bool isLoading;
-
-  /// An inline break start/end is in flight — disables the action buttons and
-  /// swaps their icon for a spinner.
-  final bool isActionInFlight;
-
-  /// Message shown when an inline attendance action is refused.
-  final String? actionError;
   final VoidCallback onCheckIn;
   final VoidCallback onCheckOut;
-  final VoidCallback onBreak;
-  final VoidCallback onResume;
   final VoidCallback onViewDetails;
   final VoidCallback? onRequestCorrection;
 
@@ -138,7 +125,6 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
     return switch (data.status) {
       AttendanceHeroStatus.notCheckedIn => _buildNotCheckedIn(context, data),
       AttendanceHeroStatus.working => _buildWorking(context, data),
-      AttendanceHeroStatus.onBreak => _buildOnBreak(context, data),
       AttendanceHeroStatus.checkedOut => _buildCheckedOut(context, data),
       AttendanceHeroStatus.absent => _buildAbsent(context),
       AttendanceHeroStatus.noShift => _buildNoShift(context),
@@ -154,7 +140,8 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
         Row(
           children: [
             Container(
-              width: 8, height: 8,
+              width: 8,
+              height: 8,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 color: PingForceColors.statusOffline,
@@ -208,7 +195,8 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
         Row(
           children: [
             Container(
-              width: 8, height: 8,
+              width: 8,
+              height: 8,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 color: PingForceColors.statusSuccess,
@@ -262,111 +250,17 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
 
         AppSpacing.space4.toSizedBox,
 
-        // Action row. Break completes inline (no GPS needed); check-out opens
-        // the attendance screen because it requires a GPS fix + geofence check.
-        Row(
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: 48,
-                child: FilledButton.tonalIcon(
-                  onPressed: widget.isActionInFlight ? null : widget.onBreak,
-                  icon: widget.isActionInFlight
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.coffee_rounded, size: AppIconSize.sm),
-                  label: const Text('Start Break'),
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.space3),
-            Expanded(
-              flex: 2,
-              child: SizedBox(
-                height: 48,
-                child: FilledButton.icon(
-                  onPressed:
-                      widget.isActionInFlight ? null : widget.onCheckOut,
-                  icon: const Icon(Icons.logout_rounded, size: AppIconSize.sm),
-                  label: const Text('Check Out'),
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        if (widget.actionError != null) ...[
-          AppSpacing.space2.toSizedBox,
-          _ActionErrorText(message: widget.actionError!),
-        ],
-      ],
-    );
-  }
-
-  // ── State C — On Break ─────────────────────────────────────────────────────
-
-  Widget _buildOnBreak(BuildContext context, AttendanceHeroData data) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.coffee_rounded,
-                size: AppIconSize.sm,
-                color: PingForceColors.statusWarning),
-            AppSpacing.iconGapBox,
-            Text(
-              'On Break',
-              style: AppTypography.labelMedium.copyWith(
-                color: PingForceColors.statusWarning,
-              ),
-            ),
-            const Spacer(),
-            _ShiftStatusChip(data: data),
-          ],
-        ),
-        AppSpacing.space2.toSizedBox,
-        if (data.breakStartTime != null)
-          Text(
-            'Break started:  ${_fmt(data.breakStartTime!)}',
-            style: AppTypography.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        AppSpacing.space1.toSizedBox,
-        _LiveTimer(
-          startTime: data.breakStartTime,
-          style: AppTypography.numericMedium.copyWith(
-            color: PingForceColors.statusWarning,
-          ),
-        ),
-        AppSpacing.space4.toSizedBox,
+        // Check-out opens the attendance screen because it requires a GPS fix
+        // + geofence check.
         SizedBox(
           width: double.infinity,
           height: 48,
           child: FilledButton.icon(
-            onPressed: widget.isActionInFlight ? null : widget.onResume,
-            icon: widget.isActionInFlight
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.play_arrow_rounded),
-            label: const Text('Resume Work'),
-            style: FilledButton.styleFrom(
-              backgroundColor: PingForceColors.statusWarning,
-              foregroundColor: PingForceColors.statusOnWarning,
-            ),
+            onPressed: widget.onCheckOut,
+            icon: const Icon(Icons.logout_rounded, size: AppIconSize.sm),
+            label: const Text('Check Out'),
           ),
         ),
-        if (widget.actionError != null) ...[
-          AppSpacing.space2.toSizedBox,
-          _ActionErrorText(message: widget.actionError!),
-        ],
       ],
     );
   }
@@ -379,9 +273,11 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
       children: [
         Row(
           children: [
-            const Icon(Icons.check_circle_rounded,
-                size: AppIconSize.sm,
-                color: PingForceColors.statusSuccess),
+            const Icon(
+              Icons.check_circle_rounded,
+              size: AppIconSize.sm,
+              color: PingForceColors.statusSuccess,
+            ),
             AppSpacing.iconGapBox,
             Text(
               'Checked Out',
@@ -410,11 +306,6 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
               label: 'Worked',
               value: _fmtWorked(data.workingDuration),
             ),
-            const SizedBox(width: AppSpacing.space3),
-            _StatBadge(
-              label: 'Breaks',
-              value: '${data.breaksTaken ?? 0}',
-            ),
             if ((data.totalOvertime ?? '').isNotEmpty) ...[
               const SizedBox(width: AppSpacing.space3),
               _StatBadge(label: 'OT', value: data.totalOvertime!),
@@ -439,9 +330,11 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
       children: [
         Row(
           children: [
-            const Icon(Icons.cancel_outlined,
-                size: AppIconSize.sm,
-                color: PingForceColors.statusCritical),
+            const Icon(
+              Icons.cancel_outlined,
+              size: AppIconSize.sm,
+              color: PingForceColors.statusCritical,
+            ),
             AppSpacing.iconGapBox,
             Text(
               'No Attendance Today',
@@ -475,9 +368,11 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
       children: [
         Row(
           children: [
-            Icon(Icons.schedule_rounded,
-                size: AppIconSize.sm,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.schedule_rounded,
+              size: AppIconSize.sm,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             AppSpacing.iconGapBox,
             Text(
               'No Shift Assigned',
@@ -503,7 +398,6 @@ class _AttendanceHeroCardState extends State<AttendanceHeroCard>
   Color _accentColor(BuildContext context, AttendanceHeroStatus status) {
     return switch (status) {
       AttendanceHeroStatus.working => PingForceColors.statusSuccess,
-      AttendanceHeroStatus.onBreak => PingForceColors.statusWarning,
       AttendanceHeroStatus.checkedOut => Theme.of(context).colorScheme.primary,
       AttendanceHeroStatus.absent => PingForceColors.statusCritical,
       _ => Theme.of(context).colorScheme.onSurfaceVariant,
@@ -579,10 +473,7 @@ class _LiveTimerState extends State<_LiveTimer> {
     final h = _elapsed.inHours;
     final m = _elapsed.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = _elapsed.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return Text(
-      h > 0 ? '$h:$m:$s' : '$m:$s',
-      style: widget.style,
-    );
+    return Text(h > 0 ? '$h:$m:$s' : '$m:$s', style: widget.style);
   }
 }
 
@@ -615,8 +506,7 @@ class _ShiftProgressBar extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: animated.clamp(0.0, 1.0),
                 minHeight: 6,
-                backgroundColor:
-                    Theme.of(context).colorScheme.primaryContainer,
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   Theme.of(context).colorScheme.primary,
                 ),
@@ -658,14 +548,21 @@ class _ShiftStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLate = data.isLate ?? false;
-    final color = isLate ? PingForceColors.statusWarning : PingForceColors.statusSuccess;
-    final bg = isLate ? PingForceColors.statusWarningContainer : PingForceColors.statusSuccessContainer;
+    final color = isLate
+        ? PingForceColors.statusWarning
+        : PingForceColors.statusSuccess;
+    final bg = isLate
+        ? PingForceColors.statusWarningContainer
+        : PingForceColors.statusSuccessContainer;
     final label = isLate ? 'Late ${data.minutesLate}m' : 'On Time';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: bg, borderRadius: AppRadius.xsAll),
-      child: Text(label, style: AppTypography.labelSmall.copyWith(color: color)),
+      child: Text(
+        label,
+        style: AppTypography.labelSmall.copyWith(color: color),
+      ),
     );
   }
 }
@@ -685,35 +582,6 @@ class _CompletedChip extends StatelessWidget {
           color: Theme.of(context).colorScheme.onPrimaryContainer,
         ),
       ),
-    );
-  }
-}
-
-class _ActionErrorText extends StatelessWidget {
-  const _ActionErrorText({required this.message});
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          Icons.error_outline_rounded,
-          size: AppIconSize.xs,
-          color: theme.colorScheme.error,
-        ),
-        AppSpacing.iconGapBox,
-        Expanded(
-          child: Text(
-            message,
-            style: AppTypography.labelSmall.copyWith(
-              color: theme.colorScheme.error,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

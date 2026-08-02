@@ -21,7 +21,6 @@ import '../../../geofences/domain/entities/geofence.dart';
 import '../../../geofences/domain/repositories/geofence_repository.dart';
 import '../../../tracking/presentation/tracking_notifier.dart';
 import '../../../../core/usecases/usecase.dart';
-import '../../domain/usecases/break_commands.dart';
 import '../../domain/usecases/get_today_query.dart';
 import '../../domain/usecases/punch_command.dart' as punch_uc;
 import 'check_in_state.dart';
@@ -35,8 +34,9 @@ import 'check_in_state.dart';
 // tenant-policy endpoint exists.
 // ─────────────────────────────────────────────────────────────────────────────
 
-final checkInNotifierProvider =
-    NotifierProvider<CheckInNotifier, CheckInState>(CheckInNotifier.new);
+final checkInNotifierProvider = NotifierProvider<CheckInNotifier, CheckInState>(
+  CheckInNotifier.new,
+);
 
 class CheckInNotifier extends Notifier<CheckInState> {
   @override
@@ -62,7 +62,7 @@ class CheckInNotifier extends Notifier<CheckInState> {
       startTime: '09:00',
       endTime: '18:00',
       gracePeriodMinutes: 15,
-      totalBreaksAllowed: 2,
+      totalBreaksAllowed: 0,
       requiredHours: 9,
       isCurrentlyActive: true,
     );
@@ -133,9 +133,6 @@ class CheckInNotifier extends Notifier<CheckInState> {
         sessionId: remote.id,
         checkInTime: remote.punchIn,
         shiftName: state.shift?.shiftName ?? 'Shift',
-        breaksTaken: remote.breaksTaken,
-        isOnBreak: remote.isOnBreak,
-        lastBreakStart: remote.currentBreakStartedAt,
         checkInGeofenceId: geofenceId,
         checkInGeofenceName: geofenceName,
       ),
@@ -505,9 +502,7 @@ class CheckInNotifier extends Notifier<CheckInState> {
   /// [UntrustedDeviceFailure]. The message check is a fallback for failures
   /// raised outside that mapping. Resolving it needs an admin-approved device
   /// change; the client must never re-bind on its own.
-  bool _isUntrustedDeviceFailure(
-    Either<Failure, dynamic> result,
-  ) {
+  bool _isUntrustedDeviceFailure(Either<Failure, dynamic> result) {
     return result.fold(
       (failure) =>
           failure is UntrustedDeviceFailure ||
@@ -520,9 +515,7 @@ class CheckInNotifier extends Notifier<CheckInState> {
   /// assignment at all — API errorCode `GEOFENCE-001`, mapped by the
   /// repository to [NoGeofenceAssignedFailure]. Only an admin can resolve it,
   /// so the screen must not suggest moving closer to a zone.
-  bool _isNoGeofenceAssignedFailure(
-    Either<Failure, dynamic> result,
-  ) {
+  bool _isNoGeofenceAssignedFailure(Either<Failure, dynamic> result) {
     return result.fold(
       (failure) => failure is NoGeofenceAssignedFailure,
       (_) => false,
@@ -536,7 +529,8 @@ class CheckInNotifier extends Notifier<CheckInState> {
     state = state.copyWith(isProcessingBiometric: true, errorMessage: null);
     try {
       final localAuth = sl<LocalAuthentication>();
-      final canCheck = await localAuth.canCheckBiometrics ||
+      final canCheck =
+          await localAuth.canCheckBiometrics ||
           await localAuth.isDeviceSupported();
       if (!canCheck) {
         state = state.copyWith(
@@ -583,7 +577,9 @@ class CheckInNotifier extends Notifier<CheckInState> {
     final clientRef = 'punch-${now.microsecondsSinceEpoch}';
     final deviceId = await sl<DeviceIdentity>().getOrCreate();
 
-    ref.read(syncProvider.notifier).enqueue(
+    ref
+        .read(syncProvider.notifier)
+        .enqueue(
           SyncQueueItem(
             id: clientRef,
             module: SyncItemModule.attendance,
@@ -633,62 +629,6 @@ class CheckInNotifier extends Notifier<CheckInState> {
 
   // ── S6: active session actions ─────────────────────────────────────────────
 
-  /// Toggles break state against the server.
-  ///
-  /// Breaks are persisted (`attendance_breaks`) because unpaid break minutes
-  /// are deducted from worked time at check-out — a local-only toggle would
-  /// silently pay for break time and vanish on restart.
-  Future<void> toggleBreak() async {
-    final session = state.activeSession;
-    if (session == null || state.isBreakUpdating || state.isCheckingOut) return;
-
-    if (!ref.read(isOnlineProvider)) {
-      state = state.copyWith(
-        breakError: 'Breaks need a connection. Try again once you are online.',
-      );
-      return;
-    }
-
-    state = state.copyWith(isBreakUpdating: true, breakError: null);
-
-    final result = session.isOnBreak
-        ? await sl<EndBreakCommand>()(NoParams())
-        : await sl<StartBreakCommand>()(const StartBreakParams());
-
-    // `fold` drops the Future an async callback returns, so the refresh must be
-    // awaited outside it — otherwise toggleBreak() completes with the refresh
-    // still in flight and callers race it.
-    final failure = result.fold<Failure?>((f) => f, (_) => null);
-    if (failure != null) {
-      state = state.copyWith(
-        isBreakUpdating: false,
-        breakError: failure.message,
-      );
-      return;
-    }
-
-    // Apply the toggle locally before refreshing. The server accepted it, so
-    // this is a fact, not a guess — and refreshToday() deliberately no-ops on
-    // failure, which would otherwise leave the button showing the pre-toggle
-    // label. The employee then taps again and the API rejects it with
-    // "A break is already in progress".
-    final wasOnBreak = session.isOnBreak;
-    state = state.copyWith(
-      isBreakUpdating: false,
-      activeSession: session.copyWith(
-        isOnBreak: !wasOnBreak,
-        lastBreakStart: wasOnBreak ? null : DateTime.now(),
-        breaksTaken: wasOnBreak
-            ? session.breaksTaken
-            : (session.breaksTaken ?? 0) + 1,
-      ),
-    );
-
-    // Re-read the snapshot so break count and timings come from the server
-    // rather than staying on the optimistic values above.
-    await refreshToday();
-  }
-
   /// Check-out must happen inside the SAME geofence the employee checked in
   /// from. If they have drifted out of that zone the punch is refused with a
   /// message naming the zone — the only override is admin force-checkout from
@@ -727,10 +667,10 @@ class CheckInNotifier extends Notifier<CheckInState> {
         isCheckingOut: false,
         checkOutError: zone != null
             ? 'You must be inside "$zone" (where you checked in) to check '
-                'out. If you are working off-site, ask your admin to check '
-                'you out from the tenant portal.'
+                  'out. If you are working off-site, ask your admin to check '
+                  'you out from the tenant portal.'
             : 'You must be at your check-in location to check out. Otherwise '
-                'ask your admin to check you out from the tenant portal.',
+                  'ask your admin to check you out from the tenant portal.',
       );
       return;
     }

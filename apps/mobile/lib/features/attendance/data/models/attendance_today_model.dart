@@ -9,35 +9,12 @@ double _parseDouble(dynamic v) => (v as num?)?.toDouble() ?? 0;
 
 int _parseInt(dynamic v) => (v as num?)?.toInt() ?? 0;
 
-class AttendanceBreakEntryModel extends AttendanceBreakEntry {
-  const AttendanceBreakEntryModel({
-    required super.id,
-    required super.breakType,
-    required super.paidBreak,
-    required super.startTime,
-    super.endTime,
-    super.durationMinutes,
-  });
-
-  factory AttendanceBreakEntryModel.fromJson(Map<String, dynamic> json) {
-    return AttendanceBreakEntryModel(
-      id: json['id'] as String,
-      breakType: json['breakType'] as String? ?? 'LUNCH',
-      paidBreak: json['paidBreak'] as bool? ?? false,
-      startTime: _parseDate(json['startTime'])!,
-      endTime: _parseDate(json['endTime']),
-      durationMinutes: (json['durationMinutes'] as num?)?.toInt(),
-    );
-  }
-}
-
 class AttendanceSessionEntryModel extends AttendanceSessionEntry {
   const AttendanceSessionEntryModel({
     required super.id,
     required super.punchIn,
     super.punchOut,
     required super.sessionStatus,
-    super.breaks,
   });
 
   factory AttendanceSessionEntryModel.fromJson(Map<String, dynamic> json) {
@@ -46,10 +23,6 @@ class AttendanceSessionEntryModel extends AttendanceSessionEntry {
       punchIn: _parseDate(json['punchIn'])!,
       punchOut: _parseDate(json['punchOut']),
       sessionStatus: json['sessionStatus'] as String? ?? 'WORKING',
-      breaks: (json['breaks'] as List<dynamic>? ?? [])
-          .map((b) =>
-              AttendanceBreakEntryModel.fromJson(b as Map<String, dynamic>))
-          .toList(),
     );
   }
 }
@@ -59,9 +32,6 @@ class ActiveSessionInfoModel extends ActiveSessionInfo {
     required super.id,
     required super.punchIn,
     required super.sessionStatus,
-    required super.isOnBreak,
-    super.currentBreakStartedAt,
-    required super.breaksTaken,
     super.checkInLatitude,
     super.checkInLongitude,
   });
@@ -71,9 +41,6 @@ class ActiveSessionInfoModel extends ActiveSessionInfo {
       id: json['id'] as String,
       punchIn: _parseDate(json['punchIn'])!,
       sessionStatus: json['sessionStatus'] as String? ?? 'WORKING',
-      isOnBreak: json['isOnBreak'] as bool? ?? false,
-      currentBreakStartedAt: _parseDate(json['currentBreakStartedAt']),
-      breaksTaken: _parseInt(json['breaksTaken']),
       checkInLatitude: (json['checkInLatitude'] as num?)?.toDouble(),
       checkInLongitude: (json['checkInLongitude'] as num?)?.toDouble(),
     );
@@ -84,8 +51,6 @@ class AttendanceTotalsModel extends AttendanceTotals {
   const AttendanceTotalsModel({
     super.workedMinutes,
     super.overtimeMinutes,
-    super.breaksTaken,
-    super.breakMinutes,
     super.firstPunchIn,
     super.lastPunchOut,
   });
@@ -94,8 +59,6 @@ class AttendanceTotalsModel extends AttendanceTotals {
     return AttendanceTotalsModel(
       workedMinutes: _parseInt(json['workedMinutes']),
       overtimeMinutes: _parseInt(json['overtimeMinutes']),
-      breaksTaken: _parseInt(json['breaksTaken']),
-      breakMinutes: _parseInt(json['breakMinutes']),
       firstPunchIn: _parseDate(json['firstPunchIn']),
       lastPunchOut: _parseDate(json['lastPunchOut']),
     );

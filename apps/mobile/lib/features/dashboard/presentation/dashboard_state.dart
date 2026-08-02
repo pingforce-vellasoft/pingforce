@@ -11,7 +11,6 @@ part 'dashboard_state.freezed.dart';
 enum AttendanceHeroStatus {
   notCheckedIn,
   working,
-  onBreak,
   checkedOut,
   absent,
   noShift,
@@ -59,8 +58,6 @@ class QuickAction with _$QuickAction {
 enum ActivityType {
   checkIn,
   checkOut,
-  breakStart,
-  breakEnd,
   faultCreated,
   faultAssigned,
   faultResolved,
@@ -94,7 +91,6 @@ class AttendanceHeroData with _$AttendanceHeroData {
     @Default(AttendanceHeroStatus.notCheckedIn) AttendanceHeroStatus status,
     DateTime? checkInTime,
     DateTime? checkOutTime,
-    DateTime? breakStartTime,
     String? shiftName,
     String? shiftStart,      // e.g. "09:00"
     String? shiftEnd,        // e.g. "18:00"
@@ -102,8 +98,6 @@ class AttendanceHeroData with _$AttendanceHeroData {
     int? gracePeriodMinutes,
     double? progressFraction,  // 0.0–1.0 for shift progress bar
     Duration? workingDuration,
-    Duration? breakDuration,
-    int? breaksTaken,
     bool? isLate,
     int? minutesLate,
     bool? isOnTime,
@@ -183,12 +177,6 @@ class DashboardState with _$DashboardState {
 
     // Attendance hero
     AttendanceHeroData? attendanceHero,
-
-    /// A break start/end triggered from the hero card is in flight.
-    @Default(false) bool isAttendanceActionInFlight,
-
-    /// Message shown when an inline attendance action is refused.
-    String? attendanceActionError,
 
     // KPI cards (ordered, RBAC-gated)
     @Default([]) List<KpiCard> kpiCards,

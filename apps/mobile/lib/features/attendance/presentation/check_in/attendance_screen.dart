@@ -177,11 +177,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         session: state.activeSession!,
                         isCheckingOut: state.isCheckingOut,
                         checkOutError: state.checkOutError,
-                        isBreakUpdating: state.isBreakUpdating,
-                        breakError: state.breakError,
-                        onBreak: () => ref
-                            .read(checkInNotifierProvider.notifier)
-                            .toggleBreak(),
                         onCheckOut: () => ref
                             .read(checkInNotifierProvider.notifier)
                             .initiateCheckOut(),
@@ -189,7 +184,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       AppSpacing.sectionGapBox,
                     ],
 
-                    // ── Today's summary: punches, breaks, leave balance ─
+                    // ── Today's summary: punches, leave balance ────────
                     if (state.today != null) ...[
                       AttendanceDaySummaryCard(today: state.today!),
                       AppSpacing.sectionGapBox,

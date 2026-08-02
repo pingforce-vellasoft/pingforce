@@ -114,6 +114,9 @@ class ShiftInfo with _$ShiftInfo {
     required String startTime,       // e.g. "09:00"
     required String endTime,         // e.g. "18:00"
     required int gracePeriodMinutes, // e.g. 15
+    /// Shift policy field carried over from the shift definition. Breaks were
+    /// removed from the app, so nothing renders this — kept only so the shift
+    /// payload keeps round-tripping unchanged.
     required int totalBreaksAllowed,
     required double requiredHours,
     @Default(false) bool isCurrentlyActive,
@@ -155,9 +158,6 @@ class ActiveSession with _$ActiveSession {
     required String sessionId,
     required DateTime checkInTime,
     required String shiftName,
-    int? breaksTaken,
-    DateTime? lastBreakStart,
-    @Default(false) bool isOnBreak,
 
     /// Geofence the employee checked in from. Check-out must occur inside this
     /// same zone (exceptions are handled by admin force-checkout).
@@ -232,9 +232,6 @@ class CheckInState with _$CheckInState {
     @Default(false) bool isCheckingOut,
     String? checkOutError,
 
-    // Break — server-backed (POST /attendance/break/start | /break/end)
-    @Default(false) bool isBreakUpdating,
-    String? breakError,
 
     /// Today's snapshot from GET /attendance/today: punch history, totals and
     /// leave balances. Reloaded on every screen open so a returning employee
