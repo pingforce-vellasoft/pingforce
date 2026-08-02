@@ -366,10 +366,11 @@ class NavDestinations {
 
   /// Tenant-wide attendance reporting. Admin-only, and deliberately distinct
   /// from the `attendance()` tab, which is the employee's own check-in screen.
-  /// Carries the web portal's Attendance Logs + Daily Attendance as two tabs.
+  /// Shows the web portal's Daily Attendance view; the punch-level log is web
+  /// only, being too noisy to read on a handset.
   static NavDestination attendanceAdmin() => const NavDestination(
         id: NavDestinationId.attendanceAdmin,
-        label: 'Attendance logs',
+        label: 'Daily attendance',
         icon: Icons.fact_check_outlined,
         selectedIcon: Icons.fact_check_rounded,
         rootRoute: '/attendance-admin',

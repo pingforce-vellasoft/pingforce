@@ -11,11 +11,8 @@ import '../domain/repositories/attendance_admin_repository.dart';
 class AttendanceAdminState {
   const AttendanceAdminState({
     this.isLoadingDaily = true,
-    this.isLoadingLogs = true,
     this.dailyError,
-    this.logsError,
     this.dailyRows = const [],
-    this.logRows = const [],
     this.summary = const DailyAttendanceSummary(),
     this.search = '',
     this.statusFilter,
@@ -25,11 +22,8 @@ class AttendanceAdminState {
   });
 
   final bool isLoadingDaily;
-  final bool isLoadingLogs;
   final String? dailyError;
-  final String? logsError;
   final List<DailyAttendanceRow> dailyRows;
-  final List<AttendanceLogRow> logRows;
   final DailyAttendanceSummary summary;
   final String search;
 
@@ -42,13 +36,9 @@ class AttendanceAdminState {
 
   AttendanceAdminState copyWith({
     bool? isLoadingDaily,
-    bool? isLoadingLogs,
     String? dailyError,
-    String? logsError,
     bool clearDailyError = false,
-    bool clearLogsError = false,
     List<DailyAttendanceRow>? dailyRows,
-    List<AttendanceLogRow>? logRows,
     DailyAttendanceSummary? summary,
     String? search,
     String? statusFilter,
@@ -59,11 +49,8 @@ class AttendanceAdminState {
   }) {
     return AttendanceAdminState(
       isLoadingDaily: isLoadingDaily ?? this.isLoadingDaily,
-      isLoadingLogs: isLoadingLogs ?? this.isLoadingLogs,
       dailyError: clearDailyError ? null : (dailyError ?? this.dailyError),
-      logsError: clearLogsError ? null : (logsError ?? this.logsError),
       dailyRows: dailyRows ?? this.dailyRows,
-      logRows: logRows ?? this.logRows,
       summary: summary ?? this.summary,
       search: search ?? this.search,
       statusFilter:
@@ -92,10 +79,6 @@ class AttendanceAdminNotifier extends Notifier<AttendanceAdminState> {
   @override
   AttendanceAdminState build() => const AttendanceAdminState();
 
-  Future<void> loadAll() async {
-    await Future.wait([loadDaily(), loadLogs()]);
-  }
-
   Future<void> loadDaily() async {
     state = state.copyWith(isLoadingDaily: true, clearDailyError: true);
     final result = await _repo.getDailyLogs(
@@ -118,23 +101,10 @@ class AttendanceAdminNotifier extends Notifier<AttendanceAdminState> {
     );
   }
 
-  Future<void> loadLogs() async {
-    state = state.copyWith(isLoadingLogs: true, clearLogsError: true);
-    final result = await _repo.getLogs(limit: _pageSize, search: state.search);
-    result.fold(
-      (f) => state = state.copyWith(isLoadingLogs: false, logsError: f.message),
-      (page) => state = state.copyWith(
-        isLoadingLogs: false,
-        logRows: page.rows,
-        clearLogsError: true,
-      ),
-    );
-  }
-
-  /// Search is applied server-side on both endpoints, so it refetches both.
+  /// Search is applied server-side, so changing it refetches.
   Future<void> setSearch(String value) async {
     state = state.copyWith(search: value);
-    await loadAll();
+    await loadDaily();
   }
 
   /// Passing null clears the filter (shows every status).

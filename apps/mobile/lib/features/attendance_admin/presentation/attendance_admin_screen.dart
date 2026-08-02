@@ -9,11 +9,16 @@ import 'attendance_admin_notifier.dart';
 // ATTENDANCE ADMIN SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Tenant-wide attendance reporting, backed by the same endpoints as the web
-// portal. Two tabs mirroring the web's two entries:
-//   • Daily      — /attendance/daily-logs, one row per employee-day
-//   • Punch log  — /attendance/logs, one row per session
-// Wired to /attendance-admin.
+// Tenant-wide attendance reporting, backed by `/attendance/daily-logs` — one
+// row per employee-day, with punch times, worked/break totals, status and
+// exceptions. Wired to /attendance-admin.
+//
+// The web portal splits this into two entries (Daily Attendance and the
+// punch-level Attendance Logs). Mobile carries only the day-grouped view: it
+// answers the at-a-glance question an admin opens a phone for (who is present,
+// late or absent), and the raw per-session list is noisy on a small screen.
+// The punch-level endpoint stays available on the repository for when a
+// drill-down view is wanted.
 
 class AttendanceAdminScreen extends ConsumerStatefulWidget {
   const AttendanceAdminScreen({super.key});
@@ -23,9 +28,7 @@ class AttendanceAdminScreen extends ConsumerStatefulWidget {
       _AttendanceAdminScreenState();
 }
 
-class _AttendanceAdminScreenState extends ConsumerState<AttendanceAdminScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _AttendanceAdminScreenState extends ConsumerState<AttendanceAdminScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   /// Statuses the API accepts on the daily-log query.
@@ -40,15 +43,13 @@ class _AttendanceAdminScreenState extends ConsumerState<AttendanceAdminScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(attendanceAdminNotifierProvider.notifier).loadAll();
+      ref.read(attendanceAdminNotifierProvider.notifier).loadDaily();
     });
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -58,28 +59,11 @@ class _AttendanceAdminScreenState extends ConsumerState<AttendanceAdminScreen>
     final state = ref.watch(attendanceAdminNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Attendance'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Daily'),
-            Tab(text: 'Punch log'),
-          ],
-        ),
-      ),
+      appBar: AppBar(title: const Text('Attendance')),
       body: Column(
         children: [
           _buildSearchField(context),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildDailyTab(context, state),
-                _buildLogsTab(context, state),
-              ],
-            ),
-          ),
+          Expanded(child: _buildDailyList(context, state)),
         ],
       ),
     );
@@ -121,9 +105,9 @@ class _AttendanceAdminScreenState extends ConsumerState<AttendanceAdminScreen>
     );
   }
 
-  // ── Daily tab ──────────────────────────────────────────────────────────────
+  // ── Daily list ─────────────────────────────────────────────────────────────
 
-  Widget _buildDailyTab(BuildContext context, AttendanceAdminState state) {
+  Widget _buildDailyList(BuildContext context, AttendanceAdminState state) {
     return Column(
       children: [
         SingleChildScrollView(
@@ -213,52 +197,6 @@ class _AttendanceAdminScreenState extends ConsumerState<AttendanceAdminScreen>
         if (i == 0) return _SummaryCard(summary: state.summary);
         return _DailyRowTile(row: state.dailyRows[i - 1]);
       },
-    );
-  }
-
-  // ── Punch log tab ──────────────────────────────────────────────────────────
-
-  Widget _buildLogsTab(BuildContext context, AttendanceAdminState state) {
-    return RefreshIndicator(
-      onRefresh: () =>
-          ref.read(attendanceAdminNotifierProvider.notifier).loadLogs(),
-      child: _buildLogsBody(context, state),
-    );
-  }
-
-  Widget _buildLogsBody(BuildContext context, AttendanceAdminState state) {
-    if (state.isLoadingLogs && state.logRows.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (state.logsError != null && state.logRows.isEmpty) {
-      return _MessageState(
-        icon: Icons.error_outline_rounded,
-        title: 'Could not load logs',
-        subtitle: state.logsError!,
-        actionLabel: 'Retry',
-        onAction: () =>
-            ref.read(attendanceAdminNotifierProvider.notifier).loadLogs(),
-      );
-    }
-    if (state.logRows.isEmpty) {
-      return const _MessageState(
-        icon: Icons.access_time_rounded,
-        title: 'No punch records',
-        subtitle: 'Check-ins and check-outs appear here as they happen.',
-      );
-    }
-
-    return ListView.separated(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenHorizontal,
-        AppSpacing.space2,
-        AppSpacing.screenHorizontal,
-        AppSpacing.space20,
-      ),
-      itemCount: state.logRows.length,
-      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.space3),
-      itemBuilder: (_, i) => _LogRowTile(row: state.logRows[i]),
     );
   }
 
@@ -471,71 +409,6 @@ class _DailyRowTile extends StatelessWidget {
                 .copyWith(color: scheme.onSurfaceVariant),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _LogRowTile extends StatelessWidget {
-  const _LogRowTile({required this.row});
-
-  final AttendanceLogRow row;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Card(
-      margin: EdgeInsets.zero,
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: row.isSpoofed
-              ? scheme.errorContainer
-              : scheme.primaryContainer,
-          child: Icon(
-            row.isSpoofed
-                ? Icons.gpp_maybe_rounded
-                : Icons.access_time_rounded,
-            color: row.isSpoofed
-                ? scheme.onErrorContainer
-                : scheme.onPrimaryContainer,
-          ),
-        ),
-        title: Text(
-          row.employeeName,
-          style: AppTypography.titleSmall,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${_day(row.punchIn)} · ${_time(row.punchIn)} → '
-              '${_time(row.punchOut)}',
-              style: AppTypography.bodySmall
-                  .copyWith(color: scheme.onSurfaceVariant),
-            ),
-            Text(
-              [
-                if ((row.employeeCode ?? '').isNotEmpty) row.employeeCode!,
-                if ((row.sessionStatus ?? '').isNotEmpty) row.sessionStatus!,
-                if ((row.attendanceMethod ?? '').isNotEmpty)
-                  row.attendanceMethod!,
-                if (row.workedMinutes != null) _hours(row.workedMinutes!),
-              ].join(' · '),
-              style: AppTypography.bodySmall
-                  .copyWith(color: scheme.onSurfaceVariant),
-              overflow: TextOverflow.ellipsis,
-            ),
-            // A spoofed punch is the strongest fraud signal in the log.
-            if (row.isSpoofed)
-              Text(
-                'Mock location detected',
-                style: AppTypography.bodySmall.copyWith(color: scheme.error),
-              ),
-          ],
-        ),
-        isThreeLine: true,
       ),
     );
   }
