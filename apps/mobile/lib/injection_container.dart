@@ -6,7 +6,6 @@ import 'package:local_auth/local_auth.dart';
 import 'features/attendance/data/datasources/attendance_remote_data_source.dart';
 import 'features/attendance/data/repositories/attendance_repository_impl.dart';
 import 'features/attendance/domain/repositories/attendance_repository.dart';
-import 'features/attendance/domain/usecases/break_commands.dart';
 import 'features/attendance/domain/usecases/get_today_query.dart';
 import 'features/attendance/domain/usecases/punch_command.dart';
 import 'features/devices/data/devices_remote_data_source.dart';
@@ -37,6 +36,18 @@ import 'features/leave/domain/repositories/leave_repository.dart';
 import 'features/notifications/data/datasources/notification_remote_data_source.dart';
 import 'features/notifications/data/repositories/notification_repository_impl.dart';
 import 'features/notifications/domain/repositories/notification_repository.dart';
+import 'features/attendance_admin/data/datasources/attendance_admin_remote_data_source.dart';
+import 'features/attendance_admin/data/repositories/attendance_admin_repository_impl.dart';
+import 'features/attendance_admin/domain/repositories/attendance_admin_repository.dart';
+import 'features/customers/data/datasources/customer_remote_data_source.dart';
+import 'features/customers/data/repositories/customer_repository_impl.dart';
+import 'features/customers/domain/repositories/customer_repository.dart';
+import 'features/devices/data/datasources/device_admin_remote_data_source.dart';
+import 'features/devices/data/repositories/device_admin_repository_impl.dart';
+import 'features/devices/domain/repositories/device_admin_repository.dart';
+import 'features/employees/data/datasources/employee_remote_data_source.dart';
+import 'features/employees/data/repositories/employee_repository_impl.dart';
+import 'features/employees/domain/repositories/employee_repository.dart';
 import 'features/geofences/data/datasources/geofence_remote_data_source.dart';
 import 'features/geofences/data/repositories/geofence_repository_impl.dart';
 import 'features/geofences/domain/repositories/geofence_repository.dart';
@@ -83,8 +94,6 @@ Future<void> init() async {
   // Use Cases
   sl.registerLazySingleton(() => PunchCommand(sl()));
   sl.registerLazySingleton(() => GetTodayQuery(sl()));
-  sl.registerLazySingleton(() => StartBreakCommand(sl()));
-  sl.registerLazySingleton(() => EndBreakCommand(sl()));
 
   // Repository
   sl.registerLazySingleton<DevicesRemoteDataSource>(
@@ -155,6 +164,38 @@ Future<void> init() async {
   );
   sl.registerLazySingleton<GeofenceRepository>(
     () => GeofenceRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // --- Features: Employees (admin workforce management) ---
+  sl.registerLazySingleton<EmployeeRemoteDataSource>(
+    () => EmployeeRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<EmployeeRepository>(
+    () => EmployeeRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // --- Features: Customers (admin account management) ---
+  sl.registerLazySingleton<CustomerRemoteDataSource>(
+    () => CustomerRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<CustomerRepository>(
+    () => CustomerRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // --- Features: Device administration (admin-side binding management) ---
+  sl.registerLazySingleton<DeviceAdminRemoteDataSource>(
+    () => DeviceAdminRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<DeviceAdminRepository>(
+    () => DeviceAdminRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // --- Features: Attendance admin (tenant-wide reporting) ---
+  sl.registerLazySingleton<AttendanceAdminRemoteDataSource>(
+    () => AttendanceAdminRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<AttendanceAdminRepository>(
+    () => AttendanceAdminRepositoryImpl(remoteDataSource: sl()),
   );
 
   // --- Features: Tracking (background field-operator location) ---

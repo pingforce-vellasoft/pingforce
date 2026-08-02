@@ -110,6 +110,11 @@ enum NavDestinationId {
   documents,
   announcements,
   geofences,
+  networkMap,
+  employees,
+  customers,
+  devicesAdmin,
+  attendanceAdmin,
 }
 
 // ── FAB Action per destination ─────────────────────────────────────────────
@@ -347,6 +352,55 @@ class NavDestinations {
         badgeCount: badgeCount,
       );
 
+  /// Workforce management. Admin-only — mirrors the web portal's People
+  /// section, backed by the same `/api/v1/employees` API.
+  static NavDestination employees() => const NavDestination(
+        id: NavDestinationId.employees,
+        label: 'Employees',
+        icon: Icons.badge_outlined,
+        selectedIcon: Icons.badge_rounded,
+        rootRoute: '/employees',
+        permissionKey: 'employees.view',
+        showInMoreSheet: true,
+      );
+
+  /// Tenant-wide attendance reporting. Admin-only, and deliberately distinct
+  /// from the `attendance()` tab, which is the employee's own check-in screen.
+  /// Carries the web portal's Attendance Logs + Daily Attendance as two tabs.
+  static NavDestination attendanceAdmin() => const NavDestination(
+        id: NavDestinationId.attendanceAdmin,
+        label: 'Attendance logs',
+        icon: Icons.fact_check_outlined,
+        selectedIcon: Icons.fact_check_rounded,
+        rootRoute: '/attendance-admin',
+        permissionKey: 'attendance.admin',
+        showInMoreSheet: true,
+      );
+
+  /// Device binding administration. Admin-only — mirrors the web portal's
+  /// Devices + Device Requests entries, which this screen carries as two tabs.
+  static NavDestination devicesAdmin() => const NavDestination(
+        id: NavDestinationId.devicesAdmin,
+        label: 'Devices',
+        icon: Icons.smartphone_outlined,
+        selectedIcon: Icons.smartphone_rounded,
+        rootRoute: '/devices',
+        permissionKey: 'devices.admin',
+        showInMoreSheet: true,
+      );
+
+  /// Customer accounts. Admin-only — mirrors the web portal's Customers entry,
+  /// backed by the same `/api/v1/customers` API.
+  static NavDestination customers() => const NavDestination(
+        id: NavDestinationId.customers,
+        label: 'Customers',
+        icon: Icons.groups_outlined,
+        selectedIcon: Icons.groups_rounded,
+        rootRoute: '/customers',
+        permissionKey: 'customers.view',
+        showInMoreSheet: true,
+      );
+
   /// Attendance zones. Admin-only: the geofence API is admin-scoped, and the
   /// dashboard setup reminder deep-links here, so it needs a permanent home in
   /// the drawer rather than being reachable only from a dismissible banner.
@@ -357,6 +411,19 @@ class NavDestinations {
         selectedIcon: Icons.location_on_rounded,
         rootRoute: '/geofences',
         permissionKey: 'geofences.view',
+        showInMoreSheet: true,
+      );
+
+  /// Connection Map — the web portal's "Network" section. The screen has been
+  /// built and routed since 3.7 but was reachable only from a dashboard
+  /// quick-action tile, so it vanished as soon as the tile scrolled away.
+  static NavDestination networkMap() => const NavDestination(
+        id: NavDestinationId.networkMap,
+        label: 'Connection Map',
+        icon: Icons.share_outlined,
+        selectedIcon: Icons.share_rounded,
+        rootRoute: '/network-map',
+        permissionKey: 'network.view',
         showInMoreSheet: true,
       );
 
@@ -413,11 +480,23 @@ class NavDestinations {
   /// Items to show in the left navigation drawer, filtered by RBAC and by what
   /// the role already has as a bottom-nav tab.
   ///
+  /// This is the mobile counterpart of the web portal's sidenav, but it is
+  /// deliberately NOT a mirror of it. The web sidenav carries back-office
+  /// administration — Employees, Devices, Device Requests, Customers,
+  /// Attendance Logs, Daily Attendance, Live Tracking, Roles & Permissions —
+  /// which is desk work on large data grids with no mobile screen built for
+  /// it, so those stay web-only. What belongs here is the field-facing subset
+  /// an admin or employee genuinely needs on a handset.
+  ///
   /// Excluded by design:
   ///   • Notifications — lives on the dashboard's app-bar bell
   ///   • Profile       — opens from the drawer's own user header / dashboard avatar
   ///   • Reports       — a bottom-nav tab for the roles that can see it
   ///   • Settings      — dropped for admins, who have it as a bottom-nav tab
+  ///   • Leads         — the mobile screen is still a placeholder stub
+  ///
+  /// Every entry is filtered through `hasPermission`, so listing a destination
+  /// here does not grant it: a role without the permission key never sees it.
   static List<NavDestination> drawerItems({
     required AppUserRole role,
     required bool Function(String permissionKey) hasPermission,
@@ -425,9 +504,18 @@ class NavDestinations {
   }) {
     final tabRoutes = bottomNavFor(role: role).map((d) => d.rootRoute).toSet();
     final all = [
+      // Field work — real screens that office roles (admin) can reach but have
+      // no bottom-nav tab for, so without the drawer they were unreachable.
+      faults(),
+      visits(),
       leave(),
+      networkMap(),
       announcements(),
       syncMonitor(badgeCount: pendingSyncBadge),
+      employees(),
+      customers(),
+      attendanceAdmin(),
+      devicesAdmin(),
       geofences(),
       settings(),
     ];
@@ -476,12 +564,26 @@ class NavDestinations {
   static Set<String> permissionsFor(AppUserRole role) {
     final roleSpecific = switch (role) {
       // Field roles carry attendance + visit geolocation.
-      AppUserRole.fieldEmployee => {..._fieldRoleGeoPermissions, 'visits.view'},
-      AppUserRole.fieldTechnician => {..._fieldRoleGeoPermissions, 'faults.view'},
+      AppUserRole.fieldEmployee => {
+          ..._fieldRoleGeoPermissions,
+          'visits.view',
+          'network.view',
+        },
+      AppUserRole.fieldTechnician => {
+          ..._fieldRoleGeoPermissions,
+          'faults.view',
+          'network.view',
+        },
       AppUserRole.salesRep => {..._fieldRoleGeoPermissions, 'leads.view'},
       // Office roles: no attendance, no visit tracking. Faults/leads stay for
       // oversight but geolocation attendance and visits are field-only.
-      AppUserRole.manager => const {'team.view', 'reports.view'},
+      AppUserRole.manager => const {
+          'team.view',
+          'reports.view',
+          'network.view',
+          // Managers review their team's attendance but do not clock in.
+          'attendance.admin',
+        },
       AppUserRole.admin => const {
           'team.view',
           'reports.view',
@@ -491,6 +593,17 @@ class NavDestinations {
           // Attendance zones are configured by admins only. Field roles punch
           // against geofences but never create or edit them.
           'geofences.view',
+          'network.view',
+          // Workforce management (People section on web). Admin-only: the
+          // employees API is gated on EMPLOYEES:READ/CREATE/UPDATE/DELETE.
+          'employees.view',
+          // Customer accounts (CUSTOMERS:READ/CREATE/UPDATE/DELETE on the API).
+          'customers.view',
+          // Device binding administration (DEVICES:READ/APPROVE on the API).
+          'devices.admin',
+          // Tenant-wide attendance reporting. NOT 'attendance.view' — admins
+          // read everyone's logs but never clock in themselves.
+          'attendance.admin',
         },
       // Customer portal identity: no field features at all. Only the shared
       // shell surfaces from `_commonPermissions` — never visits/attendance/etc.
@@ -520,6 +633,16 @@ class NavDestinations {
     '/team': 'team.view',
     '/reports': 'reports.view',
     '/geofences': 'geofences.view',
+    '/network-map': 'network.view',
+    '/employees': 'employees.view',
+    '/customers': 'customers.view',
+    // NOTE: '/devices' only — the employee's own '/device/change-request' and
+    // '/auth/device-binding' routes must stay reachable without this admin key.
+    '/devices': 'devices.admin',
+    // '/attendance-admin' is a separate key from '/attendance': the prefix
+    // match above is anchored on '/attendance/' so the two never collide, and
+    // a field employee must keep their own check-in screen without this key.
+    '/attendance-admin': 'attendance.admin',
     // No role carries 'documents.view', so this bounces every /documents
     // deep link home until the module is re-enabled.
     '/documents': 'documents.view',
