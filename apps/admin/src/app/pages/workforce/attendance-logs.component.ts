@@ -723,64 +723,14 @@ export class AttendanceLogsComponent implements OnInit, AfterViewInit {
       .getAttendanceLogs(page, limit, this.searchTerm, sortField, sortDir)
       .subscribe({
         next: (data) => {
-          if (data.data && data.data.length > 0) {
-            this.dataSource = data.data;
-            this.totalRecords = data.total;
-          } else {
-            this.dataSource = [
-              {
-                employee: {
-                  id: 'emp-1',
-                  user: { profile: { firstName: 'Sarah', lastName: 'Connor' } },
-                  department: { name: 'Field Operations' },
-                  shortfallDays: 0,
-                  leaveBalance: 12,
-                },
-                attendanceMethod: 'BIOMETRIC',
-                checkInTime: new Date(Date.now() - 8 * 60 * 60 * 1000),
-                checkOutTime: null,
-              },
-              {
-                employee: {
-                  id: 'emp-2',
-                  user: { profile: { firstName: 'John', lastName: 'Wick' } },
-                  department: { name: 'Security' },
-                  shortfallDays: 2,
-                  leaveBalance: 4,
-                },
-                attendanceMethod: 'FACIAL_RECOGNITION',
-                checkInTime: new Date(Date.now() - 32 * 60 * 60 * 1000),
-                checkOutTime: new Date(Date.now() - 23.5 * 60 * 60 * 1000),
-              },
-              {
-                employee: {
-                  id: 'emp-3',
-                  user: { profile: { firstName: 'Ellen', lastName: 'Ripley' } },
-                  department: { name: 'Logistics' },
-                  shortfallDays: 1,
-                  leaveBalance: 8,
-                },
-                attendanceMethod: 'MANUAL',
-                checkInTime: new Date(Date.now() - 56 * 60 * 60 * 1000),
-                checkOutTime: new Date(Date.now() - 48 * 60 * 60 * 1000),
-              },
-              {
-                employee: {
-                  id: 'emp-4',
-                  user: { profile: { firstName: 'Peter', lastName: 'Parker' } },
-                  department: { name: 'Photography' },
-                  shortfallDays: 4,
-                  leaveBalance: 0,
-                },
-                attendanceMethod: 'APP',
-                checkInTime: new Date(Date.now() - 80 * 60 * 60 * 1000),
-                checkOutTime: new Date(Date.now() - 74 * 60 * 60 * 1000),
-              },
-            ];
-            this.totalRecords = 4;
-          }
+          this.dataSource = data.data ?? [];
+          this.totalRecords = data.total ?? 0;
         },
-        error: (err) => console.error('Failed to load attendance logs', err),
+        error: (err) => {
+          console.error('Failed to load attendance logs', err);
+          this.dataSource = [];
+          this.totalRecords = 0;
+        },
       });
   }
 

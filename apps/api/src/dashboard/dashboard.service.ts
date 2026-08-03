@@ -284,7 +284,10 @@ export class DashboardService {
       items.push({
         id: `checkin-${s.id}`,
         type: 'checkIn',
-        title: `Checked in at ${this.timeLabel(s.punchIn)}`,
+        // The clock time is deliberately not rendered here: the server runs in
+        // UTC, so a formatted label would disagree with the device-local time
+        // shown on the attendance hero card. Clients format `timestamp`.
+        title: 'Checked in',
         subtitle: null,
         timestamp: s.punchIn.toISOString(),
         route: null,
@@ -293,7 +296,7 @@ export class DashboardService {
         items.push({
           id: `checkout-${s.id}`,
           type: 'checkOut',
-          title: `Checked out at ${this.timeLabel(s.punchOut)}`,
+          title: 'Checked out',
           subtitle: null,
           timestamp: s.punchOut.toISOString(),
           route: null,
@@ -406,13 +409,5 @@ export class DashboardService {
     const m = Number(parts[1]);
     if (Number.isNaN(h) || Number.isNaN(m)) return null;
     return h * 60 + m;
-  }
-
-  private timeLabel(dt: Date): string {
-    const h24 = dt.getHours();
-    const h = h24 % 12 === 0 ? 12 : h24 % 12;
-    const m = dt.getMinutes().toString().padStart(2, '0');
-    const ampm = h24 >= 12 ? 'PM' : 'AM';
-    return `${h}:${m} ${ampm}`;
   }
 }
