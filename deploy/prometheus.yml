@@ -3,10 +3,12 @@ global:
   evaluation_interval: 30s
 
 scrape_configs:
-  # NestJS API metrics — willsoto PrometheusModule registers at /metrics,
-  # bypassing the global 'api' prefix and URI versioning
+  # NestJS API metrics. The willsoto PrometheusModule controller is subject to
+  # the global 'api' prefix and URI versioning set in main.ts, so the endpoint
+  # is served at /api/v1/metrics — not the bare /metrics the module registers
+  # in isolation. Scraping /metrics returns 404 and collects nothing.
   - job_name: pingforce-api
-    metrics_path: /metrics
+    metrics_path: /api/v1/metrics
     static_configs:
       - targets: ['api:3000']
 
