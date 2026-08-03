@@ -8,8 +8,8 @@ import '../../../domain/entities/attendance_today.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Today at a glance for the signed-in employee: first check-in / last
-// check-out, worked and break totals, the punch history with per-session
-// breaks, and current leave balances. Data comes from GET /attendance/today.
+// check-out, worked totals, the punch history and current leave balances.
+// Data comes from GET /attendance/today.
 
 class AttendanceDaySummaryCard extends StatelessWidget {
   const AttendanceDaySummaryCard({super.key, required this.today});
@@ -86,13 +86,6 @@ class AttendanceDaySummaryCard extends StatelessWidget {
                     value: _formatTime(totals.lastPunchOut),
                     icon: Icons.logout_rounded,
                   ),
-                  // Whole-day count across every session today; the active
-                  // session card shows the current session's count instead.
-                  _Metric(
-                    label: 'Breaks today',
-                    value: '${totals.breaksTaken}',
-                    icon: Icons.coffee_rounded,
-                  ),
                 ],
               ),
 
@@ -104,11 +97,6 @@ class AttendanceDaySummaryCard extends StatelessWidget {
                     label: 'Worked',
                     value: _formatMinutes(totals.workedMinutes),
                     icon: Icons.timelapse_rounded,
-                  ),
-                  _Metric(
-                    label: 'On Break',
-                    value: _formatMinutes(totals.breakMinutes),
-                    icon: Icons.pause_circle_outline_rounded,
                   ),
                   _Metric(
                     label: 'Overtime',
@@ -244,25 +232,6 @@ class _SessionRow extends StatelessWidget {
                 style: AppTypography.bodySmall,
               ),
             ],
-          ),
-          // Breaks nested under their session
-          ...session.breaks.map(
-            (b) => Padding(
-              padding: const EdgeInsets.only(
-                left: AppSpacing.space6,
-                top: 2,
-              ),
-              child: Text(
-                '${b.breakType.toLowerCase()} · '
-                '${AttendanceDaySummaryCard._formatTime(b.startTime)}'
-                '${b.endTime == null ? ' → ongoing' : ' → ${AttendanceDaySummaryCard._formatTime(b.endTime)}'}'
-                '${b.durationMinutes != null ? ' (${b.durationMinutes}m)' : ''}'
-                '${b.paidBreak ? ' · paid' : ''}',
-                style: AppTypography.labelSmall.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
           ),
         ],
       ),

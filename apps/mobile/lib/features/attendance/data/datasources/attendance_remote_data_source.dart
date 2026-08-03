@@ -13,12 +13,6 @@ abstract class AttendanceRemoteDataSource {
 
   /// Today's snapshot — open session, punch history, totals, leave balances.
   Future<AttendanceTodayModel> getToday();
-
-  /// WORKING → ON_BREAK.
-  Future<void> startBreak(String breakType);
-
-  /// ON_BREAK → WORKING.
-  Future<void> endBreak();
 }
 
 class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
@@ -61,25 +55,6 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
       );
     }
     throw Exception('Failed to load today\'s attendance');
-  }
-
-  @override
-  Future<void> startBreak(String breakType) async {
-    final response = await dio.post(
-      '/api/v1/attendance/break/start',
-      data: {'breakType': breakType},
-    );
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Failed to start break');
-    }
-  }
-
-  @override
-  Future<void> endBreak() async {
-    final response = await dio.post('/api/v1/attendance/break/end');
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Failed to end break');
-    }
   }
 
   @override

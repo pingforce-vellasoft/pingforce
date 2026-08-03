@@ -620,6 +620,10 @@ class _QuickActionCellState extends State<_QuickActionCell>
       'event_busy': Icons.event_busy_rounded,
       'bar_chart': Icons.bar_chart_rounded,
       'folder': Icons.folder_rounded,
+      // Admin workforce shortcuts.
+      'badge': Icons.badge_rounded,
+      'fact_check': Icons.fact_check_rounded,
+      'smartphone': Icons.smartphone_rounded,
     };
     return map[name] ?? Icons.circle_rounded;
   }
@@ -864,11 +868,6 @@ class _ActivityFeedTile extends StatelessWidget {
           Icons.logout_rounded,
           Theme.of(context).colorScheme.surfaceContainerHigh,
           Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ActivityType.breakStart || ActivityType.breakEnd => (
-          Icons.coffee_rounded,
-          PingForceColors.statusWarningContainer,
-          PingForceColors.statusWarning,
         ),
       ActivityType.faultCreated || ActivityType.faultAssigned => (
           Icons.build_circle_rounded,

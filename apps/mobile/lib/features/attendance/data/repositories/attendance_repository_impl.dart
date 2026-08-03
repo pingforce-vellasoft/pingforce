@@ -146,24 +146,4 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       return Left(_mapError(e, 'Could not load today\'s attendance.'));
     }
   }
-
-  @override
-  Future<Either<Failure, void>> startBreak(String breakType) async {
-    try {
-      await remoteDataSource.startBreak(breakType);
-      return const Right(null);
-    } catch (e) {
-      return Left(_mapError(e, 'Could not start your break.'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> endBreak() async {
-    try {
-      await remoteDataSource.endBreak();
-      return const Right(null);
-    } catch (e) {
-      return Left(_mapError(e, 'Could not end your break.'));
-    }
-  }
 }

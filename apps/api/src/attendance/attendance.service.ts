@@ -120,41 +120,19 @@ export class AttendanceService {
         sessions: {
           where: { deletedAt: null },
           orderBy: { punchIn: 'asc' },
-          include: {
-            breaks: {
-              where: { deletedAt: null },
-              orderBy: { startTime: 'asc' },
-            },
-          },
         },
       },
     });
 
     const sessions = attendance?.sessions ?? [];
     const openSession = sessions.find((s) => s.punchOut === null) ?? null;
-    const allBreaks = sessions.flatMap((s) => s.breaks);
-    const openBreak =
-      openSession?.breaks.find((b) => b.endTime === null) ?? null;
-
-    // `sessionStatus` is authoritative for break state, not the presence of an
-    // unclosed break row. StartBreak/EndBreak gate on the column via
-    // assertTransition, so reporting isOnBreak from a stray open row would let
-    // the client show "On Break" for a WORKING session and then call endBreak
-    // into a rejected transition. The row only supplies the start time.
     const openSessionState = openSession
       ? resolveState(openSession.sessionStatus)
       : null;
-    const isOnBreak = openSessionState === SessionState.ON_BREAK;
-
     const closedPunchOuts = sessions
       .map((s) => s.punchOut)
       .filter((p): p is Date => p !== null)
       .sort((a, b) => a.getTime() - b.getTime());
-
-    const breakMinutes = allBreaks.reduce(
-      (sum, b) => sum + (b.durationMinutes ?? 0),
-      0,
-    );
 
     const leaveBalances = await this.prisma.leaveBalance.findMany({
       where: {
@@ -181,11 +159,6 @@ export class AttendanceService {
             id: openSession.id,
             punchIn: openSession.punchIn,
             sessionStatus: openSessionState,
-            isOnBreak,
-            currentBreakStartedAt: isOnBreak
-              ? (openBreak?.startTime ?? null)
-              : null,
-            breaksTaken: openSession.breaks.length,
             checkInLatitude: openSession.checkInLatitude,
             checkInLongitude: openSession.checkInLongitude,
           }
@@ -195,21 +168,11 @@ export class AttendanceService {
         punchIn: s.punchIn,
         punchOut: s.punchOut,
         sessionStatus: resolveState(s.sessionStatus),
-        breaks: s.breaks.map((b) => ({
-          id: b.id,
-          breakType: b.breakType,
-          paidBreak: b.paidBreak,
-          startTime: b.startTime,
-          endTime: b.endTime,
-          durationMinutes: b.durationMinutes,
-        })),
       })),
       totals: {
         // Credited on check-out only, so an open session contributes 0 here.
         workedMinutes: attendance?.totalWorkMinutes ?? 0,
         overtimeMinutes: attendance?.overtimeMinutes ?? 0,
-        breaksTaken: allBreaks.length,
-        breakMinutes,
         firstPunchIn: sessions.length > 0 ? sessions[0].punchIn : null,
         // Last *closed* session's punch-out. Reading the final element blindly
         // yields null whenever the day ends with an open session, hiding an

@@ -141,6 +141,122 @@ void main() {
       // /team gates only /team and /team/*, not an unrelated /teamwork route.
       expect(NavDestinations.permissionKeyForRoute('/teamwork'), isNull);
     });
+
+    test('admin surfaces carry their own keys, distinct from the field ones',
+        () {
+      expect(NavDestinations.permissionKeyForRoute('/employees'),
+          'employees.view');
+      expect(NavDestinations.permissionKeyForRoute('/customers'),
+          'customers.view');
+      expect(
+          NavDestinations.permissionKeyForRoute('/devices'), 'devices.admin');
+      expect(NavDestinations.permissionKeyForRoute('/geofences'),
+          'geofences.view');
+    });
+
+    test('/attendance-admin does not collide with the /attendance tab', () {
+      // The admin log and the employee's own check-in screen are different
+      // surfaces with different keys. If the prefix match were unanchored,
+      // '/attendance-admin' would inherit 'attendance.view' and an admin (who
+      // never carries that key) would be bounced off their own reporting
+      // screen.
+      expect(NavDestinations.permissionKeyForRoute('/attendance-admin'),
+          'attendance.admin');
+      expect(NavDestinations.permissionKeyForRoute('/attendance'),
+          'attendance.view');
+    });
+
+    test("the employee's own device routes are not gated by devices.admin", () {
+      // An employee whose binding was revoked reaches these on a device that
+      // is not bound; gating them behind the admin key would trap them.
+      expect(NavDestinations.permissionKeyForRoute('/device/change-request'),
+          isNull);
+      expect(NavDestinations.permissionKeyForRoute('/device-registration'),
+          isNull);
+    });
+  });
+
+  group('admin-surface role scoping', () {
+    test('admin carries every admin-surface key', () {
+      for (final key in [
+        'employees.view',
+        'customers.view',
+        'devices.admin',
+        'attendance.admin',
+        'geofences.view',
+      ]) {
+        expect(
+          NavDestinations.roleHasPermission(AppUserRole.admin, key),
+          isTrue,
+          reason: 'admin should carry $key',
+        );
+      }
+    });
+
+    test('field roles carry no admin-surface key', () {
+      const fieldRoles = [
+        AppUserRole.fieldEmployee,
+        AppUserRole.fieldTechnician,
+        AppUserRole.salesRep,
+      ];
+      for (final role in fieldRoles) {
+        for (final key in [
+          'employees.view',
+          'customers.view',
+          'devices.admin',
+          'attendance.admin',
+          'geofences.view',
+        ]) {
+          expect(
+            NavDestinations.roleHasPermission(role, key),
+            isFalse,
+            reason: '$role must not carry $key',
+          );
+        }
+      }
+    });
+
+    test('admins do not carry the field check-in key', () {
+      // Admins read everyone's attendance but never clock in themselves.
+      expect(
+        NavDestinations.roleHasPermission(AppUserRole.admin, 'attendance.view'),
+        isFalse,
+      );
+    });
+
+    test('managers review attendance but do not clock in', () {
+      expect(
+        NavDestinations.roleHasPermission(
+            AppUserRole.manager, 'attendance.admin'),
+        isTrue,
+      );
+      expect(
+        NavDestinations.roleHasPermission(
+            AppUserRole.manager, 'attendance.view'),
+        isFalse,
+      );
+      // Managers are not tenant admins — no workforce CRUD.
+      expect(
+        NavDestinations.roleHasPermission(
+            AppUserRole.manager, 'employees.view'),
+        isFalse,
+      );
+    });
+
+    test('customer portal identity reaches no admin surface', () {
+      for (final key in [
+        'employees.view',
+        'customers.view',
+        'devices.admin',
+        'attendance.admin',
+      ]) {
+        expect(
+          NavDestinations.roleHasPermission(AppUserRole.customer, key),
+          isFalse,
+          reason: 'customer must not carry $key',
+        );
+      }
+    });
   });
 
   group('end-to-end: role cannot reach a foreign feature route', () {

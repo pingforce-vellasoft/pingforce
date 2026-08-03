@@ -11,18 +11,12 @@ import { ConflictException } from '@nestjs/common';
 export enum SessionState {
   CHECKED_IN = 'CHECKED_IN',
   WORKING = 'WORKING',
-  ON_BREAK = 'ON_BREAK',
   CHECKED_OUT = 'CHECKED_OUT',
 }
 
 const ALLOWED_TRANSITIONS: Record<SessionState, readonly SessionState[]> = {
-  [SessionState.CHECKED_IN]: [
-    SessionState.WORKING,
-    SessionState.ON_BREAK,
-    SessionState.CHECKED_OUT,
-  ],
-  [SessionState.WORKING]: [SessionState.ON_BREAK, SessionState.CHECKED_OUT],
-  [SessionState.ON_BREAK]: [SessionState.WORKING, SessionState.CHECKED_OUT],
+  [SessionState.CHECKED_IN]: [SessionState.WORKING, SessionState.CHECKED_OUT],
+  [SessionState.WORKING]: [SessionState.CHECKED_OUT],
   [SessionState.CHECKED_OUT]: [], // terminal — corrections go through the correction workflow
 };
 

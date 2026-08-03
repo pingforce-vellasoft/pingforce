@@ -29,6 +29,10 @@ import '../../features/profile/presentation/active_sessions_screen.dart';
 import '../../features/profile/presentation/login_history_screen.dart';
 import '../../features/attendance/presentation/history/attendance_history_screen.dart';
 import '../../features/notifications/presentation/notification_center_screen.dart';
+import '../../features/attendance_admin/presentation/attendance_admin_screen.dart';
+import '../../features/customers/presentation/customer_list_screen.dart';
+import '../../features/devices/presentation/device_admin_screen.dart';
+import '../../features/employees/presentation/employee_list_screen.dart';
 import '../../features/geofences/presentation/geofence_list_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -406,6 +410,41 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/geofences',
         name: 'geofences',
         builder: (context, state) => const GeofenceListScreen(),
+      ),
+
+      // ── Employees (workforce management) — admin ─────────────────────────
+      GoRoute(
+        path: '/employees',
+        name: 'employees',
+        builder: (context, state) => const EmployeeListScreen(),
+      ),
+
+      // ── Customers (account management) — admin ───────────────────────────
+      GoRoute(
+        path: '/customers',
+        name: 'customers',
+        builder: (context, state) => const CustomerListScreen(),
+      ),
+
+      // ── Attendance admin (tenant-wide reporting) — admin ─────────────────
+      //
+      // Distinct from '/attendance', which is the EMPLOYEE's own check-in
+      // screen. This is the tenant-wide log the web portal carries as two
+      // separate entries (Attendance Logs + Daily Attendance).
+      GoRoute(
+        path: '/attendance-admin',
+        name: 'attendance-admin',
+        builder: (context, state) => const AttendanceAdminScreen(),
+      ),
+
+      // ── Devices (binding administration) — admin ─────────────────────────
+      //
+      // Distinct from '/device/change-request' and '/auth/device-binding',
+      // which are the EMPLOYEE's own binding flow. This is the admin queue.
+      GoRoute(
+        path: '/devices',
+        name: 'devices-admin',
+        builder: (context, state) => const DeviceAdminScreen(),
       ),
 
       GoRoute(

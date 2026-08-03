@@ -7,14 +7,8 @@ import {
 } from './session-state';
 
 describe('attendance session-state machine (STATE_MACHINE.md §3-§4)', () => {
-  it('allows check-in → working → break → working → check-out', () => {
+  it('allows check-in → working → check-out', () => {
     expect(canTransition(SessionState.CHECKED_IN, SessionState.WORKING)).toBe(
-      true,
-    );
-    expect(canTransition(SessionState.WORKING, SessionState.ON_BREAK)).toBe(
-      true,
-    );
-    expect(canTransition(SessionState.ON_BREAK, SessionState.WORKING)).toBe(
       true,
     );
     expect(canTransition(SessionState.WORKING, SessionState.CHECKED_OUT)).toBe(
@@ -26,9 +20,6 @@ describe('attendance session-state machine (STATE_MACHINE.md §3-§4)', () => {
     expect(
       canTransition(SessionState.CHECKED_IN, SessionState.CHECKED_OUT),
     ).toBe(true);
-    expect(canTransition(SessionState.ON_BREAK, SessionState.CHECKED_OUT)).toBe(
-      true,
-    );
   });
 
   it('CHECKED_OUT is terminal — corrections go through the workflow', () => {
@@ -39,9 +30,6 @@ describe('attendance session-state machine (STATE_MACHINE.md §3-§4)', () => {
 
   it('rejects re-check-in on an open session', () => {
     expect(canTransition(SessionState.WORKING, SessionState.CHECKED_IN)).toBe(
-      false,
-    );
-    expect(canTransition(SessionState.ON_BREAK, SessionState.CHECKED_IN)).toBe(
       false,
     );
   });
@@ -56,7 +44,9 @@ describe('attendance session-state machine (STATE_MACHINE.md §3-§4)', () => {
   });
 
   it('resolveState treats legacy/unknown statuses as WORKING', () => {
-    expect(resolveState('ON_BREAK')).toBe(SessionState.ON_BREAK);
+    // Breaks were removed: sessions persisted as ON_BREAK before the removal
+    // must resolve to WORKING so they can still be checked out.
+    expect(resolveState('ON_BREAK')).toBe(SessionState.WORKING);
     expect(resolveState(null)).toBe(SessionState.WORKING);
     expect(resolveState('LEGACY')).toBe(SessionState.WORKING);
   });

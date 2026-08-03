@@ -114,19 +114,18 @@ export class DashboardService {
       0,
     );
 
-    // An open break on the open session means the employee is on break, not
-    // working. Without this the hero card never reached its onBreak state, so
-    // it kept offering "Start Break" to someone already on one.
-    const openBreak =
-      firstOpen?.breaks?.find((b) => b.endTime === null) ?? null;
-
-    // Status: no session yet → notCheckedIn; an open session → working (or
-    // onBreak); every session closed → checkedOut.
+    // Status: no session yet → notCheckedIn; an open session → working; every
+    // session closed → checkedOut.
+    //
+    // Breaks were removed, so there is no longer an `onBreak` status. A session
+    // still carrying an unclosed break row from before the removal reports
+    // `working` — the client has no onBreak state to render, and the row is
+    // closed by auto-checkout.
     let status: string;
     if (sessions.length === 0) {
       status = 'notCheckedIn';
     } else if (firstOpen) {
-      status = openBreak ? 'onBreak' : 'working';
+      status = 'working';
     } else {
       status = 'checkedOut';
     }
@@ -213,7 +212,9 @@ export class DashboardService {
       workedMinutes: sessions.length > 0 ? workedMinutes : null,
       breaksTaken,
       breakMinutes,
-      breakStartTime: openBreak?.startTime.toISOString() ?? null,
+      // Always null since breaks were removed; retained so the response shape
+      // stays stable for clients still reading the field.
+      breakStartTime: null,
       overtimeMinutes,
       isLate,
       minutesLate,

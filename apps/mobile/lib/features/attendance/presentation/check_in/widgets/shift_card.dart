@@ -156,12 +156,6 @@ class _ShiftCardState extends State<ShiftCard>
                             ),
                             const SizedBox(width: AppSpacing.space4),
                             _MetaItem(
-                              icon: Icons.coffee_outlined,
-                              label:
-                                  '${shift.totalBreaksAllowed} Breaks',
-                            ),
-                            const SizedBox(width: AppSpacing.space4),
-                            _MetaItem(
                               icon: Icons.schedule_outlined,
                               label:
                                   '${shift.requiredHours.toStringAsFixed(1)}h Required',
