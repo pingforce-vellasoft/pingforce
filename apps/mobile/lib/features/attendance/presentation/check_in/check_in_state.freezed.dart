@@ -1219,9 +1219,6 @@ abstract class _ActiveSession implements ActiveSession {
     required final String sessionId,
     required final DateTime checkInTime,
     required final String shiftName,
-    final int? breaksTaken,
-    final DateTime? lastBreakStart,
-    final bool isOnBreak,
     final String? checkInGeofenceId,
     final String? checkInGeofenceName,
   }) = _$ActiveSessionImpl;
@@ -2608,8 +2605,6 @@ abstract class _CheckInState extends CheckInState {
     final bool isCapturingSelfie,
     final bool isCheckingOut,
     final String? checkOutError,
-    final bool isBreakUpdating,
-    final String? breakError,
     final AttendanceToday? today,
     final String? errorMessage,
     final String? errorCode,
