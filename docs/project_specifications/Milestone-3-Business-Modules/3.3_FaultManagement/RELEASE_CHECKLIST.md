@@ -14,13 +14,27 @@ not on the development laptop.
 - Applied same-major patches for brace expansion, Valibot, Multer, JS-YAML,
   fast-uri, MySQL2 and Nodemailer. Scoped overrides are temporary until upstream
   pinned dependencies adopt these fixes; retain CI migration/upload coverage.
-- Production lockfile audit: **12 findings (9 moderate, 3 high)**. The three high
-  entries are one dependency chain: `prisma` -> `@prisma/config` ->
-  `deepmerge-ts@7.1.5`. Its patched release is `8.0.0`, outside Prisma's pinned
-  major version ([maintainer advisory](https://github.com/advisories/GHSA-ggr8-5vv4-36mx)).
-  A scoped major-version override needs compatibility review and approval;
-  do not use `npm audit fix --force` to downgrade Prisma or waive the security
-  gate. Deployment remains blocked.
+- Following Product Owner approval, scoped `@prisma/config` to patched
+  `deepmerge-ts@8.0.0`, without changing Prisma versions. Also pinned the
+  same-major `qs@6.16.0` patch across its dependency consumers.
+- Compatibility review: Prisma's C12 loader uses the retained `deepmerge`
+  export with plain configuration objects. This project's config does not use
+  the changed Map merge behavior or removed custom-merger types
+  ([release notes](https://github.com/RebeccaStevens/deepmerge-ts/releases/tag/v8.0.0)).
+  An isolated check passed plain/circular merges, config loading and query
+  parsing. Its config fixture imports `@prisma/config` directly to avoid
+  installing the full Prisma CLI locally. CI runs the same check against the
+  actual project config and `prisma/config` import before full validation.
+- Production lockfile audit: **8 moderate findings, 0 high/critical**;
+  `npm audit --package-lock-only --omit=dev --audit-level=high` passed.
+  Remaining findings trace to older UUID consumers and MinIO's query/stream
+  dependencies. These still need upstream upgrades or separately reviewed
+  compatibility changes; no findings have been waived. Do not use
+  `npm audit fix --force` to downgrade Prisma or MinIO.
+- Retained Firebase Hosting configuration and the FCM integration. Firebase
+  Authentication/Firestore are not used by application code. FCM business-event
+  triggers and logout token removal are not yet wired; track these separately
+  from the dependency fixes.
 - Full tests/builds and Trivy verification remain in GitHub Actions; these
   focused fixes are not evidence that the full pipeline is green.
 

@@ -34,6 +34,10 @@ jobs:
 
       - uses: nrwl/nx-set-shas@v4
 
+      - name: Check patched dependency compatibility
+        timeout-minutes: 1
+        run: node .github/scripts/check-dependency-compatibility.cjs
+
       - run: npx nx format:check
       - run: npx nx affected -t lint test build
 
