@@ -282,6 +282,19 @@ jobs:
           fi
           echo "Permission catalog synced and backfilled onto existing tenant roles."
 
+      - name: Verify fault SLA administration grant is backfilled
+        run: |
+          set -euo pipefail
+          granted=$(psql "$PSQL_URL" -tAc \
+            "SELECT count(*) FROM role_permissions rp
+             JOIN permissions p ON p.id = rp.\"permissionId\"
+             WHERE rp.\"roleId\" = '88888888-8888-8888-8888-888888888888'
+               AND p.module = 'FAULTS' AND p.action = 'MANAGE_SLA'")
+          if [ "$granted" != "1" ]; then
+            echo "::error::Existing tenant admin did not receive FAULTS:MANAGE_SLA"
+            exit 1
+          fi
+
   # ── 2. Security scan ──────────────────────────────────────────────────────
   security:
     runs-on: ubuntu-latest
@@ -461,6 +474,10 @@ jobs:
             set -euo pipefail
             cd /opt/pingforce
 
+            # Pin api + migrate to this workflow's immutable image, not a
+            # mutable latest tag or a stale API_IMAGE value in the VM .env.
+            export API_IMAGE="ghcr.io/${GITHUB_REPOSITORY}-api:${GITHUB_SHA}"
+
             # The stack config (compose file, Caddyfile, prometheus, backup
             # script) is versioned in deploy/. The VM has no source checkout, so
             # sync that directory from the repo tarball each run — hand-copying
@@ -511,5 +528,8 @@ jobs:
       - name: Smoke test
         if: steps.creds.outputs.configured == 'true'
         run: |
-          sleep 15
-          curl -fsS "https://admin-api.pingforce.in/api/v1/health" > /dev/null
+          for host in admin-api.pingforce.in api.pingforce.in; do
+            curl -fsS --retry 10 --retry-delay 6 --retry-all-errors \
+              --connect-timeout 10 --max-time 20 \
+              "https://${host}/api/v1/health" > /dev/null
+          done

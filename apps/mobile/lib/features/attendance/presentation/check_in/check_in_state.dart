@@ -57,9 +57,9 @@ enum CheckInScreenStatus {
 /// GPS accuracy classification (DESIGN_TOKENS.md §3.6)
 enum GpsAccuracyLevel {
   excellent, // < 10m
-  good,      // 10–25m
-  fair,      // 25–50m
-  poor,      // > 50m
+  good, // 10–25m
+  fair, // 25–50m
+  poor, // > 50m
   unavailable,
 }
 
@@ -72,12 +72,12 @@ extension GpsAccuracyLevelX on GpsAccuracyLevel {
   }
 
   String get label => switch (this) {
-        GpsAccuracyLevel.excellent => 'Excellent',
-        GpsAccuracyLevel.good => 'Good',
-        GpsAccuracyLevel.fair => 'Fair',
-        GpsAccuracyLevel.poor => 'Poor',
-        GpsAccuracyLevel.unavailable => 'Unavailable',
-      };
+    GpsAccuracyLevel.excellent => 'Excellent',
+    GpsAccuracyLevel.good => 'Good',
+    GpsAccuracyLevel.fair => 'Fair',
+    GpsAccuracyLevel.poor => 'Poor',
+    GpsAccuracyLevel.unavailable => 'Unavailable',
+  };
 }
 
 /// Geofence status for the current user position.
@@ -90,16 +90,16 @@ enum GeofenceStatus {
 
 /// What the Check-In button should do / show.
 enum CheckInButtonMode {
-  loading,          // Initializing / acquiring GPS
-  disabled,         // Hard block (outside fence, mock detected, etc.)
-  enabledNormal,    // All clear — check in
+  loading, // Initializing / acquiring GPS
+  disabled, // Hard block (outside fence, mock detected, etc.)
+  enabledNormal, // All clear — check in
   enabledBiometric, // Inside geofence — check in via fingerprint / face
-  enabledOffline,   // Offline mode enabled
-  enabledOverride,  // Low GPS / outside fence — policy allows override
+  enabledOffline, // Offline mode enabled
+  enabledOverride, // Low GPS / outside fence — policy allows override
   alreadyCheckedIn, // Active session exists
-  submitting,       // API call in progress
-  success,          // Done
-  error,            // Retry
+  submitting, // API call in progress
+  success, // Done
+  error, // Retry
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -111,8 +111,8 @@ class ShiftInfo with _$ShiftInfo {
   const factory ShiftInfo({
     required String shiftCode,
     required String shiftName,
-    required String startTime,       // e.g. "09:00"
-    required String endTime,         // e.g. "18:00"
+    required String startTime, // e.g. "09:00"
+    required String endTime, // e.g. "18:00"
     required int gracePeriodMinutes, // e.g. 15
     /// Shift policy field carried over from the shift definition. Breaks were
     /// removed from the app, so nothing renders this — kept only so the shift
@@ -184,7 +184,7 @@ class TenantCheckInPolicy with _$TenantCheckInPolicy {
   const factory TenantCheckInPolicy({
     @Default(true) bool gpsRequired,
     @Default(true) bool geofenceEnabled,
-    @Default('BLOCK') String geofencePolicy,   // BLOCK | WARN | ALLOW
+    @Default('BLOCK') String geofencePolicy, // BLOCK | WARN | ALLOW
     @Default(false) bool biometricRequired,
     @Default(false) bool selfieRequired,
     @Default(false) bool allowLowAccuracy,
@@ -231,7 +231,6 @@ class CheckInState with _$CheckInState {
     // Check-out
     @Default(false) bool isCheckingOut,
     String? checkOutError,
-
 
     /// Today's snapshot from GET /attendance/today: punch history, totals and
     /// leave balances. Reloaded on every screen open so a returning employee

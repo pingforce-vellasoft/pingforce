@@ -123,17 +123,17 @@ class _ShiftCardState extends State<ShiftCard>
                                   Text(
                                     shift.shiftName,
                                     style: AppTypography.titleMedium.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
                                     ),
                                   ),
                                   Text(
                                     '${shift.startTime} – ${shift.endTime}',
                                     style: AppTypography.bodyMedium.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
@@ -151,8 +151,7 @@ class _ShiftCardState extends State<ShiftCard>
                           children: [
                             _MetaItem(
                               icon: Icons.timer_outlined,
-                              label:
-                                  'Grace ${shift.gracePeriodMinutes}m',
+                              label: 'Grace ${shift.gracePeriodMinutes}m',
                             ),
                             const SizedBox(width: AppSpacing.space4),
                             _MetaItem(
@@ -201,26 +200,17 @@ class _ShiftCardState extends State<ShiftCard>
 
     Widget chip = Container(
       padding: AppSpacing.chipPaddingAll,
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: AppRadius.xsAll,
-      ),
+      decoration: BoxDecoration(color: bgColor, borderRadius: AppRadius.xsAll),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color,
-            ),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
           ),
           AppSpacing.iconGapBox,
-          Text(
-            label,
-            style: AppTypography.labelMedium.copyWith(color: color),
-          ),
+          Text(label, style: AppTypography.labelMedium.copyWith(color: color)),
         ],
       ),
     );

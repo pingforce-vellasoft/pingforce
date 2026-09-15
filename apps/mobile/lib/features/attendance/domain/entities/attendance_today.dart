@@ -42,12 +42,12 @@ class ActiveSessionInfo extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        punchIn,
-        sessionStatus,
-        checkInLatitude,
-        checkInLongitude,
-      ];
+    id,
+    punchIn,
+    sessionStatus,
+    checkInLatitude,
+    checkInLongitude,
+  ];
 }
 
 class AttendanceTotals extends Equatable {
@@ -66,11 +66,11 @@ class AttendanceTotals extends Equatable {
 
   @override
   List<Object?> get props => [
-        workedMinutes,
-        overtimeMinutes,
-        firstPunchIn,
-        lastPunchOut,
-      ];
+    workedMinutes,
+    overtimeMinutes,
+    firstPunchIn,
+    lastPunchOut,
+  ];
 }
 
 class LeaveBalanceEntry extends Equatable {
@@ -92,13 +92,13 @@ class LeaveBalanceEntry extends Equatable {
 
   @override
   List<Object?> get props => [
-        leaveTypeId,
-        leaveTypeName,
-        leaveTypeCode,
-        totalDays,
-        usedDays,
-        availableDays,
-      ];
+    leaveTypeId,
+    leaveTypeName,
+    leaveTypeCode,
+    totalDays,
+    usedDays,
+    availableDays,
+  ];
 }
 
 class AttendanceToday extends Equatable {
@@ -121,6 +121,12 @@ class AttendanceToday extends Equatable {
   bool get isCheckedIn => activeSession != null;
 
   @override
-  List<Object?> get props =>
-      [date, status, activeSession, sessions, totals, leaveBalances];
+  List<Object?> get props => [
+    date,
+    status,
+    activeSession,
+    sessions,
+    totals,
+    leaveBalances,
+  ];
 }

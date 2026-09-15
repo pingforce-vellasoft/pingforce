@@ -62,13 +62,13 @@ class _CheckInSuccessOverlayState extends State<CheckInSuccessOverlay>
       vsync: this,
       duration: const Duration(milliseconds: 350),
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1.0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: AppEasing.emphasized,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 1.0), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _slideController,
+            curve: AppEasing.emphasized,
+          ),
+        );
 
     // 2. Checkmark animation (600ms)
     _checkController = AnimationController(
@@ -107,9 +107,9 @@ class _CheckInSuccessOverlayState extends State<CheckInSuccessOverlay>
   }
 
   Future<void> _runAnimationSequence() async {
-    await _slideController.forward();       // Slide up: 350ms
-    await _checkController.forward();       // Checkmark: 600ms
-    await _textFadeController.forward();    // Text: 200ms
+    await _slideController.forward(); // Slide up: 350ms
+    await _checkController.forward(); // Checkmark: 600ms
+    await _textFadeController.forward(); // Text: 200ms
   }
 
   void _startCountdown() {
@@ -148,10 +148,9 @@ class _CheckInSuccessOverlayState extends State<CheckInSuccessOverlay>
     return SlideTransition(
       position: _slideAnimation,
       child: Material(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerLowest
-            .withValues(alpha: 0.97),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerLowest.withValues(alpha: 0.97),
         child: SafeArea(
           child: Padding(
             padding: AppSpacing.screenPaddingAll,
@@ -196,8 +195,9 @@ class _CheckInSuccessOverlayState extends State<CheckInSuccessOverlay>
                         child: Text(
                           '·',
                           style: AppTypography.titleSmall.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -383,10 +383,7 @@ class _StatusBadge extends StatelessWidget {
         children: [
           Icon(icon, size: AppIconSize.xs, color: color),
           AppSpacing.iconGapBox,
-          Text(
-            label,
-            style: AppTypography.labelSmall.copyWith(color: color),
-          ),
+          Text(label, style: AppTypography.labelSmall.copyWith(color: color)),
         ],
       ),
     );

@@ -1,4 +1,4 @@
-import { IsString, IsInt, IsOptional, IsEnum, Min } from 'class-validator';
+import { IsInt, IsOptional, IsEnum, IsUUID, Min } from 'class-validator';
 import { FaultPriority } from '@pingforce-monorepo/shared';
 
 export class CreateSlaPolicyDto {
@@ -10,6 +10,6 @@ export class CreateSlaPolicyDto {
   resolveInHours!: number;
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   escalateToId?: string;
 }

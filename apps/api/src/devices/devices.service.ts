@@ -16,6 +16,7 @@ import {
   BindDeviceDto,
   CreateDeviceChangeRequestDto,
   DeviceChangeStatus,
+  UpgradeDeviceKeyDto,
 } from './dto/device.dto';
 
 /** Device error codes (DeviceManagement.md §17, extended). */
@@ -206,6 +207,69 @@ export class DevicesService {
       ipAddress: actor.ipAddress,
       userAgent: actor.userAgent,
       deviceId,
+    });
+
+    return updated;
+  }
+
+  /**
+   * Rotates the attendance signing key without changing the device binding.
+   * The caller must present the exact device id already bound to their own
+   * employee record; this cannot adopt a different handset or another user's
+   * binding.
+   */
+  async upgradeSigningKey(
+    actor: ActorContext,
+    dto: UpgradeDeviceKeyDto,
+  ): Promise<EmployeeDevice> {
+    const employee = await this.requireEmployee(actor);
+    const device = await this.repo.findDeviceById(actor.tenantId, dto.deviceId);
+    if (
+      !device ||
+      device.employeeId !== employee.id ||
+      !device.isTrusted ||
+      device.revokedAt
+    ) {
+      throw new NotFoundException({
+        errorCode: DeviceErrors.NOT_BOUND,
+        message: 'This handset is not the active device for the account.',
+      });
+    }
+
+    // Once an Ed25519 key is established it cannot be replaced through this
+    // compatibility endpoint. A real handset/key change must use the audited
+    // admin-approved device change workflow.
+    if (
+      device.publicKey?.startsWith('ed25519:') &&
+      device.publicKey !== dto.publicKey
+    ) {
+      throw new ConflictException({
+        errorCode: DeviceErrors.ALREADY_BOUND,
+        message:
+          'Use the device change request flow to replace this signing key.',
+      });
+    }
+    if (device.publicKey === dto.publicKey) return device;
+
+    const updated = await this.repo.updateSigningKey(
+      actor.tenantId,
+      dto.deviceId,
+      dto.publicKey,
+      actor.userId,
+    );
+
+    void this.audit.log({
+      tenantId: actor.tenantId,
+      actorId: actor.userId,
+      module: 'DEVICES',
+      entityName: 'employee_device',
+      entityId: device.id,
+      action: 'DEVICE_SIGNING_KEY_ROTATED',
+      severity: 'MEDIUM',
+      requestId: actor.requestId,
+      ipAddress: actor.ipAddress,
+      userAgent: actor.userAgent,
+      deviceId: dto.deviceId,
     });
 
     return updated;

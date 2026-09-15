@@ -5,6 +5,10 @@ import { Cache } from 'cache-manager';
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
 import { ReportQueryDto } from './dto/report-query.dto';
 import { RbacService, ResolvedDataScope } from '../rbac/rbac.service';
+import {
+  ACTIVE_STATES,
+  SLA_STOPPED_STATES,
+} from '../faults/domain/fault-state';
 
 interface DateRange {
   readonly from: Date;
@@ -244,10 +248,11 @@ export class ReportsService {
     const resolution = await this.prisma.$queryRaw<
       { avgHours: number | null }[]
     >`
-      SELECT ROUND((AVG(EXTRACT(EPOCH FROM ("updatedAt" - "createdAt"))) / 3600)::numeric, 1)::float AS "avgHours"
+      SELECT ROUND((AVG(EXTRACT(EPOCH FROM (COALESCE("resolvedAt", "closedAt") - "createdAt"))) / 3600)::numeric, 1)::float AS "avgHours"
       FROM "faults"
       WHERE "tenantId" = ${tenantId} AND "deletedAt" IS NULL
         AND "status" IN ('RESOLVED', 'CLOSED')
+        AND COALESCE("resolvedAt", "closedAt") IS NOT NULL
         AND "createdAt" >= ${range.from} AND "createdAt" <= ${range.to}
         ${scopeFilter} ${customerFilter};
     `;
@@ -255,8 +260,16 @@ export class ReportsService {
     const statusMap = Object.fromEntries(
       byStatus.map((s) => [s.status, s._count._all]),
     );
-    const open = (statusMap['OPEN'] ?? 0) + (statusMap['IN_PROGRESS'] ?? 0);
-    const closed = (statusMap['RESOLVED'] ?? 0) + (statusMap['CLOSED'] ?? 0);
+    // Summed from the lifecycle constants: hardcoding OPEN/IN_PROGRESS here
+    // silently dropped faults sitting in ASSIGNED, ON_HOLD or REOPENED.
+    const open = ACTIVE_STATES.reduce(
+      (total, status) => total + (statusMap[status] ?? 0),
+      0,
+    );
+    const closed = SLA_STOPPED_STATES.reduce(
+      (total, status) => total + (statusMap[status] ?? 0),
+      0,
+    );
 
     return {
       range,
@@ -420,7 +433,7 @@ export class ReportsService {
         where: {
           tenantId,
           ...faultScope,
-          status: { in: ['OPEN', 'IN_PROGRESS'] },
+          status: { in: [...ACTIVE_STATES] },
         },
       }),
       this.prisma.fault.count({
@@ -428,7 +441,7 @@ export class ReportsService {
           tenantId,
           ...faultScope,
           isEscalated: true,
-          status: { in: ['OPEN', 'IN_PROGRESS'] },
+          status: { in: [...ACTIVE_STATES] },
         },
       }),
       this.prisma.lead.count({

@@ -227,7 +227,8 @@ class _GpsMapPanelState extends State<GpsMapPanel>
         initialZoom: loc != null ? 17 : 14,
         // Match previous UX: no rotation, pan/zoom only.
         interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.pinchZoom |
+          flags:
+              InteractiveFlag.pinchZoom |
               InteractiveFlag.drag |
               InteractiveFlag.doubleTapZoom,
         ),
@@ -346,20 +347,19 @@ class _GpsMapPanelState extends State<GpsMapPanel>
   // ── Status chips ───────────────────────────────────────────────────────────
 
   Widget _buildGpsStatusChip(BuildContext context) {
-    final isAcquiring = widget.status == CheckInScreenStatus.gpsAcquiring ||
+    final isAcquiring =
+        widget.status == CheckInScreenStatus.gpsAcquiring ||
         widget.status == CheckInScreenStatus.initializing;
 
     return _MapChip(
-      icon: isAcquiring
-          ? Icons.gps_not_fixed_rounded
-          : Icons.gps_fixed_rounded,
+      icon: isAcquiring ? Icons.gps_not_fixed_rounded : Icons.gps_fixed_rounded,
       iconColor: isAcquiring
           ? Theme.of(context).colorScheme.onSurfaceVariant
           : _gpsRingColor(widget.gpsAccuracy),
       label: isAcquiring
           ? 'Acquiring...'
           : '${widget.gpsAccuracy.label} · '
-              '${widget.location?.accuracyMeters.toStringAsFixed(0) ?? '--'}m',
+                '${widget.location?.accuracyMeters.toStringAsFixed(0) ?? '--'}m',
       isAnimating: isAcquiring,
       pulseAnimation: _pulseAnimation,
     );
@@ -368,9 +368,7 @@ class _GpsMapPanelState extends State<GpsMapPanel>
   Widget _buildGeofenceStatusChip(BuildContext context) {
     final isInside = widget.geofenceStatus == GeofenceStatus.inside;
     return _MapChip(
-      icon: isInside
-          ? Icons.check_circle_rounded
-          : Icons.cancel_rounded,
+      icon: isInside ? Icons.check_circle_rounded : Icons.cancel_rounded,
       iconColor: isInside
           ? PingForceColors.gpsGeofenceInsideBorder
           : PingForceColors.gpsGeofenceOutsideBorder,
@@ -381,20 +379,19 @@ class _GpsMapPanelState extends State<GpsMapPanel>
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   Color _gpsRingColor(GpsAccuracyLevel level) => switch (level) {
-        GpsAccuracyLevel.excellent => PingForceColors.gpsExcellent,
-        GpsAccuracyLevel.good => PingForceColors.gpsGood,
-        GpsAccuracyLevel.fair => PingForceColors.gpsFair,
-        GpsAccuracyLevel.poor => PingForceColors.gpsPoor,
-        GpsAccuracyLevel.unavailable => PingForceColors.gpsUnavailable,
-      };
+    GpsAccuracyLevel.excellent => PingForceColors.gpsExcellent,
+    GpsAccuracyLevel.good => PingForceColors.gpsGood,
+    GpsAccuracyLevel.fair => PingForceColors.gpsFair,
+    GpsAccuracyLevel.poor => PingForceColors.gpsPoor,
+    GpsAccuracyLevel.unavailable => PingForceColors.gpsUnavailable,
+  };
 
   String get _semanticLabel => switch (widget.geofenceStatus) {
-        GeofenceStatus.inside =>
-          'GPS map. You are inside the check-in zone. Accuracy: ${widget.gpsAccuracy.label}',
-        GeofenceStatus.outside =>
-          'GPS map. You are outside the check-in zone.',
-        _ => 'GPS map. Acquiring your location.',
-      };
+    GeofenceStatus.inside =>
+      'GPS map. You are inside the check-in zone. Accuracy: ${widget.gpsAccuracy.label}',
+    GeofenceStatus.outside => 'GPS map. You are outside the check-in zone.',
+    _ => 'GPS map. Acquiring your location.',
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -432,10 +429,9 @@ class _MapChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerLowest
-            .withValues(alpha: 0.90),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerLowest.withValues(alpha: 0.90),
         borderRadius: AppRadius.pillAll,
       ),
       child: Row(

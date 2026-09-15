@@ -9,6 +9,61 @@
 
 ---
 
+# Current implemented API overlay (verified 2026-09-15)
+
+The running API uses the global `/api/v1` prefix. The implemented fault routes
+are listed below. Later sections retain the broader product specification and
+must not be read as proof that aspirational routes are deployed.
+
+Staff routes, protected by JWT and FAULTS RBAC:
+
+- `POST /api/v1/faults`
+- `GET /api/v1/faults`
+- `GET /api/v1/faults/assigned`
+- `GET /api/v1/faults/breached`
+- `GET /api/v1/faults/:id`
+- `PATCH /api/v1/faults/:id`
+- `PATCH /api/v1/faults/:id/status`
+- `POST /api/v1/faults/:id/assign`
+- `POST /api/v1/faults/:id/notes`
+- `PATCH /api/v1/faults/:id/timeline/:entryId/visibility`
+- `POST /api/v1/faults/:id/escalate`
+- `DELETE /api/v1/faults/:id` (soft delete)
+- `POST /api/v1/faults/sync`
+
+SLA configuration:
+
+SLA mutations require `FAULTS:MANAGE_SLA`, not the technician's ordinary
+`FAULTS:UPDATE` grant.
+
+- `POST /api/v1/sla-policies`
+- `GET /api/v1/sla-policies`
+- `GET /api/v1/sla-policies/:id`
+- `PATCH /api/v1/sla-policies/:id`
+- `DELETE /api/v1/sla-policies/:id` (soft delete)
+
+Customer-account routes, protected by customer JWT, portal identity and feature
+guards:
+
+- `POST /api/v1/portal/faults`
+- `GET /api/v1/portal/faults`
+- `GET /api/v1/portal/faults/:id`
+- `POST /api/v1/portal/faults/:id/comments`
+- `POST /api/v1/portal/faults/:id/reopen`
+- `POST /api/v1/portal/faults/:id/rating`
+
+Fault evidence uses `/api/v1/files`; customer tokens can download only files
+explicitly marked customer-visible and attached to that customer’s own fault.
+Staff evidence reads/writes are constrained by their fault action/data scope.
+
+Staff create accepts `assignToSelf: true` for field reports; it cannot be
+combined with `assignedToId`. Assigning another technician requires that target
+to fall within the caller's `FAULTS:ASSIGN` scope. Mobile create and offline
+create replay self-assign to the authenticated technician. Offline status replay
+requires `FAULTS:UPDATE` and honors the same own/team scope as online writes.
+
+---
+
 # 1. Overview
 
 This document defines the REST APIs for the Fault Management module. APIs are designed for Angular Web Portal, Flutter Mobile App, Customer Portal, Super Admin Portal, third-party integrations, and public APIs.

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -9,6 +10,7 @@ import { createHash, randomUUID } from 'crypto';
 import { extname } from 'path';
 import type { Readable } from 'stream';
 import { StorageService } from './storage.service';
+import { FaultAccessService } from '../faults/fault-access.service';
 
 // Allowed types (Upload.md §4) with per-category size caps (§6 defaults)
 const MB = 1024 * 1024;
@@ -63,6 +65,8 @@ export interface UploadInput {
   readonly mimeType: string;
   readonly buffer: Buffer;
   readonly uploadedBy?: string;
+  /** Customer-facing visibility; defaults to internal-only. */
+  readonly isCustomerVisible?: boolean;
 }
 
 export interface DownloadResult {
@@ -76,6 +80,7 @@ export class FilesService {
   constructor(
     @Inject('IPrismaService') private prisma: IPrismaService,
     private readonly storage: StorageService,
+    private readonly faultAccess: FaultAccessService,
   ) {}
 
   /**
@@ -105,6 +110,8 @@ export class FilesService {
       );
     }
 
+    await this.assertFaultAccess(tenantId, input.uploadedBy, input.entityType, input.entityId, 'UPDATE');
+
     const checksum = createHash('sha256').update(input.buffer).digest('hex');
     const fileId = randomUUID();
     const storageKey = `${tenantId}/${fileId}${ext}`;
@@ -128,6 +135,7 @@ export class FilesService {
         storageKey,
         checksum,
         storageProvider: provider,
+        isCustomerVisible: input.isCustomerVisible ?? false,
         uploadedBy: input.uploadedBy,
       },
     });
@@ -137,6 +145,7 @@ export class FilesService {
   async openForDownload(
     tenantId: string,
     fileId: string,
+    requesterUserId?: string,
   ): Promise<DownloadResult> {
     const file = await this.prisma.fileAttachment.findFirst({
       where: { id: fileId, tenantId },
@@ -145,16 +154,42 @@ export class FilesService {
       throw new NotFoundException('File not found');
     }
 
-    const stream = await this.storage.getStream(
-      file.storageKey,
-      file.storageProvider === 'OBJECT_STORAGE' ? 'OBJECT_STORAGE' : 'LOCAL',
-    );
+    await this.assertFaultAccess(tenantId, requesterUserId, file.entityType, file.entityId, ['READ', 'READ_OWN']);
 
-    return {
-      stream,
-      fileName: file.fileName,
-      mimeType: file.mimeType || 'application/octet-stream',
-    };
+    return this.streamFile(file);
+  }
+
+  /**
+   * Customer tokens may download only explicitly published attachments that
+   * belong to one of their own tenant-scoped faults.
+   */
+  async openCustomerFaultAttachment(
+    tenantId: string,
+    customerId: string,
+    fileId: string,
+  ): Promise<DownloadResult> {
+    const file = await this.prisma.fileAttachment.findFirst({
+      where: {
+        id: fileId,
+        tenantId,
+        entityType: 'FAULT',
+        isCustomerVisible: true,
+      },
+    });
+    if (!file) throw new NotFoundException('File not found');
+
+    const fault = await this.prisma.fault.findFirst({
+      where: {
+        id: file.entityId,
+        tenantId,
+        customerId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    if (!fault) throw new NotFoundException('File not found');
+
+    return this.streamFile(file);
   }
 
   async registerFile(
@@ -178,7 +213,8 @@ export class FilesService {
     });
   }
 
-  async getFiles(tenantId: string, entityType: string, entityId: string) {
+  async getFiles(tenantId: string, entityType: string, entityId: string, requesterUserId?: string) {
+    await this.assertFaultAccess(tenantId, requesterUserId, entityType, entityId, ['READ', 'READ_OWN']);
     return this.prisma.fileAttachment.findMany({
       where: {
         tenantId,
@@ -190,13 +226,15 @@ export class FilesService {
   }
 
   /** Deletes the physical bytes, then the metadata row. */
-  async deleteFile(tenantId: string, fileId: string) {
+  async deleteFile(tenantId: string, fileId: string, requesterUserId?: string) {
     const file = await this.prisma.fileAttachment.findUnique({
       where: { id: fileId },
     });
     if (!file || file.tenantId !== tenantId) {
       throw new NotFoundException('File not found');
     }
+
+    await this.assertFaultAccess(tenantId, requesterUserId, file.entityType, file.entityId, 'UPDATE');
 
     await this.storage.delete(
       file.storageKey,
@@ -206,5 +244,39 @@ export class FilesService {
     return this.prisma.fileAttachment.delete({
       where: { id: fileId },
     });
+  }
+
+  private async assertFaultAccess(
+    tenantId: string,
+    userId: string | undefined,
+    entityType: string,
+    entityId: string,
+    action: string | readonly string[],
+  ): Promise<void> {
+    if (entityType !== 'FAULT') return;
+    if (!userId) throw new ForbiddenException('A staff identity is required');
+    const scopeWhere = await this.faultAccess.scopeForAction(tenantId, userId, action);
+    const fault = await this.prisma.fault.findFirst({
+      where: { ...scopeWhere, id: entityId, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!fault) throw new NotFoundException('Fault not found');
+  }
+
+  private async streamFile(file: {
+    readonly storageKey: string;
+    readonly storageProvider: string;
+    readonly fileName: string;
+    readonly mimeType: string;
+  }): Promise<DownloadResult> {
+    const stream = await this.storage.getStream(
+      file.storageKey,
+      file.storageProvider === 'OBJECT_STORAGE' ? 'OBJECT_STORAGE' : 'LOCAL',
+    );
+    return {
+      stream,
+      fileName: file.fileName,
+      mimeType: file.mimeType || 'application/octet-stream',
+    };
   }
 }

@@ -316,9 +316,12 @@ void main() {
       }
     });
 
-    test('bottom nav is Home only', () {
+    test('bottom nav exposes Home and the own-complaints register only', () {
       final nav = NavDestinations.bottomNavFor(role: AppUserRole.customer);
-      expect(nav.map((d) => d.id).toList(), [NavDestinationId.home]);
+      expect(nav.map((d) => d.id).toList(), [
+        NavDestinationId.home,
+        NavDestinationId.myComplaints,
+      ]);
     });
 
     test('bounced from field routes (/visits, /attendance)', () {

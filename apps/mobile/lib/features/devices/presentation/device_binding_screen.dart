@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_session.dart';
 import '../../../core/hardware/device_identity.dart';
+import '../../../core/hardware/device_signing_key.dart';
 import '../../../injection_container.dart';
 import '../data/devices_remote_data_source.dart';
 
@@ -55,9 +56,10 @@ class _DeviceBindingScreenState extends ConsumerState<DeviceBindingScreen> {
     });
 
     try {
-      // Device-key signing lands in a later phase; the server stores whatever
-      // key the handset presents and does not yet verify punch signatures.
-      await sl<DevicesRemoteDataSource>().bind(fingerprint, 'mobile-client');
+      await sl<DevicesRemoteDataSource>().bind(
+        fingerprint,
+        await sl<DeviceSigningKey>().publicKey(),
+      );
       if (!mounted) return;
       AuthSession.instance.deviceBound = true;
       context.go('/home');
@@ -68,11 +70,12 @@ class _DeviceBindingScreenState extends ConsumerState<DeviceBindingScreen> {
         _isLoading = false;
         // DEVICE-008: a binding already exists, so this handset can only be
         // adopted through the admin-approved change queue.
-        _alreadyBoundElsewhere = message.contains('DEVICE-008') ||
+        _alreadyBoundElsewhere =
+            message.contains('DEVICE-008') ||
             message.toLowerCase().contains('already bound');
         _error = _alreadyBoundElsewhere
             ? 'Your account is already bound to another device. Request a '
-                'device change to move it to this one.'
+                  'device change to move it to this one.'
             : message;
       });
     }
@@ -131,8 +134,11 @@ class _DeviceBindingScreenState extends ConsumerState<DeviceBindingScreen> {
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         children: [
-                          _row(theme, 'Device',
-                              fingerprint.deviceName ?? 'This device'),
+                          _row(
+                            theme,
+                            'Device',
+                            fingerprint.deviceName ?? 'This device',
+                          ),
                           if (fingerprint.manufacturer != null)
                             _row(theme, 'Made by', fingerprint.manufacturer!),
                           if (fingerprint.osVersion != null)
@@ -164,8 +170,7 @@ class _DeviceBindingScreenState extends ConsumerState<DeviceBindingScreen> {
                   )
                 else
                   FilledButton(
-                    onPressed:
-                        _isLoading || fingerprint == null ? null : _bind,
+                    onPressed: _isLoading || fingerprint == null ? null : _bind,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: _isLoading
@@ -195,9 +200,7 @@ class _DeviceBindingScreenState extends ConsumerState<DeviceBindingScreen> {
             width: 110,
             child: Text(label, style: theme.textTheme.bodySmall),
           ),
-          Expanded(
-            child: Text(value, style: theme.textTheme.bodyMedium),
-          ),
+          Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
         ],
       ),
     );

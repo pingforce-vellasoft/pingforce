@@ -9,7 +9,10 @@ import { InAppNotificationService } from './in-app-notification.service';
 import { PushService } from './push.service';
 import { WhatsAppService } from './whatsapp.service';
 import { TenantEmailConfigService } from './tenant-email-config.service';
-import { FaultEventsHandler } from './handlers/fault-events.handler';
+import {
+  FaultEventsHandler,
+  FaultNotificationRecipients,
+} from './handlers/fault-events.handler';
 import { VisitEventsHandler } from './handlers/visit-events.handler';
 import { LeadEventsHandler } from './handlers/lead-events.handler';
 
@@ -31,6 +34,7 @@ import { LeadEventsHandler } from './handlers/lead-events.handler';
     PushService,
     WhatsAppService,
     TenantEmailConfigService,
+    FaultNotificationRecipients,
     ...FaultEventsHandler,
     ...VisitEventsHandler,
     ...LeadEventsHandler,

@@ -6,6 +6,7 @@ import {
   BindDeviceDto,
   CreateDeviceChangeRequestDto,
   DeviceChangeReason,
+  UpgradeDeviceKeyDto,
 } from './dto/device.dto';
 
 /**
@@ -74,6 +75,7 @@ function makeService(o: Overrides = {}) {
     listDevices: jest.fn().mockResolvedValue({ rows: [], total: 0 }),
     listRequests: jest.fn().mockResolvedValue({ rows: [], total: 0 }),
     countRequestsForEmployees: jest.fn().mockResolvedValue(new Map()),
+    updateSigningKey: jest.fn().mockResolvedValue({ id: 'dev-row-1' }),
   };
 
   const audit = { log: jest.fn().mockResolvedValue(undefined) };
@@ -332,6 +334,51 @@ describe('DevicesService — claiming an approved binding', () => {
     await expect(
       service.claimApprovedDevice(ACTOR, 'dev-bbbbbbbb', 'attacker-key'),
     ).rejects.toMatchObject({ response: { errorCode: 'DEVICE-007' } });
+  });
+});
+
+describe('DevicesService — signing-key migration', () => {
+  const dto: UpgradeDeviceKeyDto = {
+    deviceId: 'dev-aaaaaaaa',
+    publicKey: `ed25519:${Buffer.alloc(32).toString('base64')}`,
+  };
+
+  it('upgrades a legacy key on the employee own active device', async () => {
+    const { service, repo } = makeService({
+      deviceById: {
+        id: 'dev-row-1',
+        employeeId: 'e1',
+        isTrusted: true,
+        revokedAt: null,
+        publicKey: 'mobile-client',
+      },
+    });
+
+    await service.upgradeSigningKey(ACTOR, dto);
+
+    expect(repo.updateSigningKey).toHaveBeenCalledWith(
+      't1',
+      dto.deviceId,
+      dto.publicKey,
+      'u1',
+    );
+  });
+
+  it('does not allow an established Ed25519 key to be replaced', async () => {
+    const { service, repo } = makeService({
+      deviceById: {
+        id: 'dev-row-1',
+        employeeId: 'e1',
+        isTrusted: true,
+        revokedAt: null,
+        publicKey: `ed25519:${Buffer.alloc(32, 1).toString('base64')}`,
+      },
+    });
+
+    await expect(service.upgradeSigningKey(ACTOR, dto)).rejects.toMatchObject({
+      response: { errorCode: 'DEVICE-008' },
+    });
+    expect(repo.updateSigningKey).not.toHaveBeenCalled();
   });
 });
 

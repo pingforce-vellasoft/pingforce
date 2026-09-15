@@ -18,6 +18,8 @@ import {
   PortalOtpLoginDto,
   PortalOtpRequestDto,
   PortalRefreshDto,
+  PortalTenantDiscoveryRequestDto,
+  PortalTenantDiscoveryVerifyDto,
   VerifyInviteDto,
 } from './dto/portal-auth.dto';
 
@@ -97,6 +99,44 @@ export class PortalAuthController {
   @HttpCode(HttpStatus.OK)
   async loginWithOtp(@Body() dto: PortalOtpLoginDto, @Request() req: any) {
     return this.portalAuthService.loginWithOtp(dto, {
+      ip: req.ip,
+      requestId: req.requestId,
+    });
+  }
+
+  @ApiOperation({
+    summary: 'Request a code to recover the provider (tenant) code',
+  })
+  @Throttle({
+    burst: { limit: 3, ttl: 60000 },
+    sustained: { limit: 6, ttl: 60000 },
+  })
+  @Post('tenants/discover')
+  @HttpCode(HttpStatus.OK)
+  async requestTenantDiscovery(
+    @Body() dto: PortalTenantDiscoveryRequestDto,
+    @Request() req: any,
+  ) {
+    return this.portalAuthService.requestTenantDiscovery(dto, {
+      ip: req.ip,
+      requestId: req.requestId,
+    });
+  }
+
+  @ApiOperation({
+    summary: 'List the providers a verified contact has an account with',
+  })
+  @Throttle({
+    burst: { limit: 5, ttl: 60000 },
+    sustained: { limit: 10, ttl: 60000 },
+  })
+  @Post('tenants/verify')
+  @HttpCode(HttpStatus.OK)
+  async verifyTenantDiscovery(
+    @Body() dto: PortalTenantDiscoveryVerifyDto,
+    @Request() req: any,
+  ) {
+    return this.portalAuthService.verifyTenantDiscovery(dto, {
       ip: req.ip,
       requestId: req.requestId,
     });

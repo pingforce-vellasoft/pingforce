@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Inject,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -17,6 +18,7 @@ import {
 } from '../domain/session-state';
 import { creditWorkedMinutes } from '../domain/work-minutes';
 import { GeofenceCacheService } from '../geofence-cache.service';
+import { PunchSignatureService } from '../punch-signature.service';
 
 /**
  * Check-in / check-out (STATE_MACHINE.md §3): the punch decides direction
@@ -29,11 +31,16 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
     @Inject('IPrismaService') private readonly prisma: ExtendedPrismaClient,
     private readonly eventBus: EventBus,
     private readonly geofenceCache: GeofenceCacheService,
+    private readonly punchSignature: PunchSignatureService,
   ) {}
 
   async execute({ user, dto }: PunchCommand) {
-    const employee = await this.prisma.employee.findUnique({
-      where: { userId: user.userId },
+    const employee = await this.prisma.employee.findFirst({
+      where: {
+        userId: user.userId,
+        tenantId: user.tenantId,
+        deletedAt: null,
+      },
     });
     if (!employee) throw new UnauthorizedException('Not an employee');
 
@@ -80,17 +87,79 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
       });
     }
 
+    this.punchSignature.verify(device.publicKey, {
+      deviceId: dto.deviceId,
+      timestamp: dto.timestamp,
+      latitude: dto.latitude,
+      longitude: dto.longitude,
+      accuracy: dto.accuracy,
+      isMockLocation: dto.isMockLocation,
+      biometricVerified: dto.biometricVerified,
+      clientRef: '',
+      signature: dto.signature,
+    });
+
+    const capturedAt = new Date(dto.timestamp);
+    const ageMs = Date.now() - capturedAt.getTime();
+    if (ageMs < -60_000 || ageMs > 5 * 60_000) {
+      throw new BadRequestException({
+        errorCode: 'PUNCH_TIMESTAMP_INVALID',
+        message: 'The punch timestamp is outside the allowed time window.',
+      });
+    }
+
+    const policy = await this.prisma.attendancePolicy.findFirst({
+      where: { tenantId: employee.tenantId, deletedAt: null },
+    });
+    const gpsRequired = policy?.gpsRequired ?? true;
+    const geofenceRequired = policy?.geofenceRequired ?? true;
+    const accuracyThreshold = policy?.gpsAccuracyThreshold ?? 50;
+    if (gpsRequired && dto.accuracy === undefined) {
+      throw new BadRequestException({
+        errorCode: 'GPS_ACCURACY_REQUIRED',
+        message: 'GPS accuracy is required for attendance.',
+      });
+    }
+    if (
+      gpsRequired &&
+      dto.accuracy !== undefined &&
+      dto.accuracy > accuracyThreshold &&
+      !(policy?.allowLowAccuracy ?? false)
+    ) {
+      throw new BadRequestException({
+        errorCode: 'GPS_ACCURACY_TOO_LOW',
+        message: `GPS accuracy must be within ${accuracyThreshold} metres.`,
+      });
+    }
+    if (
+      dto.isMockLocation === true &&
+      (policy?.mockLocationPolicy ?? 'BLOCK') === 'BLOCK'
+    ) {
+      throw new BadRequestException({
+        errorCode: 'MOCK_LOCATION_DETECTED',
+        message: 'Simulated location detected. Attendance was blocked.',
+      });
+    }
+    if (policy?.biometricRequired && dto.biometricVerified !== true) {
+      throw new BadRequestException({
+        errorCode: 'BIOMETRIC_REQUIRED',
+        message: 'Biometric verification is required for attendance.',
+      });
+    }
+
     // Geofence validation — scoped to the geofences this employee is actually
     // assigned to, not every geofence in the tenant. Redis-cached per employee
     // + in-process haversine, so no DB round-trip on the punch hot path
     // (SCALABILITY_AUDIT).
-    const geofenceCheck = await this.geofenceCache.checkAssigned(
-      employee.tenantId,
-      employee.id,
-      dto.latitude,
-      dto.longitude,
-    );
-    if (geofenceCheck.status === 'NO_ASSIGNMENT') {
+    const geofenceCheck = geofenceRequired
+      ? await this.geofenceCache.checkAssigned(
+          employee.tenantId,
+          employee.id,
+          dto.latitude,
+          dto.longitude,
+        )
+      : { status: 'NOT_REQUIRED' as const };
+    if (geofenceRequired && geofenceCheck.status === 'NO_ASSIGNMENT') {
       // Distinct from OUTSIDE: standing somewhere else cannot fix this, only an
       // admin assigning a work location can. The mobile client keys on
       // `errorCode` to show the "contact your administrator" path instead of
@@ -103,7 +172,11 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
           'No work location is assigned to your account. Contact your administrator.',
       });
     }
-    if (geofenceCheck.status === 'OUTSIDE') {
+    if (
+      geofenceRequired &&
+      geofenceCheck.status === 'OUTSIDE' &&
+      (policy?.outsideGeofencePolicy ?? 'BLOCK') === 'BLOCK'
+    ) {
       throw new BadRequestException({
         statusCode: 400,
         error: 'Bad Request',
@@ -116,7 +189,17 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
     // can never create two open sessions (state machine principle: one active
     // session per employee).
     const result = await this.prisma.$transaction(async (tx) => {
-      const today = new Date();
+      // Serialize punches for one employee. Prisma cannot express PostgreSQL's
+      // partial unique constraint for "punchOut IS NULL", so this narrowly
+      // scoped transaction lock protects the one-open-session invariant.
+      await tx.$executeRaw`
+        SELECT pg_advisory_xact_lock(
+          hashtext(${employee.tenantId}),
+          hashtext(${employee.id})
+        )
+      `;
+
+      const today = new Date(capturedAt);
       today.setHours(0, 0, 0, 0);
 
       let attendance = await tx.attendance.findFirst({
@@ -138,6 +221,21 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
         });
       }
 
+      const replay = await tx.attendanceSession.findFirst({
+        where: {
+          tenantId: employee.tenantId,
+          deletedAt: null,
+          OR: [
+            { deviceSignature: dto.signature },
+            { checkOutDeviceSignature: dto.signature },
+          ],
+        },
+        select: { id: true },
+      });
+      if (replay) {
+        throw new ConflictException('This signed punch was already processed.');
+      }
+
       const openSession = await tx.attendanceSession.findFirst({
         where: {
           tenantId: employee.tenantId,
@@ -154,25 +252,35 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
           SessionState.CHECKED_OUT,
         );
 
-        const punchOut = new Date();
-        const session = await tx.attendanceSession.update({
-          where: { id: openSession.id },
+        const punchOut = capturedAt;
+        const updated = await tx.attendanceSession.updateMany({
+          where: { id: openSession.id, punchOut: null, deletedAt: null },
           data: {
             punchOut,
             checkOutLatitude: dto.latitude,
             checkOutLongitude: dto.longitude,
             punchOutDevice: dto.deviceId,
+            checkOutDeviceSignature: dto.signature,
             sessionStatus: SessionState.CHECKED_OUT,
+            updatedBy: user.userId,
           },
         });
+        if (updated.count !== 1) {
+          throw new ConflictException(
+            'Attendance session changed; retry the punch.',
+          );
+        }
         await creditWorkedMinutes(tx, openSession, punchOut);
-        return { session, direction: 'OUT' as const };
+        return {
+          session: { ...openSession, punchOut },
+          direction: 'OUT' as const,
+        };
       }
 
       // Debounce duplicate check-ins only — a check-out (openSession above)
       // must never be blocked by a recent punch-in. Guards double-tap that
       // would otherwise open two sessions.
-      const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+      const fifteenMinsAgo = new Date(capturedAt.getTime() - 15 * 60 * 1000);
       const recentSession = await tx.attendanceSession.findFirst({
         where: {
           tenantId: employee.tenantId,
@@ -193,13 +301,32 @@ export class PunchHandler implements ICommandHandler<PunchCommand> {
           tenantId: employee.tenantId,
           attendanceId: attendance.id,
           employeeId: employee.id,
-          punchIn: new Date(),
+          punchIn: capturedAt,
           checkInLatitude: dto.latitude,
           checkInLongitude: dto.longitude,
           punchInDevice: dto.deviceId,
           deviceSignature: dto.signature,
-          attendanceMethod: 'BIOMETRIC',
+          gpsAccuracy: dto.accuracy,
+          isSpoofed: dto.isMockLocation ?? false,
+          attendanceMethod: dto.biometricVerified ? 'BIOMETRIC' : 'GPS',
           sessionStatus: SessionState.CHECKED_IN,
+          createdBy: user.userId,
+        },
+      });
+
+      await tx.gpsValidationLog.create({
+        data: {
+          tenantId: employee.tenantId,
+          employeeId: employee.id,
+          attendanceId: attendance.id,
+          latitude: dto.latitude,
+          longitude: dto.longitude,
+          result:
+            geofenceCheck.status === 'OUTSIDE'
+              ? 'OUTSIDE_GEOFENCE_ALLOWED'
+              : dto.isMockLocation
+                ? 'MOCK_LOCATION_ALLOWED'
+                : 'VALID',
         },
       });
       return { session, direction: 'IN' as const };

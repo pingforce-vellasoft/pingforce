@@ -21,6 +21,7 @@ import { ServiceRequestsService } from './service-requests/service-requests.serv
 import { PortalSettingsService } from './service-requests/portal-settings.service';
 import { ServiceRequestsPortalController } from './service-requests/service-requests-portal.controller';
 import { ServiceRequestsStaffController } from './service-requests/service-requests-staff.controller';
+import { CqrsModule } from '@nestjs/cqrs';
 
 /**
  * Customer Portal module (3.8_CustomerPortal): end-user identity, invites,
@@ -29,7 +30,8 @@ import { ServiceRequestsStaffController } from './service-requests/service-reque
  * user management under /api/v1/customers/:customerId/portal/**.
  */
 @Module({
-  imports: [AuthModule, NotificationsModule],
+  // CqrsModule provides the EventBus the portal fault service publishes on.
+  imports: [CqrsModule, AuthModule, NotificationsModule],
   controllers: [
     PortalAuthController,
     PortalInvitesController,

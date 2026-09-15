@@ -8,20 +8,22 @@ part 'fault_state.freezed.dart';
 
 // ── Enums ──────────────────────────────────────────────────────────────────
 
+/// Mirrors the API fault lifecycle (apps/api/src/faults/domain/fault-state.ts).
 enum FaultStatus {
   open,
+  assigned,
   inProgress,
   onHold,
   resolved,
+  reopened,
   closed,
-  cancelled,
 }
 
 enum FaultPriority { critical, high, medium, low }
 
 enum FaultSlaStatus {
-  safe,     // > 4h remaining
-  warning,  // 1–4h remaining
+  safe, // > 4h remaining
+  warning, // 1–4h remaining
   breached, // 0h remaining (overdue)
 }
 
@@ -29,32 +31,55 @@ enum FaultSortBy { sla, priority, newest, status }
 
 extension FaultStatusX on FaultStatus {
   String get label => switch (this) {
-        FaultStatus.open => 'Open',
-        FaultStatus.inProgress => 'In Progress',
-        FaultStatus.onHold => 'On Hold',
-        FaultStatus.resolved => 'Resolved',
-        FaultStatus.closed => 'Closed',
-        FaultStatus.cancelled => 'Cancelled',
-      };
+    FaultStatus.open => 'Open',
+    FaultStatus.assigned => 'Assigned',
+    FaultStatus.inProgress => 'In Progress',
+    FaultStatus.onHold => 'On Hold',
+    FaultStatus.resolved => 'Resolved',
+    FaultStatus.reopened => 'Reopened',
+    FaultStatus.closed => 'Closed',
+  };
 
+  /// Statuses that still represent outstanding work.
   bool get isActive =>
-      this == FaultStatus.open || this == FaultStatus.inProgress;
+      this == FaultStatus.open ||
+      this == FaultStatus.assigned ||
+      this == FaultStatus.inProgress ||
+      this == FaultStatus.onHold ||
+      this == FaultStatus.reopened;
+
+  String get wireValue => switch (this) {
+    FaultStatus.open => 'OPEN',
+    FaultStatus.assigned => 'ASSIGNED',
+    FaultStatus.inProgress => 'IN_PROGRESS',
+    FaultStatus.onHold => 'ON_HOLD',
+    FaultStatus.resolved => 'RESOLVED',
+    FaultStatus.reopened => 'REOPENED',
+    FaultStatus.closed => 'CLOSED',
+  };
 }
 
 extension FaultPriorityX on FaultPriority {
   String get label => switch (this) {
-        FaultPriority.critical => 'Critical',
-        FaultPriority.high => 'High',
-        FaultPriority.medium => 'Medium',
-        FaultPriority.low => 'Low',
-      };
+    FaultPriority.critical => 'Critical',
+    FaultPriority.high => 'High',
+    FaultPriority.medium => 'Medium',
+    FaultPriority.low => 'Low',
+  };
 
   int get sortOrder => switch (this) {
-        FaultPriority.critical => 0,
-        FaultPriority.high => 1,
-        FaultPriority.medium => 2,
-        FaultPriority.low => 3,
-      };
+    FaultPriority.critical => 0,
+    FaultPriority.high => 1,
+    FaultPriority.medium => 2,
+    FaultPriority.low => 3,
+  };
+
+  String get wireValue => switch (this) {
+    FaultPriority.critical => 'CRITICAL',
+    FaultPriority.high => 'HIGH',
+    FaultPriority.medium => 'MEDIUM',
+    FaultPriority.low => 'LOW',
+  };
 }
 
 // ── Data models ───────────────────────────────────────────────────────────────
@@ -63,7 +88,7 @@ extension FaultPriorityX on FaultPriority {
 class FaultSummary with _$FaultSummary {
   const factory FaultSummary({
     required String id,
-    required String faultNumber,      // e.g. "F-1032"
+    required String faultNumber, // e.g. "F-1032"
     required String title,
     required String description,
     required FaultStatus status,
@@ -71,12 +96,12 @@ class FaultSummary with _$FaultSummary {
     required String customerName,
     required String siteName,
     required DateTime createdAt,
-    DateTime? dueAt,                  // SLA deadline
+    DateTime? dueAt, // SLA deadline
     String? assigneeName,
     String? assigneeAvatarUrl,
     String? categoryName,
     int? attemptsCount,
-    @Default(false) bool isOffline,   // pending sync
+    @Default(false) bool isOffline, // pending sync
     @Default(false) bool hasAttachments,
     @Default(0) int commentsCount,
   }) = _FaultSummary;
@@ -112,8 +137,7 @@ class FaultSummary with _$FaultSummary {
     return '${remaining.inMinutes}m left';
   }
 
-  bool get isOverdue =>
-      slaStatus == FaultSlaStatus.breached && status.isActive;
+  bool get isOverdue => slaStatus == FaultSlaStatus.breached && status.isActive;
 }
 
 @freezed
@@ -159,7 +183,7 @@ class FaultAttempt with _$FaultAttempt {
     DateTime? endTime,
     required String technicianName,
     String? workNotes,
-    required String outcome,         // 'resolved' | 'partial' | 'failed' | 'revisit'
+    required String outcome, // 'resolved' | 'partial' | 'failed' | 'revisit'
     @Default([]) List<String> attachmentUrls,
     String? gpsLocation,
   }) = _FaultAttempt;
@@ -170,7 +194,8 @@ class FaultTimelineEvent with _$FaultTimelineEvent {
   const factory FaultTimelineEvent({
     required String id,
     required DateTime timestamp,
-    required String eventType,        // 'status_change' | 'assignment' | 'comment' | 'attempt'
+    required String
+    eventType, // 'status_change' | 'assignment' | 'comment' | 'attempt'
     required String description,
     String? actorName,
     String? actorAvatarUrl,
@@ -224,8 +249,7 @@ class FaultState with _$FaultState {
 
   const FaultState._();
 
-  int get overdueCount =>
-      allFaults.where((f) => f.isOverdue).length;
+  int get overdueCount => allFaults.where((f) => f.isOverdue).length;
 
   int get activeFilterCount => activeFilters.activeCount;
 
@@ -239,11 +263,14 @@ class FaultState with _$FaultState {
       'In Progress' =>
         allFaults.where((f) => f.status == FaultStatus.inProgress).toList(),
       'Overdue' => allFaults.where((f) => f.isOverdue).toList(),
-      'Closed' => allFaults
-          .where((f) =>
-              f.status == FaultStatus.closed ||
-              f.status == FaultStatus.resolved)
-          .toList(),
+      'Closed' =>
+        allFaults
+            .where(
+              (f) =>
+                  f.status == FaultStatus.closed ||
+                  f.status == FaultStatus.resolved,
+            )
+            .toList(),
       _ => List<FaultSummary>.from(allFaults),
     };
 
@@ -252,10 +279,12 @@ class FaultState with _$FaultState {
     if (q != null && q.isNotEmpty) {
       final lower = q.toLowerCase();
       result = result
-          .where((f) =>
-              f.faultNumber.toLowerCase().contains(lower) ||
-              f.title.toLowerCase().contains(lower) ||
-              f.customerName.toLowerCase().contains(lower))
+          .where(
+            (f) =>
+                f.faultNumber.toLowerCase().contains(lower) ||
+                f.title.toLowerCase().contains(lower) ||
+                f.customerName.toLowerCase().contains(lower),
+          )
           .toList();
     }
 
@@ -267,14 +296,18 @@ class FaultState with _$FaultState {
     }
 
     // Sort
-    result.sort((a, b) => switch (sortBy) {
-          FaultSortBy.sla => (a.dueAt ?? DateTime(2100))
-              .compareTo(b.dueAt ?? DateTime(2100)),
-          FaultSortBy.priority =>
-            a.priority.sortOrder.compareTo(b.priority.sortOrder),
-          FaultSortBy.newest => b.createdAt.compareTo(a.createdAt),
-          FaultSortBy.status => a.status.index.compareTo(b.status.index),
-        });
+    result.sort(
+      (a, b) => switch (sortBy) {
+        FaultSortBy.sla => (a.dueAt ?? DateTime(2100)).compareTo(
+          b.dueAt ?? DateTime(2100),
+        ),
+        FaultSortBy.priority => a.priority.sortOrder.compareTo(
+          b.priority.sortOrder,
+        ),
+        FaultSortBy.newest => b.createdAt.compareTo(a.createdAt),
+        FaultSortBy.status => a.status.index.compareTo(b.status.index),
+      },
+    );
 
     return result;
   }

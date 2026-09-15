@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Body,
   Controller,
   Delete,
@@ -22,7 +23,13 @@ import { FilesService } from './files.service';
 import { UploadFileDto } from './dto/upload-file.dto';
 
 interface AuthRequest {
-  user: { userId: string; tenantId: string; role: string };
+  user: {
+    userId: string;
+    tenantId: string;
+    role?: string;
+    userType?: string;
+    customerId?: string;
+  };
 }
 
 // Shape multer puts on the request for memory-storage uploads
@@ -57,6 +64,7 @@ export class FilesController {
     @Body() dto: UploadFileDto,
     @UploadedFile() file?: UploadedFileLike,
   ) {
+    this.assertStaff(req);
     if (!file) {
       throw new BadRequestException('No file provided (field name: file)');
     }
@@ -66,6 +74,7 @@ export class FilesController {
       originalName: file.originalname,
       mimeType: file.mimetype,
       buffer: file.buffer,
+      isCustomerVisible: dto.isCustomerVisible,
       uploadedBy: req.user.userId,
     });
   }
@@ -73,22 +82,32 @@ export class FilesController {
   @Get()
   async list(
     @CurrentTenant() tenantId: string,
+    @Req() req: AuthRequest,
     @Query('entityType') entityType: string,
     @Query('entityId') entityId: string,
   ) {
+    this.assertStaff(req);
     if (!entityType || !entityId) {
       throw new BadRequestException('entityType and entityId are required');
     }
-    return this.filesService.getFiles(tenantId, entityType, entityId);
+    return this.filesService.getFiles(tenantId, entityType, entityId, req.user.userId);
   }
 
   @Get(':id/download')
   async download(
     @CurrentTenant() tenantId: string,
+    @Req() req: AuthRequest,
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    const file = await this.filesService.openForDownload(tenantId, id);
+    const file =
+      req.user.userType === 'CUSTOMER'
+        ? await this.filesService.openCustomerFaultAttachment(
+            tenantId,
+            req.user.customerId ?? '',
+            id,
+          )
+        : await this.filesService.openForDownload(tenantId, id, req.user.userId);
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader(
       'Content-Disposition',
@@ -98,7 +117,20 @@ export class FilesController {
   }
 
   @Delete(':id')
-  async remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.filesService.deleteFile(tenantId, id);
+  async remove(
+    @CurrentTenant() tenantId: string,
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+  ) {
+    this.assertStaff(req);
+    return this.filesService.deleteFile(tenantId, id, req.user.userId);
+  }
+
+  private assertStaff(req: AuthRequest): void {
+    if (req.user.userType === 'CUSTOMER') {
+      throw new ForbiddenException(
+        'Customer accounts cannot manage staff file records',
+      );
+    }
   }
 }

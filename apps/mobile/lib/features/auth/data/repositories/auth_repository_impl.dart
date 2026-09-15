@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/network/token_interceptor.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
@@ -59,6 +60,15 @@ class AuthRepositoryImpl implements AuthRepository {
 
     // Securely store token (Hardness)
     await secureStorage.write(key: 'jwt_token', value: token);
+
+    // Stamp the auth realm so TokenInterceptor refreshes against staff auth.
+    // Written explicitly rather than left to the default: a device that
+    // previously held a customer session would otherwise keep that realm and
+    // refresh this staff session against the portal endpoint.
+    await secureStorage.write(
+      key: TokenInterceptor.realmKey,
+      value: TokenInterceptor.realmStaff,
+    );
 
     // Persist the refresh token so TokenInterceptor can silently renew the
     // 15-minute access token. Without it every request 401s once the access

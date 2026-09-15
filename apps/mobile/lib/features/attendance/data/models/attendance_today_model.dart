@@ -104,17 +104,22 @@ class AttendanceTodayModel extends AttendanceToday {
     return AttendanceTodayModel(
       date: _parseDate(json['date']) ?? DateTime.now(),
       status: json['status'] as String?,
-      activeSession:
-          active == null ? null : ActiveSessionInfoModel.fromJson(active),
+      activeSession: active == null
+          ? null
+          : ActiveSessionInfoModel.fromJson(active),
       sessions: (json['sessions'] as List<dynamic>? ?? [])
-          .map((s) =>
-              AttendanceSessionEntryModel.fromJson(s as Map<String, dynamic>))
+          .map(
+            (s) =>
+                AttendanceSessionEntryModel.fromJson(s as Map<String, dynamic>),
+          )
           .toList(),
       totals: totals == null
           ? const AttendanceTotals()
           : AttendanceTotalsModel.fromJson(totals),
       leaveBalances: (json['leaveBalances'] as List<dynamic>? ?? [])
-          .map((b) => LeaveBalanceEntryModel.fromJson(b as Map<String, dynamic>))
+          .map(
+            (b) => LeaveBalanceEntryModel.fromJson(b as Map<String, dynamic>),
+          )
           .toList(),
     );
   }

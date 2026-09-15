@@ -12,6 +12,7 @@ import '../../../../core/auth/auth_session.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/hardware/background_location_permission.dart';
 import '../../../../core/hardware/device_identity.dart';
+import '../../../../core/hardware/device_signing_key.dart';
 import '../../../../core/navigation/nav_destinations.dart';
 import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/sync/sync_provider.dart';
@@ -22,6 +23,7 @@ import '../../../geofences/domain/repositories/geofence_repository.dart';
 import '../../../tracking/presentation/tracking_notifier.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../../domain/usecases/get_today_query.dart';
+import '../../domain/repositories/attendance_repository.dart';
 import '../../domain/usecases/punch_command.dart' as punch_uc;
 import 'check_in_state.dart';
 
@@ -30,8 +32,7 @@ import 'check_in_state.dart';
 //
 // Drives the attendance screen through S1..S14. GPS permission, position
 // acquisition, mock-location detection (geolocator) and the punch API call
-// (PunchCommand via get_it) are real; shift/policy remain stubbed until the
-// tenant-policy endpoint exists.
+// (PunchCommand via get_it) use the tenant's live attendance policy.
 // ─────────────────────────────────────────────────────────────────────────────
 
 final checkInNotifierProvider = NotifierProvider<CheckInNotifier, CheckInState>(
@@ -49,29 +50,38 @@ class CheckInNotifier extends Notifier<CheckInState> {
   bool get _isFieldRole =>
       AppUserRoleX.fromRoleCode(AuthSession.instance.roleCode).isFieldRole;
 
-  // ── S1: initialise shift + policy + GPS ────────────────────────────────────
+  // ── S1: initialise policy + GPS ────────────────────────────────────────────
 
   Future<void> initialise() async {
     state = const CheckInState(status: CheckInScreenStatus.initializing);
 
-    // TODO(phase-2): load shift + policy from the attendance repository.
-    final policy = const TenantCheckInPolicy();
-    final shift = ShiftInfo(
-      shiftCode: 'GEN',
-      shiftName: 'General Shift',
-      startTime: '09:00',
-      endTime: '18:00',
-      gracePeriodMinutes: 15,
-      totalBreaksAllowed: 0,
-      requiredHours: 9,
-      isCurrentlyActive: true,
+    final policyResult = await sl<AttendanceRepository>().getPolicy();
+    final loadedPolicy = policyResult.fold<TenantCheckInPolicy?>(
+      (_) => null,
+      (policy) => TenantCheckInPolicy(
+        gpsRequired: policy.gpsRequired,
+        geofenceEnabled: policy.geofenceEnabled,
+        geofencePolicy: policy.geofencePolicy,
+        biometricRequired: policy.biometricRequired,
+        allowLowAccuracy: policy.allowLowAccuracy,
+        accuracyThresholdMeters: policy.accuracyThresholdMeters,
+        allowOfflineCheckIn: policy.allowOfflineCheckIn,
+        checkInMethods: policy.checkInMethods,
+        mockLocationPolicy: policy.mockLocationPolicy,
+      ),
     );
+    final policy = loadedPolicy ?? const TenantCheckInPolicy();
 
     state = state.copyWith(
       policy: policy,
-      shift: shift,
+      // Shift and break scheduling are intentionally not part of attendance.
+      shift: null,
       isOnline: ref.read(isOnlineProvider),
     );
+
+    if (ref.read(isOnlineProvider)) {
+      await sl<AttendanceRepository>().prepareDeviceSigning();
+    }
 
     // Restore any open session BEFORE acquiring GPS. Attendance state lives on
     // the server, not in this notifier — without this, re-opening the screen
@@ -132,7 +142,7 @@ class CheckInNotifier extends Notifier<CheckInState> {
       activeSession: ActiveSession(
         sessionId: remote.id,
         checkInTime: remote.punchIn,
-        shiftName: state.shift?.shiftName ?? 'Shift',
+        shiftName: state.shift?.shiftName ?? 'Attendance',
         checkInGeofenceId: geofenceId,
         checkInGeofenceName: geofenceName,
       ),
@@ -230,8 +240,21 @@ class CheckInNotifier extends Notifier<CheckInState> {
         return;
       }
 
-      // Fetch tenant geofences (admin-configured) and evaluate containment.
-      await _evaluateGeofence(location, accuracyLevel);
+      if (state.policy?.geofenceEnabled ?? true) {
+        // Fetch tenant geofences (admin-configured) and evaluate containment.
+        await _evaluateGeofence(location, accuracyLevel);
+      } else {
+        state = state.copyWith(
+          location: location,
+          gpsAccuracy: accuracyLevel,
+          geofence: null,
+          geofenceStatus: GeofenceStatus.inside,
+          status: CheckInScreenStatus.readyToCheckIn,
+          buttonMode: (state.policy?.biometricRequired ?? false)
+              ? CheckInButtonMode.enabledBiometric
+              : CheckInButtonMode.enabledNormal,
+        );
+      }
     } catch (_) {
       state = state.copyWith(
         status: CheckInScreenStatus.error,
@@ -300,7 +323,8 @@ class CheckInNotifier extends Notifier<CheckInState> {
     }
 
     // State 2 — configured, but the employee is outside every zone.
-    if (containing == null) {
+    if (containing == null &&
+        (state.policy?.geofencePolicy ?? 'BLOCK') == 'BLOCK') {
       final fence = nearest!;
       state = state.copyWith(
         location: location,
@@ -321,21 +345,30 @@ class CheckInNotifier extends Notifier<CheckInState> {
       return;
     }
 
-    // State 3 — inside the zone: allow check-in via biometric.
+    // State 3 — inside the zone, or outside under a WARN/ALLOW policy.
+    final selectedFence = containing ?? nearest;
     state = state.copyWith(
       location: location,
       gpsAccuracy: accuracyLevel,
-      geofence: GeofenceInfo(
-        id: containing.id,
-        name: containing.name,
-        center: LatLng(containing.latitude, containing.longitude),
-        radiusMeters: containing.radiusMeters.toDouble(),
-        status: GeofenceStatus.inside,
-      ),
-      geofenceStatus: GeofenceStatus.inside,
-      nearestGeofenceName: containing.name,
+      geofence: selectedFence == null
+          ? null
+          : GeofenceInfo(
+              id: selectedFence.id,
+              name: selectedFence.name,
+              center: LatLng(selectedFence.latitude, selectedFence.longitude),
+              radiusMeters: selectedFence.radiusMeters.toDouble(),
+              status: containing == null
+                  ? GeofenceStatus.outside
+                  : GeofenceStatus.inside,
+            ),
+      geofenceStatus: containing == null
+          ? GeofenceStatus.outside
+          : GeofenceStatus.inside,
+      nearestGeofenceName: selectedFence?.name,
       status: CheckInScreenStatus.readyToCheckIn,
-      buttonMode: CheckInButtonMode.enabledBiometric,
+      buttonMode: (state.policy?.biometricRequired ?? false)
+          ? CheckInButtonMode.enabledBiometric
+          : CheckInButtonMode.enabledNormal,
     );
   }
 
@@ -357,10 +390,8 @@ class CheckInNotifier extends Notifier<CheckInState> {
       return;
     }
 
-    // Biometric gate: inside the geofence, check-in requires fingerprint / face
-    // verification before the punch is submitted.
-    final authed = await _verifyBiometric();
-    if (!authed) return;
+    final biometricVerified = state.policy?.biometricRequired ?? false;
+    if (biometricVerified && !await _verifyBiometric()) return;
 
     // Background-tracking consent gate — field roles only. Field staff move
     // between sites and are tracked while on shift; office roles (manager,
@@ -385,7 +416,15 @@ class CheckInNotifier extends Notifier<CheckInState> {
     // Offline path (OFFLINE_SYNC.md §6): no connectivity → save locally,
     // queue for sync, and show optimistic success flagged as offline.
     if (!ref.read(isOnlineProvider)) {
-      await _enqueueOfflinePunch(location);
+      if (!(state.policy?.allowOfflineCheckIn ?? true)) {
+        state = state.copyWith(
+          status: CheckInScreenStatus.error,
+          buttonMode: CheckInButtonMode.error,
+          errorMessage: 'Offline attendance is disabled by your organization.',
+        );
+        return;
+      }
+      await _enqueueOfflinePunch(location, biometricVerified);
       // Track the on-shift operator even for an offline check-in — pings buffer
       // in the sync queue and upload on reconnect.
       final offlineSessionId = state.activeSession?.sessionId;
@@ -395,12 +434,14 @@ class CheckInNotifier extends Notifier<CheckInState> {
       return;
     }
 
-    // Real punch via the clean-architecture data layer. Signature payload is
-    // accepted as-is server-side until device-key signing lands (Phase 5b).
+    // Real punch via the clean-architecture data layer. The repository signs
+    // the exact timestamp/location/policy evidence with this device's key.
     final params = punch_uc.PunchParams(
       latitude: location.latitude,
       longitude: location.longitude,
-      cryptographicSignature: 'gps:${location.timestamp.toIso8601String()}',
+      accuracy: location.accuracyMeters,
+      isMockLocation: location.isMockLocation,
+      biometricVerified: biometricVerified,
     );
 
     final result = await sl<punch_uc.PunchCommand>()(params);
@@ -474,14 +515,14 @@ class CheckInNotifier extends Notifier<CheckInState> {
           checkInResult: CheckInResult(
             attendanceId: session.id,
             checkInTime: session.punchIn,
-            shiftName: state.shift?.shiftName ?? 'Shift',
+            shiftName: state.shift?.shiftName ?? 'Attendance',
             branchName: 'Main Branch',
             isOffline: !state.isOnline,
           ),
           activeSession: ActiveSession(
             sessionId: session.id,
             checkInTime: session.punchIn,
-            shiftName: state.shift?.shiftName ?? 'Shift',
+            shiftName: state.shift?.shiftName ?? 'Attendance',
             checkInGeofenceId: state.geofence?.id,
             checkInGeofenceName: state.geofence?.name,
           ),
@@ -572,10 +613,23 @@ class CheckInNotifier extends Notifier<CheckInState> {
 
   /// LOCAL_SAVE → QUEUE CREATED (OFFLINE_SYNC.md §6): stores the punch in the
   /// Hive-backed sync queue; SyncNotifier drains it when connectivity returns.
-  Future<void> _enqueueOfflinePunch(GpsLocation location) async {
-    final now = DateTime.now();
+  Future<void> _enqueueOfflinePunch(
+    GpsLocation location,
+    bool biometricVerified,
+  ) async {
+    final now = DateTime.now().toUtc();
     final clientRef = 'punch-${now.microsecondsSinceEpoch}';
     final deviceId = await sl<DeviceIdentity>().getOrCreate();
+    final signature = await sl<DeviceSigningKey>().signPunch(
+      deviceId: deviceId,
+      timestamp: now,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      accuracy: location.accuracyMeters,
+      isMockLocation: location.isMockLocation,
+      biometricVerified: biometricVerified,
+      clientRef: clientRef,
+    );
 
     ref
         .read(syncProvider.notifier)
@@ -592,7 +646,10 @@ class CheckInNotifier extends Notifier<CheckInState> {
               'deviceId': deviceId,
               'latitude': location.latitude,
               'longitude': location.longitude,
-              'signature': 'gps:${now.toIso8601String()}',
+              'accuracy': location.accuracyMeters,
+              'isMockLocation': location.isMockLocation,
+              'biometricVerified': biometricVerified,
+              'signature': signature,
               'timestamp': now.toIso8601String(),
             },
           ),
@@ -605,14 +662,14 @@ class CheckInNotifier extends Notifier<CheckInState> {
       checkInResult: CheckInResult(
         attendanceId: clientRef,
         checkInTime: now,
-        shiftName: state.shift?.shiftName ?? 'Shift',
+        shiftName: state.shift?.shiftName ?? 'Attendance',
         branchName: 'Main Branch',
         isOffline: true,
       ),
       activeSession: ActiveSession(
         sessionId: clientRef,
         checkInTime: now,
-        shiftName: state.shift?.shiftName ?? 'Shift',
+        shiftName: state.shift?.shiftName ?? 'Attendance',
         checkInGeofenceId: state.geofence?.id,
         checkInGeofenceName: state.geofence?.name,
       ),
@@ -660,7 +717,9 @@ class CheckInNotifier extends Notifier<CheckInState> {
     }
 
     // Same-location rule: verify still inside the check-in geofence.
-    final inside = await _isInsideCheckInFence(session, location);
+    final inside =
+        !(state.policy?.geofenceEnabled ?? true) ||
+        await _isInsideCheckInFence(session, location);
     if (!inside) {
       final zone = session.checkInGeofenceName;
       state = state.copyWith(
@@ -675,16 +734,22 @@ class CheckInNotifier extends Notifier<CheckInState> {
       return;
     }
 
-    // Biometric gate on check-out as well.
-    final authed = await _verifyBiometric();
-    if (!authed) {
+    final biometricVerified = state.policy?.biometricRequired ?? false;
+    if (biometricVerified && !await _verifyBiometric()) {
       state = state.copyWith(isCheckingOut: false);
       return;
     }
 
     // Offline check-out → queue the punch; the server toggles in/out.
     if (!ref.read(isOnlineProvider)) {
-      await _enqueueOfflinePunch(location);
+      if (!(state.policy?.allowOfflineCheckIn ?? true)) {
+        state = state.copyWith(
+          isCheckingOut: false,
+          checkOutError: 'Offline attendance is disabled by your organization.',
+        );
+        return;
+      }
+      await _enqueueOfflinePunch(location, biometricVerified);
       state = state.copyWith(isCheckingOut: false, activeSession: null);
       unawaited(ref.read(trackingProvider.notifier).stop());
       return;
@@ -693,7 +758,9 @@ class CheckInNotifier extends Notifier<CheckInState> {
     final params = punch_uc.PunchParams(
       latitude: location.latitude,
       longitude: location.longitude,
-      cryptographicSignature: 'gps:${location.timestamp.toIso8601String()}',
+      accuracy: location.accuracyMeters,
+      isMockLocation: location.isMockLocation,
+      biometricVerified: biometricVerified,
     );
     final result = await sl<punch_uc.PunchCommand>()(params);
 

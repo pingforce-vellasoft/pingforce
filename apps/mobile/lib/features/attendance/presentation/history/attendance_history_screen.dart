@@ -44,8 +44,8 @@ class _HistoryState {
 
 final _attHistoryProvider =
     NotifierProvider<_AttHistoryNotifier, _HistoryState>(
-  _AttHistoryNotifier.new,
-);
+      _AttHistoryNotifier.new,
+    );
 
 class _AttHistoryNotifier extends Notifier<_HistoryState> {
   @override
@@ -54,8 +54,9 @@ class _AttHistoryNotifier extends Notifier<_HistoryState> {
   Future<void> load() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      final page =
-          await sl<AttendanceHistoryRemoteDataSource>().fetchLogs(limit: 30);
+      final page = await sl<AttendanceHistoryRemoteDataSource>().fetchLogs(
+        limit: 30,
+      );
       state = state.copyWith(
         isLoading: false,
         entries: page.entries,
@@ -166,10 +167,12 @@ class _SummaryHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Last ${summary.daysCounted} days',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              )),
+          Text(
+            'Last ${summary.daysCounted} days',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -241,28 +244,28 @@ class _AttendanceDayRow extends StatelessWidget {
         return (
           PingForceColors.statusSuccess,
           Icons.check_circle_rounded,
-          'Present'
+          'Present',
         );
       case AttendanceEntryStatus.working:
         return (
           PingForceColors.statusWarning,
           Icons.timelapse_rounded,
-          'Working'
+          'Working',
         );
       case AttendanceEntryStatus.leave:
         return (
           PingForceColors.statusInfo,
           Icons.beach_access_rounded,
-          'On Leave'
+          'On Leave',
         );
       case AttendanceEntryStatus.halfDay:
-        return (PingForceColors.statusInfo, Icons.timelapse_rounded, 'Half Day');
-      case AttendanceEntryStatus.absent:
         return (
-          PingForceColors.statusCritical,
-          Icons.cancel_rounded,
-          'Absent'
+          PingForceColors.statusInfo,
+          Icons.timelapse_rounded,
+          'Half Day',
         );
+      case AttendanceEntryStatus.absent:
+        return (PingForceColors.statusCritical, Icons.cancel_rounded, 'Absent');
     }
   }
 
@@ -329,8 +332,10 @@ class _AttendanceDayRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: theme.textTheme.labelMedium
-                ?.copyWith(color: color, fontWeight: FontWeight.w600),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           Text(
             _fmtMinutes(entry.workedMinutes),
@@ -351,7 +356,10 @@ class _AttendanceDayRow extends StatelessWidget {
                 spacing: 20,
                 runSpacing: 8,
                 children: [
-                  _Detail(label: 'Worked', value: _fmtMinutes(entry.workedMinutes)),
+                  _Detail(
+                    label: 'Worked',
+                    value: _fmtMinutes(entry.workedMinutes),
+                  ),
                   _Detail(
                     label: 'Breaks',
                     value:
@@ -548,14 +556,23 @@ String _hhmm(DateTime dt) =>
 
 String _formatDay(DateTime dt) {
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   final today = DateTime.now();
-  final isToday = dt.year == today.year &&
-      dt.month == today.month &&
-      dt.day == today.day;
+  final isToday =
+      dt.year == today.year && dt.month == today.month && dt.day == today.day;
   final base = '${weekdays[dt.weekday - 1]}, ${dt.day} ${months[dt.month - 1]}';
   return isToday ? 'Today · $base' : base;
 }

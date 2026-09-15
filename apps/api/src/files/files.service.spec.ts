@@ -24,6 +24,9 @@ function makeService(fileRow: Record<string, unknown> | null = null) {
       findMany: jest.fn().mockResolvedValue([]),
       delete: jest.fn().mockResolvedValue({}),
     },
+    fault: {
+      findFirst: jest.fn().mockResolvedValue({ id: 'f1' }),
+    },
   };
   const storage = {
     provider: 'LOCAL' as const,
@@ -34,6 +37,7 @@ function makeService(fileRow: Record<string, unknown> | null = null) {
   const service = new FilesService(
     prisma as unknown as Ctor[0],
     storage as unknown as Ctor[1],
+    { scopeForAction: jest.fn().mockResolvedValue({}) } as unknown as Ctor[2],
   );
   return { service, prisma, storage };
 }
@@ -48,6 +52,14 @@ const pngUpload = (buffer: Buffer) => ({
 });
 
 describe('FilesService.upload', () => {
+  it('rejects evidence uploads to faults outside the staff write scope', async () => {
+    const { service, prisma, storage } = makeService();
+    prisma.fault.findFirst.mockResolvedValue(null);
+    await expect(
+      service.upload('t1', pngUpload(Buffer.from('png'))),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(storage.put).not.toHaveBeenCalled();
+  });
   it('rejects disallowed extensions', async () => {
     const { service } = makeService();
     await expect(
@@ -148,5 +160,51 @@ describe('FilesService.openForDownload / deleteFile', () => {
       NotFoundException,
     );
     expect(storage.delete).not.toHaveBeenCalled();
+  });
+});
+
+describe('FilesService.openCustomerFaultAttachment', () => {
+  const row = {
+    id: 'file1',
+    tenantId: 't1',
+    entityType: 'FAULT',
+    entityId: 'f1',
+    isCustomerVisible: true,
+    fileName: 'proof.jpg',
+    mimeType: 'image/jpeg',
+    storageKey: 't1/file1.jpg',
+    storageProvider: 'LOCAL',
+  };
+
+  it('streams a published attachment from the customer own fault', async () => {
+    const { service, prisma, storage } = makeService(row);
+
+    const result = await service.openCustomerFaultAttachment(
+      't1',
+      'customer-1',
+      'file1',
+    );
+
+    expect(prisma.fault.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'f1',
+        tenantId: 't1',
+        customerId: 'customer-1',
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    expect(storage.getStream).toHaveBeenCalledWith('t1/file1.jpg', 'LOCAL');
+    expect(result.fileName).toBe('proof.jpg');
+  });
+
+  it('404s when the attachment is not on the customer own fault', async () => {
+    const { service, prisma, storage } = makeService(row);
+    prisma.fault.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.openCustomerFaultAttachment('t1', 'customer-2', 'file1'),
+    ).rejects.toThrow(NotFoundException);
+    expect(storage.getStream).not.toHaveBeenCalled();
   });
 });

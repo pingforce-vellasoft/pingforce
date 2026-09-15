@@ -1,8 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/app_states.dart';
+import '../../../injection_container.dart';
+import '../data/faults_remote_data_source.dart';
+import 'fault_notifier.dart';
 import 'fault_state.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -31,14 +38,19 @@ class FaultDetailScreen extends ConsumerStatefulWidget {
 class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  final List<String> _tabs = ['Overview', 'Attempts', 'Timeline', 'Attachments'];
+  final List<String> _tabs = [
+    'Overview',
+    'Attempts',
+    'Timeline',
+    'Attachments',
+  ];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // TODO: ref.read(faultDetailProvider(widget.faultId).notifier).load();
+      ref.read(faultNotifierProvider.notifier).loadDetail(widget.faultId);
     });
   }
 
@@ -50,9 +62,26 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    // TODO: watch faultDetailProvider(widget.faultId)
-    // Using stub data for now
-    final fault = _stubFaultDetail();
+    final state = ref.watch(faultNotifierProvider);
+    final fault = state.selectedFault;
+
+    if (fault == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Fault')),
+        body: state.isLoadingDetail
+            ? const Center(child: CircularProgressIndicator())
+            : Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    state.errorMessage ?? 'This fault could not be loaded.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -62,11 +91,7 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
           _buildSliverAppBar(context, fault),
 
           // ── SLA Countdown Banner ───────────────────────────────────────
-          SliverToBoxAdapter(
-            child: _SlaCountdownBanner(
-              fault: fault.summary,
-            ),
-          ),
+          SliverToBoxAdapter(child: _SlaCountdownBanner(fault: fault.summary)),
 
           // ── Tab bar ────────────────────────────────────────────────────
           SliverPersistentHeader(
@@ -130,20 +155,6 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
           ],
         ),
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.share_rounded),
-          tooltip: 'Share',
-          onPressed: () {
-            // TODO: share fault link
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.more_vert_rounded),
-          tooltip: 'More options',
-          onPressed: () => _showMoreMenu(context, fault),
-        ),
-      ],
     );
   }
 
@@ -189,16 +200,6 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
                 icon: Icons.location_on_rounded,
                 label: 'Site',
                 value: s.siteName,
-                trailing: fault.siteAddress != null
-                    ? IconButton(
-                        icon: const Icon(Icons.navigation_rounded,
-                            size: AppIconSize.sm),
-                        tooltip: 'Navigate',
-                        onPressed: () {
-                          // TODO: launch maps with siteAddress
-                        },
-                      )
-                    : null,
               ),
               if (fault.customerPhone != null) ...[
                 const Divider(height: AppSpacing.space5),
@@ -206,27 +207,6 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
                   icon: Icons.phone_rounded,
                   label: 'Contact',
                   value: fault.customerPhone!,
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.call_rounded,
-                            size: AppIconSize.sm),
-                        tooltip: 'Call',
-                        onPressed: () {
-                          // TODO: launch_url tel:
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.message_rounded,
-                            size: AppIconSize.sm),
-                        tooltip: 'Message',
-                        onPressed: () {
-                          // TODO: launch_url sms:
-                        },
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ],
@@ -251,17 +231,14 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
         // ── Assignee Card ──────────────────────────────────────────────
         _SectionCard(
           title: 'Assignment',
-          trailing: TextButton(
-            onPressed: () => _showReassignSheet(context, fault),
-            child: const Text('Reassign'),
-          ),
           child: s.assigneeName != null
               ? Row(
                   children: [
                     CircleAvatar(
                       radius: 20,
-                      backgroundColor:
-                          Theme.of(context).colorScheme.primaryContainer,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
                       child: Text(
                         s.assigneeName!
                             .split(' ')
@@ -270,9 +247,9 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
                             .join()
                             .toUpperCase(),
                         style: AppTypography.labelMedium.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ),
@@ -280,16 +257,7 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(s.assigneeName!,
-                            style: AppTypography.titleSmall),
-                        Text(
-                          '${s.attemptsCount ?? 0} attempt(s)',
-                          style: AppTypography.bodySmall.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
-                        ),
+                        Text(s.assigneeName!, style: AppTypography.titleSmall),
                       ],
                     ),
                   ],
@@ -323,8 +291,8 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
                   valueColor: s.slaStatus == FaultSlaStatus.breached
                       ? PingForceColors.statusCritical
                       : s.slaStatus == FaultSlaStatus.warning
-                          ? PingForceColors.statusWarning
-                          : null,
+                      ? PingForceColors.statusWarning
+                      : null,
                 ),
               ],
             ],
@@ -341,21 +309,18 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
       return const AppEmptyState(
         type: AppEmptyStateType.noData,
         customTitle: 'No Attempts Yet',
-        customSubtitle: 'Tap "Add Attempt" to record your first service attempt.',
+        customSubtitle:
+            'Tap "Add Attempt" to record your first service attempt.',
       );
     }
 
     return ListView.separated(
       padding: AppSpacing.screenPaddingAll,
       itemCount: fault.attempts.length,
-      separatorBuilder: (_, _) =>
-          const SizedBox(height: AppSpacing.cardMargin),
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.cardMargin),
       itemBuilder: (context, i) {
         final attempt = fault.attempts[i];
-        return _AttemptCard(
-          attempt: attempt,
-          attemptNumber: i + 1,
-        );
+        return _AttemptCard(attempt: attempt, attemptNumber: i + 1);
       },
     );
   }
@@ -389,7 +354,8 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
       return const AppEmptyState(
         type: AppEmptyStateType.noData,
         customTitle: 'No Attachments',
-        customSubtitle: 'Photos and documents attached to this fault will appear here.',
+        customSubtitle:
+            'Photos and documents attached to this fault will appear here.',
       );
     }
 
@@ -433,29 +399,13 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
         ),
         child: isClosed
             ? const SizedBox.shrink()
-            : Row(
-                children: [
-                  // Status change
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _showStatusChangeSheet(context, fault),
-                      icon: const Icon(Icons.swap_horiz_rounded),
-                      label: const Text('Change Status'),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.space3),
-                  // Add attempt
-                  Expanded(
-                    flex: 2,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        // TODO: context.push('/faults/${s.id}/attempts/new');
-                      },
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text('Add Attempt'),
-                    ),
-                  ),
-                ],
+            : SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => _showStatusChangeSheet(context, fault),
+                  icon: const Icon(Icons.swap_horiz_rounded),
+                  label: const Text('Change Status'),
+                ),
               ),
       ),
     );
@@ -463,47 +413,17 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
 
   // ── Action sheet helpers ───────────────────────────────────────────────────
 
-  void _showMoreMenu(BuildContext context, FaultDetail fault) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_rounded),
-              title: const Text('Edit Fault'),
-              onTap: () => Navigator.pop(ctx),
-            ),
-            ListTile(
-              leading: const Icon(Icons.flag_rounded),
-              title: const Text('Change Priority'),
-              onTap: () => Navigator.pop(ctx),
-            ),
-            ListTile(
-              leading: const Icon(Icons.gps_fixed_rounded),
-              title: const Text('Capture GPS Location'),
-              onTap: () => Navigator.pop(ctx),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showReassignSheet(BuildContext context, FaultDetail fault) {
-    // TODO: implement reassign bottom sheet
-  }
-
   void _showStatusChangeSheet(BuildContext context, FaultDetail fault) {
     final current = fault.summary.status;
+    // Mirrors the server state machine (faults/domain/fault-state.ts) so the
+    // sheet never offers a move the API will reject with a 409.
     final transitions = switch (current) {
-      FaultStatus.open => [FaultStatus.inProgress, FaultStatus.onHold],
-      FaultStatus.inProgress => [
-          FaultStatus.resolved,
-          FaultStatus.onHold,
-        ],
-      FaultStatus.onHold => [FaultStatus.inProgress, FaultStatus.cancelled],
+      FaultStatus.open => [FaultStatus.inProgress],
+      FaultStatus.assigned => [FaultStatus.inProgress, FaultStatus.onHold],
+      FaultStatus.inProgress => [FaultStatus.resolved, FaultStatus.onHold],
+      FaultStatus.onHold => [FaultStatus.inProgress],
+      FaultStatus.reopened => [FaultStatus.inProgress],
+      FaultStatus.resolved => [FaultStatus.closed],
       _ => <FaultStatus>[],
     };
 
@@ -517,19 +437,153 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
               padding: AppSpacing.cardPaddingAll,
               child: Text('Change Status', style: AppTypography.titleMedium),
             ),
-            ...transitions.map((s) => ListTile(
-                  title: Text(s.label),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    // TODO: update status via notifier
-                    AppSnackBar.showSuccess(
-                        context, 'Status updated to ${s.label}');
-                  },
-                )),
+            ...transitions.map(
+              (s) => ListTile(
+                title: Text(s.label),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  unawaited(_applyStatus(fault, s));
+                },
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  /// Applies a transition, prompting for the note the lifecycle requires on
+  /// hold/resolve/close so the timeline records why the fault moved.
+  Future<void> _applyStatus(FaultDetail fault, FaultStatus next) async {
+    final needsNote =
+        next == FaultStatus.onHold ||
+        next == FaultStatus.resolved ||
+        next == FaultStatus.closed;
+
+    String? notes;
+    if (needsNote) {
+      notes = await _promptForNote(next);
+      if (notes == null) return; // cancelled
+    }
+
+    // Proof-of-work photo on resolution. Offered before the write so a failed
+    // upload does not leave the fault resolved with no evidence attached.
+    String? photoPath;
+    if (next == FaultStatus.resolved) {
+      photoPath = await _capturePhoto();
+    }
+
+    final ok = await ref
+        .read(faultNotifierProvider.notifier)
+        .changeStatus(fault.summary.id, next, notes: notes);
+
+    if (ok && photoPath != null) {
+      try {
+        await sl<FaultsRemoteDataSource>().uploadAttachment(
+          fault.summary.id,
+          photoPath,
+        );
+      } catch (_) {
+        if (mounted) {
+          AppSnackBar.showError(
+            context,
+            'Status saved, but the photo could not be uploaded.',
+          );
+        }
+      }
+    }
+
+    if (!mounted) return;
+
+    if (ok) {
+      final queued = !ref.read(isOnlineProvider);
+      AppSnackBar.showSuccess(
+        context,
+        queued
+            ? 'Saved offline — will sync when you are back online'
+            : 'Status updated to ${next.label}',
+      );
+    } else {
+      AppSnackBar.showError(
+        context,
+        ref.read(faultNotifierProvider).errorMessage ??
+            'Could not update the fault.',
+      );
+    }
+  }
+
+  /// Optional camera capture attached as resolution evidence.
+  Future<String?> _capturePhoto() async {
+    final wanted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add a photo?'),
+        content: const Text(
+          'A photo of the completed work is attached to the fault as evidence.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Skip'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Take photo'),
+          ),
+        ],
+      ),
+    );
+    if (wanted != true) return null;
+
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1600,
+        imageQuality: 85,
+      );
+      return picked?.path;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<String?> _promptForNote(FaultStatus next) async {
+    final controller = TextEditingController();
+    final hint = switch (next) {
+      FaultStatus.onHold => 'What is the fault waiting on?',
+      FaultStatus.resolved => 'What did you do to fix it?',
+      _ => 'Closing summary…',
+    };
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(next.label),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 4,
+          maxLength: 2000,
+          decoration: InputDecoration(hintText: hint),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+
+    // An empty note is treated as a cancel: the transition is meaningless on
+    // the timeline without it.
+    if (result == null || result.isEmpty) return null;
+    return result;
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -549,83 +603,6 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
     final m = dt.minute.toString().padLeft(2, '0');
     final amPm = dt.hour >= 12 ? 'PM' : 'AM';
     return '$date  $h:$m $amPm';
-  }
-
-  FaultDetail _stubFaultDetail() {
-    final now = DateTime.now();
-    return FaultDetail(
-      summary: FaultSummary(
-        id: '1',
-        faultNumber: 'F-1032',
-        title: 'AC Unit Failure — Building 4, Floor 3',
-        description:
-            'The central HVAC unit on Floor 3 is not cooling below 25°C despite thermostat set to 18°C. Reported by floor manager Mr. Hassan.',
-        status: FaultStatus.inProgress,
-        priority: FaultPriority.critical,
-        customerName: 'ACME Corp',
-        siteName: 'Headquarters',
-        createdAt: now.subtract(const Duration(hours: 6)),
-        dueAt: now.subtract(const Duration(hours: 1)),
-        assigneeName: 'Ahmed Ali',
-        attemptsCount: 2,
-        categoryName: 'HVAC',
-        hasAttachments: true,
-        commentsCount: 3,
-      ),
-      customerPhone: '+971 50 123 4567',
-      siteAddress: 'ACME HQ, Sheikh Zayed Rd, Dubai',
-      attempts: [
-        FaultAttempt(
-          id: 'a1',
-          attemptNumber: '1',
-          startTime: now.subtract(const Duration(hours: 5)),
-          endTime: now.subtract(const Duration(hours: 4)),
-          technicianName: 'Ahmed Ali',
-          workNotes:
-              'Inspected unit. Found refrigerant leak at compressor seal. Topped up refrigerant temporarily.',
-          outcome: 'partial',
-        ),
-        FaultAttempt(
-          id: 'a2',
-          attemptNumber: '2',
-          startTime: now.subtract(const Duration(hours: 2)),
-          technicianName: 'Ahmed Ali',
-          workNotes: 'Ordered replacement compressor seal. Unit running at reduced capacity.',
-          outcome: 'requires_revisit',
-        ),
-      ],
-      timeline: [
-        FaultTimelineEvent(
-          id: 't1',
-          timestamp: now.subtract(const Duration(hours: 6)),
-          eventType: 'status_change',
-          description: 'Fault created',
-          actorName: 'System',
-          toValue: 'Open',
-        ),
-        FaultTimelineEvent(
-          id: 't2',
-          timestamp: now.subtract(const Duration(hours: 5, minutes: 55)),
-          eventType: 'assignment',
-          description: 'Assigned to Ahmed Ali',
-          actorName: 'Manager',
-        ),
-        FaultTimelineEvent(
-          id: 't3',
-          timestamp: now.subtract(const Duration(hours: 4)),
-          eventType: 'attempt',
-          description: 'Attempt #1 completed — Partial fix',
-          actorName: 'Ahmed Ali',
-        ),
-        FaultTimelineEvent(
-          id: 't4',
-          timestamp: now.subtract(const Duration(hours: 1)),
-          eventType: 'status_change',
-          description: 'SLA deadline passed',
-          actorName: 'System',
-        ),
-      ],
-    );
   }
 }
 
@@ -664,23 +641,23 @@ class _SlaCountdownBannerState extends State<_SlaCountdownBanner> {
 
     final (bg, fg, icon, label) = switch (sla) {
       FaultSlaStatus.breached => (
-          PingForceColors.statusCriticalContainer,
-          PingForceColors.statusCritical,
-          Icons.alarm_off_rounded,
-          'SLA Breached — ${widget.fault.slaRemainingLabel}',
-        ),
+        PingForceColors.statusCriticalContainer,
+        PingForceColors.statusCritical,
+        Icons.alarm_off_rounded,
+        'SLA Breached — ${widget.fault.slaRemainingLabel}',
+      ),
       FaultSlaStatus.warning => (
-          PingForceColors.statusWarningContainer,
-          PingForceColors.statusWarning,
-          Icons.alarm_rounded,
-          'SLA Warning — ${widget.fault.slaRemainingLabel}',
-        ),
+        PingForceColors.statusWarningContainer,
+        PingForceColors.statusWarning,
+        Icons.alarm_rounded,
+        'SLA Warning — ${widget.fault.slaRemainingLabel}',
+      ),
       FaultSlaStatus.safe => (
-          PingForceColors.statusSuccessContainer,
-          PingForceColors.statusSuccess,
-          Icons.alarm_on_rounded,
-          'SLA On Track — ${widget.fault.slaRemainingLabel}',
-        ),
+        PingForceColors.statusSuccessContainer,
+        PingForceColors.statusSuccess,
+        Icons.alarm_on_rounded,
+        'SLA On Track — ${widget.fault.slaRemainingLabel}',
+      ),
     };
 
     return Semantics(
@@ -717,17 +694,16 @@ class _SlaCountdownBannerState extends State<_SlaCountdownBanner> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _AttemptCard extends StatelessWidget {
-  const _AttemptCard({
-    required this.attempt,
-    required this.attemptNumber,
-  });
+  const _AttemptCard({required this.attempt, required this.attemptNumber});
   final FaultAttempt attempt;
   final int attemptNumber;
 
   @override
   Widget build(BuildContext context) {
     final (outcomeColor, outcomeBg, outcomeLabel) = _outcomeStyle(
-        context, attempt.outcome);
+      context,
+      attempt.outcome,
+    );
 
     return Card(
       child: Padding(
@@ -743,7 +719,10 @@ class _AttemptCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: outcomeBg,
                     borderRadius: AppRadius.pillAll,
@@ -751,7 +730,9 @@ class _AttemptCard extends StatelessWidget {
                   child: Text(
                     outcomeLabel,
                     style: AppTypography.labelSmall.copyWith(
-                        color: outcomeColor, fontSize: 10),
+                      color: outcomeColor,
+                      fontSize: 10,
+                    ),
                   ),
                 ),
               ],
@@ -790,30 +771,30 @@ class _AttemptCard extends StatelessWidget {
   (Color, Color, String) _outcomeStyle(BuildContext ctx, String outcome) {
     return switch (outcome) {
       'resolved' => (
-          PingForceColors.statusSuccess,
-          PingForceColors.statusSuccessContainer,
-          'Resolved',
-        ),
+        PingForceColors.statusSuccess,
+        PingForceColors.statusSuccessContainer,
+        'Resolved',
+      ),
       'partial' => (
-          PingForceColors.statusWarning,
-          PingForceColors.statusWarningContainer,
-          'Partial Fix',
-        ),
+        PingForceColors.statusWarning,
+        PingForceColors.statusWarningContainer,
+        'Partial Fix',
+      ),
       'failed' => (
-          PingForceColors.statusCritical,
-          PingForceColors.statusCriticalContainer,
-          'Failed',
-        ),
+        PingForceColors.statusCritical,
+        PingForceColors.statusCriticalContainer,
+        'Failed',
+      ),
       'requires_revisit' => (
-          Theme.of(ctx).colorScheme.primary,
-          Theme.of(ctx).colorScheme.primaryContainer,
-          'Revisit Required',
-        ),
+        Theme.of(ctx).colorScheme.primary,
+        Theme.of(ctx).colorScheme.primaryContainer,
+        'Revisit Required',
+      ),
       _ => (
-          Theme.of(ctx).colorScheme.onSurfaceVariant,
-          Theme.of(ctx).colorScheme.surfaceContainerHigh,
-          outcome,
-        ),
+        Theme.of(ctx).colorScheme.onSurfaceVariant,
+        Theme.of(ctx).colorScheme.surfaceContainerHigh,
+        outcome,
+      ),
     };
   }
 
@@ -829,10 +810,7 @@ class _AttemptCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TimelineEventTile extends StatelessWidget {
-  const _TimelineEventTile({
-    required this.event,
-    required this.isLast,
-  });
+  const _TimelineEventTile({required this.event, required this.isLast});
   final FaultTimelineEvent event;
   final bool isLast;
 
@@ -912,14 +890,9 @@ class _TimelineEventTile extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.title,
-    required this.child,
-    this.trailing,
-  });
+  const _SectionCard({required this.title, required this.child});
   final String title;
   final Widget child;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -929,13 +902,7 @@ class _SectionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text(title, style: AppTypography.titleSmall),
-                const Spacer(),
-                ?trailing,
-              ],
-            ),
+            Row(children: [Text(title, style: AppTypography.titleSmall)]),
             const SizedBox(height: AppSpacing.space3),
             child,
           ],
@@ -950,21 +917,22 @@ class _DetailRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
-    this.trailing,
     this.valueColor,
   });
   final IconData icon;
   final String label;
   final String value;
-  final Widget? trailing;
   final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: AppIconSize.sm,
-            color: Theme.of(context).colorScheme.onSurfaceVariant),
+        Icon(
+          icon,
+          size: AppIconSize.sm,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: AppSpacing.space3),
         Expanded(
           child: Column(
@@ -985,7 +953,6 @@ class _DetailRow extends StatelessWidget {
             ],
           ),
         ),
-        ?trailing,
       ],
     );
   }
@@ -1014,8 +981,7 @@ class _InfoChip extends StatelessWidget {
         children: [
           Icon(icon, size: AppIconSize.xs, color: color),
           const SizedBox(width: 4),
-          Text(label,
-              style: AppTypography.labelMedium.copyWith(color: color)),
+          Text(label, style: AppTypography.labelMedium.copyWith(color: color)),
         ],
       ),
     );
@@ -1030,27 +996,29 @@ class _StatusChipDetail extends StatelessWidget {
   Widget build(BuildContext context) {
     final (color, bg) = switch (status) {
       FaultStatus.open => (
-          Theme.of(context).colorScheme.primary,
-          Theme.of(context).colorScheme.primaryContainer,
-        ),
+        Theme.of(context).colorScheme.primary,
+        Theme.of(context).colorScheme.primaryContainer,
+      ),
       FaultStatus.inProgress => (
-          PingForceColors.statusWarning,
-          PingForceColors.statusWarningContainer,
-        ),
+        PingForceColors.statusWarning,
+        PingForceColors.statusWarningContainer,
+      ),
       FaultStatus.resolved || FaultStatus.closed => (
-          PingForceColors.statusSuccess,
-          PingForceColors.statusSuccessContainer,
-        ),
+        PingForceColors.statusSuccess,
+        PingForceColors.statusSuccessContainer,
+      ),
       _ => (
-          Theme.of(context).colorScheme.onSurfaceVariant,
-          Theme.of(context).colorScheme.surfaceContainerHigh,
-        ),
+        Theme.of(context).colorScheme.onSurfaceVariant,
+        Theme.of(context).colorScheme.surfaceContainerHigh,
+      ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: bg, borderRadius: AppRadius.xsAll),
-      child: Text(status.label,
-          style: AppTypography.labelSmall.copyWith(color: color, fontSize: 10)),
+      child: Text(
+        status.label,
+        style: AppTypography.labelSmall.copyWith(color: color, fontSize: 10),
+      ),
     );
   }
 }
@@ -1067,7 +1035,10 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Material(
       color: Theme.of(context).colorScheme.surface,
       child: tabBar,

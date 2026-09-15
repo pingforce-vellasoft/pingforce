@@ -31,6 +31,14 @@ class TokenInterceptor extends QueuedInterceptor {
   static const _accessKey = 'jwt_token';
   static const _refreshKey = 'refresh_token';
 
+  /// Which auth realm issued the stored session. Customer portal identities
+  /// live in a separate table with their own endpoints, so refreshing a
+  /// customer session against the staff route always fails and silently signs
+  /// them out. Persisted at login and read back here.
+  static const realmKey = 'auth_realm';
+  static const realmStaff = 'STAFF';
+  static const realmCustomer = 'CUSTOMER';
+
   Future<String?>? _refreshing;
 
   @override
@@ -96,9 +104,14 @@ class TokenInterceptor extends QueuedInterceptor {
     if (refresh == null || refresh.isEmpty) return null;
 
     try {
+      final realm = await secureStorage.read(key: realmKey);
+      final path = realm == realmCustomer
+          ? '/api/v1/portal/auth/refresh'
+          : '/api/v1/auth/refresh';
+
       // Bare Dio — no interceptors — so this call cannot recurse into onError.
       final res = await Dio(BaseOptions(baseUrl: baseUrl)).post<dynamic>(
-        '/api/v1/auth/refresh',
+        path,
         data: {'refreshToken': refresh},
       );
       final data = res.data as Map<String, dynamic>;
@@ -122,6 +135,7 @@ class TokenInterceptor extends QueuedInterceptor {
   Future<void> _clearSession() async {
     await secureStorage.delete(key: _accessKey);
     await secureStorage.delete(key: _refreshKey);
+    await secureStorage.delete(key: realmKey);
     await secureStorage.delete(key: 'user_cache');
 
     // Queued offline work belongs to the session being torn down; it uploads

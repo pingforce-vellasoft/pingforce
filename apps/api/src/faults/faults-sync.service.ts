@@ -1,15 +1,31 @@
-import { Injectable, Inject, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { IPrismaService, CurrentUserContext } from '@pingforce-monorepo/shared';
 import { AuditService } from '../audit/audit.service';
 import { CreateFaultCommand, UpdateFaultStatusCommand } from './commands/impl';
 import { OfflineFaultActionDto, SyncFaultsDto } from './dto/sync-faults.dto';
+import { assertTransitionNote } from './domain/fault-state';
+import { FaultAccessService } from './fault-access.service';
 
 export interface FaultSyncItemResult {
   readonly clientRef: string;
   readonly status: 'APPLIED' | 'DUPLICATE' | 'FAILED';
   readonly faultId?: string;
   readonly error?: string;
+}
+
+function hasPrismaCode(error: unknown, code: string): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === code
+  );
 }
 
 /**
@@ -28,6 +44,7 @@ export class FaultsSyncService {
     @Inject('IPrismaService') private readonly prisma: IPrismaService,
     private readonly commandBus: CommandBus,
     private readonly auditService: AuditService,
+    private readonly faultAccess: FaultAccessService,
   ) {}
 
   async syncActions(
@@ -79,6 +96,7 @@ export class FaultsSyncService {
     actor: CurrentUserContext,
     item: OfflineFaultActionDto,
   ): Promise<FaultSyncItemResult> {
+    await this.faultAccess.scopeForAction(tenantId, actor.userId, 'CREATE');
     if (!item.faultNumber || !item.title || !item.description) {
       throw new BadRequestException(
         'CREATE requires faultNumber, title and description',
@@ -86,7 +104,11 @@ export class FaultsSyncService {
     }
 
     const existing = await this.prisma.fault.findFirst({
-      where: { tenantId, faultNumber: item.faultNumber },
+      where: {
+        tenantId,
+        faultNumber: item.faultNumber,
+        createdBy: actor.userId,
+      },
       select: { id: true },
     });
     if (existing) {
@@ -104,6 +126,7 @@ export class FaultsSyncService {
         description: item.description,
         priority: item.priority,
         customerId: item.customerId,
+        assignToSelf: true,
       }),
     );
     return {
@@ -123,6 +146,18 @@ export class FaultsSyncService {
         'UPDATE_STATUS requires faultId and status',
       );
     }
+    assertTransitionNote(item.status, item.notes);
+
+    const scopeWhere = await this.faultAccess.scopeForAction(
+      tenantId,
+      actor.userId,
+      'UPDATE',
+    );
+    const accessibleFault = await this.prisma.fault.findFirst({
+      where: { ...scopeWhere, id: item.faultId, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!accessibleFault) throw new NotFoundException('Fault not found');
 
     const replayed = await this.prisma.faultTimeline.findFirst({
       where: { tenantId, faultId: item.faultId, clientRef: item.clientRef },
@@ -136,13 +171,28 @@ export class FaultsSyncService {
       };
     }
 
-    await this.commandBus.execute(
-      new UpdateFaultStatusCommand(tenantId, item.faultId, actor, {
-        status: item.status,
-        notes: item.notes ?? `Offline status update to ${item.status}`,
-        clientRef: item.clientRef,
-      }),
-    );
+    try {
+      await this.commandBus.execute(
+        new UpdateFaultStatusCommand(tenantId, item.faultId, actor, {
+          status: item.status,
+          notes:
+            item.notes?.trim() || `Offline status update to ${item.status}`,
+          clientRef: item.clientRef,
+        }),
+      );
+    } catch (error: unknown) {
+      // A concurrent replay can pass the read check in both workers. The
+      // database unique key is authoritative; report that race as a duplicate,
+      // not a failed sync item.
+      if (hasPrismaCode(error, 'P2002')) {
+        return {
+          clientRef: item.clientRef,
+          status: 'DUPLICATE',
+          faultId: item.faultId,
+        };
+      }
+      throw error;
+    }
     return {
       clientRef: item.clientRef,
       status: 'APPLIED',

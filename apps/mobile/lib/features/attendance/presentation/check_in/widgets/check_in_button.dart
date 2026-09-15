@@ -11,10 +11,12 @@ class CheckInButton extends StatefulWidget {
   const CheckInButton({
     super.key,
     required this.mode,
+    required this.status,
     this.onTap,
   });
 
   final CheckInButtonMode mode;
+  final CheckInScreenStatus status;
   final VoidCallback? onTap;
 
   @override
@@ -58,7 +60,9 @@ class _CheckInButtonState extends State<CheckInButton>
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: GestureDetector(
-          onTapDown: config.isEnabled ? (_) => _scaleController.forward() : null,
+          onTapDown: config.isEnabled
+              ? (_) => _scaleController.forward()
+              : null,
           onTapUp: config.isEnabled
               ? (_) {
                   _scaleController.reverse();
@@ -73,9 +77,7 @@ class _CheckInButtonState extends State<CheckInButton>
             decoration: BoxDecoration(
               color: config.backgroundColor,
               borderRadius: AppRadius.pillAll,
-              boxShadow: config.isEnabled
-                  ? AppElevation.shadowForLevel(1)
-                  : [],
+              boxShadow: config.isEnabled ? AppElevation.shadowForLevel(1) : [],
             ),
             child: Material(
               color: Colors.transparent,
@@ -113,7 +115,11 @@ class _CheckInButtonState extends State<CheckInButton>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (config.icon != null) ...[
-          Icon(config.icon, size: AppIconSize.md, color: config.foregroundColor),
+          Icon(
+            config.icon,
+            size: AppIconSize.md,
+            color: config.foregroundColor,
+          ),
           AppSpacing.iconGapBox,
         ],
         Text(
@@ -134,120 +140,125 @@ class _CheckInButtonState extends State<CheckInButton>
     return switch (mode) {
       // Loading / Initializing
       CheckInButtonMode.loading => _ButtonConfig(
-          label: 'Checking requirements...',
-          icon: Icons.sync_rounded,
-          backgroundColor: cs.surfaceContainerHigh,
-          foregroundColor: cs.onSurfaceVariant.withValues(alpha: 0.38),
-          isEnabled: false,
-          semanticLabel: 'Checking requirements, please wait',
-        ),
+        label: 'Checking requirements...',
+        icon: Icons.sync_rounded,
+        backgroundColor: cs.surfaceContainerHigh,
+        foregroundColor: cs.onSurfaceVariant.withValues(alpha: 0.38),
+        isEnabled: false,
+        semanticLabel: 'Checking requirements, please wait',
+      ),
 
       // GPS Acquiring
       CheckInButtonMode.disabled when _isGpsAcquiring => _ButtonConfig(
-          label: 'Acquiring GPS...',
-          icon: Icons.gps_not_fixed_rounded,
-          backgroundColor: cs.surfaceContainerHigh,
-          foregroundColor: cs.onSurfaceVariant.withValues(alpha: 0.38),
-          isEnabled: false,
-          semanticLabel: 'Acquiring GPS signal, please wait',
-        ),
+        label: 'Acquiring GPS...',
+        icon: Icons.gps_not_fixed_rounded,
+        backgroundColor: cs.surfaceContainerHigh,
+        foregroundColor: cs.onSurfaceVariant.withValues(alpha: 0.38),
+        isEnabled: false,
+        semanticLabel: 'Acquiring GPS signal, please wait',
+      ),
 
       // Hard disabled
       CheckInButtonMode.disabled => _ButtonConfig(
-          label: _disabledLabel,
-          icon: _disabledIcon,
-          backgroundColor: cs.surfaceContainerHigh,
-          foregroundColor: cs.onSurfaceVariant.withValues(alpha: 0.38),
-          isEnabled: false,
-          semanticLabel: _disabledLabel,
-        ),
+        label: _disabledLabel,
+        icon: _disabledIcon,
+        backgroundColor: cs.surfaceContainerHigh,
+        foregroundColor: cs.onSurfaceVariant.withValues(alpha: 0.38),
+        isEnabled: false,
+        semanticLabel: _disabledLabel,
+      ),
 
       // Ready — normal
       CheckInButtonMode.enabledNormal => _ButtonConfig(
-          label: 'Check In',
-          icon: Icons.login_rounded,
-          backgroundColor: cs.primary,
-          foregroundColor: cs.onPrimary,
-          isEnabled: true,
-          semanticLabel: 'Check in for your shift',
-        ),
+        label: 'Check In',
+        icon: Icons.login_rounded,
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
+        isEnabled: true,
+        semanticLabel: 'Check in for your shift',
+      ),
 
       // Ready — inside geofence, biometric required
       CheckInButtonMode.enabledBiometric => _ButtonConfig(
-          label: 'Check In with Biometric',
-          icon: Icons.fingerprint_rounded,
-          backgroundColor: cs.primary,
-          foregroundColor: cs.onPrimary,
-          isEnabled: true,
-          semanticLabel:
-              'Check in using fingerprint or face verification',
-        ),
+        label: 'Check In with Biometric',
+        icon: Icons.fingerprint_rounded,
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
+        isEnabled: true,
+        semanticLabel: 'Check in using fingerprint or face verification',
+      ),
 
       // Offline
       CheckInButtonMode.enabledOffline => _ButtonConfig(
-          label: 'Check In (Offline)',
-          icon: Icons.cloud_off_rounded,
-          backgroundColor: cs.secondary,
-          foregroundColor: cs.onSecondary,
-          isEnabled: true,
-          semanticLabel: 'Check in offline. Will sync when connected.',
-        ),
+        label: 'Check In (Offline)',
+        icon: Icons.cloud_off_rounded,
+        backgroundColor: cs.secondary,
+        foregroundColor: cs.onSecondary,
+        isEnabled: true,
+        semanticLabel: 'Check in offline. Will sync when connected.',
+      ),
 
       // Override (poor GPS / outside fence allowed)
       CheckInButtonMode.enabledOverride => _ButtonConfig(
-          label: 'Check In Anyway',
-          icon: Icons.warning_amber_rounded,
-          backgroundColor: PingForceColors.statusWarning,
-          foregroundColor: PingForceColors.statusOnWarning,
-          isEnabled: true,
-          semanticLabel: 'Check in with GPS warning. Attendance may be flagged.',
-        ),
+        label: 'Check In Anyway',
+        icon: Icons.warning_amber_rounded,
+        backgroundColor: PingForceColors.statusWarning,
+        foregroundColor: PingForceColors.statusOnWarning,
+        isEnabled: true,
+        semanticLabel: 'Check in with GPS warning. Attendance may be flagged.',
+      ),
 
       // Already checked in
       CheckInButtonMode.alreadyCheckedIn => _ButtonConfig(
-          label: "You're Checked In",
-          icon: Icons.check_circle_rounded,
-          backgroundColor: cs.tertiaryContainer,
-          foregroundColor: cs.onTertiaryContainer,
-          isEnabled: false,
-          semanticLabel: 'You are already checked in',
-        ),
+        label: "You're Checked In",
+        icon: Icons.check_circle_rounded,
+        backgroundColor: cs.tertiaryContainer,
+        foregroundColor: cs.onTertiaryContainer,
+        isEnabled: false,
+        semanticLabel: 'You are already checked in',
+      ),
 
       // Submitting
       CheckInButtonMode.submitting => _ButtonConfig(
-          label: '',
-          icon: null,
-          backgroundColor: cs.primary.withValues(alpha: 0.80),
-          foregroundColor: cs.onPrimary,
-          isEnabled: false,
-          semanticLabel: 'Submitting check-in, please wait',
-        ),
+        label: '',
+        icon: null,
+        backgroundColor: cs.primary.withValues(alpha: 0.80),
+        foregroundColor: cs.onPrimary,
+        isEnabled: false,
+        semanticLabel: 'Submitting check-in, please wait',
+      ),
 
       // Success
       CheckInButtonMode.success => _ButtonConfig(
-          label: 'Checked In ✓',
-          icon: null,
-          backgroundColor: PingForceColors.statusSuccess,
-          foregroundColor: PingForceColors.statusOnSuccess,
-          isEnabled: false,
-          semanticLabel: 'Check-in successful',
-        ),
+        label: 'Checked In ✓',
+        icon: null,
+        backgroundColor: PingForceColors.statusSuccess,
+        foregroundColor: PingForceColors.statusOnSuccess,
+        isEnabled: false,
+        semanticLabel: 'Check-in successful',
+      ),
 
       // Error
       CheckInButtonMode.error => _ButtonConfig(
-          label: 'Try Again',
-          icon: Icons.refresh_rounded,
-          backgroundColor: cs.errorContainer,
-          foregroundColor: cs.onErrorContainer,
-          isEnabled: true,
-          semanticLabel: 'Check-in failed. Tap to try again.',
-        ),
+        label: 'Try Again',
+        icon: Icons.refresh_rounded,
+        backgroundColor: cs.errorContainer,
+        foregroundColor: cs.onErrorContainer,
+        isEnabled: true,
+        semanticLabel: 'Check-in failed. Tap to try again.',
+      ),
     };
   }
 
-  bool get _isGpsAcquiring => true; // TODO: derive from parent state
+  bool get _isGpsAcquiring => widget.status == CheckInScreenStatus.gpsAcquiring;
 
-  String get _disabledLabel => 'Outside Boundary'; // Placeholder
+  String get _disabledLabel => switch (widget.status) {
+    CheckInScreenStatus.gpsPermissionRequired => 'Location Required',
+    CheckInScreenStatus.gpsPoor => 'GPS Signal Too Weak',
+    CheckInScreenStatus.geofenceNotConfigured => 'Location Not Configured',
+    CheckInScreenStatus.outsideGeofence => 'Outside Boundary',
+    _ => 'Check-in Unavailable',
+  };
 
   IconData get _disabledIcon => Icons.location_off_rounded;
 }

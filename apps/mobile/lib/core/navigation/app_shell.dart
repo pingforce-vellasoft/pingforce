@@ -188,7 +188,7 @@ class _AppShellState extends ConsumerState<AppShell>
       backgroundColor: Theme.of(context).colorScheme.surface,
       drawer: _AppDrawer(
         shellState: shellState,
-        onNavigate: (route) => context.push(route),
+        onNavigate: _onDrawerNavigate,
       ),
       body: Column(
         children: [
@@ -225,6 +225,22 @@ class _AppShellState extends ConsumerState<AppShell>
       floatingActionButtonLocation:
           FloatingActionButtonLocation.endFloat,
     );
+  }
+
+  /// Drawer navigation. Most drawer entries are modal routes pushed over the
+  /// shell, but some (Faults, Visits) are shell BRANCH routes — an admin can
+  /// reach them from the drawer because they have no bottom-nav tab for them.
+  /// Pushing a branch route would stack it over the shell, leaving the screen
+  /// without a bottom nav and exitable only by the back button, so switch the
+  /// branch instead and let the shell keep owning the layout.
+  void _onDrawerNavigate(String route) {
+    final branch = NavDestinations.branchIndexForRoute(route);
+    if (branch == null) {
+      context.push(route);
+      return;
+    }
+    widget.navigationShell.goBranch(branch);
+    context.go(route);
   }
 
   void _onNavTap(int index, List<NavDestination> destinations) {

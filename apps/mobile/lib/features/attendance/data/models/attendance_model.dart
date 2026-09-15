@@ -15,7 +15,9 @@ class AttendanceModel extends AttendanceSession {
       id: json['id'],
       employeeId: json['employeeId'],
       punchIn: DateTime.parse(json['punchIn']),
-      punchOut: json['punchOut'] != null ? DateTime.parse(json['punchOut']) : null,
+      punchOut: json['punchOut'] != null
+          ? DateTime.parse(json['punchOut'])
+          : null,
       status: json['status'] ?? 'PRESENT',
       attendanceMethod: json['attendanceMethod'] ?? 'GPS',
     );

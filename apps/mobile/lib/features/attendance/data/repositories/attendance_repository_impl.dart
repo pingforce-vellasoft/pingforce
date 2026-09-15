@@ -2,6 +2,9 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/hardware/device_identity.dart';
+import '../../../../core/hardware/device_signing_key.dart';
+import '../../../devices/data/devices_remote_data_source.dart';
+import '../../domain/entities/attendance_policy.dart';
 import '../../domain/entities/attendance_session.dart';
 import '../../domain/entities/attendance_today.dart';
 import '../../domain/repositories/attendance_repository.dart';
@@ -10,10 +13,15 @@ import '../datasources/attendance_remote_data_source.dart';
 class AttendanceRepositoryImpl implements AttendanceRepository {
   final AttendanceRemoteDataSource remoteDataSource;
   final DeviceIdentity deviceIdentity;
+  final DeviceSigningKey deviceSigningKey;
+  final DevicesRemoteDataSource devicesRemoteDataSource;
+  bool _signingKeyPrepared = false;
 
   AttendanceRepositoryImpl({
     required this.remoteDataSource,
     required this.deviceIdentity,
+    required this.deviceSigningKey,
+    required this.devicesRemoteDataSource,
   });
 
   /// Turns a thrown error into a Failure that says what actually went wrong.
@@ -68,7 +76,8 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       // DEVICE-007 (nothing bound to the account) lands here too: both end at
       // the same place for the employee — this handset cannot punch until an
       // admin binds it.
-      final isUntrustedDevice = errorCode == 'UNTRUSTED_DEVICE' ||
+      final isUntrustedDevice =
+          errorCode == 'UNTRUSTED_DEVICE' ||
           errorCode == 'DEVICE-007' ||
           (status == 401 &&
               (serverMessage ?? '').toLowerCase().contains('untrusted device'));
@@ -116,21 +125,88 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Future<Either<Failure, bool>> isDeviceRegistered() async {
-    // In a real scenario, check secure storage to see if the private key exists
-    return const Right(true);
+    try {
+      final result = await devicesRemoteDataSource.getMyDevice();
+      return Right(result['device'] != null);
+    } catch (e) {
+      return Left(_mapError(e, 'Could not verify this device binding.'));
+    }
   }
 
+  @override
+  Future<Either<Failure, void>> prepareDeviceSigning() async {
+    if (_signingKeyPrepared) return const Right(null);
+    try {
+      final deviceId = await deviceIdentity.getOrCreate();
+      final publicKey = await deviceSigningKey.publicKey();
+      await devicesRemoteDataSource.upgradeSigningKey(deviceId, publicKey);
+      _signingKeyPrepared = true;
+      return const Right(null);
+    } catch (e) {
+      return Left(_mapError(e, 'Could not prepare secure attendance signing.'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AttendancePolicy>> getPolicy() async {
+    try {
+      final json = await remoteDataSource.getPolicy();
+      return Right(
+        AttendancePolicy(
+          gpsRequired: json['gpsRequired'] as bool? ?? true,
+          geofenceEnabled: json['geofenceEnabled'] as bool? ?? true,
+          geofencePolicy: json['geofencePolicy'] as String? ?? 'BLOCK',
+          biometricRequired: json['biometricRequired'] as bool? ?? false,
+          allowLowAccuracy: json['allowLowAccuracy'] as bool? ?? false,
+          accuracyThresholdMeters:
+              (json['accuracyThresholdMeters'] as num?)?.toDouble() ?? 50,
+          allowOfflineCheckIn: json['allowOfflineCheckIn'] as bool? ?? true,
+          checkInMethods: (json['checkInMethods'] as List<dynamic>? ?? const [])
+              .whereType<String>()
+              .toList(growable: false),
+          mockLocationPolicy: json['mockLocationPolicy'] as String? ?? 'BLOCK',
+        ),
+      );
+    } catch (e) {
+      return Left(_mapError(e, 'Could not load the attendance policy.'));
+    }
+  }
 
   @override
   Future<Either<Failure, AttendanceSession>> punch(
-      double latitude, double longitude, String cryptographicSignature) async {
+    double latitude,
+    double longitude,
+    double accuracy,
+    bool isMockLocation,
+    bool biometricVerified,
+  ) async {
     try {
+      final prepared = await prepareDeviceSigning();
+      final signingFailure = prepared.fold<Failure?>(
+        (failure) => failure,
+        (_) => null,
+      );
+      if (signingFailure != null) return Left(signingFailure);
       final deviceId = await deviceIdentity.getOrCreate();
+      final timestamp = DateTime.now().toUtc();
+      final signature = await deviceSigningKey.signPunch(
+        deviceId: deviceId,
+        timestamp: timestamp,
+        latitude: latitude,
+        longitude: longitude,
+        accuracy: accuracy,
+        isMockLocation: isMockLocation,
+        biometricVerified: biometricVerified,
+      );
       final remoteSession = await remoteDataSource.punch(
         deviceId,
+        timestamp,
         latitude,
         longitude,
-        cryptographicSignature,
+        accuracy,
+        isMockLocation,
+        biometricVerified,
+        signature,
       );
       return Right(remoteSession);
     } catch (e) {

@@ -5,6 +5,8 @@ import {
   IsArray,
   IsDateString,
   IsNotEmpty,
+  IsBoolean,
+  IsOptional,
   IsNumber,
   IsString,
   ValidateNested,
@@ -26,6 +28,18 @@ export class OfflinePunchItemDto {
 
   @IsNumber()
   readonly longitude!: number;
+
+  @IsOptional()
+  @IsNumber()
+  readonly accuracy?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  readonly isMockLocation?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  readonly biometricVerified?: boolean;
 
   @IsNotEmpty()
   @IsString()

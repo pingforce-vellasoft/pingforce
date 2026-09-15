@@ -1,9 +1,11 @@
 import {
   BadRequestException,
+  ConflictException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventBus } from '@nestjs/cqrs';
 import { randomInt } from 'crypto';
 import {
   IPrismaService,
@@ -16,6 +18,11 @@ import {
   PortalFaultListQueryDto,
   PortalFaultRatingDto,
 } from './portal-faults.dto';
+import { ACTIVE_STATES, FaultState } from '../../faults/domain/fault-state';
+import {
+  FaultCommentedEvent,
+  FaultReopenedEvent,
+} from '../../faults/events/impl';
 
 const MAX_OPEN_FAULTS_PER_CUSTOMER = 10;
 
@@ -49,6 +56,7 @@ export class PortalFaultsService {
     @Inject('IPrismaService') private readonly prisma: IPrismaService,
     private readonly slaComputationService: SlaComputationService,
     private readonly auditService: AuditService,
+    private readonly eventBus: EventBus,
   ) {}
 
   async create(
@@ -63,7 +71,7 @@ export class PortalFaultsService {
         tenantId,
         customerId,
         deletedAt: null,
-        status: { in: ['OPEN', 'IN_PROGRESS'] },
+        status: { in: [...ACTIVE_STATES] },
       },
     });
     if (openCount >= MAX_OPEN_FAULTS_PER_CUSTOMER) {
@@ -82,18 +90,14 @@ export class PortalFaultsService {
     }
 
     const priority = 'MEDIUM';
-    const slaPolicy = await this.prisma.slaPolicy.findUnique({
-      where: { tenantId_priority: { tenantId, priority } },
+    const slaPolicy = await this.prisma.slaPolicy.findFirst({
+      where: { tenantId, priority, deletedAt: null },
     });
     const slaDeadline = slaPolicy
       ? this.slaComputationService.calculateSlaDeadline(
           slaPolicy.resolveInHours,
         )
       : null;
-
-    const description = dto.connectionId
-      ? `${dto.description}\n\n[Connection: ${dto.connectionId}]`
-      : dto.description;
 
     const fault = await this.prisma.$transaction(async (tx) => {
       const created = await tx.fault.create({
@@ -102,7 +106,8 @@ export class PortalFaultsService {
           faultNumber: this.generateFaultNumber(),
           customerId,
           title: dto.title,
-          description,
+          description: dto.description,
+          connectionId: dto.connectionId ?? null,
           priority,
           slaDeadline,
           channel: 'PORTAL',
@@ -171,8 +176,32 @@ export class PortalFaultsService {
     });
     if (!fault) throw new NotFoundException('Complaint not found');
 
+    // Only attachments explicitly flagged for the customer are exposed;
+    // internal evidence photos stay staff-only (BR-3.4).
+    const attachments = await this.prisma.fileAttachment.findMany({
+      where: {
+        tenantId,
+        entityType: 'FAULT',
+        entityId: faultId,
+        isCustomerVisible: true,
+      },
+      select: {
+        id: true,
+        fileName: true,
+        mimeType: true,
+        fileSize: true,
+        fileUrl: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
     const { faultTimelines, ...rest } = fault;
-    return { ...this.toPortalView(rest), timeline: faultTimelines };
+    return {
+      ...this.toPortalView(rest),
+      timeline: faultTimelines,
+      attachments,
+    };
   }
 
   async comment(
@@ -199,6 +228,18 @@ export class PortalFaultsService {
         createdBy: portalUserId,
       },
     });
+
+    // Tell the assignee: a customer reply that nobody is notified about is
+    // indistinguishable from silence, and the SLA keeps running.
+    this.eventBus.publish(
+      new FaultCommentedEvent(
+        tenantId,
+        fault.id,
+        fault.faultNumber,
+        fault.assignedToId ?? undefined,
+      ),
+    );
+
     return { message: 'Comment added' };
   }
 
@@ -221,30 +262,64 @@ export class PortalFaultsService {
     });
     const windowHours = settings?.portalFaultReopenHours ?? 72;
     const windowMs = windowHours * 60 * 60 * 1000;
-    if (Date.now() - fault.updatedAt.getTime() > windowMs) {
+    // Measured from resolution, not `updatedAt` — any later edit to the fault
+    // would otherwise silently extend the customer's reopen window.
+    const resolvedAt = fault.resolvedAt ?? fault.updatedAt;
+    if (Date.now() - resolvedAt.getTime() > windowMs) {
       throw new BadRequestException(
         `The reopen window (${windowHours}h) has passed. Please raise a new complaint.`,
       );
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      const u = await tx.fault.update({
-        where: { id: fault.id },
-        data: { status: 'OPEN', updatedBy: portalUserId },
-        select: PORTAL_FAULT_SELECT,
+      const claimed = await tx.fault.updateMany({
+        where: {
+          id: fault.id,
+          tenantId,
+          customerId,
+          deletedAt: null,
+          status: FaultState.RESOLVED,
+        },
+        data: {
+          status: FaultState.REOPENED,
+          resolvedAt: null,
+          reopenCount: { increment: 1 },
+          updatedBy: portalUserId,
+        },
       });
+      if (claimed.count !== 1) {
+        throw new ConflictException(
+          'Complaint status changed; refresh before reopening',
+        );
+      }
       await tx.faultTimeline.create({
         data: {
           tenantId,
           faultId: fault.id,
-          status: 'OPEN',
+          status: FaultState.REOPENED,
           notes: `[Customer reopened] ${dto.notes}`,
           isCustomerVisible: true,
           createdBy: portalUserId,
         },
       });
-      return u;
+      const reopened = await tx.fault.findFirst({
+        where: { id: fault.id, tenantId, customerId, deletedAt: null },
+        select: PORTAL_FAULT_SELECT,
+      });
+      if (!reopened) throw new NotFoundException('Complaint not found');
+      return reopened;
     });
+
+    // A reopened fault is live work again — the assignee has to be told, or it
+    // sits in REOPENED with nobody aware it came back.
+    this.eventBus.publish(
+      new FaultReopenedEvent(
+        tenantId,
+        fault.id,
+        fault.faultNumber,
+        fault.assignedToId ?? undefined,
+      ),
+    );
 
     void this.auditService.log({
       tenantId,
@@ -276,14 +351,26 @@ export class PortalFaultsService {
       throw new BadRequestException('This complaint has already been rated');
     }
 
-    await this.prisma.fault.update({
-      where: { id: fault.id },
+    const rated = await this.prisma.fault.updateMany({
+      where: {
+        id: fault.id,
+        tenantId,
+        customerId,
+        deletedAt: null,
+        customerRating: null,
+        status: { in: [FaultState.RESOLVED, FaultState.CLOSED] },
+      },
       data: {
         customerRating: dto.rating,
         customerRatingComment: dto.comment,
         updatedBy: portalUserId,
       },
     });
+    if (rated.count !== 1) {
+      throw new ConflictException(
+        'Complaint status or rating changed; refresh and try again',
+      );
+    }
     return { message: 'Thank you for your feedback' };
   }
 

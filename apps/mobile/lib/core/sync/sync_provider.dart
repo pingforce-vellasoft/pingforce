@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../features/attendance/data/datasources/attendance_remote_data_source.dart';
+import '../../features/attendance/domain/repositories/attendance_repository.dart';
 import '../../features/tracking/data/datasources/tracking_remote_data_source.dart';
+import '../../features/faults/data/faults_remote_data_source.dart';
 import '../../features/visits/data/visits_remote_data_source.dart';
 import '../../injection_container.dart';
 import 'sync_state.dart';
@@ -20,8 +22,9 @@ import '../network/connectivity_provider.dart';
 //   - Exposes enqueue/dequeue/conflict-resolve API
 //   - Feeds SyncMonitorScreen and all offline banners/chips
 
-final syncProvider =
-    NotifierProvider<SyncNotifier, SyncState>(SyncNotifier.new);
+final syncProvider = NotifierProvider<SyncNotifier, SyncState>(
+  SyncNotifier.new,
+);
 
 // ── Convenience selectors ──────────────────────────────────────────────────
 
@@ -136,31 +139,31 @@ class SyncNotifier extends Notifier<SyncState> {
   }
 
   Map<String, dynamic> _itemToMap(SyncQueueItem item) => {
-        'id': item.id,
-        'module': item.module.name,
-        'entityId': item.entityId,
-        'operationType': item.operationType,
-        'description': item.description,
-        'queuedAt': item.queuedAt.toIso8601String(),
-        'retryCount': item.retryCount,
-        'payload': item.payload,
-      };
+    'id': item.id,
+    'module': item.module.name,
+    'entityId': item.entityId,
+    'operationType': item.operationType,
+    'description': item.description,
+    'queuedAt': item.queuedAt.toIso8601String(),
+    'retryCount': item.retryCount,
+    'payload': item.payload,
+  };
 
   SyncQueueItem _itemFromMap(Map<String, dynamic> map) => SyncQueueItem(
-        id: map['id'] as String,
-        module: SyncItemModule.values.firstWhere(
-          (m) => m.name == map['module'],
-          orElse: () => SyncItemModule.attendance,
-        ),
-        entityId: map['entityId'] as String,
-        operationType: map['operationType'] as String,
-        description: map['description'] as String,
-        queuedAt: DateTime.parse(map['queuedAt'] as String),
-        retryCount: (map['retryCount'] as int?) ?? 0,
-        payload: map['payload'] != null
-            ? Map<String, dynamic>.from(map['payload'] as Map)
-            : null,
-      );
+    id: map['id'] as String,
+    module: SyncItemModule.values.firstWhere(
+      (m) => m.name == map['module'],
+      orElse: () => SyncItemModule.attendance,
+    ),
+    entityId: map['entityId'] as String,
+    operationType: map['operationType'] as String,
+    description: map['description'] as String,
+    queuedAt: DateTime.parse(map['queuedAt'] as String),
+    retryCount: (map['retryCount'] as int?) ?? 0,
+    payload: map['payload'] != null
+        ? Map<String, dynamic>.from(map['payload'] as Map)
+        : null,
+  );
 
   // ── Public API ─────────────────────────────────────────────────────────
 
@@ -271,7 +274,9 @@ class SyncNotifier extends Notifier<SyncState> {
   /// Clear all failed items that have exhausted retries
   void clearFailed() {
     state = state.copyWith(
-      queue: state.queue.where((i) => i.canRetry || i.errorMessage == null).toList(),
+      queue: state.queue
+          .where((i) => i.canRetry || i.errorMessage == null)
+          .toList(),
     );
   }
 
@@ -284,10 +289,12 @@ class SyncNotifier extends Notifier<SyncState> {
 
   Future<void> _flushQueue() async {
     final pendingItems = state.queue
-        .where((i) =>
-            !i.hasConflict &&
-            i.errorMessage == null &&
-            i.retryCount < _maxAutoRetries)
+        .where(
+          (i) =>
+              !i.hasConflict &&
+              i.errorMessage == null &&
+              i.retryCount < _maxAutoRetries,
+        )
         .toList();
 
     if (pendingItems.isEmpty) {
@@ -314,8 +321,9 @@ class SyncNotifier extends Notifier<SyncState> {
       byModule.entries.map((e) => _syncModuleBatches(e.key, e.value)),
     );
 
-    final hasRemaining =
-        state.queue.any((i) => !i.hasConflict && i.errorMessage != null);
+    final hasRemaining = state.queue.any(
+      (i) => !i.hasConflict && i.errorMessage != null,
+    );
     state = state.copyWith(
       status: hasRemaining ? SyncQueueStatus.failed : SyncQueueStatus.completed,
       lastSyncedAt: DateTime.now(),
@@ -338,8 +346,9 @@ class SyncNotifier extends Notifier<SyncState> {
         offset,
         min(offset + _batchSize, items.length),
       );
-      final withPayload =
-          chunk.where((i) => i.payload != null).toList(growable: false);
+      final withPayload = chunk
+          .where((i) => i.payload != null)
+          .toList(growable: false);
 
       try {
         await _syncBatch(
@@ -373,6 +382,16 @@ class SyncNotifier extends Notifier<SyncState> {
     if (payloads.isEmpty) return;
     switch (module) {
       case SyncItemModule.attendance:
+        // An app updated from the legacy timestamp-only "signature" must
+        // migrate its already-bound handset key before queued signed punches
+        // are replayed. This also covers a user whose first post-update punch
+        // was captured while offline.
+        final prepared = await sl<AttendanceRepository>()
+            .prepareDeviceSigning();
+        prepared.fold<void>(
+          (failure) => throw StateError(failure.message),
+          (_) {},
+        );
         await sl<AttendanceRemoteDataSource>().syncPunches(payloads);
       case SyncItemModule.visits:
         // Idempotent replay via clientRef (POST /visits/sync)
@@ -380,8 +399,10 @@ class SyncNotifier extends Notifier<SyncState> {
       case SyncItemModule.tracking:
         // Background location pings — idempotent on clientRef.
         await sl<TrackingRemoteDataSource>().sendPingBatch(payloads);
-      // Remaining modules gain client sync flows in a later phase
       case SyncItemModule.faults:
+        // Idempotent replay via clientRef (POST /faults/sync)
+        await sl<FaultsRemoteDataSource>().syncActions(payloads);
+      // Remaining modules gain client sync flows in a later phase
       case SyncItemModule.leads:
       case SyncItemModule.documents:
       case SyncItemModule.profile:

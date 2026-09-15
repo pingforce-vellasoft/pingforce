@@ -21,8 +21,11 @@ import 'core/network/token_interceptor.dart';
 import 'core/hardware/hardware_service.dart';
 import 'core/hardware/hardware_service_impl.dart';
 import 'core/hardware/device_identity.dart';
+import 'core/hardware/device_signing_key.dart';
 import 'core/notifications/push_notifications_service.dart';
 import 'features/faults/data/faults_remote_data_source.dart';
+import 'features/customer_faults/data/customer_faults_remote_data_source.dart';
+import 'features/customer_faults/data/portal_auth_data_source.dart';
 import 'features/network_map/data/network_map_remote_data_source.dart';
 import 'features/visits/data/visits_remote_data_source.dart';
 import 'features/profile/data/profile_remote_data_source.dart';
@@ -62,14 +65,17 @@ Future<void> init() async {
   sl.registerLazySingleton(() => LocalAuthentication());
   sl.registerLazySingleton<HardwareService>(() => HardwareServiceImpl());
   sl.registerLazySingleton(() => DeviceIdentity(sl()));
-  
+  sl.registerLazySingleton(() => DeviceSigningKey(sl()));
+
   sl.registerLazySingleton(() {
     // Note: If testing locally, use 'http://10.0.2.2:3000' for emulator
     // Or run 'adb reverse tcp:3000 tcp:3000' and use 'http://localhost:3000'
     // For Production / Staging, use the real OCI Server IP (NGINX will forward this to 3000):
     const baseUrl = 'https://api.pingforce.in';
     final dio = Dio(BaseOptions(baseUrl: baseUrl));
-    dio.interceptors.add(TokenInterceptor(secureStorage: sl(), baseUrl: baseUrl));
+    dio.interceptors.add(
+      TokenInterceptor(secureStorage: sl(), baseUrl: baseUrl),
+    );
     return dio;
   });
 
@@ -101,7 +107,12 @@ Future<void> init() async {
   );
 
   sl.registerLazySingleton<AttendanceRepository>(
-    () => AttendanceRepositoryImpl(remoteDataSource: sl(), deviceIdentity: sl()),
+    () => AttendanceRepositoryImpl(
+      remoteDataSource: sl(),
+      deviceIdentity: sl(),
+      deviceSigningKey: sl(),
+      devicesRemoteDataSource: sl(),
+    ),
   );
 
   // Data sources
@@ -112,6 +123,14 @@ Future<void> init() async {
   // --- Features: Faults ---
   sl.registerLazySingleton<FaultsRemoteDataSource>(
     () => FaultsRemoteDataSourceImpl(dio: sl()),
+  );
+
+  // --- Features: Customer complaints (portal identities) ---
+  sl.registerLazySingleton<CustomerFaultsRemoteDataSource>(
+    () => CustomerFaultsRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<PortalAuthDataSource>(
+    () => PortalAuthDataSource(dio: sl(), secureStorage: sl()),
   );
 
   // --- Features: Visits ---

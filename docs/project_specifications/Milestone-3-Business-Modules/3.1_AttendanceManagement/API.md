@@ -7,13 +7,41 @@
 **Architecture:** REST API (Versioned)
 **Version:** v1
 **Authentication:** JWT + Refresh Token + RBAC + Tenant Resolution
-**Status:** Production Ready
+**Status:** Specification baseline with verified MVP route overlay
 
 ---
 
 # 1. Overview
 
 The Attendance API provides secure, multi-tenant REST endpoints for attendance operations including check-in, check-out, shift validation, GPS validation, attendance corrections, offline synchronization, reporting, and administration.
+
+> Implementation note (2026-09-14): the sections below preserve the original
+> broad API design. The implemented MVP uses a single signed toggle endpoint,
+> `POST /api/v1/attendance/punch`, for check-in and check-out. Shift and break
+> APIs are not part of the agreed scope. Do not generate clients from the
+> aspirational route list below; use Swagger at `/api/docs`.
+
+Verified MVP routes include:
+
+- `POST /attendance/punch` — signed online check-in/check-out toggle
+- `POST /attendance/sync` — ordered, signed offline punch batch
+- `GET /attendance/policy` — effective mobile attendance policy
+- `PUT /attendance/policy` — validated tenant attendance policy update
+- `GET /attendance/today` — employee current-day snapshot
+- `GET /attendance/daily-logs` — scope-filtered day history
+- `POST /attendance/corrections` — employee correction request
+- `GET /attendance/corrections/pending` — approver queue
+- `POST /attendance/corrections/{id}/approve|reject|cancel`
+- `POST /attendance/manual-checkout`
+- `POST /attendance/admin/adjust-session`
+- `POST /attendance/admin/override-status`
+- Geofence, assignment, tracking-gap and tracking-exemption routes exposed by
+  `AttendanceController`
+
+The online punch body contains `deviceId`, `timestamp`, `latitude`,
+`longitude`, `accuracy`, `isMockLocation`, `biometricVerified`, and an Ed25519
+`signature` over the canonical payload. Offline items add `clientRef` to that
+signed payload.
 
 Base URL
 
@@ -137,7 +165,7 @@ Returns
 
 ---
 
-# 5. Shift APIs
+# 5. Shift APIs (not in agreed implementation scope)
 
 GET /shifts
 
@@ -188,6 +216,8 @@ DELETE /gps/geofences/{id}
 ---
 
 # 8. Offline Sync APIs
+
+Implemented route: `POST /sync`.
 
 POST /offline/sync
 

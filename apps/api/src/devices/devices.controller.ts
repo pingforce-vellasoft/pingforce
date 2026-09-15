@@ -21,6 +21,7 @@ import {
   ListDevicesDto,
   RejectDeviceChangeRequestDto,
   RevokeDeviceDto,
+  UpgradeDeviceKeyDto,
 } from './dto/device.dto';
 
 interface AuthRequest {
@@ -83,6 +84,18 @@ export class DevicesController {
       dto.deviceId,
       dto.publicKey,
     );
+  }
+
+  @Post('signing-key')
+  @RequirePermission('DEVICES', 'BIND')
+  @ApiOperation({
+    summary: 'Refresh the signing key for this already-bound handset',
+  })
+  async upgradeSigningKey(
+    @Req() req: AuthRequest,
+    @Body() dto: UpgradeDeviceKeyDto,
+  ) {
+    return this.devicesService.upgradeSigningKey(this.actor(req), dto);
   }
 
   @Get('me')

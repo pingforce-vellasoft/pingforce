@@ -9,15 +9,22 @@ interface TxMock {
   attendanceSession: {
     findFirst: jest.Mock;
     create: jest.Mock;
-    update: jest.Mock;
+    updateMany: jest.Mock;
   };
-  attendance: { findFirst: jest.Mock; create: jest.Mock };
+  attendance: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
+  attendanceBreak: { aggregate: jest.Mock };
+  $executeRaw: jest.Mock;
 }
 
 function makeService(opts: {
   trustedDevices?: string[];
   nearDuplicate?: boolean;
-  openSession?: { id: string; punchIn: Date; sessionStatus: string } | null;
+  openSession?: {
+    id: string;
+    attendanceId: string;
+    punchIn: Date;
+    sessionStatus: string;
+  } | null;
 }) {
   const tx: TxMock = {
     attendanceSession: {
@@ -27,35 +34,55 @@ function makeService(opts: {
         .mockResolvedValueOnce(opts.nearDuplicate ? { id: 'dup' } : null)
         .mockResolvedValueOnce(opts.openSession ?? null),
       create: jest.fn().mockResolvedValue({}),
-      update: jest.fn().mockResolvedValue({}),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     attendance: {
       findFirst: jest.fn().mockResolvedValue({ id: 'att1' }),
       create: jest.fn().mockResolvedValue({ id: 'att1' }),
+      update: jest.fn().mockResolvedValue({}),
     },
+    attendanceBreak: {
+      aggregate: jest.fn().mockResolvedValue({
+        _sum: { durationMinutes: 0 },
+      }),
+    },
+    $executeRaw: jest.fn().mockResolvedValue(1),
   };
   const prisma = {
     employee: {
-      findUnique: jest.fn().mockResolvedValue({ id: 'e1', tenantId: 't1' }),
+      findFirst: jest.fn().mockResolvedValue({ id: 'e1', tenantId: 't1' }),
     },
     employeeDevice: {
       findMany: jest.fn().mockResolvedValue(
         (opts.trustedDevices ?? ['d1']).map((deviceId) => ({
           deviceId,
           isTrusted: true,
+          revokedAt: null,
+          publicKey: 'ed25519:test',
         })),
       ),
     },
+    attendancePolicy: { findFirst: jest.fn().mockResolvedValue(null) },
     $transaction: jest.fn(async (cb: (t: TxMock) => Promise<unknown>) =>
       cb(tx),
     ),
   };
   const auditService = { log: jest.fn().mockResolvedValue(undefined) };
+  const punchSignature = { verify: jest.fn() };
+  const geofenceCache = {
+    checkAssigned: jest.fn().mockResolvedValue({ status: 'INSIDE' }),
+  };
   const service = new OfflineSyncService(
     prisma as unknown as ConstructorParameters<typeof OfflineSyncService>[0],
     auditService as unknown as ConstructorParameters<
       typeof OfflineSyncService
     >[1],
+    punchSignature as unknown as ConstructorParameters<
+      typeof OfflineSyncService
+    >[2],
+    geofenceCache as unknown as ConstructorParameters<
+      typeof OfflineSyncService
+    >[3],
   );
   return { service, tx };
 }
@@ -67,6 +94,7 @@ const punch = (over: Partial<Record<string, unknown>> = {}) => ({
   timestamp: '2026-07-15T09:00:00.000Z',
   latitude: 1,
   longitude: 2,
+  accuracy: 10,
   signature: 'sig-1',
   ...over,
 });
@@ -89,7 +117,7 @@ describe('OfflineSyncService.syncPunches', () => {
     } as never);
     expect(results).toEqual([{ clientRef: 'c1', status: 'DUPLICATE' }]);
     expect(tx.attendanceSession.create).not.toHaveBeenCalled();
-    expect(tx.attendanceSession.update).not.toHaveBeenCalled();
+    expect(tx.attendanceSession.updateMany).not.toHaveBeenCalled();
   });
 
   it('applies a fresh punch as a new CHECKED_IN session', async () => {
@@ -112,6 +140,7 @@ describe('OfflineSyncService.syncPunches', () => {
     const { service, tx } = makeService({
       openSession: {
         id: 's-open',
+        attendanceId: 'att1',
         punchIn: new Date('2026-07-15T08:00:00.000Z'),
         sessionStatus: 'CHECKED_IN',
       },
@@ -120,9 +149,9 @@ describe('OfflineSyncService.syncPunches', () => {
       punches: [punch()],
     } as never);
     expect(results).toEqual([{ clientRef: 'c1', status: 'APPLIED' }]);
-    expect(tx.attendanceSession.update).toHaveBeenCalledWith(
+    expect(tx.attendanceSession.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 's-open' },
+        where: { id: 's-open', punchOut: null, deletedAt: null },
         data: expect.objectContaining({ sessionStatus: 'CHECKED_OUT' }),
       }),
     );

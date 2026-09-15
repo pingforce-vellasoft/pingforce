@@ -18,5 +18,12 @@ class AttendanceSession extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, employeeId, punchIn, punchOut, status, attendanceMethod];
+  List<Object?> get props => [
+    id,
+    employeeId,
+    punchIn,
+    punchOut,
+    status,
+    attendanceMethod,
+  ];
 }

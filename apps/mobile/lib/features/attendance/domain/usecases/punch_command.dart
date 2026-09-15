@@ -15,7 +15,9 @@ class PunchCommand implements UseCase<AttendanceSession, PunchParams> {
     return await repository.punch(
       params.latitude,
       params.longitude,
-      params.cryptographicSignature,
+      params.accuracy,
+      params.isMockLocation,
+      params.biometricVerified,
     );
   }
 }
@@ -23,14 +25,24 @@ class PunchCommand implements UseCase<AttendanceSession, PunchParams> {
 class PunchParams extends Equatable {
   final double latitude;
   final double longitude;
-  final String cryptographicSignature;
+  final double accuracy;
+  final bool isMockLocation;
+  final bool biometricVerified;
 
   const PunchParams({
     required this.latitude,
     required this.longitude,
-    required this.cryptographicSignature,
+    required this.accuracy,
+    required this.isMockLocation,
+    required this.biometricVerified,
   });
 
   @override
-  List<Object> get props => [latitude, longitude, cryptographicSignature];
+  List<Object> get props => [
+    latitude,
+    longitude,
+    accuracy,
+    isMockLocation,
+    biometricVerified,
+  ];
 }

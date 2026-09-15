@@ -2,10 +2,15 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
 import '../entities/attendance_session.dart';
 import '../entities/attendance_today.dart';
+import '../entities/attendance_policy.dart';
 
 abstract class AttendanceRepository {
   /// Checks if the device is registered for the current user.
   Future<Either<Failure, bool>> isDeviceRegistered();
+
+  Future<Either<Failure, void>> prepareDeviceSigning();
+
+  Future<Either<Failure, AttendancePolicy>> getPolicy();
 
   /// Registers this device's public key with the backend.
 
@@ -13,7 +18,9 @@ abstract class AttendanceRepository {
   Future<Either<Failure, AttendanceSession>> punch(
     double latitude,
     double longitude,
-    String cryptographicSignature,
+    double accuracy,
+    bool isMockLocation,
+    bool biometricVerified,
   );
 
   /// Today's snapshot: any open session (so the screen can resume it), the
