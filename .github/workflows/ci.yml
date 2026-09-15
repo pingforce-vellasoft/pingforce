@@ -25,6 +25,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Validate Compose and MinIO registry
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          docker compose --env-file .env.example -f docker-compose.yml config --no-env-resolution --no-interpolate --quiet
+          docker compose --env-file .env.example -f deploy/docker-compose.yml config --no-env-resolution --no-interpolate --quiet
+          dev_minio_image=$(docker compose --env-file .env.example -f docker-compose.yml config --no-env-resolution --no-interpolate --format json minio | jq -er '.services.minio.image')
+          prod_minio_image=$(docker compose --env-file .env.example -f deploy/docker-compose.yml config --no-env-resolution --no-interpolate --format json minio | jq -er '.services.minio.image')
+          test "$dev_minio_image" = "$prod_minio_image"
+          case "$prod_minio_image" in
+            quay.io/minio/minio@sha256:*) ;;
+            *) echo "::error::MinIO must use a pinned official Quay image"; exit 1 ;;
+          esac
+          # Manifest metadata only; do not pull layers or start containers.
+          docker buildx imagetools inspect "$prod_minio_image" >/dev/null
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
