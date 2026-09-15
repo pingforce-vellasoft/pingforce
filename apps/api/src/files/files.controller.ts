@@ -90,7 +90,12 @@ export class FilesController {
     if (!entityType || !entityId) {
       throw new BadRequestException('entityType and entityId are required');
     }
-    return this.filesService.getFiles(tenantId, entityType, entityId, req.user.userId);
+    return this.filesService.getFiles(
+      tenantId,
+      entityType,
+      entityId,
+      req.user.userId,
+    );
   }
 
   @Get(':id/download')
@@ -107,7 +112,11 @@ export class FilesController {
             req.user.customerId ?? '',
             id,
           )
-        : await this.filesService.openForDownload(tenantId, id, req.user.userId);
+        : await this.filesService.openForDownload(
+            tenantId,
+            id,
+            req.user.userId,
+          );
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader(
       'Content-Disposition',

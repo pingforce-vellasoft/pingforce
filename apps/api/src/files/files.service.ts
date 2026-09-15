@@ -110,7 +110,13 @@ export class FilesService {
       );
     }
 
-    await this.assertFaultAccess(tenantId, input.uploadedBy, input.entityType, input.entityId, 'UPDATE');
+    await this.assertFaultAccess(
+      tenantId,
+      input.uploadedBy,
+      input.entityType,
+      input.entityId,
+      'UPDATE',
+    );
 
     const checksum = createHash('sha256').update(input.buffer).digest('hex');
     const fileId = randomUUID();
@@ -154,7 +160,13 @@ export class FilesService {
       throw new NotFoundException('File not found');
     }
 
-    await this.assertFaultAccess(tenantId, requesterUserId, file.entityType, file.entityId, ['READ', 'READ_OWN']);
+    await this.assertFaultAccess(
+      tenantId,
+      requesterUserId,
+      file.entityType,
+      file.entityId,
+      ['READ', 'READ_OWN'],
+    );
 
     return this.streamFile(file);
   }
@@ -213,8 +225,19 @@ export class FilesService {
     });
   }
 
-  async getFiles(tenantId: string, entityType: string, entityId: string, requesterUserId?: string) {
-    await this.assertFaultAccess(tenantId, requesterUserId, entityType, entityId, ['READ', 'READ_OWN']);
+  async getFiles(
+    tenantId: string,
+    entityType: string,
+    entityId: string,
+    requesterUserId?: string,
+  ) {
+    await this.assertFaultAccess(
+      tenantId,
+      requesterUserId,
+      entityType,
+      entityId,
+      ['READ', 'READ_OWN'],
+    );
     return this.prisma.fileAttachment.findMany({
       where: {
         tenantId,
@@ -234,7 +257,13 @@ export class FilesService {
       throw new NotFoundException('File not found');
     }
 
-    await this.assertFaultAccess(tenantId, requesterUserId, file.entityType, file.entityId, 'UPDATE');
+    await this.assertFaultAccess(
+      tenantId,
+      requesterUserId,
+      file.entityType,
+      file.entityId,
+      'UPDATE',
+    );
 
     await this.storage.delete(
       file.storageKey,
@@ -255,7 +284,11 @@ export class FilesService {
   ): Promise<void> {
     if (entityType !== 'FAULT') return;
     if (!userId) throw new ForbiddenException('A staff identity is required');
-    const scopeWhere = await this.faultAccess.scopeForAction(tenantId, userId, action);
+    const scopeWhere = await this.faultAccess.scopeForAction(
+      tenantId,
+      userId,
+      action,
+    );
     const fault = await this.prisma.fault.findFirst({
       where: { ...scopeWhere, id: entityId, tenantId, deletedAt: null },
       select: { id: true },

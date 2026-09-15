@@ -3,6 +3,27 @@
 Updated: 2026-09-15. Full tests and production builds run in GitHub Actions,
 not on the development laptop.
 
+## CI remediation status (2026-09-15)
+
+- Corrected the six API files reported by the formatting gate.
+- Awaited auth-response processing in all three Flutter sign-in paths so
+  asynchronous processing errors reach the existing failure handlers. Added
+  regression tests for these paths; execution is pending Flutter CI.
+- Aligned Angular framework/compiler packages on patched `21.2.20`, upgraded
+  Firebase Admin to `14.4.0`, and refreshed the vulnerable storage chain.
+- Applied same-major patches for brace expansion, Valibot, Multer, JS-YAML,
+  fast-uri, MySQL2 and Nodemailer. Scoped overrides are temporary until upstream
+  pinned dependencies adopt these fixes; retain CI migration/upload coverage.
+- Production lockfile audit: **12 findings (9 moderate, 3 high)**. The three high
+  entries are one dependency chain: `prisma` -> `@prisma/config` ->
+  `deepmerge-ts@7.1.5`. Its patched release is `8.0.0`, outside Prisma's pinned
+  major version ([maintainer advisory](https://github.com/advisories/GHSA-ggr8-5vv4-36mx)).
+  A scoped major-version override needs compatibility review and approval;
+  do not use `npm audit fix --force` to downgrade Prisma or waive the security
+  gate. Deployment remains blocked.
+- Full tests/builds and Trivy verification remain in GitHub Actions; these
+  focused fixes are not evidence that the full pipeline is green.
+
 ## Before deployment
 
 - Review the combined attendance/auth/fault changes on the working branch.

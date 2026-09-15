@@ -308,7 +308,12 @@ describe('PortalAuthService — login gating', () => {
  * an account exists — nor which providers a person is a customer of.
  */
 describe('PortalAuthService — tenant discovery', () => {
-  const acmeUser = { id: 'pu1', tenantId: 't1', email: 'cust@x.io', phone: null };
+  const acmeUser = {
+    id: 'pu1',
+    tenantId: 't1',
+    email: 'cust@x.io',
+    phone: null,
+  };
   const globexUser = {
     id: 'pu2',
     tenantId: 't2',

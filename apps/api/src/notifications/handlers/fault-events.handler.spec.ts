@@ -44,13 +44,7 @@ describe('FaultStatusUpdatedHandler', () => {
     ]);
 
     await handler.handle(
-      new FaultStatusUpdatedEvent(
-        TENANT,
-        'f1',
-        'RESOLVED',
-        CUSTOMER,
-        'PF-1',
-      ),
+      new FaultStatusUpdatedEvent(TENANT, 'f1', 'RESOLVED', CUSTOMER, 'PF-1'),
     );
 
     expect(prisma.customerPortalUser.findMany).toHaveBeenCalledWith(

@@ -64,7 +64,10 @@ export class FaultCreatedHandler implements IEventHandler<FaultCreatedEvent> {
     if (!event.customerId) return;
 
     const [portalUserIds, tenantCode] = await Promise.all([
-      this.recipients.portalUserIdsForCustomer(event.tenantId, event.customerId),
+      this.recipients.portalUserIdsForCustomer(
+        event.tenantId,
+        event.customerId,
+      ),
       this.recipients.tenantCode(event.tenantId),
     ]);
 
@@ -168,7 +171,10 @@ export class FaultStatusUpdatedHandler
     // `customerId` identifies the customer account, not a notifiable identity;
     // fan out to that customer's active portal users instead.
     const [portalUserIds, tenantCode] = await Promise.all([
-      this.recipients.portalUserIdsForCustomer(event.tenantId, event.customerId),
+      this.recipients.portalUserIdsForCustomer(
+        event.tenantId,
+        event.customerId,
+      ),
       this.recipients.tenantCode(event.tenantId),
     ]);
 
