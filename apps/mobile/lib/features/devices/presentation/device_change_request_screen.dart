@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/hardware/device_identity.dart';
+import '../../../core/hardware/device_signing_key.dart';
 import '../../../injection_container.dart';
 import '../data/devices_remote_data_source.dart';
 
@@ -88,7 +89,7 @@ class _DeviceChangeRequestScreenState
     try {
       final request = await sl<DevicesRemoteDataSource>().createChangeRequest(
         fingerprint: fingerprint,
-        publicKey: 'mobile-client',
+        publicKey: await sl<DeviceSigningKey>().publicKey(),
         reason: _reason,
         notes: _notesCtrl.text.trim(),
       );
@@ -129,8 +130,11 @@ class _DeviceChangeRequestScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Icon(Icons.hourglass_top_outlined,
-            size: 56, color: theme.colorScheme.primary),
+        Icon(
+          Icons.hourglass_top_outlined,
+          size: 56,
+          color: theme.colorScheme.primary,
+        ),
         const SizedBox(height: 16),
         Text(
           'Your request is with your administrator',
@@ -218,10 +222,7 @@ class _DeviceChangeRequestScreenState
 
         if (_error != null) ...[
           const SizedBox(height: 8),
-          Text(
-            _error!,
-            style: TextStyle(color: theme.colorScheme.error),
-          ),
+          Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
         ],
 
         const SizedBox(height: 16),

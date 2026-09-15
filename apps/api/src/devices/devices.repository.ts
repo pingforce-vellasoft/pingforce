@@ -34,6 +34,18 @@ export class DevicesRepository {
     });
   }
 
+  async updateSigningKey(
+    tenantId: string,
+    deviceId: string,
+    publicKey: string,
+    updatedBy: string,
+  ): Promise<EmployeeDevice> {
+    return this.prisma.employeeDevice.update({
+      where: { tenantId_deviceId: { tenantId, deviceId } },
+      data: { publicKey, updatedBy },
+    });
+  }
+
   /**
    * Tenant device inventory for the admin portal. The employee's user record is
    * never included wholesale — it carries passwordHash.

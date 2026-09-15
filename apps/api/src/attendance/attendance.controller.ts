@@ -17,7 +17,11 @@ import { PunchCommand } from './commands/impl';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
-import { PunchDto, CreateGeofenceDto } from './dto/attendance.dto';
+import {
+  PunchDto,
+  CreateGeofenceDto,
+  UpdateAttendancePolicyDto,
+} from './dto/attendance.dto';
 import { ManualCheckoutDto } from './dto/manual-checkout.dto';
 import { CreateCorrectionDto } from './dto/create-correction.dto';
 import { CorrectionsService } from './corrections.service';
@@ -179,6 +183,22 @@ export class AttendanceController {
   @RequirePermission('ATTENDANCE', 'READ_OWN')
   async getToday(@Req() req: AuthRequest) {
     return this.attendanceService.getToday(req.user);
+  }
+
+  /** Effective tenant policy consumed by the mobile attendance gate. */
+  @Get('policy')
+  @RequirePermission('ATTENDANCE', 'READ_OWN')
+  async getPolicy(@Req() req: AuthRequest) {
+    return this.attendanceService.getPolicy(req.user.tenantId);
+  }
+
+  @Put('policy')
+  @RequirePermission('ATTENDANCE', 'UPDATE')
+  async updateAttendancePolicy(
+    @Req() req: AuthRequest,
+    @Body() dto: UpdateAttendancePolicyDto,
+  ) {
+    return this.attendanceService.updatePolicy(req.user, dto);
   }
 
   /**

@@ -18,6 +18,8 @@ import {
   PortalLoginDto,
   PortalOtpLoginDto,
   PortalOtpRequestDto,
+  PortalTenantDiscoveryRequestDto,
+  PortalTenantDiscoveryVerifyDto,
 } from './dto/portal-auth.dto';
 
 const REFRESH_TTL_DAYS = 7;
@@ -269,6 +271,130 @@ export class PortalAuthService {
       this.logger.warn('Portal OTP request for unknown/inactive account');
     }
     return { message: 'If the account exists, a login code has been sent.' };
+  }
+
+  // ---------------------------------------------------------------------
+  // Tenant discovery — "I lost my provider code"
+  // ---------------------------------------------------------------------
+
+  /**
+   * Step 1 of tenant discovery: sends a verification code to the contact.
+   *
+   * A portal identifier is unique per tenant, not globally, so the same email
+   * may hold accounts with several providers. Listing them straight from an
+   * identifier would be a user-enumeration oracle AND would disclose which
+   * providers a person is a customer of, both before any authentication —
+   * so the tenant list is withheld until the code proves the caller owns the
+   * inbox. This response is deliberately identical whether or not any account
+   * exists.
+   */
+  async requestTenantDiscovery(
+    dto: PortalTenantDiscoveryRequestDto,
+    meta: RequestMeta = {},
+  ) {
+    try {
+      const candidates = await this.findDiscoverableAccounts(
+        dto.email,
+        dto.phone,
+      );
+
+      // One code per candidate account: OTPs are keyed per portal user, and
+      // the caller has no way to tell how many were sent.
+      for (const portalUser of candidates) {
+        const otp = await this.otpService.issue(
+          portalUser.tenantId,
+          portalUser.id,
+          'LOGIN',
+          portalUser.email ? 'EMAIL' : 'SMS',
+          meta,
+        );
+        await this.deliverOtp(
+          portalUser.tenantId,
+          portalUser.email,
+          portalUser.phone,
+          otp,
+        );
+      }
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error; // OTP throttle errors are safe and useful to surface
+      }
+      this.logger.warn('Portal tenant discovery for unknown/inactive account');
+    }
+    return {
+      message: 'If the account exists, a verification code has been sent.',
+    };
+  }
+
+  /**
+   * Step 2 of tenant discovery: returns the providers the verified contact
+   * holds an account with. Only accounts whose OTP matches are returned, so
+   * a wrong code reveals nothing.
+   */
+  async verifyTenantDiscovery(
+    dto: PortalTenantDiscoveryVerifyDto,
+    meta: RequestMeta = {},
+  ) {
+    const candidates = await this.findDiscoverableAccounts(
+      dto.email,
+      dto.phone,
+    );
+
+    const verified: { tenantId: string }[] = [];
+    for (const portalUser of candidates) {
+      try {
+        await this.otpService.verify(
+          portalUser.tenantId,
+          portalUser.id,
+          'LOGIN',
+          dto.otp,
+          meta,
+        );
+        verified.push({ tenantId: portalUser.tenantId });
+      } catch {
+        // Wrong code for this account — try the next candidate.
+      }
+    }
+
+    if (verified.length === 0) {
+      throw new UnauthorizedException('Invalid or expired code');
+    }
+
+    const tenants = await this.prisma.tenant.findMany({
+      where: { id: { in: verified.map((v) => v.tenantId) } },
+      select: { code: true, name: true, logoUrl: true },
+    });
+
+    return { tenants };
+  }
+
+  /**
+   * Active portal accounts for a contact across every tenant whose portal is
+   * enabled. Never exposed directly — callers must gate it behind an OTP.
+   */
+  private async findDiscoverableAccounts(email?: string, phone?: string) {
+    if (!email && !phone) {
+      throw new BadRequestException('Provide an email or phone number');
+    }
+
+    return this.prisma.customerPortalUser.findMany({
+      where: {
+        deletedAt: null,
+        status: 'ACTIVE',
+        ...(email ? { email } : {}),
+        ...(phone ? { phone } : {}),
+        tenant: {
+          status: 'ACTIVE',
+          tenantSettings: { customerPortalEnabled: true },
+        },
+      },
+      select: {
+        id: true,
+        tenantId: true,
+        email: true,
+        phone: true,
+      },
+    });
   }
 
   async loginWithOtp(dto: PortalOtpLoginDto, meta: RequestMeta = {}) {

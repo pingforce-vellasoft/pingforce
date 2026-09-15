@@ -80,6 +80,28 @@ export class PortalOtpLoginDto extends PortalOtpRequestDto {
   readonly otp!: string;
 }
 
+/**
+ * Tenant discovery — for a customer who no longer has their provider code.
+ * Deliberately carries no tenantCode: that is what the flow resolves.
+ */
+export class PortalTenantDiscoveryRequestDto {
+  @IsOptional()
+  @IsEmail()
+  readonly email?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^[0-9+\-\s()]{6,20}$/)
+  readonly phone?: string;
+}
+
+export class PortalTenantDiscoveryVerifyDto extends PortalTenantDiscoveryRequestDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(10)
+  readonly otp!: string;
+}
+
 export class PortalRefreshDto {
   @IsString()
   @IsNotEmpty()

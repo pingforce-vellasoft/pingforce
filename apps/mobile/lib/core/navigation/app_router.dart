@@ -21,6 +21,10 @@ import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/attendance/presentation/check_in/attendance_screen.dart';
 import '../../features/faults/presentation/fault_list_screen.dart';
 import '../../features/faults/presentation/fault_detail_screen.dart';
+import '../../features/faults/presentation/create_fault_screen.dart';
+import '../../features/customer_faults/presentation/my_complaints_screen.dart';
+import '../../features/customer_faults/presentation/raise_complaint_screen.dart';
+import '../../features/customer_faults/presentation/complaint_detail_screen.dart';
 import '../../features/visits/presentation/visit_list_screen.dart';
 import '../../features/sync/sync_monitor_screen.dart';
 import '../../features/network_map/presentation/network_map_screen.dart';
@@ -28,6 +32,7 @@ import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/presentation/active_sessions_screen.dart';
 import '../../features/profile/presentation/login_history_screen.dart';
 import '../../features/attendance/presentation/history/attendance_history_screen.dart';
+import '../../features/attendance/presentation/correction/correction_request_screen.dart';
 import '../../features/notifications/presentation/notification_center_screen.dart';
 import '../../features/attendance_admin/presentation/attendance_admin_screen.dart';
 import '../../features/customers/presentation/customer_list_screen.dart';
@@ -232,7 +237,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'correction',
                     name: 'correction-request',
                     builder: (context, state) =>
-                        const _PlaceholderScreen(name: 'Correction Request'),
+                        const CorrectionRequestScreen(),
                   ),
                 ],
               ),
@@ -251,8 +256,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'new',
                     name: 'create-fault',
-                    builder: (context, state) =>
-                        const _PlaceholderScreen(name: 'Create Fault'),
+                    builder: (context, state) => const CreateFaultScreen(),
                   ),
                   GoRoute(
                     path: ':faultId',
@@ -269,6 +273,29 @@ final routerProvider = Provider<GoRouter>((ref) {
                             const _PlaceholderScreen(name: 'Add Attempt'),
                       ),
                     ],
+                  ),
+                ],
+              ),
+              // Complaints (Customer role) — the customer-facing counterpart
+              // of /faults. Separate routes, not a mode of the technician
+              // screens: the portal projection is a different shape and the
+              // available actions are different.
+              GoRoute(
+                path: '/complaints',
+                name: 'complaints',
+                builder: (context, state) => const MyComplaintsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    name: 'raise-complaint',
+                    builder: (context, state) => const RaiseComplaintScreen(),
+                  ),
+                  GoRoute(
+                    path: ':complaintId',
+                    name: 'complaint-detail',
+                    builder: (context, state) => ComplaintDetailScreen(
+                      complaintId: state.pathParameters['complaintId']!,
+                    ),
                   ),
                 ],
               ),

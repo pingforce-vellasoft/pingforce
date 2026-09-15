@@ -1,4 +1,9 @@
-import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Inject,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
 import { OfflinePunchItemDto, SyncPunchesDto } from './dto/sync-punches.dto';
 import {
@@ -7,6 +12,9 @@ import {
   canTransition,
 } from './domain/session-state';
 import { AuditService } from '../audit/audit.service';
+import { PunchSignatureService } from './punch-signature.service';
+import { GeofenceCacheService } from './geofence-cache.service';
+import { creditWorkedMinutes } from './domain/work-minutes';
 
 export interface SyncItemResult {
   readonly clientRef: string;
@@ -28,14 +36,20 @@ export class OfflineSyncService {
   constructor(
     @Inject('IPrismaService') private readonly prisma: ExtendedPrismaClient,
     private readonly auditService: AuditService,
+    private readonly punchSignature: PunchSignatureService,
+    private readonly geofenceCache: GeofenceCacheService,
   ) {}
 
   async syncPunches(
     user: { userId: string; tenantId: string },
     dto: SyncPunchesDto,
   ): Promise<{ results: SyncItemResult[] }> {
-    const employee = await this.prisma.employee.findUnique({
-      where: { userId: user.userId },
+    const employee = await this.prisma.employee.findFirst({
+      where: {
+        userId: user.userId,
+        tenantId: user.tenantId,
+        deletedAt: null,
+      },
     });
     if (!employee) throw new UnauthorizedException('Not an employee');
 
@@ -48,9 +62,21 @@ export class OfflineSyncService {
         deviceId: { in: deviceIds },
       },
     });
-    const trusted = new Set(
-      devices.filter((d) => d.isTrusted).map((d) => d.deviceId),
+    const trusted = new Map(
+      devices
+        .filter((d) => d.isTrusted && !d.revokedAt)
+        .map((d) => [d.deviceId, d.publicKey] as const),
     );
+
+    const policy = await this.prisma.attendancePolicy.findFirst({
+      where: { tenantId: employee.tenantId, deletedAt: null },
+    });
+    const gpsRequired = policy?.gpsRequired ?? true;
+    if (policy?.allowOfflineCheckIn === false) {
+      throw new BadRequestException(
+        'Offline attendance is disabled for this tenant.',
+      );
+    }
 
     // Capture order (§7 priority: chronological within the batch)
     const ordered = [...dto.punches].sort(
@@ -59,7 +85,8 @@ export class OfflineSyncService {
 
     const results: SyncItemResult[] = [];
     for (const item of ordered) {
-      if (!trusted.has(item.deviceId)) {
+      const publicKey = trusted.get(item.deviceId);
+      if (!publicKey) {
         results.push({
           clientRef: item.clientRef,
           status: 'FAILED',
@@ -68,6 +95,55 @@ export class OfflineSyncService {
         continue;
       }
       try {
+        this.punchSignature.verify(publicKey, {
+          ...item,
+          clientRef: item.clientRef,
+        });
+        if (new Date(item.timestamp).getTime() > Date.now() + 60_000) {
+          throw new BadRequestException(
+            'Punch timestamp cannot be in the future.',
+          );
+        }
+        if (
+          item.isMockLocation === true &&
+          (policy?.mockLocationPolicy ?? 'BLOCK') === 'BLOCK'
+        ) {
+          throw new BadRequestException('Simulated location detected.');
+        }
+        if (gpsRequired && item.accuracy === undefined) {
+          throw new BadRequestException('GPS accuracy is required.');
+        }
+        if (
+          gpsRequired &&
+          item.accuracy !== undefined &&
+          item.accuracy > (policy?.gpsAccuracyThreshold ?? 50) &&
+          !(policy?.allowLowAccuracy ?? false)
+        ) {
+          throw new BadRequestException(
+            'GPS accuracy is outside the allowed threshold.',
+          );
+        }
+        if (policy?.biometricRequired && item.biometricVerified !== true) {
+          throw new BadRequestException('Biometric verification is required.');
+        }
+        if (policy?.geofenceRequired ?? true) {
+          const fence = await this.geofenceCache.checkAssigned(
+            employee.tenantId,
+            employee.id,
+            item.latitude,
+            item.longitude,
+          );
+          if (
+            fence.status !== 'INSIDE' &&
+            (policy?.outsideGeofencePolicy ?? 'BLOCK') === 'BLOCK'
+          ) {
+            throw new BadRequestException(
+              fence.status === 'NO_ASSIGNMENT'
+                ? 'No work location is assigned to this employee.'
+                : 'Punch is outside the authorized geofence.',
+            );
+          }
+        }
         results.push(await this.applyPunch(employee, item));
       } catch (error) {
         results.push({
@@ -103,6 +179,13 @@ export class OfflineSyncService {
     const punchAt = new Date(item.timestamp);
 
     return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        SELECT pg_advisory_xact_lock(
+          hashtext(${employee.tenantId}),
+          hashtext(${employee.id})
+        )
+      `;
+
       // Idempotency: exact retransmission (same signature) or a punch within
       // one minute of an existing one on either side of a session
       const windowStart = new Date(punchAt.getTime() - 60_000);
@@ -114,6 +197,7 @@ export class OfflineSyncService {
           deletedAt: null,
           OR: [
             { deviceSignature: item.signature },
+            { checkOutDeviceSignature: item.signature },
             { punchIn: { gte: windowStart, lte: windowEnd } },
             { punchOut: { gte: windowStart, lte: windowEnd } },
           ],
@@ -163,16 +247,21 @@ export class OfflineSyncService {
           SessionState.CHECKED_OUT,
         )
       ) {
-        await tx.attendanceSession.update({
-          where: { id: openSession.id },
+        const updated = await tx.attendanceSession.updateMany({
+          where: { id: openSession.id, punchOut: null, deletedAt: null },
           data: {
             punchOut: punchAt,
             checkOutLatitude: item.latitude,
             checkOutLongitude: item.longitude,
             punchOutDevice: item.deviceId,
+            checkOutDeviceSignature: item.signature,
             sessionStatus: SessionState.CHECKED_OUT,
           },
         });
+        if (updated.count !== 1) {
+          throw new Error('Attendance session changed while syncing.');
+        }
+        await creditWorkedMinutes(tx, openSession, punchAt);
         return { clientRef: item.clientRef, status: 'APPLIED' as const };
       }
 
@@ -186,6 +275,8 @@ export class OfflineSyncService {
           checkInLongitude: item.longitude,
           punchInDevice: item.deviceId,
           deviceSignature: item.signature,
+          gpsAccuracy: item.accuracy,
+          isSpoofed: item.isMockLocation ?? false,
           attendanceMethod: 'GPS',
           sessionStatus: SessionState.CHECKED_IN,
         },

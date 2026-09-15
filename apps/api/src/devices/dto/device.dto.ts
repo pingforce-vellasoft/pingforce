@@ -7,6 +7,7 @@ import {
   Max,
   MaxLength,
   MinLength,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -111,6 +112,19 @@ export class ClaimDeviceDto {
   @IsString()
   @MinLength(8)
   @MaxLength(2048)
+  readonly publicKey!: string;
+}
+
+/** Refreshes only the signing key for the employee's already-bound handset. */
+export class UpgradeDeviceKeyDto {
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
+  readonly deviceId!: string;
+
+  @IsString()
+  @Matches(/^ed25519:[A-Za-z0-9+/]+={0,2}$/)
+  @MaxLength(128)
   readonly publicKey!: string;
 }
 

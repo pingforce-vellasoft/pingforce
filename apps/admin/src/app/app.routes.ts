@@ -77,12 +77,36 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        // Legacy path kept so existing bookmarks and deep links keep working.
         path: 'crm/tickets',
+        redirectTo: 'crm/faults',
+        pathMatch: 'full',
+      },
+      {
+        path: 'crm/faults',
         canActivate: [roleGuard],
         data: { roles: ['ADMIN_MANAGER'] },
         loadComponent: () =>
-          import('./pages/crm-support/tickets.component').then(
-            (m) => m.TicketsComponent,
+          import('./pages/crm-support/faults/fault-list.component').then(
+            (m) => m.FaultListComponent,
+          ),
+      },
+      {
+        path: 'crm/faults/sla-policies',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN_MANAGER'] },
+        loadComponent: () =>
+          import('./pages/crm-support/faults/sla-policy.component').then(
+            (m) => m.SlaPolicyComponent,
+          ),
+      },
+      {
+        path: 'crm/faults/:id',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN_MANAGER'] },
+        loadComponent: () =>
+          import('./pages/crm-support/faults/fault-detail.component').then(
+            (m) => m.FaultDetailComponent,
           ),
       },
       {

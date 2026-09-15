@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/theme.dart';
 import 'check_in_state.dart';
-import 'widgets/shift_card.dart';
 import 'widgets/gps_map_panel.dart';
 import 'widgets/check_in_button.dart';
 import 'widgets/check_in_success_overlay.dart';
 import 'widgets/mock_location_blocker.dart';
 import 'widgets/offline_banner.dart';
 import '../../../../core/hardware/hardware_service.dart';
+import '../../../../core/sync/sync_provider.dart';
 import '../../../../injection_container.dart';
 import '../../../tracking/presentation/tracking_notifier.dart';
 import 'widgets/attendance_active_session_card.dart';
@@ -41,13 +41,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
       vsync: this,
       duration: AppDurations.medium, // 300ms
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.05),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _screenEntryController,
-      curve: AppEasing.emphasized,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _screenEntryController,
+            curve: AppEasing.emphasized,
+          ),
+        );
 
     // Start check-in initialisation
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -75,14 +75,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
     // entirely — no check-in button, only the consult-admin message.
     final showCheckInBar =
         state.status != CheckInScreenStatus.geofenceNotConfigured &&
-            state.status != CheckInScreenStatus.gpsPermissionRequired &&
-            state.status != CheckInScreenStatus.initializing;
+        state.status != CheckInScreenStatus.gpsPermissionRequired &&
+        state.status != CheckInScreenStatus.initializing;
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: _buildAppBar(context, state),
-      bottomNavigationBar:
-          showCheckInBar ? const AttendanceCheckInBar() : null,
+      bottomNavigationBar: showCheckInBar ? const AttendanceCheckInBar() : null,
       body: Stack(
         children: [
           // ── Main scrollable content ──────────────────────────────────────
@@ -124,14 +123,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
               icon: const Icon(Icons.help_outline_rounded),
               tooltip: 'Help',
               onPressed: () => _showHelpSheet(context),
-            ),
-          ),
-          Semantics(
-            label: 'Attendance settings',
-            child: IconButton(
-              icon: const Icon(Icons.tune_rounded),
-              tooltip: 'Settings',
-              onPressed: () => _openAttendanceSettings(context),
             ),
           ),
         ],
@@ -206,50 +197,44 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             'geofence before you can use attendance check-in.',
                       ),
                     ] else ...[
-                    // ── Shift Card (always visible except alreadyCheckedIn) ─
-                    if (state.status != CheckInScreenStatus.alreadyCheckedIn)
-                      ShiftCard(shift: state.shift),
+                      if (state.status ==
+                          CheckInScreenStatus.outsideGeofence) ...[
+                        _GeofenceMessageCard(
+                          icon: Icons.location_off_rounded,
+                          color: Theme.of(context).colorScheme.error,
+                          title: 'You are outside the check-in zone',
+                          message: state.nearestGeofenceName != null
+                              ? 'You need to be inside "'
+                                    '${state.nearestGeofenceName}" to check in. '
+                                    'Move to the specified location and try again.'
+                              : 'You need to be inside the specified location to '
+                                    'check in. Move to the zone and try again.',
+                        ),
+                        AppSpacing.sectionGapBox,
+                      ],
 
-                    if (state.status != CheckInScreenStatus.alreadyCheckedIn)
-                      AppSpacing.sectionGapBox,
-
-                    if (state.status ==
-                        CheckInScreenStatus.outsideGeofence) ...[
-                      _GeofenceMessageCard(
-                        icon: Icons.location_off_rounded,
-                        color: Theme.of(context).colorScheme.error,
-                        title: 'You are outside the check-in zone',
-                        message: state.nearestGeofenceName != null
-                            ? 'You need to be inside "'
-                                '${state.nearestGeofenceName}" to check in. '
-                                'Move to the specified location and try again.'
-                            : 'You need to be inside the specified location to '
-                                'check in. Move to the zone and try again.',
+                      // ── GPS Map Panel ──────────────────────────────────
+                      GpsMapPanel(
+                        status: state.status,
+                        location: state.location,
+                        geofence: state.geofence,
+                        gpsAccuracy: state.gpsAccuracy,
+                        geofenceStatus: state.geofenceStatus,
+                        isCompact:
+                            state.status ==
+                            CheckInScreenStatus.alreadyCheckedIn,
                       ),
+
                       AppSpacing.sectionGapBox,
-                    ],
 
-                    // ── GPS Map Panel ──────────────────────────────────
-                    GpsMapPanel(
-                      status: state.status,
-                      location: state.location,
-                      geofence: state.geofence,
-                      gpsAccuracy: state.gpsAccuracy,
-                      geofenceStatus: state.geofenceStatus,
-                      isCompact:
-                          state.status == CheckInScreenStatus.alreadyCheckedIn,
-                    ),
+                      // ── Method Selector ────────────────────────────────
+                      if (state.showMethodSelector)
+                        _buildMethodSelector(context, state),
 
-                    AppSpacing.sectionGapBox,
+                      if (state.showMethodSelector) AppSpacing.sectionGapBox,
 
-                    // ── Method Selector ────────────────────────────────
-                    if (state.showMethodSelector)
-                      _buildMethodSelector(context, state),
-
-                    if (state.showMethodSelector) AppSpacing.sectionGapBox,
-
-                    // ── Sync timestamp ─────────────────────────────────
-                    _buildSyncInfo(context, state),
+                      // ── Sync timestamp ─────────────────────────────────
+                      _buildSyncInfo(context, state),
                     ], // end else (geofence configured)
                   ],
                 ),
@@ -273,18 +258,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
         separatorBuilder: (_, _) => AppSpacing.iconGapBox,
         itemBuilder: (context, index) {
           final method = methods[index];
-          final isGps = method == 'GPS';
-          final isActive = isGps; // GPS is always primary
-          return FilterChip(
+          return Chip(
             label: Text(method),
-            selected: isActive,
-            avatar: Icon(
-              _methodIcon(method),
-              size: AppIconSize.sm,
-            ),
-            onSelected: (_) {
-              // TODO: handle method switching
-            },
+            avatar: Icon(_methodIcon(method), size: AppIconSize.sm),
           );
         },
       ),
@@ -292,12 +268,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
   }
 
   IconData _methodIcon(String method) => switch (method) {
-        'GPS' => Icons.gps_fixed_rounded,
-        'QR' => Icons.qr_code_scanner_rounded,
-        'NFC' => Icons.nfc_rounded,
-        'MANUAL' => Icons.edit_note_rounded,
-        _ => Icons.radio_button_checked_rounded,
-      };
+    'GPS' => Icons.gps_fixed_rounded,
+    'QR' => Icons.qr_code_scanner_rounded,
+    'NFC' => Icons.nfc_rounded,
+    'MANUAL' => Icons.edit_note_rounded,
+    _ => Icons.radio_button_checked_rounded,
+  };
 
   // ── Sync info row ──────────────────────────────────────────────────────────
 
@@ -313,7 +289,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
           ),
           AppSpacing.iconGapBox,
           Text(
-            'Last synced: Today 09:05 AM', // TODO: from state
+            'Last synced: ${ref.watch(lastSyncedLabelProvider)}',
             style: AppTypography.labelSmall.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -348,10 +324,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
         ),
       ),
     );
-  }
-
-  void _openAttendanceSettings(BuildContext context) {
-    // TODO: navigate to attendance settings
   }
 }
 
@@ -479,9 +451,12 @@ class AttendanceCheckInBar extends ConsumerWidget {
         ),
         child: CheckInButton(
           mode: state.buttonMode,
+          status: state.status,
           onTap: state.isCheckInBlocked
               ? null
-              : () => ref.read(checkInNotifierProvider.notifier).onCheckInTap(context),
+              : () => ref
+                    .read(checkInNotifierProvider.notifier)
+                    .onCheckInTap(context),
         ),
       ),
     );

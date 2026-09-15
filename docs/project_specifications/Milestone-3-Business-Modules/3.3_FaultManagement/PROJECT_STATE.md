@@ -6,7 +6,71 @@
 **Module:** Business_Modules/Fault_Management
 **Document:** Project State
 **Version:** 1.0.0
-**Status:** Documentation Complete (Phase 1 – Functional & Architecture)
+**Status:** Agreed MVP implemented; deployment validation pending
+
+> Implementation verification updated 2026-09-15. The original sections below
+> describe the broader enterprise roadmap. “Documentation Complete” does not
+> mean that every future capability in those specifications has shipped.
+
+---
+
+# 0. Current implementation status
+
+The agreed deployable MVP currently includes:
+
+- Tenant-scoped staff registration, editing and soft deletion
+- Server-paged search, assigned-work and SLA-breach queues
+- Assignment/reassignment with tenant validation and notifications
+- Enforced lifecycle transitions, mandatory hold/resolution/reopen/close notes,
+  optimistic concurrency protection and complete timeline history
+- Resolution/closure/reopen timestamps and SLA pause/resume accounting
+- Tenant SLA policies, escalation owners, warning/breach jobs and manual
+  escalation; policies use audit metadata and soft deletion
+- Online/offline mobile create and status synchronization with self-assignment
+  to the reporting technician and database-enforced replay protection
+- Internal/customer-visible notes and attachments
+- Customer complaint creation, tracking, comments, reopen window and one-time
+  closure rating, scoped to the authenticated customer account
+- Angular operations screens plus Flutter technician and customer flows
+- Reactive Angular forms, including immediately responsive mandatory-note
+  validation in the status dialog
+- Global mutation audit capture and fault lifecycle notifications
+- Action-specific own/team scope on staff mutations and evidence access;
+  separate `FAULTS:MANAGE_SLA` permission for tenant-wide SLA changes
+
+Explicitly deferred beyond this MVP:
+
+- Attempt/work-log and parts-consumption subsystem
+- Root-cause-analysis workflow
+- Dynamic tenant-defined lifecycle designer
+- Bulk import, merge and mass assignment
+- AI routing/prediction, IoT ingestion and advanced analytics
+- WhatsApp/vendor integrations
+
+Verification evidence:
+
+- Prisma Client generation: passed
+- API TypeScript compilation: passed
+- Complete API suite: 41 suites, 353 tests passed before the final write-scope
+  security patch
+- Focused fault/portal/notification/file tests: 9 suites, 72 tests passed
+- Angular admin development build: passed
+- Targeted Flutter fault analysis: no issues
+
+The final write-scope/evidence/SLA-permission/reactive-form patch and its new regression tests
+are pending GitHub Actions validation. Full local tests/builds are paused at the
+Product Owner's request because of laptop resource limits. The production admin
+build and complete mobile test suite must run in CI, not on this laptop.
+
+Release gates:
+
+- Deploy migration `20260807120000_fault_lifecycle_and_linkage`
+- Run real PostgreSQL/Redis/object-storage integration checks
+- Smoke-test admin, technician mobile and customer complaint journeys
+- Run complete CI (including the newly enforced Flutter test step), security/
+  performance checks and UAT
+- Review and approve the combined attendance/auth/fault working changes before
+  merging to `main`; main triggers production deployment automatically
 
 ---
 

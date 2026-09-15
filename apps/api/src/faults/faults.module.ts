@@ -10,9 +10,14 @@ import { CommandHandlers } from './commands/handlers';
 import { QueryHandlers } from './queries/handlers';
 import { SlaMonitorProcessor } from './sla-monitor.processor';
 import { FaultsSyncService } from './faults-sync.service';
+import { FaultAccessModule } from './fault-access.module';
 
 @Module({
-  imports: [CqrsModule, BullModule.registerQueue({ name: 'sla-monitor' })],
+  imports: [
+    CqrsModule,
+    FaultAccessModule,
+    BullModule.registerQueue({ name: 'sla-monitor' }),
+  ],
   controllers: [FaultsController, SlaPolicyController],
   providers: [
     ...CommandHandlers,

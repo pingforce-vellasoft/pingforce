@@ -15,6 +15,10 @@ abstract class DevicesRemoteDataSource {
 
   /// Activates a binding an admin approved, with this handset's own key.
   Future<Map<String, dynamic>> claim(String deviceId, String publicKey);
+  Future<Map<String, dynamic>> upgradeSigningKey(
+    String deviceId,
+    String publicKey,
+  );
 
   Future<Map<String, dynamic>> getMyDevice();
 
@@ -49,6 +53,18 @@ class DevicesRemoteDataSourceImpl implements DevicesRemoteDataSource {
   Future<Map<String, dynamic>> claim(String deviceId, String publicKey) async {
     final response = await dio.post(
       '/api/v1/devices/claim',
+      data: {'deviceId': deviceId, 'publicKey': publicKey},
+    );
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  @override
+  Future<Map<String, dynamic>> upgradeSigningKey(
+    String deviceId,
+    String publicKey,
+  ) async {
+    final response = await dio.post(
+      '/api/v1/devices/signing-key',
       data: {'deviceId': deviceId, 'publicKey': publicKey},
     );
     return Map<String, dynamic>.from(response.data as Map);

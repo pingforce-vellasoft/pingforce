@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/theme.dart';
+import '../../../../../core/hardware/hardware_service.dart';
+import '../../../../../injection_container.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MOCK LOCATION BLOCKER  (CHECKIN_FLOW_SPEC.md §6 S14)
@@ -51,21 +53,9 @@ class MockLocationBlocker extends StatelessWidget {
               AppSpacing.sectionGapBox,
 
               FilledButton.icon(
-                onPressed: () {
-                  // TODO: open app settings via app_settings package
-                },
+                onPressed: () => sl<HardwareService>().openAppSettings(),
                 icon: const Icon(Icons.settings_rounded),
                 label: const Text('Open Settings'),
-              ),
-
-              AppSpacing.smallGapBox,
-
-              OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: open HR contact or in-app support
-                },
-                icon: const Icon(Icons.support_agent_rounded),
-                label: const Text('Contact HR'),
               ),
             ],
           ),

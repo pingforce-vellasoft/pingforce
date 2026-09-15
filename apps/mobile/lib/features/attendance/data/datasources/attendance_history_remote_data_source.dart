@@ -7,6 +7,13 @@ import '../../presentation/history/attendance_history_models.dart';
 /// server-side: a field employee only receives their own days.
 abstract class AttendanceHistoryRemoteDataSource {
   Future<AttendanceHistoryPage> fetchLogs({int page, int limit});
+
+  Future<void> requestCorrection({
+    required String attendanceId,
+    required String correctionType,
+    required String requestedValue,
+    required String reason,
+  });
 }
 
 class AttendanceHistoryRemoteDataSourceImpl
@@ -16,7 +23,28 @@ class AttendanceHistoryRemoteDataSourceImpl
   final Dio dio;
 
   @override
-  Future<AttendanceHistoryPage> fetchLogs({int page = 1, int limit = 30}) async {
+  Future<void> requestCorrection({
+    required String attendanceId,
+    required String correctionType,
+    required String requestedValue,
+    required String reason,
+  }) async {
+    await dio.post(
+      '/api/v1/attendance/corrections',
+      data: {
+        'attendanceId': attendanceId,
+        'correctionType': correctionType,
+        'requestedValue': requestedValue,
+        'reason': reason,
+      },
+    );
+  }
+
+  @override
+  Future<AttendanceHistoryPage> fetchLogs({
+    int page = 1,
+    int limit = 30,
+  }) async {
     final res = await dio.get(
       '/api/v1/attendance/daily-logs',
       queryParameters: {'page': page, 'limit': limit},
@@ -43,7 +71,10 @@ class AttendanceHistoryRemoteDataSourceImpl
     return AttendanceHistoryEntry(
       attendanceId: (json['attendanceId'] ?? '') as String,
       date: _parseDate(json['date']) ?? DateTime.now(),
-      status: _deriveStatus(json['status'] as String?, json['isOngoing'] == true),
+      status: _deriveStatus(
+        json['status'] as String?,
+        json['isOngoing'] == true,
+      ),
       isOngoing: json['isOngoing'] == true,
       checkIn: _parseDate(json['checkInTime']),
       checkOut: _parseDate(json['checkOutTime']),

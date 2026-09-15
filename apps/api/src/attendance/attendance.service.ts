@@ -5,12 +5,16 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
-import { CreateGeofenceDto } from './dto/attendance.dto';
+import {
+  CreateGeofenceDto,
+  UpdateAttendancePolicyDto,
+} from './dto/attendance.dto';
 import { RbacService } from '../rbac/rbac.service';
 import { creditWorkedMinutes } from './domain/work-minutes';
 import { resolveState, SessionState } from './domain/session-state';
 import { GeofenceCacheService } from './geofence-cache.service';
 import * as crypto from 'crypto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class AttendanceService {
@@ -18,7 +22,86 @@ export class AttendanceService {
     @Inject('IPrismaService') private prisma: ExtendedPrismaClient,
     private readonly rbacService: RbacService,
     private readonly geofenceCache: GeofenceCacheService,
+    private readonly auditService: AuditService,
   ) {}
+
+  async updatePolicy(
+    actor: { userId: string; tenantId: string },
+    dto: UpdateAttendancePolicyDto,
+  ) {
+    const existing = await this.prisma.attendancePolicy.findFirst({
+      where: { tenantId: actor.tenantId, deletedAt: null },
+    });
+    const data = {
+      gpsRequired: dto.gpsRequired,
+      geofenceRequired: dto.geofenceRequired,
+      biometricRequired: dto.biometricRequired,
+      gpsAccuracyThreshold: dto.gpsAccuracyThreshold,
+      allowLowAccuracy: dto.allowLowAccuracy,
+      allowOfflineCheckIn: dto.allowOfflineCheckIn,
+      outsideGeofencePolicy: dto.outsideGeofencePolicy,
+      mockLocationPolicy: dto.mockLocationPolicy,
+      updatedBy: actor.userId,
+    };
+    const policy = existing
+      ? await this.prisma.attendancePolicy.update({
+          where: { id: existing.id },
+          data,
+        })
+      : await this.prisma.attendancePolicy.create({
+          data: {
+            tenantId: actor.tenantId,
+            ...data,
+            createdBy: actor.userId,
+          },
+        });
+
+    void this.auditService.log({
+      tenantId: actor.tenantId,
+      actorId: actor.userId,
+      module: 'ATTENDANCE',
+      entityName: 'attendance_policy',
+      entityId: policy.id,
+      action: existing
+        ? 'ATTENDANCE_POLICY_UPDATED'
+        : 'ATTENDANCE_POLICY_CREATED',
+      oldValue: existing ?? undefined,
+      newValue: data,
+    });
+    return this.getPolicy(actor.tenantId);
+  }
+
+  async getPolicy(tenantId: string): Promise<{
+    readonly gpsRequired: boolean;
+    readonly geofenceEnabled: boolean;
+    readonly geofencePolicy: string;
+    readonly biometricRequired: boolean;
+    readonly allowLowAccuracy: boolean;
+    readonly accuracyThresholdMeters: number;
+    readonly allowOfflineCheckIn: boolean;
+    readonly checkInMethods: readonly string[];
+    readonly mockLocationPolicy: string;
+  }> {
+    const policy = await this.prisma.attendancePolicy.findFirst({
+      where: { tenantId, deletedAt: null },
+    });
+    const gpsRequired = policy?.gpsRequired ?? true;
+    const biometricRequired = policy?.biometricRequired ?? false;
+    return {
+      gpsRequired,
+      geofenceEnabled: policy?.geofenceRequired ?? true,
+      geofencePolicy: policy?.outsideGeofencePolicy ?? 'BLOCK',
+      biometricRequired,
+      allowLowAccuracy: policy?.allowLowAccuracy ?? false,
+      accuracyThresholdMeters: policy?.gpsAccuracyThreshold ?? 50,
+      allowOfflineCheckIn: policy?.allowOfflineCheckIn ?? true,
+      checkInMethods: [
+        ...(gpsRequired ? ['GPS'] : []),
+        ...(biometricRequired ? ['BIOMETRIC'] : []),
+      ],
+      mockLocationPolicy: policy?.mockLocationPolicy ?? 'BLOCK',
+    };
+  }
 
   // Device binding lives in DevicesModule (devices.service.ts).
   // getDevices / registerDevice / revokeDevice were removed together with the

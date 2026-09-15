@@ -1,9 +1,10 @@
+import { FaultListQueryDto } from '../dto/fault-list-query.dto';
+
 export class GetFaultsQuery {
   constructor(
     public readonly tenantId: string,
     public readonly requesterUserId: string,
-    public readonly skip?: number,
-    public readonly take?: number,
+    public readonly filter: FaultListQueryDto = {},
   ) {}
 }
 export class GetAssignedFaultsQuery {
@@ -18,6 +19,7 @@ export class GetFaultByIdQuery {
   constructor(
     public readonly tenantId: string,
     public readonly id: string,
+    public readonly requesterUserId: string,
   ) {}
 }
 export class GetBreachedFaultsQuery {

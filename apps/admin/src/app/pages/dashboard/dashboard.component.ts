@@ -160,6 +160,26 @@ import { AuthService } from '../../core/auth/auth.service';
               -->
 
               <mat-divider></mat-divider>
+              <div mat-subheader>Support</div>
+              <a
+                mat-list-item
+                routerLink="/dashboard/crm/faults"
+                routerLinkActive="active-link"
+                [routerLinkActiveOptions]="{ exact: true }"
+              >
+                <mat-icon matListItemIcon>support_agent</mat-icon>
+                <span matListItemTitle>Faults</span>
+              </a>
+              <a
+                mat-list-item
+                routerLink="/dashboard/crm/faults/sla-policies"
+                routerLinkActive="active-link"
+              >
+                <mat-icon matListItemIcon>timer</mat-icon>
+                <span matListItemTitle>SLA Policies</span>
+              </a>
+
+              <mat-divider></mat-divider>
               <div mat-subheader>People</div>
               <a
                 mat-list-item

@@ -226,8 +226,18 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
     action: 'UPDATE',
     description: 'Update fault details and status',
   },
+  {
+    module: 'FAULTS',
+    action: 'ASSIGN',
+    description: 'Assign faults to a technician',
+  },
   { module: 'FAULTS', action: 'ESCALATE', description: 'Escalate faults' },
   { module: 'FAULTS', action: 'DELETE', description: 'Delete faults' },
+  {
+    module: 'FAULTS',
+    action: 'MANAGE_SLA',
+    description: 'Configure tenant fault SLA policies',
+  },
   // Leave
   {
     module: 'LEAVES',

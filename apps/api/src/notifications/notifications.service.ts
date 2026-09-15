@@ -98,11 +98,17 @@ export class NotificationsService {
     }
   }
 
+  /**
+   * @param recipientKind which identity table `recipientId` refers to. Customer
+   * portal users live in their own table, so staff and customer notifications
+   * must resolve their delivery address from different sources.
+   */
   async sendEmail(
     tenantId: string,
     recipientId: string,
     templateName: string,
     payload: any,
+    recipientKind: 'USER' | 'PORTAL_USER' = 'USER',
   ): Promise<void> {
     const template = await this.prisma.notificationTemplate.findUnique({
       where: { tenantId_name: { tenantId, name: templateName } },
@@ -135,11 +141,22 @@ export class NotificationsService {
       },
     });
 
-    // recipientId is a userId — resolve the delivery address
-    const recipient = await this.prisma.user.findFirst({
-      where: { id: recipientId, tenantId, deletedAt: null },
-      select: { email: true },
-    });
+    // Resolve the delivery address from the identity table the caller named.
+    const recipient =
+      recipientKind === 'PORTAL_USER'
+        ? await this.prisma.customerPortalUser.findFirst({
+            where: {
+              id: recipientId,
+              tenantId,
+              deletedAt: null,
+              status: 'ACTIVE',
+            },
+            select: { email: true },
+          })
+        : await this.prisma.user.findFirst({
+            where: { id: recipientId, tenantId, deletedAt: null },
+            select: { email: true },
+          });
 
     if (!recipient?.email) {
       await this.prisma.notificationLog.update({

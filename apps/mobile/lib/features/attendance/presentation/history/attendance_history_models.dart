@@ -57,15 +57,15 @@ class AttendanceException {
 
   /// Short label for the chip shown on the row.
   String get label => switch (code) {
-        'MISSING_CHECK_OUT' => 'No check-out',
-        'BREAK_NOT_ENDED' => 'Break not ended',
-        'MOCK_LOCATION' => 'Mock location',
-        'MANUAL_PUNCH' => 'Manual entry',
-        'TRACKING_GAP' => 'Location gap',
-        'SHORT_DAY' => 'Short day',
-        'LATE_ARRIVAL' => 'Late',
-        _ => code,
-      };
+    'MISSING_CHECK_OUT' => 'No check-out',
+    'BREAK_NOT_ENDED' => 'Break not ended',
+    'MOCK_LOCATION' => 'Mock location',
+    'MANUAL_PUNCH' => 'Manual entry',
+    'TRACKING_GAP' => 'Location gap',
+    'SHORT_DAY' => 'Short day',
+    'LATE_ARRIVAL' => 'Late',
+    _ => code,
+  };
 }
 
 class AttendanceHistoryEntry {

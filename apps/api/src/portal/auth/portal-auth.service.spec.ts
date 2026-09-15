@@ -34,6 +34,9 @@ function makeService(
     invite?: unknown;
     tenant?: unknown;
     portalUser?: unknown;
+    /** Accounts a contact holds across tenants (tenant discovery). */
+    discoverable?: unknown[];
+    discoveredTenants?: unknown[];
   } = {},
 ) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,6 +52,7 @@ function makeService(
         .fn()
         .mockResolvedValue(overrides.portalUser ?? activePortalUser),
       findUnique: jest.fn().mockResolvedValue(overrides.portalUser ?? null),
+      findMany: jest.fn().mockResolvedValue(overrides.discoverable ?? []),
       update: jest.fn().mockResolvedValue({}),
       create: jest.fn().mockResolvedValue(activePortalUser),
     },
@@ -72,6 +76,7 @@ function makeService(
           },
         },
       ),
+      findMany: jest.fn().mockResolvedValue(overrides.discoveredTenants ?? []),
     },
     $transaction: jest.fn(async (arg: unknown): Promise<unknown> => {
       if (typeof arg === 'function') {
@@ -294,5 +299,93 @@ describe('PortalAuthService — login gating', () => {
       }),
     );
     expect(prisma.refreshToken.create).toHaveBeenCalled();
+  });
+});
+
+/**
+ * Tenant discovery ("I lost my provider code"). A portal identifier is unique
+ * per tenant, not globally, so an identifier alone must never reveal whether
+ * an account exists — nor which providers a person is a customer of.
+ */
+describe('PortalAuthService — tenant discovery', () => {
+  const acmeUser = {
+    id: 'pu1',
+    tenantId: 't1',
+    email: 'cust@x.io',
+    phone: null,
+  };
+  const globexUser = {
+    id: 'pu2',
+    tenantId: 't2',
+    email: 'cust@x.io',
+    phone: null,
+  };
+
+  it('gives the same answer for a known and an unknown contact', async () => {
+    const known = makeService({ discoverable: [acmeUser] });
+    const unknown = makeService({ discoverable: [] });
+
+    const knownResult = await known.service.requestTenantDiscovery({
+      email: 'cust@x.io',
+    });
+    const unknownResult = await unknown.service.requestTenantDiscovery({
+      email: 'nobody@x.io',
+    });
+
+    expect(knownResult).toEqual(unknownResult);
+    // The known contact still gets a code; the caller cannot tell.
+    expect(known.otpService.issue).toHaveBeenCalledTimes(1);
+    expect(unknown.otpService.issue).not.toHaveBeenCalled();
+  });
+
+  it('sends a code per candidate account across tenants', async () => {
+    const { service, otpService } = makeService({
+      discoverable: [acmeUser, globexUser],
+    });
+
+    await service.requestTenantDiscovery({ email: 'cust@x.io' });
+
+    expect(otpService.issue).toHaveBeenCalledTimes(2);
+  });
+
+  it('requires an email or phone', async () => {
+    const { service } = makeService();
+    await expect(service.requestTenantDiscovery({})).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('withholds the tenant list until the code is verified', async () => {
+    const { service, otpService } = makeService({
+      discoverable: [acmeUser],
+    });
+    otpService.verify.mockRejectedValue(new UnauthorizedException());
+
+    await expect(
+      service.verifyTenantDiscovery({ email: 'cust@x.io', otp: '000000' }),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('returns only the providers whose code matched', async () => {
+    const { service, otpService, prisma } = makeService({
+      discoverable: [acmeUser, globexUser],
+      discoveredTenants: [{ code: 'ACME', name: 'Acme ISP', logoUrl: null }],
+    });
+    // Correct code for the first account only.
+    otpService.verify
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new UnauthorizedException());
+
+    const result = await service.verifyTenantDiscovery({
+      email: 'cust@x.io',
+      otp: '123456',
+    });
+
+    expect(result.tenants).toEqual([
+      { code: 'ACME', name: 'Acme ISP', logoUrl: null },
+    ]);
+    expect(prisma.tenant.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: { in: ['t1'] } } }),
+    );
   });
 });

@@ -6,7 +6,11 @@
 **Platform:** Enterprise Workforce Management SaaS Platform
 **Version:** 1.0.0
 **Document Status:** Active
-**Implementation Status:** Documentation Baseline Complete
+**Implementation Status:** Agreed MVP implemented; release validation pending
+
+> Implementation verification updated 2026-09-14. The original document below
+> describes the broader specification baseline, not proof that every specified
+> feature has shipped.
 
 ---
 
@@ -20,6 +24,30 @@ The current project state represents a complete functional documentation baselin
 
 # 2. Overall Status
 
+## 2.1 Agreed implementation scope (verified 2026-09-14)
+
+| Area | Status |
+| --- | --- |
+| Online check-in/check-out | Implemented |
+| Bound-device Ed25519 punch proof | Implemented |
+| Replay and concurrent-punch protection | Implemented |
+| Tenant GPS, geofence, mock-location and biometric policy | Implemented |
+| Offline signed punch queue and idempotent sync | Implemented |
+| Employee history and correction request | Implemented |
+| Admin daily log, adjustments and correction approval | Implemented |
+| Tenant isolation, RBAC and audit events | Implemented |
+| Shift scheduling | Excluded from agreed scope |
+| Break tracking | Excluded from agreed scope |
+| Database migration deployment | Pending environment deployment |
+| Full CI, device E2E, security/UAT and Product Owner approval | Pending release gate |
+
+Backend verification: TypeScript compilation passed; attendance test suites
+passed (7 suites, 46 tests), and the complete API suite passed (38 suites, 333
+tests). The Angular admin development build passed. Targeted Flutter analysis
+for attendance/device files passed with no issues. This is feature-complete for
+the agreed MVP, but is not yet a production release under the repository
+Definition of Done until the remaining release gates above are completed.
+
 | Area                    | Status   |
 | ----------------------- | -------- |
 | Business Analysis       | Complete |
@@ -27,7 +55,7 @@ The current project state represents a complete functional documentation baselin
 | Technical Design        | Complete |
 | Workflow Design         | Complete |
 | State Machine           | Complete |
-| Shift Management        | Complete |
+| Shift Management        | Excluded |
 | GPS Validation          | Complete |
 | Offline Synchronization | Complete |
 | Attendance Corrections  | Complete |
@@ -134,14 +162,12 @@ Completed Documents
 
 # 6. Pending Engineering Work
 
-Development
+Development/release
 
-- Implement NestJS services
-- Implement Angular Admin Portal
-- Implement Flutter application
-- Build database schema
-- Develop APIs
-- Configure CI/CD
+- Deploy `20260914070000_attendance_punch_integrity` in each environment
+- Run device-level E2E for online and offline check-in/check-out
+- Complete CI, security scan, performance validation and UAT
+- Obtain Product Owner approval
 
 Testing
 
@@ -223,15 +249,15 @@ Completed
 - Technical documentation
 - Functional specifications
 - Architecture baseline
+- Agreed attendance MVP implementation
 
 Next
 
-1. Database implementation
-2. Backend APIs
-3. Angular Admin Portal
-4. Flutter Mobile App
-5. Automated testing
-6. Production deployment
+1. Deploy attendance punch-integrity migration
+2. Run automated CI and device E2E validation
+3. Security/performance validation
+4. UAT and Product Owner sign-off
+5. Production deployment
 
 ---
 
@@ -278,13 +304,13 @@ Production: Pending
 
 # 14. Current Completion Summary
 
-Documentation: 100%
-Architecture: 100%
-Implementation: Not Started
-Testing: Not Started
-Deployment: Not Started
+Documentation baseline: 100%
+Agreed MVP implementation: Complete
+Targeted automated verification: Passed
+Full release validation: Pending
+Deployment: Pending
 
-Project Health: GREEN (Documentation Phase)
+Project Health: AMBER (feature-complete, release gates pending)
 
 ---
 

@@ -93,6 +93,11 @@ export class GeofenceAssignmentService {
       : await this.prisma.attendancePolicy.create({
           data: {
             tenantId: actor.tenantId,
+            // Match the effective defaults used by punch validation. Creating
+            // this row solely to change assignment multiplicity must not
+            // silently turn GPS/geofence enforcement off.
+            gpsRequired: true,
+            geofenceRequired: true,
             allowMultipleGeofencesPerEmployee:
               dto.allowMultipleGeofencesPerEmployee,
             createdBy: actor.userId,

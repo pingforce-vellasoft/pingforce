@@ -58,6 +58,43 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: readonly NotificationTemplateDef[] 
         '<p>Customer ID: {{customerId}}</p>',
     },
     {
+      name: 'FAULT_CREATED',
+      type: 'EMAIL',
+      subject: 'We have logged your issue: {{faultNumber}}',
+      body:
+        '<p>Your issue <strong>{{faultNumber}}</strong> has been logged.</p>' +
+        '<p>Subject: {{title}}</p>' +
+        '<p>You can follow its progress in the PingForce app.</p>' +
+        // The provider code is what a customer needs to sign in on a new
+        // device, so every customer-facing fault email carries it.
+        '<p style="color:#6b7280;font-size:12px">Signing in on a new device? ' +
+        'Your provider code is <strong>{{tenantCode}}</strong>.</p>',
+    },
+    {
+      name: 'FAULT_ASSIGNED',
+      type: 'EMAIL',
+      subject: 'Fault assigned to you: {{faultNumber}}',
+      body:
+        '<p>Fault <strong>{{faultNumber}}</strong> has been assigned to you.</p>' +
+        '<p>Open the PingForce app to review and start work.</p>',
+    },
+    {
+      name: 'FAULT_COMMENT_ADDED',
+      type: 'EMAIL',
+      subject: 'Customer replied on {{faultNumber}}',
+      body:
+        '<p>The customer added a note to fault <strong>{{faultNumber}}</strong>.</p>' +
+        '<p>Open the PingForce app to read it and respond.</p>',
+    },
+    {
+      name: 'FAULT_SLA_WARNING',
+      type: 'EMAIL',
+      subject: 'Fault {{faultNumber}} is approaching its SLA deadline',
+      body:
+        '<p>Fault <strong>{{faultNumber}}</strong> is approaching its SLA deadline ({{slaDeadline}}).</p>' +
+        '<p>Resolve it or escalate before the deadline passes.</p>',
+    },
+    {
       name: 'FAULT_ESCALATED',
       type: 'EMAIL',
       subject: 'Fault escalated to you',
@@ -70,8 +107,10 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: readonly NotificationTemplateDef[] 
       type: 'EMAIL',
       subject: 'Your reported issue has been resolved',
       body:
-        '<p>Your reported fault (ID: {{id}}) has been marked <strong>{{status}}</strong>.</p>' +
-        '<p>If the issue persists, please raise a new ticket.</p>',
+        '<p>Your reported fault <strong>{{faultNumber}}</strong> has been marked <strong>{{status}}</strong>.</p>' +
+        '<p>If the issue persists, you can reopen it in the PingForce app.</p>' +
+        '<p style="color:#6b7280;font-size:12px">Signing in on a new device? ' +
+        'Your provider code is <strong>{{tenantCode}}</strong>.</p>',
     },
   ];
 

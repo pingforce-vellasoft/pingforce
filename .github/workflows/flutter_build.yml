@@ -42,6 +42,9 @@ jobs:
       - name: Run Static Analysis
         run: flutter analyze
 
+      - name: Run Tests
+        run: flutter test
+
       # Reconstruct the upload keystore from secrets so release artifacts are
       # signed with the real key. Without these secrets (e.g. on a fork PR) the
       # build falls back to debug signing and the AAB is NOT uploadable to Play.

@@ -1,17 +1,36 @@
-import { IsString, IsEnum, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  MaxLength,
+  ValidateIf,
+} from 'class-validator';
+import { FaultState } from '../domain/fault-state';
+import { NOTE_REQUIRED_STATES } from '../domain/fault-state';
 
-export enum FaultStatus {
-  OPEN = 'OPEN',
-  IN_PROGRESS = 'IN_PROGRESS',
-  RESOLVED = 'RESOLVED',
-  CLOSED = 'CLOSED',
-}
+/**
+ * Fault statuses accepted on the wire. Kept as an alias of the state-machine
+ * enum so the lifecycle has a single source of truth (domain/fault-state.ts).
+ */
+export const FaultStatus = FaultState;
+export type FaultStatus = FaultState;
 
 export class UpdateFaultStatusDto {
-  @IsEnum(FaultStatus)
-  status!: string;
+  @IsEnum(FaultState)
+  status!: FaultState;
+
+  @ValidateIf(
+    (dto: UpdateFaultStatusDto) =>
+      dto.notes !== undefined || NOTE_REQUIRED_STATES.includes(dto.status),
+  )
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(2000)
+  notes?: string;
 
   @IsOptional()
   @IsString()
-  notes?: string;
+  @MaxLength(200)
+  clientRef?: string;
 }

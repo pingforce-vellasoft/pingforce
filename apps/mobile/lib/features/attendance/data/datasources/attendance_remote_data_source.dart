@@ -5,10 +5,15 @@ import '../models/attendance_today_model.dart';
 abstract class AttendanceRemoteDataSource {
   Future<AttendanceModel> punch(
     String deviceId,
+    DateTime timestamp,
     double lat,
     double lng,
+    double accuracy,
+    bool isMockLocation,
+    bool biometricVerified,
     String signature,
   );
+  Future<Map<String, dynamic>> getPolicy();
   Future<void> syncPunches(List<Map<String, dynamic>> punches);
 
   /// Today's snapshot — open session, punch history, totals, leave balances.
@@ -23,8 +28,12 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
   @override
   Future<AttendanceModel> punch(
     String deviceId,
+    DateTime timestamp,
     double lat,
     double lng,
+    double accuracy,
+    bool isMockLocation,
+    bool biometricVerified,
     String signature,
   ) async {
     // Body matches the API PunchDto contract exactly
@@ -34,8 +43,11 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
         'deviceId': deviceId,
         'latitude': lat,
         'longitude': lng,
+        'accuracy': accuracy,
+        'isMockLocation': isMockLocation,
+        'biometricVerified': biometricVerified,
         'signature': signature,
-        'timestamp': DateTime.now().toIso8601String(),
+        'timestamp': timestamp.toUtc().toIso8601String(),
       },
     );
 
@@ -44,6 +56,12 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
     } else {
       throw Exception('Server Error');
     }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getPolicy() async {
+    final response = await dio.get('/api/v1/attendance/policy');
+    return Map<String, dynamic>.from(response.data as Map);
   }
 
   @override

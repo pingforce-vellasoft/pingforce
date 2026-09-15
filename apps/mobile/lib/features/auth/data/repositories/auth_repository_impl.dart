@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/network/token_interceptor.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
@@ -17,23 +18,28 @@ class AuthRepositoryImpl implements AuthRepository {
   });
 
   @override
-  Future<Either<Failure, User>> login(String email, String password, String tenantCode) async {
+  Future<Either<Failure, User>> login(
+    String email,
+    String password,
+    String tenantCode,
+  ) async {
     try {
-      final responseData = await remoteDataSource.login(email, password, tenantCode);
-      return _processAuthResponse(responseData);
+      final responseData = await remoteDataSource.login(
+        email,
+        password,
+        tenantCode,
+      );
+      return await _processAuthResponse(responseData);
     } catch (e) {
       return const Left(ServerFailure('Invalid email or password.'));
     }
   }
 
   @override
-  Future<Either<Failure, User>> signup(
-    String email,
-    String password,
-  ) async {
+  Future<Either<Failure, User>> signup(String email, String password) async {
     try {
       final responseData = await remoteDataSource.signup(email, password);
-      return _processAuthResponse(responseData);
+      return await _processAuthResponse(responseData);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -43,22 +49,35 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, User>> googleAuth(String idToken) async {
     try {
       final responseData = await remoteDataSource.googleAuth(idToken);
-      return _processAuthResponse(responseData);
+      return await _processAuthResponse(responseData);
     } catch (e) {
       return const Left(ServerFailure('Google Authentication failed.'));
     }
   }
 
-  Future<Either<Failure, User>> _processAuthResponse(Map<String, dynamic> responseData) async {
+  Future<Either<Failure, User>> _processAuthResponse(
+    Map<String, dynamic> responseData,
+  ) async {
     final token = responseData['access_token'] ?? responseData['accessToken'];
     final userData = responseData['user'];
-    
+
     if (token == null || userData == null) {
-      return const Left(ServerFailure('Invalid server response: Missing token or user data'));
+      return const Left(
+        ServerFailure('Invalid server response: Missing token or user data'),
+      );
     }
 
     // Securely store token (Hardness)
     await secureStorage.write(key: 'jwt_token', value: token);
+
+    // Stamp the auth realm so TokenInterceptor refreshes against staff auth.
+    // Written explicitly rather than left to the default: a device that
+    // previously held a customer session would otherwise keep that realm and
+    // refresh this staff session against the portal endpoint.
+    await secureStorage.write(
+      key: TokenInterceptor.realmKey,
+      value: TokenInterceptor.realmStaff,
+    );
 
     // Persist the refresh token so TokenInterceptor can silently renew the
     // 15-minute access token. Without it every request 401s once the access
@@ -70,10 +89,10 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     final user = UserModel.fromJson(userData);
-    
+
     // Cache user info securely
     await secureStorage.write(key: 'user_cache', value: jsonEncode(userData));
-    
+
     // Save tenant code separately so it persists even if user logs out (for auto-filling)
     if (user.tenantCode != 'SYSTEM') {
       await secureStorage.write(key: 'tenant_code', value: user.tenantCode);

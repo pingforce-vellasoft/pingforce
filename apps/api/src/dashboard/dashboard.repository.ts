@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
+import { ACTIVE_STATES } from '../faults/domain/fault-state';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DASHBOARD REPOSITORY  (Controller → Service → Repository → Prisma)
@@ -111,7 +112,7 @@ export class DashboardRepository {
           tenantId,
           deletedAt: null,
           assignedToId: userId,
-          status: { in: ['OPEN', 'IN_PROGRESS'] },
+          status: { in: [...ACTIVE_STATES] },
         },
       }),
       this.prisma.fault.count({
@@ -119,7 +120,7 @@ export class DashboardRepository {
           tenantId,
           deletedAt: null,
           assignedToId: userId,
-          status: { in: ['OPEN', 'IN_PROGRESS'] },
+          status: { in: [...ACTIVE_STATES] },
           slaDeadline: { lt: now },
         },
       }),

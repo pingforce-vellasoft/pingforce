@@ -13,15 +13,9 @@ import {
   IsEnum,
 } from 'class-validator';
 import { FaultPriority } from '@pingforce-monorepo/shared';
+import { FaultState } from '../domain/fault-state';
 
 export const OFFLINE_FAULT_ACTIONS = ['CREATE', 'UPDATE_STATUS'] as const;
-
-export const FAULT_STATUSES = [
-  'OPEN',
-  'IN_PROGRESS',
-  'RESOLVED',
-  'CLOSED',
-] as const;
 
 export class OfflineFaultActionDto {
   /** Client-generated id used for idempotent replay. */
@@ -63,8 +57,8 @@ export class OfflineFaultActionDto {
   readonly faultId?: string;
 
   @IsOptional()
-  @IsIn(FAULT_STATUSES)
-  readonly status?: string;
+  @IsEnum(FaultState)
+  readonly status?: FaultState;
 
   @IsOptional()
   @IsString()

@@ -9,11 +9,7 @@ import '../fault_state.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class FaultListCard extends StatefulWidget {
-  const FaultListCard({
-    super.key,
-    required this.fault,
-    required this.onTap,
-  });
+  const FaultListCard({super.key, required this.fault, required this.onTap});
 
   final FaultSummary fault;
   final VoidCallback onTap;
@@ -37,9 +33,10 @@ class _FaultListCardState extends State<FaultListCard>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    _pulseAnim = Tween<double>(begin: 1.0, end: 0.5).animate(
-      CurvedAnimation(parent: _pulseCtrl, curve: AppEasing.standard),
-    );
+    _pulseAnim = Tween<double>(
+      begin: 1.0,
+      end: 0.5,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: AppEasing.standard));
     if (widget.fault.slaStatus == FaultSlaStatus.breached) {
       _pulseCtrl.repeat(reverse: true);
     }
@@ -58,7 +55,8 @@ class _FaultListCardState extends State<FaultListCard>
     final (borderColor, slaColor, slaBg) = _slaColors(context, sla);
 
     return Semantics(
-      label: 'Fault ${fault.faultNumber}: ${fault.title}. '
+      label:
+          'Fault ${fault.faultNumber}: ${fault.title}. '
           'Status: ${fault.status.label}. Priority: ${fault.priority.label}. '
           '${fault.slaRemainingLabel}',
       button: true,
@@ -76,9 +74,7 @@ class _FaultListCardState extends State<FaultListCard>
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerLowest,
               borderRadius: AppRadius.lgAll,
-              border: Border(
-                left: BorderSide(color: borderColor, width: 4),
-              ),
+              border: Border(left: BorderSide(color: borderColor, width: 4)),
               boxShadow: AppElevation.shadowForLevel(1),
             ),
             child: Padding(
@@ -136,7 +132,9 @@ class _FaultListCardState extends State<FaultListCard>
                         child: Text(
                           '${fault.customerName}  ·  ${fault.siteName}',
                           style: AppTypography.bodySmall.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -221,7 +219,9 @@ class _FaultListCardState extends State<FaultListCard>
                         Text(
                           '${fault.commentsCount}',
                           style: AppTypography.labelSmall.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -231,8 +231,9 @@ class _FaultListCardState extends State<FaultListCard>
                         const SizedBox(width: AppSpacing.space3),
                         CircleAvatar(
                           radius: 12,
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primaryContainer,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
                           child: Text(
                             fault.assigneeName!
                                 .split(' ')
@@ -263,20 +264,20 @@ class _FaultListCardState extends State<FaultListCard>
   (Color, Color, Color) _slaColors(BuildContext context, FaultSlaStatus sla) {
     return switch (sla) {
       FaultSlaStatus.breached => (
-          PingForceColors.statusCritical,
-          PingForceColors.statusCritical,
-          PingForceColors.statusCriticalContainer,
-        ),
+        PingForceColors.statusCritical,
+        PingForceColors.statusCritical,
+        PingForceColors.statusCriticalContainer,
+      ),
       FaultSlaStatus.warning => (
-          PingForceColors.statusWarning,
-          PingForceColors.statusWarning,
-          PingForceColors.statusWarningContainer,
-        ),
+        PingForceColors.statusWarning,
+        PingForceColors.statusWarning,
+        PingForceColors.statusWarningContainer,
+      ),
       FaultSlaStatus.safe => (
-          Theme.of(context).colorScheme.primary,
-          PingForceColors.statusSuccess,
-          PingForceColors.statusSuccessContainer,
-        ),
+        Theme.of(context).colorScheme.primary,
+        PingForceColors.statusSuccess,
+        PingForceColors.statusSuccessContainer,
+      ),
     };
   }
 }
@@ -293,25 +294,25 @@ class _PriorityBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (color, bg, icon) = switch (priority) {
       FaultPriority.critical => (
-          PingForceColors.statusCritical,
-          PingForceColors.statusCriticalContainer,
-          Icons.keyboard_double_arrow_up_rounded,
-        ),
+        PingForceColors.statusCritical,
+        PingForceColors.statusCriticalContainer,
+        Icons.keyboard_double_arrow_up_rounded,
+      ),
       FaultPriority.high => (
-          PingForceColors.statusWarning,
-          PingForceColors.statusWarningContainer,
-          Icons.keyboard_arrow_up_rounded,
-        ),
+        PingForceColors.statusWarning,
+        PingForceColors.statusWarningContainer,
+        Icons.keyboard_arrow_up_rounded,
+      ),
       FaultPriority.medium => (
-          Theme.of(context).colorScheme.primary,
-          Theme.of(context).colorScheme.primaryContainer,
-          Icons.remove_rounded,
-        ),
+        Theme.of(context).colorScheme.primary,
+        Theme.of(context).colorScheme.primaryContainer,
+        Icons.remove_rounded,
+      ),
       FaultPriority.low => (
-          Theme.of(context).colorScheme.onSurfaceVariant,
-          Theme.of(context).colorScheme.surfaceContainerHigh,
-          Icons.keyboard_arrow_down_rounded,
-        ),
+        Theme.of(context).colorScheme.onSurfaceVariant,
+        Theme.of(context).colorScheme.surfaceContainerHigh,
+        Icons.keyboard_arrow_down_rounded,
+      ),
     };
 
     return Container(
@@ -347,25 +348,26 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (color, bg) = switch (status) {
       FaultStatus.open => (
-          Theme.of(context).colorScheme.primary,
-          Theme.of(context).colorScheme.primaryContainer,
-        ),
-      FaultStatus.inProgress => (
-          PingForceColors.statusWarning,
-          PingForceColors.statusWarningContainer,
-        ),
+        Theme.of(context).colorScheme.primary,
+        Theme.of(context).colorScheme.primaryContainer,
+      ),
+      FaultStatus.assigned => (
+        Theme.of(context).colorScheme.tertiary,
+        Theme.of(context).colorScheme.tertiaryContainer,
+      ),
+      // A reopened fault is active work again, so it reads like in-progress.
+      FaultStatus.inProgress || FaultStatus.reopened => (
+        PingForceColors.statusWarning,
+        PingForceColors.statusWarningContainer,
+      ),
       FaultStatus.onHold => (
-          Theme.of(context).colorScheme.onSurfaceVariant,
-          Theme.of(context).colorScheme.surfaceContainerHigh,
-        ),
+        Theme.of(context).colorScheme.onSurfaceVariant,
+        Theme.of(context).colorScheme.surfaceContainerHigh,
+      ),
       FaultStatus.resolved || FaultStatus.closed => (
-          PingForceColors.statusSuccess,
-          PingForceColors.statusSuccessContainer,
-        ),
-      FaultStatus.cancelled => (
-          Theme.of(context).colorScheme.onSurfaceVariant,
-          Theme.of(context).colorScheme.surfaceContainerHigh,
-        ),
+        PingForceColors.statusSuccess,
+        PingForceColors.statusSuccessContainer,
+      ),
     };
 
     return Container(
@@ -378,4 +380,3 @@ class _StatusChip extends StatelessWidget {
     );
   }
 }
-

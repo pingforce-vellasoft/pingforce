@@ -50,7 +50,15 @@ export class PortalFaultRatingDto {
 
 export class PortalFaultListQueryDto {
   @IsOptional()
-  @IsIn(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'])
+  @IsIn([
+    'OPEN',
+    'ASSIGNED',
+    'IN_PROGRESS',
+    'ON_HOLD',
+    'RESOLVED',
+    'REOPENED',
+    'CLOSED',
+  ])
   readonly status?: string;
 
   @IsOptional()

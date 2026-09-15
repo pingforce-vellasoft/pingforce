@@ -9,6 +9,7 @@ import { AttendanceLogService } from './attendance-log.service';
 import { AttendanceAdminService } from './attendance-admin.service';
 import { TrackingGapService } from './tracking-gap.service';
 import { GeofenceAssignmentService } from './geofence-assignment.service';
+import { PunchSignatureService } from './punch-signature.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AttendanceCommandHandlers } from './commands/handlers';
 import { AttendanceEventHandlers } from './events/handlers';
@@ -25,6 +26,7 @@ import { AttendanceEventHandlers } from './events/handlers';
     AttendanceAdminService,
     TrackingGapService,
     GeofenceAssignmentService,
+    PunchSignatureService,
     ...AttendanceCommandHandlers,
     ...AttendanceEventHandlers,
   ],

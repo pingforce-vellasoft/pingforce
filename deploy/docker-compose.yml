@@ -4,11 +4,12 @@
 #   1. Copy this directory's contents to /opt/pingforce
 #   2. cp .env.example .env  and fill in real values
 #   3. Put the Firebase service-account JSON at /opt/pingforce/secrets/
-#   4. Build the api image locally on the VM:  docker build -t pingforce_api:latest -f apps/api/Dockerfile .
-#   5. docker compose up -d
+#   4. Set API_IMAGE in .env (or use the repository's default GHCR image)
+#   5. Authenticate Docker to GHCR when the image is private
+#   6. docker compose pull && docker compose up -d
 #
-# NOTE: api runs the locally-built pingforce_api:latest image — no ghcr pull.
-# postgres reuses the external volume pingforce_postgres_prod_data (kartoza image).
+# The API image is built by CI and pulled from GHCR. PostgreSQL reuses the
+# external pingforce_postgres_prod_data volume created by the original stack.
 
 name: pingforce
 

@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  ParseUUIDPipe,
   Query,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
@@ -14,6 +15,13 @@ import { CreateFaultDto } from './dto/create-fault.dto';
 import { UpdateFaultDto } from './dto/update-fault.dto';
 import { UpdateFaultStatusDto } from './dto/update-fault-status.dto';
 import { SyncFaultsDto } from './dto/sync-faults.dto';
+import { FaultListQueryDto } from './dto/fault-list-query.dto';
+import { AssignFaultDto } from './dto/assign-fault.dto';
+import { FaultPageQueryDto } from './dto/fault-page-query.dto';
+import {
+  AddFaultNoteDto,
+  UpdateTimelineVisibilityDto,
+} from './dto/fault-note.dto';
 import { FaultsSyncService } from './faults-sync.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
@@ -28,6 +36,9 @@ import {
   CreateFaultCommand,
   UpdateFaultCommand,
   UpdateFaultStatusCommand,
+  AssignFaultCommand,
+  AddFaultNoteCommand,
+  SetTimelineVisibilityCommand,
   EscalateFaultCommand,
   RemoveFaultCommand,
 } from './commands/impl';
@@ -75,16 +86,10 @@ export class FaultsController {
   findAll(
     @CurrentTenant() tenantId: string,
     @CurrentUser() currentUser: CurrentUserContext,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
+    @Query() query: FaultListQueryDto,
   ) {
     return this.queryBus.execute(
-      new GetFaultsQuery(
-        tenantId,
-        currentUser.userId,
-        skip ? parseInt(skip, 10) : undefined,
-        take ? parseInt(take, 10) : undefined,
-      ),
+      new GetFaultsQuery(tenantId, currentUser.userId, query),
     );
   }
 
@@ -93,15 +98,14 @@ export class FaultsController {
   findBreached(
     @CurrentTenant() tenantId: string,
     @CurrentUser() currentUser: CurrentUserContext,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
+    @Query() query: FaultPageQueryDto,
   ) {
     return this.queryBus.execute(
       new GetBreachedFaultsQuery(
         tenantId,
         currentUser.userId,
-        skip ? parseInt(skip, 10) : undefined,
-        take ? parseInt(take, 10) : undefined,
+        query.skip,
+        query.take,
       ),
     );
   }
@@ -111,30 +115,35 @@ export class FaultsController {
   findAssignedToMe(
     @CurrentTenant() tenantId: string,
     @CurrentUser() currentUser: CurrentUserContext,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
+    @Query() query: FaultPageQueryDto,
   ) {
     return this.queryBus.execute(
       new GetAssignedFaultsQuery(
         tenantId,
         currentUser.userId,
-        skip ? parseInt(skip, 10) : undefined,
-        take ? parseInt(take, 10) : undefined,
+        query.skip,
+        query.take,
       ),
     );
   }
 
   @Get(':id')
   @RequirePermission('FAULTS', 'READ_OWN')
-  findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.queryBus.execute(new GetFaultByIdQuery(tenantId, id));
+  findOne(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() currentUser: CurrentUserContext,
+  ) {
+    return this.queryBus.execute(
+      new GetFaultByIdQuery(tenantId, id, currentUser.userId),
+    );
   }
 
   @Patch(':id')
   @RequirePermission('FAULTS', 'UPDATE')
   update(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() currentUser: CurrentUserContext,
     @Body() updateFaultDto: UpdateFaultDto,
   ) {
@@ -147,7 +156,7 @@ export class FaultsController {
   @RequirePermission('FAULTS', 'UPDATE')
   updateStatus(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() currentUser: CurrentUserContext,
     @Body() updateFaultStatusDto: UpdateFaultStatusDto,
   ) {
@@ -161,11 +170,57 @@ export class FaultsController {
     );
   }
 
+  @Post(':id/assign')
+  @RequirePermission('FAULTS', 'ASSIGN')
+  assign(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() currentUser: CurrentUserContext,
+    @Body() assignFaultDto: AssignFaultDto,
+  ) {
+    return this.commandBus.execute(
+      new AssignFaultCommand(tenantId, id, currentUser, assignFaultDto),
+    );
+  }
+
+  @Post(':id/notes')
+  @RequirePermission('FAULTS', 'UPDATE')
+  addNote(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() currentUser: CurrentUserContext,
+    @Body() dto: AddFaultNoteDto,
+  ) {
+    return this.commandBus.execute(
+      new AddFaultNoteCommand(tenantId, id, currentUser, dto),
+    );
+  }
+
+  @Patch(':id/timeline/:entryId/visibility')
+  @RequirePermission('FAULTS', 'UPDATE')
+  setTimelineVisibility(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() currentUser: CurrentUserContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('entryId', ParseUUIDPipe) entryId: string,
+    @Body() dto: UpdateTimelineVisibilityDto,
+  ) {
+    return this.commandBus.execute(
+      new SetTimelineVisibilityCommand(
+        tenantId,
+        id,
+        entryId,
+        dto.isCustomerVisible,
+        currentUser,
+      ),
+    );
+  }
+
   @Post(':id/escalate')
   @RequirePermission('FAULTS', 'ESCALATE')
   escalate(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() currentUser: CurrentUserContext,
   ) {
     return this.commandBus.execute(
@@ -175,7 +230,13 @@ export class FaultsController {
 
   @Delete(':id')
   @RequirePermission('FAULTS', 'DELETE')
-  remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.commandBus.execute(new RemoveFaultCommand(tenantId, id));
+  remove(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() currentUser: CurrentUserContext,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.commandBus.execute(
+      new RemoveFaultCommand(tenantId, id, currentUser),
+    );
   }
 }

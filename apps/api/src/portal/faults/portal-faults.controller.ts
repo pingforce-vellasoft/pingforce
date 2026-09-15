@@ -22,6 +22,14 @@ import {
   PortalFaultRatingDto,
 } from './portal-faults.dto';
 
+interface PortalAuthRequest {
+  readonly user: {
+    readonly userId: string;
+    readonly tenantId: string;
+    readonly customerId: string;
+  };
+}
+
 @ApiTags('Customer Portal — Faults')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PortalUserGuard, PortalFeatureGuard)
@@ -35,7 +43,10 @@ export class PortalFaultsController {
     sustained: { limit: 20, ttl: 60000 },
   })
   @Post()
-  async create(@Request() req: any, @Body() dto: PortalCreateFaultDto) {
+  async create(
+    @Request() req: PortalAuthRequest,
+    @Body() dto: PortalCreateFaultDto,
+  ) {
     return this.faultsService.create(
       req.user.tenantId,
       req.user.customerId,
@@ -46,7 +57,10 @@ export class PortalFaultsController {
 
   @ApiOperation({ summary: 'List own complaints' })
   @Get()
-  async list(@Request() req: any, @Query() query: PortalFaultListQueryDto) {
+  async list(
+    @Request() req: PortalAuthRequest,
+    @Query() query: PortalFaultListQueryDto,
+  ) {
     return this.faultsService.list(
       req.user.tenantId,
       req.user.customerId,
@@ -56,7 +70,10 @@ export class PortalFaultsController {
 
   @ApiOperation({ summary: 'Complaint detail with customer-visible timeline' })
   @Get(':id')
-  async findOne(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
+  async findOne(
+    @Request() req: PortalAuthRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.faultsService.findOne(
       req.user.tenantId,
       req.user.customerId,
@@ -71,7 +88,7 @@ export class PortalFaultsController {
   })
   @Post(':id/comments')
   async comment(
-    @Request() req: any,
+    @Request() req: PortalAuthRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: PortalFaultCommentDto,
   ) {
@@ -87,7 +104,7 @@ export class PortalFaultsController {
   @ApiOperation({ summary: 'Reopen a resolved complaint (within window)' })
   @Post(':id/reopen')
   async reopen(
-    @Request() req: any,
+    @Request() req: PortalAuthRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: PortalFaultCommentDto,
   ) {
@@ -103,7 +120,7 @@ export class PortalFaultsController {
   @ApiOperation({ summary: 'Rate a resolved/closed complaint (once)' })
   @Post(':id/rating')
   async rate(
-    @Request() req: any,
+    @Request() req: PortalAuthRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: PortalFaultRatingDto,
   ) {

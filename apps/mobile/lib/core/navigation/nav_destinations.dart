@@ -115,6 +115,7 @@ enum NavDestinationId {
   customers,
   devicesAdmin,
   attendanceAdmin,
+  myComplaints,
 }
 
 // ── FAB Action per destination ─────────────────────────────────────────────
@@ -216,6 +217,24 @@ class NavDestinations {
           tooltip: 'New Visit',
           icon: Icons.add_location_alt_rounded,
           route: '/visits/new',
+        ),
+      );
+
+  /// The customer's own complaint register — the customer-facing counterpart
+  /// of [faults], which stays staff-only.
+  static NavDestination myComplaints({int badgeCount = 0}) => NavDestination(
+        id: NavDestinationId.myComplaints,
+        label: 'Complaints',
+        icon: Icons.support_agent_outlined,
+        selectedIcon: Icons.support_agent_rounded,
+        rootRoute: '/complaints',
+        permissionKey: 'complaints.view',
+        showInBottomNav: true,
+        badgeCount: badgeCount,
+        fab: const DestinationFabConfig(
+          tooltip: 'Raise a complaint',
+          icon: Icons.add_rounded,
+          route: '/complaints/new',
         ),
       );
 
@@ -467,9 +486,11 @@ class NavDestinations {
           settings(),
         ],
       // Customer is a portal identity — no field-work tabs (no Visits,
-      // Attendance, Faults, etc.). Only the shared shell surfaces.
+      // Attendance, staff Faults). Only the shared shell surfaces plus their
+      // own complaint register.
       AppUserRole.customer => [
           home(),
+          myComplaints(),
         ],
     };
   }
@@ -608,7 +629,7 @@ class NavDestinations {
         },
       // Customer portal identity: no field features at all. Only the shared
       // shell surfaces from `_commonPermissions` — never visits/attendance/etc.
-      AppUserRole.customer => const <String>{},
+      AppUserRole.customer => const <String>{'complaints.view'},
     };
     return {..._commonPermissions, ...roleSpecific};
   }
@@ -630,6 +651,9 @@ class NavDestinations {
     '/attendance': 'attendance.view',
     '/visits': 'visits.view',
     '/faults': 'faults.view',
+    // Customer-facing complaints. Gated by its own key so the customer shell
+    // reaches it while staff roles, which never carry it, do not.
+    '/complaints': 'complaints.view',
     '/leads': 'leads.view',
     '/team': 'team.view',
     '/reports': 'reports.view',
@@ -679,6 +703,7 @@ class NavDestinations {
     '/home': 0,
     '/attendance': 1,
     '/faults': 2,
+    '/complaints': 2,
     '/visits': 2,
     '/leads': 2,
     '/team': 2,
