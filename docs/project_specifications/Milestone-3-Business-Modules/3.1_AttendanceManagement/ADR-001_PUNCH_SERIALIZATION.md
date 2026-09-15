@@ -1,6 +1,6 @@
 # ADR-001 — Attendance Punch Serialization
 
-**Status:** Accepted  
+**Status:** Accepted
 **Date:** 2026-09-14
 
 ## Context
