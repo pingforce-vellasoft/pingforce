@@ -119,11 +119,9 @@ describe('Leave transaction participation', () => {
     });
     const transaction = {
       workflowInstance: {
-        findFirst: jest
-          .fn()
-          .mockResolvedValue({
-            workflow: { ...twoStageWorkflow, deletedAt: null, active: false },
-          }),
+        findFirst: jest.fn().mockResolvedValue({
+          workflow: { ...twoStageWorkflow, deletedAt: null, active: false },
+        }),
       },
     };
     const result = await engine.findExistingWorkflow(

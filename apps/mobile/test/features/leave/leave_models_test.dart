@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../../lib/features/leave/data/models/leave_models.dart';
+import 'package:mobile/features/leave/data/models/leave_models.dart';
 
 void main() {
   test('uses persisted half-day charge instead of date difference', () {

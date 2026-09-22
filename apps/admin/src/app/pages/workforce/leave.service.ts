@@ -29,12 +29,10 @@ export class LeavePageService {
   readonly pageSize = 25;
 
   initialize(): void {
-    this.http
-      .get<{ canApprove: boolean }>('/api/v1/leaves/access')
-      .subscribe({
-        next: (access) => this.canApprove.set(access.canApprove),
-        error: () => this.canApprove.set(false),
-      });
+    this.http.get<{ canApprove: boolean }>('/api/v1/leaves/access').subscribe({
+      next: (access) => this.canApprove.set(access.canApprove),
+      error: () => this.canApprove.set(false),
+    });
     this.load();
   }
 
