@@ -20,40 +20,40 @@ import 'presentation/leave_notifier.dart';
 enum LeaveStatus { pending, approved, rejected, cancelled }
 
 LeaveStatus _statusFrom(String raw) => switch (raw.toUpperCase()) {
-      'APPROVED' => LeaveStatus.approved,
-      'REJECTED' => LeaveStatus.rejected,
-      'CANCELLED' => LeaveStatus.cancelled,
-      _ => LeaveStatus.pending,
-    };
+  'APPROVED' => LeaveStatus.approved,
+  'REJECTED' => LeaveStatus.rejected,
+  'CANCELLED' => LeaveStatus.cancelled,
+  _ => LeaveStatus.pending,
+};
 
 extension LeaveStatusX on LeaveStatus {
   String get label => switch (this) {
-        LeaveStatus.pending => 'Pending',
-        LeaveStatus.approved => 'Approved',
-        LeaveStatus.rejected => 'Rejected',
-        LeaveStatus.cancelled => 'Cancelled',
-      };
+    LeaveStatus.pending => 'Pending',
+    LeaveStatus.approved => 'Approved',
+    LeaveStatus.rejected => 'Rejected',
+    LeaveStatus.cancelled => 'Cancelled',
+  };
 
   Color get color => switch (this) {
-        LeaveStatus.pending => PingForceColors.statusWarning,
-        LeaveStatus.approved => PingForceColors.statusSuccess,
-        LeaveStatus.rejected => PingForceColors.statusCritical,
-        LeaveStatus.cancelled => const Color(0xFF616161),
-      };
+    LeaveStatus.pending => PingForceColors.statusWarning,
+    LeaveStatus.approved => PingForceColors.statusSuccess,
+    LeaveStatus.rejected => PingForceColors.statusCritical,
+    LeaveStatus.cancelled => const Color(0xFF616161),
+  };
 
   Color get bgColor => switch (this) {
-        LeaveStatus.pending => PingForceColors.statusWarningContainer,
-        LeaveStatus.approved => PingForceColors.statusSuccessContainer,
-        LeaveStatus.rejected => PingForceColors.statusCriticalContainer,
-        LeaveStatus.cancelled => const Color(0xFFEEEEEE),
-      };
+    LeaveStatus.pending => PingForceColors.statusWarningContainer,
+    LeaveStatus.approved => PingForceColors.statusSuccessContainer,
+    LeaveStatus.rejected => PingForceColors.statusCriticalContainer,
+    LeaveStatus.cancelled => const Color(0xFFEEEEEE),
+  };
 
   IconData get icon => switch (this) {
-        LeaveStatus.pending => Icons.hourglass_top_rounded,
-        LeaveStatus.approved => Icons.check_circle_rounded,
-        LeaveStatus.rejected => Icons.cancel_rounded,
-        LeaveStatus.cancelled => Icons.remove_circle_rounded,
-      };
+    LeaveStatus.pending => Icons.hourglass_top_rounded,
+    LeaveStatus.approved => Icons.check_circle_rounded,
+    LeaveStatus.rejected => Icons.cancel_rounded,
+    LeaveStatus.cancelled => Icons.remove_circle_rounded,
+  };
 }
 
 /// Stable per-name colour so each leave type reads consistently across tabs.
@@ -140,6 +140,9 @@ class _LeaveApplyTab extends ConsumerStatefulWidget {
 class _LeaveApplyTabState extends ConsumerState<_LeaveApplyTab> {
   LeaveTypeModel? _selectedType;
   DateTimeRange? _dateRange;
+  String _duration = 'FULL_DAY';
+  bool _previewing = false;
+  double? _chargedDays;
   final _reasonCtrl = TextEditingController();
 
   @override
@@ -159,22 +162,59 @@ class _LeaveApplyTabState extends ConsumerState<_LeaveApplyTab> {
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       initialDateRange: _dateRange,
-      builder: (context, child) => Theme(
-        data: Theme.of(context),
-        child: child!,
-      ),
+      builder: (context, child) =>
+          Theme(data: Theme.of(context), child: child!),
     );
     if (result != null) setState(() => _dateRange = result);
   }
 
   Future<void> _submit() async {
     final type = _selectedType;
-    if (type == null || _dateRange == null) return;
-    await ref.read(leaveNotifierProvider.notifier).submit(
+    final range = _dateRange;
+    final duration = _duration;
+    final reason = _reasonCtrl.text.trim();
+    if (type == null || range == null || _previewing) return;
+    setState(() => _previewing = true);
+    final days = await ref
+        .read(leaveNotifierProvider.notifier)
+        .preview(
           leaveTypeId: type.id,
-          startDate: _dateRange!.start,
-          endDate: _dateRange!.end,
-          reason: _reasonCtrl.text.trim(),
+          startDate: range.start,
+          endDate: range.end,
+          duration: duration,
+        );
+    if (!mounted) return;
+    setState(() => _previewing = false);
+    if (days == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm leave request'),
+        content: Text(
+          '$days day(s) will be reserved from your available balance. Submit this request?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Back'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Submit'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    _chargedDays = days;
+    await ref
+        .read(leaveNotifierProvider.notifier)
+        .submit(
+          leaveTypeId: type.id,
+          startDate: range.start,
+          endDate: range.end,
+          reason: reason,
+          duration: duration,
         );
   }
 
@@ -182,6 +222,8 @@ class _LeaveApplyTabState extends ConsumerState<_LeaveApplyTab> {
     ref.read(leaveNotifierProvider.notifier).resetSubmit();
     setState(() {
       _dateRange = null;
+      _duration = 'FULL_DAY';
+      _chargedDays = null;
       _reasonCtrl.clear();
     });
   }
@@ -197,7 +239,7 @@ class _LeaveApplyTabState extends ConsumerState<_LeaveApplyTab> {
 
     if (state.submitStatus == SubmitStatus.success) {
       return _SuccessView(
-        days: _days,
+        days: _chargedDays ?? _days.toDouble(),
         typeName: _selectedType?.name ?? 'leave',
         onAnother: _resetForm,
       );
@@ -216,8 +258,10 @@ class _LeaveApplyTabState extends ConsumerState<_LeaveApplyTab> {
       );
     }
 
-    final submitting = state.submitStatus == SubmitStatus.submitting;
-    final canSubmit = _selectedType != null && _dateRange != null && !submitting;
+    final submitting =
+        state.submitStatus == SubmitStatus.submitting || _previewing;
+    final canSubmit =
+        _selectedType != null && _dateRange != null && !submitting;
 
     return SingleChildScrollView(
       padding: AppSpacing.screenPaddingAll,
@@ -227,10 +271,12 @@ class _LeaveApplyTabState extends ConsumerState<_LeaveApplyTab> {
           const SizedBox(height: AppSpacing.space3),
 
           // ── Leave type chips ──────────────────────────────────────────
-          Text('Leave Type',
-              style: AppTypography.labelMedium.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              )),
+          Text(
+            'Leave Type',
+            style: AppTypography.labelMedium.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: AppSpacing.space2),
           Wrap(
             spacing: 8,
@@ -262,10 +308,12 @@ class _LeaveApplyTabState extends ConsumerState<_LeaveApplyTab> {
           const SizedBox(height: AppSpacing.space5),
 
           // ── Date range ────────────────────────────────────────────────
-          Text('Duration',
-              style: AppTypography.labelMedium.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              )),
+          Text(
+            'Duration',
+            style: AppTypography.labelMedium.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: AppSpacing.space2),
           GestureDetector(
             onTap: _pickDateRange,
@@ -281,24 +329,30 @@ class _LeaveApplyTabState extends ConsumerState<_LeaveApplyTab> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.date_range_rounded,
-                      color: Theme.of(context).colorScheme.primary),
+                  Icon(
+                    Icons.date_range_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(width: AppSpacing.space3),
                   Expanded(
                     child: _dateRange == null
-                        ? Text('Select dates',
+                        ? Text(
+                            'Select dates',
                             style: AppTypography.bodyMedium.copyWith(
-                              color:
-                                  Theme.of(context).colorScheme.onSurfaceVariant,
-                            ))
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          )
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 '${_fmt(_dateRange!.start)} → ${_fmt(_dateRange!.end)}',
                                 style: AppTypography.bodyMedium.copyWith(
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                               ),
                               Text(
@@ -310,8 +364,10 @@ class _LeaveApplyTabState extends ConsumerState<_LeaveApplyTab> {
                             ],
                           ),
                   ),
-                  Icon(Icons.chevron_right_rounded,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ],
               ),
             ),
@@ -332,6 +388,28 @@ class _LeaveApplyTabState extends ConsumerState<_LeaveApplyTab> {
           ),
 
           // ── Submit error ─────────────────────────────────────────────
+          DropdownButtonFormField<String>(
+            initialValue: _duration,
+            decoration: const InputDecoration(labelText: 'Duration'),
+            items: const [
+              DropdownMenuItem(value: 'FULL_DAY', child: Text('Full day(s)')),
+              DropdownMenuItem(
+                value: 'FIRST_HALF',
+                child: Text('First half — single day'),
+              ),
+              DropdownMenuItem(
+                value: 'SECOND_HALF',
+                child: Text('Second half — single day'),
+              ),
+            ],
+            onChanged: submitting
+                ? null
+                : (value) => setState(() => _duration = value ?? 'FULL_DAY'),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Online submission required. Chargeable days are confirmed before submission. Submit separate requests for different years.',
+          ),
           if (state.submitStatus == SubmitStatus.failure &&
               state.submitError != null) ...[
             const SizedBox(height: AppSpacing.space4),
@@ -343,9 +421,11 @@ class _LeaveApplyTabState extends ConsumerState<_LeaveApplyTab> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.error_outline_rounded,
-                      size: AppIconSize.sm,
-                      color: PingForceColors.statusCritical),
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    size: AppIconSize.sm,
+                    color: PingForceColors.statusCritical,
+                  ),
                   const SizedBox(width: AppSpacing.space2),
                   Expanded(
                     child: Text(
@@ -396,7 +476,7 @@ class _SuccessView extends StatelessWidget {
     required this.typeName,
     required this.onAnother,
   });
-  final int days;
+  final double days;
   final String typeName;
   final VoidCallback onAnother;
 
@@ -415,8 +495,11 @@ class _SuccessView extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: PingForceColors.statusSuccessContainer,
               ),
-              child: const Icon(Icons.check_rounded,
-                  size: 36, color: PingForceColors.statusSuccess),
+              child: const Icon(
+                Icons.check_rounded,
+                size: 36,
+                color: PingForceColors.statusSuccess,
+              ),
             ),
             const SizedBox(height: AppSpacing.space4),
             Text('Leave Applied!', style: AppTypography.titleLarge),
@@ -501,10 +584,12 @@ class _LeaveBalanceTab extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.space4),
-          ...state.balances.map((b) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.cardMargin),
-                child: _LeaveBalanceCard(balance: b),
-              )),
+          ...state.balances.map(
+            (b) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.cardMargin),
+              child: _LeaveBalanceCard(balance: b),
+            ),
+          ),
         ],
       ),
     );
@@ -526,11 +611,13 @@ class _SummaryCount extends StatelessWidget {
     return Column(
       children: [
         Text(value, style: AppTypography.numericMedium.copyWith(color: color)),
-        Text(label,
-            style: AppTypography.labelSmall.copyWith(
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-            ),
-            textAlign: TextAlign.center),
+        Text(
+          label,
+          style: AppTypography.labelSmall.copyWith(
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
@@ -555,14 +642,16 @@ class _LeaveBalanceCard extends StatelessWidget {
                 Container(
                   width: 12,
                   height: 12,
-                  decoration:
-                      BoxDecoration(shape: BoxShape.circle, color: color),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.space2),
                 Text(balance.leaveTypeName, style: AppTypography.titleSmall),
                 const Spacer(),
                 Text(
-                  '${balance.availableDays.toInt()} / ${balance.totalDays.toInt()} days',
+                  '${balance.availableDays} / ${balance.totalDays} days',
                   style: AppTypography.numericSmall.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -576,8 +665,9 @@ class _LeaveBalanceCard extends StatelessWidget {
                 children: [
                   Container(
                     height: 8,
-                    color:
-                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                   ),
                   FractionallySizedBox(
                     widthFactor: balance.usedFraction.clamp(0.0, 1.0),
@@ -585,9 +675,9 @@ class _LeaveBalanceCard extends StatelessWidget {
                   ),
                   if (balance.pendingDays > 0)
                     FractionallySizedBox(
-                      widthFactor: (balance.usedFraction +
-                              balance.pendingFraction)
-                          .clamp(0.0, 1.0),
+                      widthFactor:
+                          (balance.usedFraction + balance.pendingFraction)
+                              .clamp(0.0, 1.0),
                       child: Container(
                         height: 8,
                         color: color.withValues(alpha: 0.35),
@@ -599,12 +689,15 @@ class _LeaveBalanceCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.space2),
             Row(
               children: [
-                _Legend(color: color, label: 'Used ${balance.usedDays.toInt()}'),
+                _Legend(
+                  color: color,
+                  label: 'Used ${balance.usedDays}',
+                ),
                 const SizedBox(width: AppSpacing.space4),
                 if (balance.pendingDays > 0)
                   _Legend(
                     color: color.withValues(alpha: 0.4),
-                    label: 'Pending ${balance.pendingDays.toInt()}',
+                    label: 'Pending ${balance.pendingDays}',
                   ),
               ],
             ),
@@ -626,14 +719,17 @@ class _Legend extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+        ),
         const SizedBox(width: 4),
-        Text(label,
-            style: AppTypography.labelSmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            )),
+        Text(
+          label,
+          style: AppTypography.labelSmall.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
       ],
     );
   }
@@ -657,8 +753,7 @@ class _LeaveHistoryTab extends ConsumerWidget {
       return _EmptyView(
         icon: Icons.history_rounded,
         title: 'No leave history',
-        subtitle:
-            state.errorMessage ?? 'Your applied leaves will appear here.',
+        subtitle: state.errorMessage ?? 'Your applied leaves will appear here.',
         onRetry: () => ref.read(leaveNotifierProvider.notifier).refresh(),
       );
     }
@@ -667,21 +762,36 @@ class _LeaveHistoryTab extends ConsumerWidget {
       onRefresh: () => ref.read(leaveNotifierProvider.notifier).refresh(),
       child: ListView.separated(
         padding: AppSpacing.screenPaddingAll,
-        itemCount: state.history.length,
+        itemCount: state.history.length + 1,
         separatorBuilder: (_, _) =>
             const SizedBox(height: AppSpacing.cardMargin),
-        itemBuilder: (_, i) => _LeaveHistoryCard(app: state.history[i]),
+        itemBuilder: (_, i) => i < state.history.length
+            ? _LeaveHistoryCard(app: state.history[i])
+            : Column(
+                children: [
+                  if (state.errorMessage != null) Text(state.errorMessage!),
+                  if (state.hasMore)
+                    TextButton(
+                      onPressed: state.loadingMore || state.isLoading
+                          ? null
+                          : () => ref
+                                .read(leaveNotifierProvider.notifier)
+                                .loadMore(),
+                      child: Text(state.loadingMore ? 'Loading…' : 'Load more'),
+                    ),
+                ],
+              ),
       ),
     );
   }
 }
 
-class _LeaveHistoryCard extends StatelessWidget {
+class _LeaveHistoryCard extends ConsumerWidget {
   const _LeaveHistoryCard({required this.app});
   final LeaveRequestModel app;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final status = _statusFrom(app.status);
     final color = _typeColor(app.leaveTypeName);
 
@@ -696,17 +806,25 @@ class _LeaveHistoryCard extends StatelessWidget {
                 Container(
                   width: 10,
                   height: 10,
-                  decoration:
-                      BoxDecoration(shape: BoxShape.circle, color: color),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.space2),
-                Text(app.leaveTypeName,
-                    style: AppTypography.labelMedium.copyWith(
-                        color: color, fontWeight: FontWeight.w600)),
+                Text(
+                  app.leaveTypeName,
+                  style: AppTypography.labelMedium.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const Spacer(),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: status.bgColor,
                     borderRadius: AppRadius.pillAll,
@@ -716,9 +834,12 @@ class _LeaveHistoryCard extends StatelessWidget {
                     children: [
                       Icon(status.icon, size: 12, color: status.color),
                       const SizedBox(width: 4),
-                      Text(status.label,
-                          style: AppTypography.labelSmall
-                              .copyWith(color: status.color)),
+                      Text(
+                        status.label,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: status.color,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -734,15 +855,60 @@ class _LeaveHistoryCard extends StatelessWidget {
               Text(
                 app.reason!,
                 style: AppTypography.bodySmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
             const SizedBox(height: AppSpacing.space2),
             Text(
               'Applied: ${_fmt(app.appliedOn)}',
               style: AppTypography.labelSmall.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
+            if (app.decisionReason != null) Text(app.decisionReason!),
+            if (app.status == 'PENDING')
+              TextButton(
+                onPressed:
+                    ref.watch(leaveNotifierProvider).submitStatus ==
+                        SubmitStatus.submitting
+                    ? null
+                    : () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Withdraw leave?'),
+                            content: const Text(
+                              'Your reserved days will return to your available balance.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Keep request'),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Withdraw'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed != true || !context.mounted) return;
+                        final error = await ref
+                            .read(leaveNotifierProvider.notifier)
+                            .withdraw(app.id);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                error ?? 'Leave withdrawn. Balance refreshed.',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                child: const Text('Withdraw request'),
+              ),
           ],
         ),
       ),
@@ -776,17 +942,21 @@ class _EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: AppIconSize.xl,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              icon,
+              size: AppIconSize.xl,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: AppSpacing.space3),
             Text(title, style: AppTypography.titleSmall),
             const SizedBox(height: AppSpacing.space1),
-            Text(subtitle,
-                textAlign: TextAlign.center,
-                style: AppTypography.bodySmall.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                )),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySmall.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: AppSpacing.space4),
             OutlinedButton.icon(
               onPressed: onRetry,

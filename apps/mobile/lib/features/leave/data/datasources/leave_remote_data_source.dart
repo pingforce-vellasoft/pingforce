@@ -3,14 +3,22 @@ import 'package:dio/dio.dart';
 import '../models/leave_models.dart';
 
 abstract class LeaveRemoteDataSource {
+  Future<void> withdraw(String id);
+  Future<double> preview({
+    required String leaveTypeId,
+    required DateTime startDate,
+    required DateTime endDate,
+    String duration = 'FULL_DAY',
+  });
   Future<List<LeaveTypeModel>> getTypes();
   Future<List<LeaveBalanceModel>> getMyBalances(int year);
-  Future<List<LeaveRequestModel>> getMyRequests({String? status});
+  Future<List<LeaveRequestModel>> getMyRequests({String? status, int skip = 0});
   Future<void> requestLeave({
     required String leaveTypeId,
     required DateTime startDate,
     required DateTime endDate,
     String? reason,
+    String duration = 'FULL_DAY',
   });
 }
 
@@ -18,6 +26,32 @@ class LeaveRemoteDataSourceImpl implements LeaveRemoteDataSource {
   final Dio dio;
 
   LeaveRemoteDataSourceImpl({required this.dio});
+
+  @override
+  Future<void> withdraw(String id) async {
+    await dio.post('/api/v1/leaves/$id/withdraw');
+  }
+
+  @override
+  Future<double> preview({
+    required String leaveTypeId,
+    required DateTime startDate,
+    required DateTime endDate,
+    String duration = 'FULL_DAY',
+  }) async {
+    String date(DateTime value) =>
+        '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+    final response = await dio.post(
+      '/api/v1/leaves/preview',
+      data: {
+        'leaveTypeId': leaveTypeId,
+        'startDate': date(startDate),
+        'endDate': date(endDate),
+        'duration': duration,
+      },
+    );
+    return ((response.data as Map)['requestedDays'] as num).toDouble();
+  }
 
   List<T> _list<T>(dynamic data, T Function(Map<String, dynamic>) fromJson) {
     final raw = (data as List?) ?? const [];
@@ -44,10 +78,13 @@ class LeaveRemoteDataSourceImpl implements LeaveRemoteDataSource {
   }
 
   @override
-  Future<List<LeaveRequestModel>> getMyRequests({String? status}) async {
+  Future<List<LeaveRequestModel>> getMyRequests({
+    String? status,
+    int skip = 0,
+  }) async {
     final res = await dio.get(
       '/api/v1/leaves/my',
-      queryParameters: status == null ? null : {'status': status},
+      queryParameters: {'skip': skip, 'take': 25, 'status': ?status},
     );
     if (res.statusCode != 200) throw Exception('Failed to load history');
     return _list(res.data, LeaveRequestModel.fromJson);
@@ -59,6 +96,7 @@ class LeaveRemoteDataSourceImpl implements LeaveRemoteDataSource {
     required DateTime startDate,
     required DateTime endDate,
     String? reason,
+    String duration = 'FULL_DAY',
   }) async {
     // Body matches CreateLeaveRequestDto. Dates are date-only on the server.
     String d(DateTime dt) =>
@@ -71,6 +109,7 @@ class LeaveRemoteDataSourceImpl implements LeaveRemoteDataSource {
         'leaveTypeId': leaveTypeId,
         'startDate': d(startDate),
         'endDate': d(endDate),
+        'duration': duration,
         if (reason != null && reason.isNotEmpty) 'reason': reason,
       },
     );

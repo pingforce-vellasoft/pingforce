@@ -15,13 +15,42 @@
 
 export interface NotificationTemplateDef {
   readonly name: string;
-  readonly type: 'EMAIL' | 'SMS';
+  readonly type: 'EMAIL' | 'SMS' | 'PUSH';
   readonly subject: string;
   readonly body: string;
 }
 
+export const LEAVE_NOTIFICATION_TEMPLATES: readonly NotificationTemplateDef[] =
+  [
+    {
+      name: 'LEAVE_STATUS_EMAIL',
+      type: 'EMAIL',
+      subject: 'Leave request {{status}}',
+      body: '<p>Your leave from {{startDate}} to {{endDate}} is {{status}}.</p><p>Open PingForce to review your leave history.</p>',
+    },
+    {
+      name: 'LEAVE_STATUS_PUSH',
+      type: 'PUSH',
+      subject: 'Leave request {{status}}',
+      body: 'Your leave from {{startDate}} to {{endDate}} is {{status}}.',
+    },
+    {
+      name: 'LEAVE_REVIEW_EMAIL',
+      type: 'EMAIL',
+      subject: 'Leave request awaiting review',
+      body: '<p>A leave request is awaiting your review. Open the Leave requests page in PingForce.</p>',
+    },
+    {
+      name: 'LEAVE_REVIEW_PUSH',
+      type: 'PUSH',
+      subject: 'Leave request awaiting review',
+      body: 'Open PingForce to review your leave approval queue.',
+    },
+  ];
+
 export const DEFAULT_NOTIFICATION_TEMPLATES: readonly NotificationTemplateDef[] =
   [
+    ...LEAVE_NOTIFICATION_TEMPLATES,
     {
       name: 'VISIT_ASSIGNED',
       type: 'EMAIL',

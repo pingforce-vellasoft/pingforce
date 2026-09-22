@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import { AuditService } from '../audit/audit.service';
+import { Prisma } from '@prisma/client';
 import { RbacService } from '../rbac/rbac.service';
 import {
   WorkflowEngineService,
@@ -27,6 +28,7 @@ export interface ApprovalRequest {
   readonly actorUserId: string;
   readonly decision: ApprovalDecision;
   readonly notes?: string;
+  readonly requestId?: string;
   /** RBAC action that authorizes this decision (usually 'APPROVE') */
   readonly requiredAction?: string;
   /** Conditional-routing context (ApprovalWorkflow.md §11), e.g. { amount } */
@@ -147,21 +149,27 @@ export class ApprovalsService {
   }
 
   /** Records the decision in the immutable audit trail (§2, §19). */
-  async recordDecision(request: ApprovalRequest): Promise<void> {
-    await this.auditService.log({
+  async recordDecision(
+    request: ApprovalRequest,
+    transaction?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const entry = {
       tenantId: request.tenantId,
       actorId: request.actorUserId,
       module: request.module,
       entityName: request.entityName,
       entityId: request.entityId,
       action: `WORKFLOW_${request.decision}`,
-      severity: 'INFO',
+      requestId: request.requestId,
+      severity: 'INFO' as const,
       newValue: {
         decision: request.decision,
         ownerEmployeeId: request.ownerEmployeeId,
         ...(request.notes && { notes: request.notes }),
       },
-    });
+    };
+    if (transaction) await transaction.auditLog.create({ data: entry });
+    else await this.auditService.log(entry);
   }
 
   /**
@@ -173,35 +181,50 @@ export class ApprovalsService {
   async process<T>(
     request: ApprovalRequest,
     apply: () => Promise<T>,
+    transaction?: Prisma.TransactionClient,
   ): Promise<ApprovalOutcome<T>> {
-    const workflow = await this.workflowEngine.findActiveWorkflow(
-      request.tenantId,
-      request.module,
-      request.entityName,
-      request.context,
-    );
+    const existingWorkflow = transaction
+      ? await this.workflowEngine.findExistingWorkflow(
+          request.tenantId,
+          request.module,
+          request.entityName,
+          request.entityId,
+          transaction,
+        )
+      : null;
+    const workflow =
+      existingWorkflow ??
+      (await this.workflowEngine.findActiveWorkflow(
+        request.tenantId,
+        request.module,
+        request.entityName,
+        request.context,
+        transaction,
+      ));
 
     if (!workflow) {
       // Single-stage fallback — original behavior, zero regression
       await this.authorizeDecision(request);
       const result = await apply();
-      await this.recordDecision(request);
+      await this.recordDecision(request, transaction);
       return { finalized: true, decision: request.decision, result };
     }
 
-    return this.processStaged(workflow, request, apply);
+    return this.processStaged(workflow, request, apply, transaction);
   }
 
   private async processStaged<T>(
     workflow: ActiveWorkflow,
     request: ApprovalRequest,
     apply: () => Promise<T>,
+    transaction?: Prisma.TransactionClient,
   ): Promise<ApprovalOutcome<T>> {
     const instance = await this.workflowEngine.getOrCreateInstance(
       workflow,
       request.entityId,
       request.ownerEmployeeId,
       request.context,
+      transaction,
     );
 
     const stage = workflow.stages.find(
@@ -221,14 +244,16 @@ export class ApprovalsService {
         actorUserId: request.actorUserId,
         decision: request.decision,
         notes: request.notes,
+        requestId: request.requestId,
         actedAsDelegateOf: delegatorUserId ?? undefined,
       },
+      transaction,
     );
 
     let result: T | undefined;
     if (engineOutcome.finalized) {
       result = await apply();
-      await this.recordDecision(request);
+      await this.recordDecision(request, transaction);
     }
 
     return {

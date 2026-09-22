@@ -1,400 +1,582 @@
 import {
   Injectable,
-  Inject,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
+  Logger,
 } from '@nestjs/common';
-import { IPrismaService } from '@pingforce-monorepo/shared';
+import { LeaveRequest } from '@prisma/client';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
+import { LeaveQueryDto } from './dto/leave-query.dto';
 import { RbacService } from '../rbac/rbac.service';
-import { ApprovalsService } from '../approvals/approvals.service';
+import {
+  ApprovalsService,
+  ApprovalOutcome,
+} from '../approvals/approvals.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { InAppNotificationService } from '../notifications/in-app-notification.service';
+import {
+  LeaveRepository,
+  LeaveTransactionRepository,
+} from './leave.repository';
+import { calculateLeaveDays, calendarPolicy } from './leave-calendar';
+import { WorkflowEngineService } from '../approvals/workflow-engine.service';
 
 @Injectable()
 export class LeaveService {
+  private readonly logger = new Logger(LeaveService.name);
   constructor(
-    @Inject('IPrismaService')
-    private readonly prisma: IPrismaService,
+    private readonly repository: LeaveRepository,
     private readonly rbacService: RbacService,
     private readonly approvalsService: ApprovalsService,
     private readonly notifications: NotificationsService,
     private readonly inApp: InAppNotificationService,
+    private readonly workflowEngine: WorkflowEngineService,
   ) {}
+
+  private async employee(
+    repo: LeaveTransactionRepository,
+    tenantId: string,
+    userId: string,
+  ): Promise<string> {
+    const employee = await repo.employee(tenantId, userId);
+    if (!employee)
+      throw new NotFoundException(
+        'No employee record is linked to this user account',
+      );
+    return employee.id;
+  }
+
+  async preview(
+    tenantId: string,
+    dto: CreateLeaveRequestDto,
+  ): Promise<{ requestedDays: number }> {
+    const repo = this.repository.read();
+    if (!(await repo.type(tenantId, dto.leaveTypeId)))
+      throw new NotFoundException('Leave type not found');
+    return {
+      requestedDays: calculateLeaveDays(
+        dto,
+        calendarPolicy((await repo.settings(tenantId))?.metadata),
+      ),
+    };
+  }
 
   async requestLeave(
     tenantId: string,
     userId: string,
     dto: CreateLeaveRequestDto,
-  ) {
-    const startDate = new Date(dto.startDate);
-    const endDate = new Date(dto.endDate);
-
-    // Resolve the caller's own employee record — leave is always filed as self
-    const employee = await this.prisma.employee.findFirst({
-      where: { tenantId, userId, deletedAt: null },
-      select: { id: true },
-    });
-
-    if (!employee) {
-      throw new NotFoundException(
-        'No employee record is linked to this user account',
+    requestId?: string,
+  ): Promise<LeaveRequest> {
+    const result = await this.repository.transaction(async (repo) => {
+      const employeeId = await this.employee(repo, tenantId, userId);
+      if (!(await repo.type(tenantId, dto.leaveTypeId)))
+        throw new NotFoundException('Leave type not found');
+      const days = calculateLeaveDays(
+        dto,
+        calendarPolicy((await repo.settings(tenantId))?.metadata),
       );
-    }
-
-    const employeeId = employee.id;
-
-    return this.prisma.$transaction(async (tx) => {
-      // Validate overlapping leaves
-      const overlapping = await tx.leaveRequest.findFirst({
-        where: {
-          tenantId,
-          employeeId,
-          status: { in: ['PENDING', 'APPROVED'] },
-          OR: [{ startDate: { lte: endDate }, endDate: { gte: startDate } }],
-          // A withdrawn/deleted request must not block a new one for the
-          // same dates.
-          deletedAt: null,
-        },
-      });
-
-      if (overlapping) {
+      const startDate = new Date(dto.startDate + 'T00:00:00Z');
+      const endDate = new Date(dto.endDate + 'T00:00:00Z');
+      const duration = dto.duration ?? 'FULL_DAY';
+      const overlaps = await repo.overlapping(
+        tenantId,
+        employeeId,
+        startDate,
+        endDate,
+      );
+      if (
+        overlaps.some(
+          (r) =>
+            duration === 'FULL_DAY' ||
+            r.duration === 'FULL_DAY' ||
+            r.duration === duration,
+        )
+      ) {
         throw new ConflictException(
           'Leave request overlaps with an existing request',
         );
       }
-
-      const daysRequested =
-        Math.floor(
-          (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-        ) + 1;
-      const year = startDate.getFullYear();
-
-      const balance = await tx.leaveBalance.findUnique({
-        where: {
-          tenantId_employeeId_leaveTypeId_year: {
-            tenantId,
-            employeeId,
-            leaveTypeId: dto.leaveTypeId,
-            year,
-          },
-        },
-      });
-
-      if (!balance || balance.availableDays < daysRequested) {
+      const balance = await repo.balance(
+        tenantId,
+        employeeId,
+        dto.leaveTypeId,
+        startDate.getUTCFullYear(),
+      );
+      if (!balance || balance.availableDays < days)
         throw new ConflictException(
           'Insufficient leave balance for the requested dates',
         );
-      }
-
-      await tx.leaveBalance.update({
-        where: { id: balance.id },
-        data: {
-          usedDays: { increment: daysRequested },
-          availableDays: { decrement: daysRequested },
-        },
+      await repo.changeBalance(tenantId, balance.id, {
+        reservedDays: { increment: days },
+        availableDays: { decrement: days },
+        updatedBy: userId,
       });
-
-      return tx.leaveRequest.create({
-        data: {
-          tenantId,
-          employeeId,
-          leaveTypeId: dto.leaveTypeId,
-          startDate,
-          endDate,
-          reason: dto.reason,
-        },
+      const leave = await repo.create({
+        tenantId,
+        employeeId,
+        leaveTypeId: dto.leaveTypeId,
+        startDate,
+        endDate,
+        duration,
+        requestedDays: days,
+        reason: dto.reason,
+        createdBy: userId,
+        updatedBy: userId,
       });
+      await this.record(repo, leave, 'RESERVED', userId, requestId);
+      const workflow = await this.workflowEngine.findActiveWorkflow(
+        tenantId,
+        'LEAVES',
+        'leave_request',
+        { leaveTypeId: leave.leaveTypeId, days },
+        repo.client,
+      );
+      const instance = workflow
+        ? await this.workflowEngine.getOrCreateInstance(
+            workflow,
+            leave.id,
+            employeeId,
+            { leaveTypeId: leave.leaveTypeId, days },
+            repo.client,
+          )
+        : null;
+      return { leave, instance };
     });
+    await this.notifyReviewer(
+      result.leave,
+      requestId,
+      result.instance?.id,
+      result.instance?.currentStage,
+    );
+    return result.leave;
+  }
+
+  async getLeaveTypes(
+    tenantId: string,
+  ): ReturnType<LeaveTransactionRepository['types']> {
+    return this.repository.read().types(tenantId);
+  }
+
+  async access(userId: string): Promise<{ canApprove: boolean }> {
+    return {
+      canApprove: await this.rbacService.hasPermission(
+        userId,
+        'LEAVES',
+        'APPROVE',
+      ),
+    };
+  }
+
+  async getMyBalances(
+    tenantId: string,
+    userId: string,
+    year: number,
+  ): ReturnType<LeaveTransactionRepository['balances']> {
+    const repo = this.repository.read();
+    return repo.balances(
+      tenantId,
+      await this.employee(repo, tenantId, userId),
+      year,
+    );
   }
 
   async getLeaveBalances(
     tenantId: string,
+    userId: string,
     employeeId: string,
     year: number,
-    skip = 0,
-    take = 50,
-  ) {
-    return this.prisma.leaveBalance.findMany({
-      where: { tenantId, employeeId, year, deletedAt: null },
-      skip,
-      // `take` is client-supplied; cap it like the other list endpoints.
-      take: Math.min(take, 200),
-    });
+  ): ReturnType<LeaveTransactionRepository['balances']> {
+    const repo = this.repository.read();
+    if ((await this.employee(repo, tenantId, userId)) !== employeeId)
+      throw new ForbiddenException('You may only read your own leave balance');
+    return repo.balances(tenantId, employeeId, year);
   }
 
-  /**
-   * Active leave types for the tenant — used to populate the Apply form.
-   * The client needs the real leaveTypeId (not a hard-coded enum) to file.
-   */
-  async getLeaveTypes(tenantId: string) {
-    return this.prisma.leaveType.findMany({
-      where: { tenantId, deletedAt: null },
-      select: {
-        id: true,
-        name: true,
-        code: true,
-        isPaid: true,
-      },
-      orderBy: { name: 'asc' },
-    });
-  }
-
-  /**
-   * Resolve the caller's own employee id. Self-service leave endpoints derive
-   * the employee from the JWT so a client can never read or file for someone
-   * else (closes the balance/:employeeId scope hole).
-   */
-  private async resolveEmployeeId(
-    tenantId: string,
-    userId: string,
-  ): Promise<string> {
-    const employee = await this.prisma.employee.findFirst({
-      where: { tenantId, userId, deletedAt: null },
-      select: { id: true },
-    });
-    if (!employee) {
-      throw new NotFoundException(
-        'No employee record is linked to this user account',
-      );
-    }
-    return employee.id;
-  }
-
-  /** The caller's own leave balances for a year, with the type joined in. */
-  async getMyBalances(tenantId: string, userId: string, year: number) {
-    const employeeId = await this.resolveEmployeeId(tenantId, userId);
-    return this.prisma.leaveBalance.findMany({
-      where: { tenantId, employeeId, year, deletedAt: null },
-      include: {
-        leaveType: { select: { id: true, name: true, code: true } },
-      },
-      orderBy: { leaveType: { name: 'asc' } },
-    });
-  }
-
-  /** The caller's own leave requests (history), newest first. */
   async getMyRequests(
     tenantId: string,
     userId: string,
     status?: string,
     skip = 0,
-    take = 50,
-  ) {
-    const employeeId = await this.resolveEmployeeId(tenantId, userId);
-    return this.prisma.leaveRequest.findMany({
-      where: {
-        tenantId,
-        employeeId,
-        deletedAt: null,
+    take = 25,
+  ): ReturnType<LeaveTransactionRepository['list']> {
+    const repo = this.repository.read();
+    return repo.list(
+      tenantId,
+      {
+        employeeId: await this.employee(repo, tenantId, userId),
         ...(status ? { status } : {}),
       },
-      include: {
-        leaveType: { select: { id: true, name: true, code: true } },
-      },
-      orderBy: { createdAt: 'desc' },
       skip,
-      take: Math.min(take, 100),
-    });
+      Math.min(take, 100),
+    );
   }
 
   async getPendingLeaves(
     tenantId: string,
-    requesterUserId: string,
-    skip = 0,
-    take = 50,
-  ) {
-    // Data scope (DataScope.md): tenant admins see all, managers see their
-    // team, everyone else sees nothing they aren't scoped to.
-    const scope = await this.rbacService.getDataScope(
-      requesterUserId,
-      'LEAVES',
-      'READ',
-    );
-    const scopeFilter = await this.rbacService.buildEmployeeScopeFilter(
+    userId: string,
+    query: LeaveQueryDto = new LeaveQueryDto(),
+  ): ReturnType<LeaveTransactionRepository['list']> {
+    const scope = await this.rbacService.getDataScope(userId, 'LEAVES', 'READ');
+    const filter = await this.rbacService.buildEmployeeScopeFilter(
       tenantId,
-      requesterUserId,
+      userId,
       scope,
       'LEAVES',
     );
-    if (scopeFilter === null) return [];
-
-    return this.prisma.leaveRequest.findMany({
-      where: { tenantId, status: 'PENDING', deletedAt: null, ...scopeFilter },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            employeeCode: true,
-            firstName: true,
-            lastName: true,
-            // Never include the full user record here — it carries
-            // passwordHash and tokenVersion.
-            user: {
-              select: {
-                id: true,
-                email: true,
-                profile: {
-                  select: { firstName: true, lastName: true },
-                },
-              },
-            },
-          },
-        },
-        leaveType: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take,
-    });
+    if (filter === null) return [];
+    return this.repository
+      .read()
+      .list(
+        tenantId,
+        { ...filter, status: query.status ?? 'PENDING' },
+        query.skip,
+        query.take,
+      );
   }
 
   async updateLeaveStatus(
     tenantId: string,
     leaveId: string,
     status: 'APPROVED' | 'REJECTED',
-    managerId: string,
-  ) {
-    // Approval routing via the shared workflow engine (ApprovalWorkflow.md):
-    // RBAC + data-scope authorization, self-approval block, audit trail.
-    // Tenants with an active leave_request workflow route through its
-    // stages; the leave record only changes on the finalizing decision.
-    const pending = await this.prisma.leaveRequest.findFirst({
-      where: { id: leaveId, tenantId, deletedAt: null },
-      select: {
-        employeeId: true,
-        leaveTypeId: true,
-        startDate: true,
-        endDate: true,
-      },
-    });
-    if (!pending) {
-      throw new NotFoundException('Leave request not found');
-    }
-
-    const requestedDays =
-      Math.floor(
-        (new Date(pending.endDate).getTime() -
-          new Date(pending.startDate).getTime()) /
-          (1000 * 3600 * 24),
-      ) + 1;
-
-    const applyDecision = () =>
-      this.prisma.$transaction(async (tx) => {
-        const leave = await tx.leaveRequest.findUnique({
-          where: { id: leaveId },
-        });
-
-        if (!leave || leave.tenantId !== tenantId) {
-          throw new NotFoundException('Leave request not found');
-        }
-
-        if (leave.status !== 'PENDING') {
-          throw new ConflictException(
-            'Can only approve/reject pending leave requests',
-          );
-        }
-
-        const updatedLeave = await tx.leaveRequest.update({
-          where: { id: leaveId },
-          data: { status, approvedBy: managerId },
-        });
-
-        // If rejected, refund the days to the balance
-        if (status === 'REJECTED') {
-          const startDate = new Date(leave.startDate);
-          const endDate = new Date(leave.endDate);
-          const daysRequested =
-            Math.floor(
-              (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24),
-            ) + 1;
-          const year = startDate.getFullYear();
-
-          const balance = await tx.leaveBalance.findUnique({
-            where: {
-              tenantId_employeeId_leaveTypeId_year: {
-                tenantId,
-                employeeId: leave.employeeId,
-                leaveTypeId: leave.leaveTypeId,
-                year,
-              },
-            },
-          });
-
-          if (balance) {
-            await tx.leaveBalance.update({
-              where: { id: balance.id },
-              data: {
-                usedDays: { decrement: daysRequested },
-                availableDays: { increment: daysRequested },
-              },
-            });
-          }
-        }
-
-        return updatedLeave;
-      });
-
-    const outcome = await this.approvalsService.process(
-      {
-        tenantId,
-        module: 'LEAVES',
-        entityName: 'leave_request',
-        entityId: leaveId,
-        ownerEmployeeId: pending.employeeId,
-        actorUserId: managerId,
-        decision: status,
-        context: { leaveTypeId: pending.leaveTypeId, days: requestedDays },
-      },
-      applyDecision,
-    );
-
-    // Intermediate stage approval — leave stays PENDING for the next
-    // approver; no balance change, no employee notification yet.
-    if (!outcome.finalized || !outcome.result) {
-      return {
-        id: leaveId,
-        status: 'PENDING',
-        workflow: {
-          instanceId: outcome.instanceId,
-          approvedStage: outcome.stageNumber,
-          nextStage: outcome.nextStageNumber,
-          nextStageName: outcome.nextStageName,
-          totalStages: outcome.totalStages,
+    userId: string,
+    reason?: string,
+    requestId?: string,
+  ): Promise<
+    | LeaveRequest
+    | {
+        id: string;
+        status: string;
+        workflow: Omit<ApprovalOutcome<LeaveRequest>, 'result'>;
+      }
+  > {
+    const outcome = await this.repository.transaction(async (repo) => {
+      const leave = await repo.request(tenantId, leaveId);
+      if (!leave) throw new NotFoundException('Leave request not found');
+      if (leave.status !== 'PENDING')
+        throw new ConflictException(
+          'Only pending leave requests can be decided',
+        );
+      const approver = await repo.employee(tenantId, userId);
+      return this.approvalsService.process(
+        {
+          tenantId,
+          module: 'LEAVES',
+          entityName: 'leave_request',
+          entityId: leaveId,
+          ownerEmployeeId: leave.employeeId,
+          actorUserId: userId,
+          decision: status,
+          notes: reason,
+          requestId,
+          context: {
+            leaveTypeId: leave.leaveTypeId,
+            days: leave.requestedDays,
+          },
         },
-      };
-    }
-    const decided = outcome.result;
-
-    // Notify the employee (ApprovalWorkflow.md — notification on decision)
-    const owner = await this.prisma.employee.findFirst({
-      where: { id: pending.employeeId, tenantId, deletedAt: null },
-      select: {
-        firstName: true,
-        user: { select: { id: true, email: true } },
-      },
+        async () => {
+          const balance = await repo.balance(
+            tenantId,
+            leave.employeeId,
+            leave.leaveTypeId,
+            leave.startDate.getUTCFullYear(),
+          );
+          if (!balance || balance.reservedDays < leave.requestedDays)
+            throw new ConflictException(
+              'Leave balance requires administrator reconciliation',
+            );
+          const claimed = await repo.update(tenantId, leaveId, 'PENDING', {
+            status,
+            approvedBy: approver?.id ?? null,
+            approvedAt: new Date(),
+            decisionReason: reason,
+            updatedBy: userId,
+          });
+          if (claimed.count !== 1)
+            throw new ConflictException(
+              'Leave request has already changed; refresh and retry',
+            );
+          await repo.changeBalance(tenantId, balance.id, {
+            reservedDays: { decrement: leave.requestedDays },
+            ...(status === 'APPROVED'
+              ? { usedDays: { increment: leave.requestedDays } }
+              : { availableDays: { increment: leave.requestedDays } }),
+            updatedBy: userId,
+          });
+          const updated = await repo.request(tenantId, leaveId);
+          if (!updated) throw new NotFoundException('Leave request not found');
+          await this.record(repo, updated, status, userId, requestId);
+          return updated;
+        },
+        repo.client,
+      );
     });
-    const verb = status === 'APPROVED' ? 'approved' : 'rejected';
-    if (owner?.user?.email) {
-      void this.notifications.sendRawEmail(
-        owner.user.email,
-        `Your leave request has been ${verb}`,
-        `<p>Hi ${owner.firstName},</p>
-         <p>Your leave request from ${decided.startDate.toDateString()} to ${decided.endDate.toDateString()} has been <b>${verb}</b>.</p>`,
+    if (!outcome.finalized || !outcome.result) {
+      const leave = await this.repository.read().request(tenantId, leaveId);
+      if (leave)
+        await this.notifyReviewer(
+          leave,
+          requestId,
+          outcome.instanceId,
+          outcome.nextStageNumber,
+        );
+      return { id: leaveId, status: 'PENDING', workflow: outcome };
+    }
+    await this.notify(outcome.result, requestId);
+    return outcome.result;
+  }
+
+  async withdraw(
+    tenantId: string,
+    userId: string,
+    id: string,
+    requestId?: string,
+  ): Promise<LeaveRequest> {
+    return this.cancel(
+      tenantId,
+      userId,
+      id,
+      false,
+      'Withdrawn by employee',
+      requestId,
+    );
+  }
+
+  async cancelApproved(
+    tenantId: string,
+    userId: string,
+    id: string,
+    reason: string,
+    requestId?: string,
+  ): Promise<LeaveRequest> {
+    return this.cancel(tenantId, userId, id, true, reason, requestId);
+  }
+
+  private async cancel(
+    tenantId: string,
+    userId: string,
+    id: string,
+    approved: boolean,
+    reason: string,
+    requestId?: string,
+  ): Promise<LeaveRequest> {
+    const result = await this.repository.transaction(async (repo) => {
+      const leave = await repo.request(tenantId, id);
+      if (!leave) throw new NotFoundException('Leave request not found');
+      if (approved)
+        await this.approvalsService.authorizeDecision({
+          tenantId,
+          module: 'LEAVES',
+          entityName: 'leave_request',
+          entityId: id,
+          ownerEmployeeId: leave.employeeId,
+          actorUserId: userId,
+          decision: 'REJECTED',
+        });
+      else if (
+        (await this.employee(repo, tenantId, userId)) !== leave.employeeId
+      )
+        throw new NotFoundException('Leave request not found');
+      if (leave.status === 'CANCELLED') return leave;
+      const expected = approved ? 'APPROVED' : 'PENDING';
+      if (leave.status !== expected)
+        throw new ConflictException(
+          'Only ' +
+            expected.toLowerCase() +
+            ' requests can be ' +
+            (approved ? 'cancelled' : 'withdrawn'),
+        );
+      const balance = await repo.balance(
+        tenantId,
+        leave.employeeId,
+        leave.leaveTypeId,
+        leave.startDate.getUTCFullYear(),
+      );
+      if (
+        !balance ||
+        (approved ? balance.usedDays : balance.reservedDays) <
+          leave.requestedDays
+      )
+        throw new ConflictException(
+          'Leave balance requires administrator reconciliation',
+        );
+      const changed = await repo.update(tenantId, id, expected, {
+        status: 'CANCELLED',
+        cancelledAt: new Date(),
+        decisionReason: reason,
+        updatedBy: userId,
+      });
+      if (changed.count !== 1)
+        throw new ConflictException(
+          'Leave request has already changed; refresh and retry',
+        );
+      await repo.changeBalance(tenantId, balance.id, {
+        availableDays: { increment: leave.requestedDays },
+        ...(approved
+          ? { usedDays: { decrement: leave.requestedDays } }
+          : { reservedDays: { decrement: leave.requestedDays } }),
+        updatedBy: userId,
+      });
+      await repo.cancelWorkflow(tenantId, id);
+      const updated = await repo.request(tenantId, id);
+      if (!updated) throw new NotFoundException('Leave request not found');
+      await this.record(
+        repo,
+        updated,
+        approved ? 'CANCELLED' : 'WITHDRAWN',
+        userId,
+        requestId,
+      );
+      return updated;
+    });
+    await this.notify(result, requestId);
+    return result;
+  }
+
+  private async record(
+    repo: LeaveTransactionRepository,
+    leave: LeaveRequest,
+    action: string,
+    userId: string,
+    requestId?: string,
+  ): Promise<void> {
+    await repo.ledger({
+      tenantId: leave.tenantId,
+      requestId: leave.id,
+      employeeId: leave.employeeId,
+      leaveTypeId: leave.leaveTypeId,
+      year: leave.startDate.getUTCFullYear(),
+      action,
+      days: leave.requestedDays,
+      createdBy: userId,
+    });
+    await repo.audit({
+      tenantId: leave.tenantId,
+      actorId: userId,
+      module: 'LEAVES',
+      entityName: 'leave_request',
+      entityId: leave.id,
+      action: 'LEAVE_' + action,
+      requestId,
+      newValue: { status: leave.status, days: leave.requestedDays },
+    });
+  }
+
+  private async notify(leave: LeaveRequest, requestId?: string): Promise<void> {
+    try {
+      const owner = await this.repository
+        .read()
+        .owner(leave.tenantId, leave.employeeId);
+      if (!owner?.user) return;
+      await this.repository.read().notificationTemplates(leave.tenantId);
+      const title = 'Leave request ' + leave.status.toLowerCase();
+      const body =
+        'Your leave from ' +
+        leave.startDate.toISOString().slice(0, 10) +
+        ' to ' +
+        leave.endDate.toISOString().slice(0, 10) +
+        ' is ' +
+        leave.status.toLowerCase() +
+        '.';
+      const results = await Promise.allSettled([
+        this.inApp.create({
+          tenantId: leave.tenantId,
+          recipientId: owner.user.id,
+          category: 'LEAVE',
+          title,
+          body,
+          deepLinkRoute: '/leave',
+        }),
+        this.notifications.sendEmail(
+          leave.tenantId,
+          owner.user.id,
+          'LEAVE_STATUS_EMAIL',
+          {
+            status: leave.status.toLowerCase(),
+            startDate: leave.startDate.toISOString().slice(0, 10),
+            endDate: leave.endDate.toISOString().slice(0, 10),
+          },
+        ),
+        this.notifications.sendPush(
+          leave.tenantId,
+          owner.user.id,
+          'LEAVE_STATUS_PUSH',
+          {
+            status: leave.status.toLowerCase(),
+            startDate: leave.startDate.toISOString().slice(0, 10),
+            endDate: leave.endDate.toISOString().slice(0, 10),
+          },
+        ),
+      ]);
+      if (results.some((r) => r.status === 'rejected'))
+        throw new Error('Notification delivery failed');
+    } catch {
+      this.logger.warn(
+        {
+          tenant_id: leave.tenantId,
+          request_id: requestId,
+          leave_id: leave.id,
+        },
+        'Leave saved; notification delivery failed',
       );
     }
-    // In-app feed (mobile Home bell) — mirror the email decision.
-    if (owner?.user?.id) {
-      await this.inApp.create({
-        tenantId,
-        recipientId: owner.user.id,
-        category: 'LEAVE',
-        title: `Leave request ${verb}`,
-        body: `Your leave from ${decided.startDate.toDateString()} to ${decided.endDate.toDateString()} was ${verb}.`,
-        deepLinkRoute: '/leave',
-      });
-    }
+  }
 
-    return decided;
+  private async notifyReviewer(
+    leave: LeaveRequest,
+    requestId?: string,
+    instanceId?: string,
+    stageNumber?: number,
+  ): Promise<void> {
+    try {
+      const repo = this.repository.read();
+      const recipient =
+        instanceId && stageNumber
+          ? await repo.assignedApprover(leave.tenantId, instanceId, stageNumber)
+          : await repo.reportingManager(leave.tenantId, leave.employeeId);
+      if (!recipient) return;
+      // Do not disclose request data to an out-of-scope reporting manager.
+      await this.approvalsService.authorizeDecision({
+        tenantId: leave.tenantId,
+        module: 'LEAVES',
+        entityName: 'leave_request',
+        entityId: leave.id,
+        ownerEmployeeId: leave.employeeId,
+        actorUserId: recipient,
+        decision: 'APPROVED',
+      });
+      await repo.notificationTemplates(leave.tenantId);
+      await Promise.all([
+        this.inApp.create({
+          tenantId: leave.tenantId,
+          recipientId: recipient,
+          category: 'LEAVE',
+          title: 'Leave request awaiting review',
+          body: 'Open the Leave requests page to review your approval queue.',
+          deepLinkRoute: '/leave',
+        }),
+        this.notifications.sendEmail(
+          leave.tenantId,
+          recipient,
+          'LEAVE_REVIEW_EMAIL',
+          {},
+        ),
+        this.notifications.sendPush(
+          leave.tenantId,
+          recipient,
+          'LEAVE_REVIEW_PUSH',
+          {},
+        ),
+      ]);
+    } catch {
+      this.logger.warn(
+        {
+          tenant_id: leave.tenantId,
+          request_id: requestId,
+          leave_id: leave.id,
+        },
+        'Reviewer notification could not be delivered',
+      );
+    }
   }
 }

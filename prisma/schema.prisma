@@ -1915,6 +1915,7 @@ model LeaveBalance {
   leaveTypeId   String
   totalDays     Float     @default(0)
   usedDays      Float     @default(0)
+  reservedDays  Float     @default(0)
   availableDays Float     @default(0)
   year          Int
   createdAt     DateTime  @default(now())
@@ -1940,6 +1941,10 @@ model LeaveRequest {
   startDate   DateTime  @db.Date
   endDate     DateTime  @db.Date
   status      String    @default("PENDING") // PENDING, APPROVED, REJECTED, CANCELLED
+  duration    String    @default("FULL_DAY") // FULL_DAY, FIRST_HALF, SECOND_HALF
+  requestedDays Float   @default(0)
+  decisionReason String?
+  cancelledAt DateTime?
   reason      String?
   approvedBy  String?
   approvedAt  DateTime?
@@ -1953,12 +1958,35 @@ model LeaveRequest {
   employee  Employee  @relation("EmployeeLeaveRequests", fields: [employeeId], references: [id], onDelete: Cascade)
   leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
   approver  Employee? @relation("LeaveApprover", fields: [approvedBy], references: [id])
+  ledgerEntries LeaveLedger[]
 
   @@unique([id, tenantId])
   @@index([tenantId, employeeId])
   @@index([tenantId, status])
   @@index([tenantId, startDate])
   @@map("leave_requests")
+}
+
+// Immutable entitlement movements. No update/delete API is exposed.
+model LeaveLedger {
+  id String @id @default(uuid())
+  tenantId String
+  requestId String
+  employeeId String
+  leaveTypeId String
+  year Int
+  action String
+  days Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  request LeaveRequest @relation(fields: [requestId, tenantId], references: [id, tenantId])
+  @@unique([tenantId, requestId, action])
+  @@index([tenantId, employeeId, year])
+  @@index([tenantId, leaveTypeId])
+  @@map("leave_ledger")
 }
 
 // -----------------------------------------------------------------------------

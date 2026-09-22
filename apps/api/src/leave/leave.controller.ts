@@ -6,6 +6,8 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
+  Req,
 } from '@nestjs/common';
 import { LeaveService } from './leave.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -17,120 +19,166 @@ import {
   CurrentUserContext,
 } from '@pingforce-monorepo/shared';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
+import { LeaveQueryDto } from './dto/leave-query.dto';
+import { CancelLeaveDto, LeaveDecisionDto } from './dto/leave-decision.dto';
 
 @Controller('leaves')
 @UseGuards(JwtAuthGuard, RbacGuard)
 export class LeaveController {
-  constructor(private readonly leaveService: LeaveService) {}
+  constructor(private readonly service: LeaveService) {}
+
+  @Get('access')
+  @RequirePermission('LEAVES', 'READ')
+  access(
+    @CurrentUser() user: CurrentUserContext,
+  ): ReturnType<LeaveService['access']> {
+    return this.service.access(user.userId);
+  }
 
   @Post('request')
   @RequirePermission('LEAVES', 'CREATE')
-  async requestLeave(
+  requestLeave(
     @CurrentTenant() tenantId: string,
-    @CurrentUser() currentUser: CurrentUserContext,
+    @CurrentUser() user: CurrentUserContext,
     @Body() dto: CreateLeaveRequestDto,
-  ) {
-    // employeeId is always derived from the authenticated user — clients
-    // cannot file leave on behalf of someone else.
-    return this.leaveService.requestLeave(tenantId, currentUser.userId, dto);
+    @Req() request: { id?: string },
+  ): ReturnType<LeaveService['requestLeave']> {
+    return this.service.requestLeave(tenantId, user.userId, dto, request.id);
   }
 
-  // ── Self-service (mobile Leave screen) ────────────────────────────────────
-  // employeeId is always derived from the JWT — a client can never read or
-  // file leave for another employee.
+  @Post('preview')
+  @RequirePermission('LEAVES', 'CREATE')
+  preview(
+    @CurrentTenant() tenantId: string,
+    @Body() dto: CreateLeaveRequestDto,
+  ): ReturnType<LeaveService['preview']> {
+    return this.service.preview(tenantId, dto);
+  }
 
   @Get('types')
   @RequirePermission('LEAVES', 'READ_OWN')
-  async getLeaveTypes(@CurrentTenant() tenantId: string) {
-    return this.leaveService.getLeaveTypes(tenantId);
+  getTypes(
+    @CurrentTenant() tenantId: string,
+  ): ReturnType<LeaveService['getLeaveTypes']> {
+    return this.service.getLeaveTypes(tenantId);
   }
 
   @Get('my-balance')
   @RequirePermission('LEAVES', 'READ_OWN')
-  async getMyBalances(
+  getMyBalances(
     @CurrentTenant() tenantId: string,
-    @CurrentUser() currentUser: CurrentUserContext,
-    @Query('year') year?: string,
-  ) {
-    return this.leaveService.getMyBalances(
-      tenantId,
-      currentUser.userId,
-      year ? parseInt(year, 10) : new Date().getFullYear(),
-    );
+    @CurrentUser() user: CurrentUserContext,
+    @Query() query: LeaveQueryDto,
+  ): ReturnType<LeaveService['getMyBalances']> {
+    return this.service.getMyBalances(tenantId, user.userId, query.year);
   }
 
   @Get('my')
   @RequirePermission('LEAVES', 'READ_OWN')
-  async getMyRequests(
+  getMyRequests(
     @CurrentTenant() tenantId: string,
-    @CurrentUser() currentUser: CurrentUserContext,
-    @Query('status') status?: string,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-  ) {
-    return this.leaveService.getMyRequests(
+    @CurrentUser() user: CurrentUserContext,
+    @Query() query: LeaveQueryDto,
+  ): ReturnType<LeaveService['getMyRequests']> {
+    return this.service.getMyRequests(
       tenantId,
-      currentUser.userId,
-      status,
-      skip ? parseInt(skip, 10) : undefined,
-      take ? parseInt(take, 10) : undefined,
+      user.userId,
+      query.status,
+      query.skip,
+      query.take,
     );
   }
 
   @Get('balance/:employeeId')
   @RequirePermission('LEAVES', 'READ_OWN')
-  async getLeaveBalances(
+  getBalances(
     @CurrentTenant() tenantId: string,
-    @Param('employeeId') employeeId: string,
-    @Query('year') year: number,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-  ) {
-    return this.leaveService.getLeaveBalances(
+    @CurrentUser() user: CurrentUserContext,
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @Query() query: LeaveQueryDto,
+  ): ReturnType<LeaveService['getLeaveBalances']> {
+    return this.service.getLeaveBalances(
       tenantId,
+      user.userId,
       employeeId,
-      Number(year) || new Date().getFullYear(),
-      skip ? parseInt(skip, 10) : undefined,
-      take ? parseInt(take, 10) : undefined,
+      query.year,
     );
   }
 
   @Get('pending')
   @RequirePermission('LEAVES', 'READ')
-  async getPendingLeaves(
+  getPending(
     @CurrentTenant() tenantId: string,
-    @CurrentUser() currentUser: CurrentUserContext,
-  ) {
-    return this.leaveService.getPendingLeaves(tenantId, currentUser.userId);
+    @CurrentUser() user: CurrentUserContext,
+    @Query() query: LeaveQueryDto,
+  ): ReturnType<LeaveService['getPendingLeaves']> {
+    return this.service.getPendingLeaves(tenantId, user.userId, query);
   }
 
   @Post(':id/approve')
   @RequirePermission('LEAVES', 'APPROVE')
-  async approveLeave(
+  approve(
     @CurrentTenant() tenantId: string,
-    @CurrentUser() currentUser: CurrentUserContext,
-    @Param('id') leaveId: string,
-  ) {
-    return this.leaveService.updateLeaveStatus(
+    @CurrentUser() user: CurrentUserContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: LeaveDecisionDto,
+    @Req() request: { id?: string },
+  ): ReturnType<LeaveService['updateLeaveStatus']> {
+    return this.service.updateLeaveStatus(
       tenantId,
-      leaveId,
+      id,
       'APPROVED',
-      currentUser.userId,
+      user.userId,
+      dto.reason,
+      request.id,
     );
   }
 
   @Post(':id/reject')
   @RequirePermission('LEAVES', 'APPROVE')
-  async rejectLeave(
+  reject(
     @CurrentTenant() tenantId: string,
-    @CurrentUser() currentUser: CurrentUserContext,
-    @Param('id') leaveId: string,
-  ) {
-    return this.leaveService.updateLeaveStatus(
+    @CurrentUser() user: CurrentUserContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: LeaveDecisionDto,
+    @Req() request: { id?: string },
+  ): ReturnType<LeaveService['updateLeaveStatus']> {
+    return this.service.updateLeaveStatus(
       tenantId,
-      leaveId,
+      id,
       'REJECTED',
-      currentUser.userId,
+      user.userId,
+      dto.reason,
+      request.id,
+    );
+  }
+
+  @Post(':id/withdraw')
+  @RequirePermission('LEAVES', 'CREATE')
+  withdraw(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() request: { id?: string },
+  ): ReturnType<LeaveService['withdraw']> {
+    return this.service.withdraw(tenantId, user.userId, id, request.id);
+  }
+
+  @Post(':id/cancel')
+  @RequirePermission('LEAVES', 'APPROVE')
+  cancel(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CancelLeaveDto,
+    @Req() request: { id?: string },
+  ): ReturnType<LeaveService['cancelApproved']> {
+    return this.service.cancelApproved(
+      tenantId,
+      user.userId,
+      id,
+      dto.reason,
+      request.id,
     );
   }
 }

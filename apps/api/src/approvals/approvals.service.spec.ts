@@ -1,5 +1,6 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ApprovalsService, ApprovalRequest } from './approvals.service';
+import { Prisma } from '@prisma/client';
 
 /**
  * Shared approval engine guarantees (ApprovalWorkflow.md): RBAC check,
@@ -64,6 +65,23 @@ const baseRequest: ApprovalRequest = {
   actorUserId: 'u-actor',
   decision: 'APPROVED',
 };
+
+describe('Leave transactional audit integration', () => {
+  it('writes the approval audit using the caller transaction', async () => {
+    const { service, auditService } = makeService({});
+    const transaction = {
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
+    };
+    await service.recordDecision(
+      { ...baseRequest, requestId: 'request-1' },
+      transaction as unknown as Prisma.TransactionClient,
+    );
+    expect(transaction.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ tenantId: 't1', requestId: 'request-1' }),
+    });
+    expect(auditService.log).not.toHaveBeenCalled();
+  });
+});
 
 describe('ApprovalsService.authorizeDecision', () => {
   it('rejects actors without the APPROVE permission', async () => {
