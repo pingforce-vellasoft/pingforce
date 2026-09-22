@@ -1,4 +1,5 @@
 import { ConflictException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import {
   WorkflowEngineService,
   ActiveWorkflow,
@@ -52,6 +53,7 @@ function makeEngine(state: TxState) {
   const createdActions: unknown[] = [];
 
   const tx = {
+    auditLog: { create: jest.fn().mockResolvedValue({}) },
     workflowInstance: {
       findFirst: jest.fn().mockResolvedValue(state.instance),
       update: jest.fn().mockImplementation(({ data }) => {
@@ -101,8 +103,78 @@ function makeEngine(state: TxState) {
       typeof WorkflowEngineService
     >[1],
   );
-  return { engine, prisma, auditService, instanceUpdates, createdActions };
+  return { engine, prisma, auditService, instanceUpdates, createdActions, tx };
 }
+
+describe('Leave transaction participation', () => {
+  it('keeps the workflow selected on submission even after a newer version is activated', async () => {
+    const { engine } = makeEngine({
+      instance: {
+        id: 'i1',
+        tenantId: 't1',
+        status: 'IN_PROGRESS',
+        currentStage: 1,
+      },
+      priorActions: [],
+    });
+    const transaction = {
+      workflowInstance: {
+        findFirst: jest.fn().mockResolvedValue({
+          workflow: { ...twoStageWorkflow, deletedAt: null, active: false },
+        }),
+      },
+    };
+    const result = await engine.findExistingWorkflow(
+      't1',
+      'LEAVES',
+      'leave_request',
+      'r1',
+      transaction as unknown as Prisma.TransactionClient,
+    );
+    expect(result?.id).toBe('wf1');
+    expect(transaction.workflowInstance.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          tenantId: 't1',
+          module: 'LEAVES',
+          entityName: 'leave_request',
+          entityId: 'r1',
+          status: 'IN_PROGRESS',
+        },
+      }),
+    );
+  });
+
+  it('advances a stage and audits without starting a nested transaction', async () => {
+    const { engine, prisma, tx, auditService } = makeEngine({
+      instance: {
+        id: 'i1',
+        tenantId: 't1',
+        status: 'IN_PROGRESS',
+        currentStage: 1,
+      },
+      priorActions: [],
+    });
+    const result = await engine.applyAction(
+      twoStageWorkflow,
+      'i1',
+      {
+        tenantId: 't1',
+        actorUserId: 'u1',
+        decision: 'APPROVED',
+        requestId: 'request-1',
+      },
+      tx as unknown as Prisma.TransactionClient,
+    );
+    expect(result.finalized).toBe(false);
+    expect(result.nextStageNumber).toBe(2);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ tenantId: 't1', requestId: 'request-1' }),
+    });
+    expect(auditService.log).not.toHaveBeenCalled();
+  });
+});
 
 describe('WorkflowEngineService.findActiveWorkflow (conditional routing §11)', () => {
   function makeRoutingEngine(definitions: unknown[]) {

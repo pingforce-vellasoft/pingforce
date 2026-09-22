@@ -34,6 +34,7 @@ class LeaveBalanceModel {
     required this.usedDays,
     required this.availableDays,
     required this.year,
+    this.reservedDays,
   });
 
   final String id;
@@ -43,9 +44,11 @@ class LeaveBalanceModel {
   final double usedDays;
   final double availableDays;
   final int year;
+  final double? reservedDays;
 
   /// Days awaiting approval = entitled minus used minus still-available.
   double get pendingDays {
+    if (reservedDays != null) return reservedDays!;
     final p = totalDays - usedDays - availableDays;
     return p > 0 ? p : 0;
   }
@@ -64,6 +67,7 @@ class LeaveBalanceModel {
       usedDays: d(json['usedDays']),
       availableDays: d(json['availableDays']),
       year: (json['year'] as int?) ?? DateTime.now().year,
+      reservedDays: (json['reservedDays'] as num?)?.toDouble(),
     );
   }
 }
@@ -77,6 +81,9 @@ class LeaveRequestModel {
     required this.status,
     required this.reason,
     required this.appliedOn,
+    this.requestedDays,
+    this.duration = 'FULL_DAY',
+    this.decisionReason,
   });
 
   final String id;
@@ -87,7 +94,11 @@ class LeaveRequestModel {
   final String? reason;
   final DateTime appliedOn;
 
-  int get days => endDate.difference(startDate).inDays + 1;
+  final double? requestedDays;
+  final String duration;
+  final String? decisionReason;
+  double get days =>
+      requestedDays ?? (endDate.difference(startDate).inDays + 1).toDouble();
 
   factory LeaveRequestModel.fromJson(Map<String, dynamic> json) {
     DateTime parse(String? s) => DateTime.tryParse(s ?? '') ?? DateTime.now();
@@ -100,6 +111,9 @@ class LeaveRequestModel {
       status: (json['status'] as String?) ?? 'PENDING',
       reason: json['reason'] as String?,
       appliedOn: parse(json['createdAt'] as String?),
+      requestedDays: (json['requestedDays'] as num?)?.toDouble(),
+      duration: (json['duration'] as String?) ?? 'FULL_DAY',
+      decisionReason: json['decisionReason'] as String?,
     );
   }
 }

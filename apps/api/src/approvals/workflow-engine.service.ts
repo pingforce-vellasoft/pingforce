@@ -1,6 +1,7 @@
 import { Injectable, Inject, ConflictException, Logger } from '@nestjs/common';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 import { AuditService } from '../audit/audit.service';
+import { Prisma } from '@prisma/client';
 
 /** Conditional-routing rule (ApprovalWorkflow.md §11). */
 export interface WorkflowCondition {
@@ -35,6 +36,7 @@ export interface EngineActionInput {
   readonly actorUserId: string;
   readonly decision: 'APPROVED' | 'REJECTED';
   readonly notes?: string;
+  readonly requestId?: string;
   /** Delegator userId when the actor acts under a delegation (§13). */
   readonly actedAsDelegateOf?: string;
 }
@@ -71,6 +73,41 @@ export class WorkflowEngineService {
     private readonly auditService: AuditService,
   ) {}
 
+  /** An in-flight leave request keeps the workflow version chosen on submission. */
+  async findExistingWorkflow(
+    tenantId: string,
+    module: string,
+    entityName: string,
+    entityId: string,
+    transaction: Prisma.TransactionClient,
+  ): Promise<ActiveWorkflow | null> {
+    const instance = await transaction.workflowInstance.findFirst({
+      where: { tenantId, module, entityName, entityId, status: 'IN_PROGRESS' },
+      include: {
+        workflow: { include: { stages: { orderBy: { stageNumber: 'asc' } } } },
+      },
+    });
+    if (!instance) return null;
+    const workflow = instance.workflow;
+    if (
+      workflow.tenantId !== tenantId ||
+      workflow.deletedAt ||
+      !workflow.stages.length
+    ) {
+      throw new ConflictException(
+        'The assigned workflow requires administrator reconciliation',
+      );
+    }
+    return {
+      id: workflow.id,
+      tenantId,
+      module: workflow.module,
+      entityName: workflow.entityName,
+      code: workflow.code,
+      stages: workflow.stages,
+    };
+  }
+
   /**
    * Picks the active definition routing this entity, or null when the
    * module runs single-stage. Definitions with conditions are evaluated
@@ -82,8 +119,11 @@ export class WorkflowEngineService {
     module: string,
     entityName: string,
     context?: Record<string, unknown>,
+    transaction?: Prisma.TransactionClient,
   ): Promise<ActiveWorkflow | null> {
-    const definitions = await this.prisma.workflowDefinition.findMany({
+    const definitions = await (
+      transaction ?? this.prisma
+    ).workflowDefinition.findMany({
       where: { tenantId, module, entityName, active: true, deletedAt: null },
       include: { stages: { orderBy: { stageNumber: 'asc' } } },
       orderBy: [{ version: 'desc' }, { createdAt: 'desc' }],
@@ -154,8 +194,11 @@ export class WorkflowEngineService {
     entityId: string,
     ownerEmployeeId: string,
     context?: Record<string, unknown>,
+    transaction?: Prisma.TransactionClient,
   ) {
-    const existing = await this.prisma.workflowInstance.findFirst({
+    const existing = await (
+      transaction ?? this.prisma
+    ).workflowInstance.findFirst({
       where: {
         tenantId: workflow.tenantId,
         entityName: workflow.entityName,
@@ -166,7 +209,7 @@ export class WorkflowEngineService {
     if (existing) return existing;
 
     const firstStage = workflow.stages[0];
-    return this.prisma.workflowInstance.create({
+    return (transaction ?? this.prisma).workflowInstance.create({
       data: {
         tenantId: workflow.tenantId,
         workflowId: workflow.id,
@@ -213,8 +256,11 @@ export class WorkflowEngineService {
     workflow: ActiveWorkflow,
     instanceId: string,
     input: EngineActionInput,
+    transaction?: Prisma.TransactionClient,
   ): Promise<EngineOutcome> {
-    const outcome = await this.prisma.$transaction(async (tx) => {
+    const apply = async (
+      tx: Prisma.TransactionClient,
+    ): Promise<EngineOutcome> => {
       const instance = await tx.workflowInstance.findFirst({
         where: { id: instanceId, tenantId: input.tenantId },
       });
@@ -232,6 +278,7 @@ export class WorkflowEngineService {
       // One vote per approver per stage (parallel double-approve guard)
       const alreadyActed = await tx.workflowAction.findFirst({
         where: {
+          tenantId: input.tenantId,
           instanceId: instance.id,
           stageNumber: stage.stageNumber,
           actorUserId: input.actorUserId,
@@ -258,7 +305,7 @@ export class WorkflowEngineService {
 
       if (input.decision === 'REJECTED') {
         await tx.workflowInstance.update({
-          where: { id: instance.id },
+          where: { id: instance.id, tenantId: input.tenantId },
           data: { status: 'REJECTED', completedAt: new Date() },
         });
         return {
@@ -274,6 +321,7 @@ export class WorkflowEngineService {
       if (stage.approvalMode === 'PARALLEL') {
         const approvals = await tx.workflowAction.count({
           where: {
+            tenantId: input.tenantId,
             instanceId: instance.id,
             stageNumber: stage.stageNumber,
             decision: 'APPROVED',
@@ -300,7 +348,7 @@ export class WorkflowEngineService {
 
       if (!nextStage) {
         await tx.workflowInstance.update({
-          where: { id: instance.id },
+          where: { id: instance.id, tenantId: input.tenantId },
           data: { status: 'APPROVED', completedAt: new Date() },
         });
         return {
@@ -314,7 +362,7 @@ export class WorkflowEngineService {
       }
 
       await tx.workflowInstance.update({
-        where: { id: instance.id },
+        where: { id: instance.id, tenantId: input.tenantId },
         data: {
           currentStage: nextStage.stageNumber,
           slaDueAt: this.slaDueAt(nextStage),
@@ -331,15 +379,19 @@ export class WorkflowEngineService {
         nextStageName: nextStage.stageName,
         totalStages,
       };
-    });
+    };
+    const outcome = transaction
+      ? await apply(transaction)
+      : await this.prisma.$transaction(apply);
 
-    void this.auditService.log({
+    const auditEntry = {
       tenantId: input.tenantId,
       actorId: input.actorUserId,
       module: workflow.module,
       entityName: workflow.entityName,
       entityId: outcome.instanceId,
       action: `WORKFLOW_STAGE_${input.decision}`,
+      requestId: input.requestId,
       newValue: {
         workflowCode: workflow.code,
         stageNumber: outcome.stageNumber,
@@ -350,7 +402,9 @@ export class WorkflowEngineService {
         }),
         ...(input.notes && { notes: input.notes }),
       },
-    });
+    };
+    if (transaction) await transaction.auditLog.create({ data: auditEntry });
+    else await this.auditService.log(auditEntry);
 
     return outcome;
   }

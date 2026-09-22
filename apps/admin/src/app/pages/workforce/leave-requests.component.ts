@@ -1,202 +1,236 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
-import { MatCardModule } from '@angular/material/card';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { WorkforceService } from '../../core/services/workforce.service';
-import { LeaveRequest } from '@pingforce-monorepo/dto';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { ConfirmDialogComponent } from '../../core/components/confirm-dialog.component';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { LeavePageService, LeaveRow } from './leave.service';
 
 @Component({
   selector: 'app-leave-requests',
   standalone: true,
   imports: [
     CommonModule,
-    MatTableModule,
-    MatCardModule,
+    ReactiveFormsModule,
     MatButtonModule,
-    MatIconModule,
-    MatDialogModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
   ],
+  providers: [LeavePageService],
   template: `
-    <div class="header-container">
-      <h1>Pending Leave Requests</h1>
-      <p>Approve or reject employee leave applications</p>
+    <h1>Leave requests</h1>
+    <p>Review chargeable days and employee requests within your team scope.</p>
+    <div class="toolbar">
+      <mat-form-field>
+        <mat-label>Status</mat-label>
+        <mat-select
+          [value]="page.status()"
+          [disabled]="page.loading() || page.busy()"
+          (selectionChange)="selected.set(null); page.load(0, $event.value)"
+        >
+          <mat-option value="PENDING">Pending</mat-option>
+          <mat-option value="APPROVED">Approved</mat-option>
+          <mat-option value="REJECTED">Rejected</mat-option>
+          <mat-option value="CANCELLED">Cancelled / withdrawn</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <button
+        mat-button
+        [disabled]="page.loading() || page.busy()"
+        (click)="page.load()"
+      >
+        Refresh
+      </button>
     </div>
-
-    <mat-card class="table-container">
-      <table mat-table [dataSource]="dataSource">
-        <ng-container matColumnDef="employee">
-          <th mat-header-cell *matHeaderCellDef>Employee</th>
-          <td mat-cell *matCellDef="let element">
-            {{ element.employee?.user?.firstName }}
-            {{ element.employee?.user?.lastName }}
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="leaveType">
-          <th mat-header-cell *matHeaderCellDef>Leave Type</th>
-          <td mat-cell *matCellDef="let element">
-            {{ element.leaveType?.name || 'Standard Leave' }}
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="dates">
-          <th mat-header-cell *matHeaderCellDef>Dates</th>
-          <td mat-cell *matCellDef="let element">
-            {{ element.startDate | date: 'mediumDate' }} -
-            {{ element.endDate | date: 'mediumDate' }}
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="reason">
-          <th mat-header-cell *matHeaderCellDef>Reason</th>
-          <td mat-cell *matCellDef="let element">{{ element.reason }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef class="action-cell">Actions</th>
-          <td mat-cell *matCellDef="let element" class="action-cell">
+    @if (page.error()) {
+      <p role="alert">{{ page.error() }}</p>
+    }
+    @if (page.message()) {
+      <p role="status">{{ page.message() }}</p>
+    }
+    @if (page.loading()) {
+      <p role="status">Loading requests…</p>
+    }
+    @for (row of page.rows(); track row.id) {
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title
+            >{{ row.employee.firstName }}
+            {{ row.employee.lastName }}</mat-card-title
+          >
+          <mat-card-subtitle
+            >{{ row.employee.employeeCode }} · {{ row.leaveType.name }} ·
+            {{ row.status }}</mat-card-subtitle
+          >
+        </mat-card-header>
+        <mat-card-content>
+          <p>
+            {{ row.startDate | date: 'mediumDate' : 'UTC' }} –
+            {{ row.endDate | date: 'mediumDate' : 'UTC' }}
+          </p>
+          <p>
+            {{ row.requestedDays }} chargeable day(s) ·
+            {{
+              row.duration === 'FULL_DAY'
+                ? 'Full day'
+                : row.duration === 'FIRST_HALF'
+                  ? 'First half'
+                  : 'Second half'
+            }}
+          </p>
+          <p>{{ row.reason || 'No reason provided' }}</p>
+          @if (row.decisionReason) {
+            <p>Decision: {{ row.decisionReason }}</p>
+          }
+        </mat-card-content>
+        @if (
+          page.canApprove() &&
+          (row.status === 'PENDING' || row.status === 'APPROVED')
+        ) {
+          <mat-card-actions>
             <button
-              mat-flat-button
-              color="primary"
-              class="action-btn"
-              (click)="approve(element.id)"
+              mat-button
+              [disabled]="page.busy() || page.loading()"
+              (click)="review(row)"
             >
-              <mat-icon>check</mat-icon> Approve
+              Review request
             </button>
-            <button
-              mat-stroked-button
-              color="warn"
-              class="action-btn"
-              (click)="reject(element.id)"
-            >
-              <mat-icon>close</mat-icon> Reject
-            </button>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-      </table>
-
-      @if (dataSource.length === 0) {
-        <div class="empty-state">No pending leave requests!</div>
+          </mat-card-actions>
+        }
+      </mat-card>
+    } @empty {
+      @if (!page.loading() && !page.error()) {
+        <p>No requests with this status.</p>
       }
-    </mat-card>
+    }
+    @if (selected(); as row) {
+      <section class="review" aria-label="Review leave request">
+        <h2>Review {{ row.employee.firstName }}'s request</h2>
+        <p>
+          {{ row.requestedDays }} day(s) will be
+          {{
+            row.status === 'APPROVED'
+              ? 'returned to the available balance on cancellation'
+              : 'converted from reserved to used on final approval, or returned on rejection'
+          }}.
+        </p>
+        <mat-form-field>
+          <mat-label>Decision reason (required for cancellation)</mat-label>
+          <textarea matInput [formControl]="reason" maxlength="1000"></textarea>
+        </mat-form-field>
+        @if (row.status === 'PENDING') {
+          <button
+            mat-flat-button
+            [disabled]="page.busy() || page.loading() || reason.invalid"
+            (click)="
+              page.decide(row, 'approve', reason.value); selected.set(null)
+            "
+          >
+            Confirm approval
+          </button>
+          <button
+            mat-button
+            [disabled]="page.busy() || page.loading() || reason.invalid"
+            (click)="
+              page.decide(row, 'reject', reason.value); selected.set(null)
+            "
+          >
+            Confirm rejection
+          </button>
+        } @else {
+          <button
+            mat-flat-button
+            [disabled]="
+              page.busy() ||
+              page.loading() ||
+              reason.invalid ||
+              reason.value.trim().length < 3
+            "
+            (click)="
+              page.decide(row, 'cancel', reason.value); selected.set(null)
+            "
+          >
+            Cancel approved leave
+          </button>
+        }
+        <button
+          mat-button
+          [disabled]="page.busy()"
+          (click)="selected.set(null)"
+        >
+          Close
+        </button>
+      </section>
+    }
+    <nav aria-label="Leave pagination">
+      <button
+        mat-button
+        [disabled]="page.page() === 0 || page.loading() || page.busy()"
+        (click)="selected.set(null); page.load(page.page() - 1)"
+      >
+        Previous
+      </button>
+      <span>Page {{ page.page() + 1 }}</span>
+      <button
+        mat-button
+        [disabled]="
+          page.rows().length < page.pageSize || page.loading() || page.busy()
+        "
+        (click)="selected.set(null); page.load(page.page() + 1)"
+      >
+        Next
+      </button>
+    </nav>
   `,
   styles: [
     `
       :host {
         display: block;
         padding: 24px;
+        max-width: 1100px;
+        margin: auto;
       }
-      .header-container {
-        margin-bottom: 24px;
+      .toolbar,
+      nav {
+        display: flex;
+        align-items: center;
+        gap: 16px;
       }
-      .header-container h1 {
-        margin: 0;
-        font-size: 24px;
-        font-weight: 500;
+      mat-card {
+        margin-bottom: 16px;
       }
-      .header-container p {
-        margin: 4px 0 0 0;
-        color: #666;
+      .review {
+        padding: 24px;
+        border: 1px solid currentColor;
+        border-radius: 12px;
+        margin: 24px 0;
       }
-      .table-container {
-        overflow: hidden;
-        padding: 0;
+      mat-form-field {
+        display: block;
       }
-      table {
-        width: 100%;
-      }
-      .action-cell {
-        width: 250px;
-        text-align: right;
-      }
-      .action-btn {
-        margin-left: 8px;
-      }
-      .empty-state {
-        padding: 48px;
-        text-align: center;
-        color: #757575;
-        font-size: 16px;
+      [role='alert'] {
+        color: var(--mat-sys-error, #b3261e);
       }
     `,
   ],
 })
 export class LeaveRequestsComponent implements OnInit {
-  private workforceService = inject(WorkforceService);
-  private dialog = inject(MatDialog);
+  readonly page = inject(LeavePageService);
+  readonly selected = signal<LeaveRow | null>(null);
+  readonly reason = new FormControl('', {
+    nonNullable: true,
+    validators: [Validators.maxLength(1000)],
+  });
 
-  displayedColumns: string[] = [
-    'employee',
-    'leaveType',
-    'dates',
-    'reason',
-    'actions',
-  ];
-  dataSource: LeaveRequest[] = [];
-
-  ngOnInit() {
-    this.loadData();
+  ngOnInit(): void {
+    this.page.initialize();
   }
-
-  loadData() {
-    this.workforceService.getPendingLeaves().subscribe({
-      next: (data) => {
-        this.dataSource = data;
-      },
-      error: (err) => console.error('Failed to load pending leaves', err),
-    });
-  }
-
-  approve(id: string) {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '450px',
-      panelClass: 'premium-dialog',
-      data: {
-        title: 'Approve Leave',
-        message: 'Are you sure you want to approve this leave request?',
-        confirmText: 'Approve',
-        color: 'primary',
-        icon: 'check_circle',
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.workforceService.approveLeave(id).subscribe({
-          next: () => this.loadData(),
-          error: (err) => console.error('Approval failed', err),
-        });
-      }
-    });
-  }
-
-  reject(id: string) {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '450px',
-      panelClass: 'premium-dialog',
-      data: {
-        title: 'Reject Leave',
-        message: 'Are you sure you want to reject this leave request?',
-        confirmText: 'Reject',
-        color: 'warn',
-        icon: 'cancel',
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.workforceService.rejectLeave(id).subscribe({
-          next: () => this.loadData(),
-          error: (err) => console.error('Rejection failed', err),
-        });
-      }
-    });
+  review(row: LeaveRow): void {
+    this.selected.set(row);
+    this.reason.reset();
   }
 }
