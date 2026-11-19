@@ -15,6 +15,39 @@ import {
   UnassignResult,
 } from '../../pages/settings/geofence-assignment.model';
 
+export interface TimelineEvent {
+  readonly type:
+    | 'CHECK_IN'
+    | 'BREAK_START'
+    | 'BREAK_END'
+    | 'TRACKING_GAP_START'
+    | 'TRACKING_GAP_END'
+    | 'CORRECTION_REQUESTED'
+    | 'CORRECTION_DECIDED'
+    | 'CHECK_OUT';
+  readonly at: string;
+  readonly detail: Record<string, unknown>;
+}
+
+export interface SessionTimeline {
+  readonly sessionId: string;
+  readonly attendanceId: string;
+  readonly employee: {
+    readonly id: string;
+    readonly employeeCode: string | null;
+    readonly firstName: string | null;
+    readonly lastName: string | null;
+  };
+  readonly punchIn: string;
+  readonly punchOut: string | null;
+  readonly events: readonly TimelineEvent[];
+  readonly tracking: {
+    readonly points: number;
+    readonly firstAt: string | null;
+    readonly lastAt: string | null;
+  };
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -131,6 +164,13 @@ export class WorkforceService {
       checkoutTime,
       reason,
     });
+  }
+
+  /** Chronological events of one attendance session (admin "View timeline"). */
+  getSessionTimeline(sessionId: string) {
+    return this.http.get<SessionTimeline>(
+      `/api/v1/attendance/sessions/${encodeURIComponent(sessionId)}/timeline`,
+    );
   }
 
   // ── Geofences ──────────────────────────────────────────────────────────────

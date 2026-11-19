@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/auth/auth_session.dart';
+import '../../../core/navigation/nav_destinations.dart';
 
 import 'visit_notifier.dart';
 import 'visit_state.dart';
+import 'widgets/visit_widgets.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VISIT LIST SCREEN — assigned visits + execution actions
@@ -41,11 +46,29 @@ class _VisitListScreenState extends ConsumerState<VisitListScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(title: const Text('My Visits')),
+      // Only roles holding VISITS:CREATE see this; the API enforces it too.
+      floatingActionButton: _canCreateVisits()
+          ? FloatingActionButton.extended(
+              onPressed: () async {
+                await context.push('/visits/new');
+                if (mounted) {
+                  ref.read(visitNotifierProvider.notifier).refresh();
+                }
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('New visit'),
+            )
+          : null,
       body: RefreshIndicator(
         onRefresh: () => ref.read(visitNotifierProvider.notifier).refresh(),
         child: _buildBody(context, state),
       ),
     );
+  }
+
+  bool _canCreateVisits() {
+    final role = AppUserRoleX.fromRoleCode(AuthSession.instance.roleCode);
+    return role == AppUserRole.manager || role == AppUserRole.admin;
   }
 
   Widget _buildBody(BuildContext context, VisitState state) {
@@ -90,7 +113,10 @@ class _VisitCard extends ConsumerWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/visits/${visit.id}'),
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,7 +130,7 @@ class _VisitCard extends ConsumerWidget {
                         ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
-                _StatusChip(status: visit.status),
+                VisitStatusChip(status: visit.status),
                 if (visit.pendingSync) ...[
                   const SizedBox(width: 6),
                   Tooltip(
@@ -122,16 +148,16 @@ class _VisitCard extends ConsumerWidget {
             Text(visit.purpose, style: theme.textTheme.bodyLarge),
             if (visit.customerName != null) ...[
               const SizedBox(height: 4),
-              _InfoRow(icon: Icons.business_outlined, text: visit.customerName!),
+              VisitInfoRow(icon: Icons.business_outlined, text: visit.customerName!),
             ],
             if (visit.siteAddress != null) ...[
               const SizedBox(height: 4),
-              _InfoRow(icon: Icons.place_outlined, text: visit.siteAddress!),
+              VisitInfoRow(icon: Icons.place_outlined, text: visit.siteAddress!),
             ],
             const SizedBox(height: 4),
-            _InfoRow(
+            VisitInfoRow(
               icon: Icons.schedule_outlined,
-              text: _formatPlanned(visit.plannedStartAt.toLocal()),
+              text: formatVisitTime(visit.plannedStartAt.toLocal()),
             ),
             if (actions.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -140,7 +166,7 @@ class _VisitCard extends ConsumerWidget {
                 children: [
                   for (final action in actions) ...[
                     const SizedBox(width: 8),
-                    _ActionButton(
+                    VisitActionButton(
                       visit: visit,
                       action: action,
                       enabled: !actionInFlight,
@@ -152,156 +178,7 @@ class _VisitCard extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-String _formatPlanned(DateTime dt) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
-  final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-  final minute = dt.minute.toString().padLeft(2, '0');
-  final meridiem = dt.hour < 12 ? 'AM' : 'PM';
-  return '${dt.day} ${months[dt.month - 1]} · $hour12:$minute $meridiem';
-}
-
-class _ActionButton extends ConsumerWidget {
-  const _ActionButton({
-    required this.visit,
-    required this.action,
-    required this.enabled,
-  });
-
-  final VisitSummary visit;
-  final VisitAction action;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final (label, icon) = switch (action) {
-      VisitAction.accept => ('Accept', Icons.check_circle_outline),
-      VisitAction.start => ('Start', Icons.play_arrow_outlined),
-      VisitAction.pause => ('Pause', Icons.pause_outlined),
-      VisitAction.resume => ('Resume', Icons.play_arrow_outlined),
-      VisitAction.complete => ('Complete', Icons.task_alt_outlined),
-    };
-
-    return FilledButton.icon(
-      onPressed: enabled ? () => _run(context, ref) : null,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
-    );
-  }
-
-  Future<void> _run(BuildContext context, WidgetRef ref) async {
-    if (action != VisitAction.complete) {
-      await ref
-          .read(visitNotifierProvider.notifier)
-          .performAction(visit.id, action);
-      return;
-    }
-
-    // Completion requires an outcome (VISIT_MANAGEMENT.md §6)
-    final controller = TextEditingController();
-    final outcome = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Complete Visit'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Outcome / result',
-            hintText: 'e.g. Router replaced, signal restored',
-          ),
-          maxLines: 2,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext)
-                .pop(controller.text.trim().isEmpty
-                    ? 'COMPLETED_ON_SITE'
-                    : controller.text.trim()),
-            child: const Text('Complete'),
-          ),
-        ],
       ),
-    );
-    controller.dispose();
-
-    if (outcome != null) {
-      await ref
-          .read(visitNotifierProvider.notifier)
-          .performAction(visit.id, action, outcome: outcome);
-    }
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-
-  final VisitStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final (background, foreground) = switch (status) {
-      VisitStatus.assigned => (Colors.blue.shade50, Colors.blue.shade700),
-      VisitStatus.accepted => (Colors.cyan.shade50, Colors.cyan.shade800),
-      VisitStatus.started => (Colors.orange.shade50, Colors.orange.shade800),
-      VisitStatus.paused => (Colors.amber.shade50, Colors.amber.shade900),
-      VisitStatus.completed ||
-      VisitStatus.approved =>
-        (Colors.green.shade50, Colors.green.shade700),
-      VisitStatus.rejected ||
-      VisitStatus.cancelled ||
-      VisitStatus.aborted =>
-        (Colors.red.shade50, Colors.red.shade700),
-      _ => (Colors.grey.shade200, Colors.grey.shade700),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        status.label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: foreground,
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 15, color: Colors.grey.shade600),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
     );
   }
 }

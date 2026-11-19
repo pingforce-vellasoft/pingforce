@@ -21,6 +21,7 @@ import { WorkforceService } from '../../core/services/workforce.service';
 import { RouterModule } from '@angular/router';
 import { MatRippleModule } from '@angular/material/core';
 import { ManualCheckoutDialogComponent } from './dialogs/manual-checkout-dialog.component';
+import { AttendanceTimelineDialogComponent } from './dialogs/attendance-timeline-dialog.component';
 @Component({
   selector: 'app-attendance-logs',
   standalone: true,
@@ -834,7 +835,10 @@ export class AttendanceLogsComponent implements OnInit, AfterViewInit {
   }
 
   viewTimeline(log: any) {
-    console.log('Viewing timeline for', log);
-    // TODO: Implement view timeline
+    // Rows are attendance sessions (GET /attendance/logs).
+    this.dialog.open(AttendanceTimelineDialogComponent, {
+      width: '560px',
+      data: { sessionId: log.id, employeeName: this.getName(log) },
+    });
   }
 }

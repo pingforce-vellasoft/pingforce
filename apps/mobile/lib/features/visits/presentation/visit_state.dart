@@ -173,3 +173,113 @@ class VisitState {
 
   static const _sentinel = Object();
 }
+
+/// One status-history row (immutable audit trail of the visit lifecycle).
+class VisitHistoryEntry {
+  const VisitHistoryEntry({
+    required this.toStatus,
+    required this.at,
+    this.fromStatus,
+    this.notes,
+  });
+
+  final VisitStatus? fromStatus;
+  final VisitStatus toStatus;
+  final DateTime at;
+  final String? notes;
+}
+
+class VisitNote {
+  const VisitNote({required this.id, required this.note, required this.at});
+
+  final String id;
+  final String note;
+  final DateTime at;
+}
+
+/// GET /visits/:id — the summary plus geofence, history and notes.
+class VisitDetail {
+  const VisitDetail({
+    required this.summary,
+    this.geofenceName,
+    this.outcome,
+    this.history = const [],
+    this.notes = const [],
+  });
+
+  final VisitSummary summary;
+  final String? geofenceName;
+  final String? outcome;
+  final List<VisitHistoryEntry> history;
+  final List<VisitNote> notes;
+}
+
+class VisitDetailState {
+  const VisitDetailState({
+    this.isLoading = true,
+    this.detail,
+    this.errorMessage,
+    this.isSavingNote = false,
+  });
+
+  final bool isLoading;
+  final VisitDetail? detail;
+  final String? errorMessage;
+  final bool isSavingNote;
+
+  VisitDetailState copyWith({
+    bool? isLoading,
+    VisitDetail? detail,
+    String? errorMessage,
+    bool? isSavingNote,
+  }) {
+    return VisitDetailState(
+      isLoading: isLoading ?? this.isLoading,
+      detail: detail ?? this.detail,
+      errorMessage: errorMessage,
+      isSavingNote: isSavingNote ?? this.isSavingNote,
+    );
+  }
+}
+
+/// Fields of POST /visits a manager fills on mobile (CreateVisitDto subset).
+class CreateVisitRequest {
+  const CreateVisitRequest({
+    required this.purpose,
+    required this.plannedStartAt,
+    this.description,
+    this.visitType = 'PLANNED',
+    this.priority = 'MEDIUM',
+    this.siteAddress,
+  });
+
+  final String purpose;
+  final DateTime plannedStartAt;
+  final String? description;
+  final String visitType;
+  final String priority;
+  final String? siteAddress;
+
+  Map<String, dynamic> toJson() => {
+        'purpose': purpose,
+        'plannedStartAt': plannedStartAt.toUtc().toIso8601String(),
+        'visitType': visitType,
+        'priority': priority,
+        if (description != null && description!.isNotEmpty)
+          'description': description,
+        if (siteAddress != null && siteAddress!.isNotEmpty)
+          'siteAddress': siteAddress,
+      };
+}
+
+class CreateVisitState {
+  const CreateVisitState({
+    this.isSubmitting = false,
+    this.errorMessage,
+    this.createdVisitId,
+  });
+
+  final bool isSubmitting;
+  final String? errorMessage;
+  final String? createdVisitId;
+}

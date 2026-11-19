@@ -407,3 +407,82 @@ describe('Leave lifecycle', () => {
     ).resolves.toMatchObject({ status: 'APPROVED' });
   });
 });
+
+describe('Leave decision notifications to the employee', () => {
+  const vars = (status: string) => ({
+    status,
+    startDate: '2026-09-21',
+    endDate: '2026-09-21',
+  });
+
+  it.each([
+    ['APPROVED', 'approved'],
+    ['REJECTED', 'rejected'],
+  ] as const)(
+    '%s sends in-app, email and push to the owner',
+    async (decision, word) => {
+      const { service, repo, notifications, inApp } = setup();
+      await service.updateLeaveStatus('t1', 'r1', decision, 'manager');
+      expect(repo.notificationTemplates).toHaveBeenCalledWith('t1');
+      expect(inApp.create).toHaveBeenCalledWith({
+        tenantId: 't1',
+        recipientId: 'u1',
+        category: 'LEAVE',
+        title: 'Leave request ' + word,
+        body: 'Your leave from 2026-09-21 to 2026-09-21 is ' + word + '.',
+        deepLinkRoute: '/leave',
+      });
+      expect(notifications.sendEmail).toHaveBeenCalledWith(
+        't1',
+        'u1',
+        'LEAVE_STATUS_EMAIL',
+        vars(word),
+      );
+      expect(notifications.sendPush).toHaveBeenCalledWith(
+        't1',
+        'u1',
+        'LEAVE_STATUS_PUSH',
+        vars(word),
+      );
+    },
+  );
+
+  it('cancellation of approved leave notifies the employee once', async () => {
+    const { service, setLeave, notifications } = setup();
+    setLeave({ status: 'APPROVED' });
+    await service.cancelApproved('t1', 'manager', 'r1', 'Wrong dates');
+    expect(notifications.sendEmail).toHaveBeenCalledTimes(1);
+    expect(notifications.sendEmail).toHaveBeenCalledWith(
+      't1',
+      'u1',
+      'LEAVE_STATUS_EMAIL',
+      vars('cancelled'),
+    );
+  });
+
+  it('a replayed withdraw does not notify again', async () => {
+    const { service, notifications, inApp } = setup();
+    await service.withdraw('t1', 'u1', 'r1');
+    await service.withdraw('t1', 'u1', 'r1');
+    expect(notifications.sendEmail).toHaveBeenCalledTimes(1);
+    expect(notifications.sendPush).toHaveBeenCalledTimes(1);
+    expect(inApp.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('a push failure does not stop email and in-app delivery', async () => {
+    const { service, notifications, inApp } = setup();
+    notifications.sendPush.mockRejectedValue(new Error('FCM down'));
+    await expect(
+      service.updateLeaveStatus('t1', 'r1', 'APPROVED', 'manager'),
+    ).resolves.toMatchObject({ status: 'APPROVED' });
+    expect(notifications.sendEmail).toHaveBeenCalledTimes(1);
+    expect(inApp.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('notifies the owner, never the deciding manager', async () => {
+    const { service, repo, inApp } = setup();
+    await service.updateLeaveStatus('t1', 'r1', 'APPROVED', 'manager-user');
+    expect(repo.owner).toHaveBeenCalledWith('t1', 'e1');
+    expect(inApp.create.mock.calls[0][0].recipientId).toBe('u1');
+  });
+});
