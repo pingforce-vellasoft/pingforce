@@ -161,6 +161,57 @@ export class LeadRepository extends PrismaRepository<
     });
   }
 
+  async createStage(
+    tenantId: string,
+    name: string,
+    order: number,
+    createdBy: string,
+  ): Promise<PipelineStage> {
+    return this.prismaClient.pipelineStage.create({
+      data: { tenantId, name, order, createdBy, updatedBy: createdBy },
+    });
+  }
+
+  async updateStageRow(
+    tenantId: string,
+    id: string,
+    data: { name?: string; order?: number; updatedBy: string },
+  ): Promise<PipelineStage> {
+    return this.prismaClient.pipelineStage.update({
+      where: { id_tenantId: { id, tenantId } },
+      data,
+    });
+  }
+
+  /** Writes order 1..n in one transaction so the board never sees a mix. */
+  async reorderStages(
+    tenantId: string,
+    orderedIds: readonly string[],
+    updatedBy: string,
+  ): Promise<void> {
+    await this.prismaClient.$transaction(
+      orderedIds.map((id, index) =>
+        this.prismaClient.pipelineStage.update({
+          where: { id_tenantId: { id, tenantId } },
+          data: { order: index + 1, updatedBy },
+        }),
+      ),
+    );
+  }
+
+  async countLeadsInStage(tenantId: string, stageId: string): Promise<number> {
+    return this.delegate.count({
+      where: { tenantId, pipelineStageId: stageId },
+    });
+  }
+
+  /** Soft delete via the Prisma extension (deletedAt = now()). */
+  async deleteStage(tenantId: string, id: string): Promise<PipelineStage> {
+    return this.prismaClient.pipelineStage.delete({
+      where: { id_tenantId: { id, tenantId } },
+    });
+  }
+
   /** True when the referenced row exists in this tenant (and is not deleted). */
   async referenceExists(
     kind: LeadReferenceKind,

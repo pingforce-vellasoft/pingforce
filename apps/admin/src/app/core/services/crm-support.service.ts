@@ -60,6 +60,28 @@ export class CrmSupportService {
     return this.http.get<PipelineStage[]>(`${this.api}/stages`);
   }
 
+  createStage(name: string): Observable<PipelineStage> {
+    return this.http.post<PipelineStage>(`${this.api}/stages`, { name });
+  }
+
+  renameStage(id: string, name: string): Observable<PipelineStage> {
+    return this.http.patch<PipelineStage>(`${this.api}/stages/${id}`, {
+      name,
+    });
+  }
+
+  /** `stageIds` = every stage, in the new order; returns the saved list. */
+  reorderStages(stageIds: string[]): Observable<PipelineStage[]> {
+    return this.http.put<PipelineStage[]>(`${this.api}/stages/order`, {
+      stageIds,
+    });
+  }
+
+  /** Refused (409) while leads are still in the stage. */
+  deleteStage(id: string): Observable<PipelineStage> {
+    return this.http.delete<PipelineStage>(`${this.api}/stages/${id}`);
+  }
+
   updateLeadStage(leadId: string, pipelineStageId: string): Observable<Lead> {
     return this.http.patch<Lead>(`${this.api}/${leadId}/stage`, {
       pipelineStageId,
