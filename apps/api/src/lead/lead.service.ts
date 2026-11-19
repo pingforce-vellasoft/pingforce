@@ -6,18 +6,56 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { EventBus } from '@nestjs/cqrs';
+import { createHash } from 'crypto';
+import { Customer, Lead, PipelineStage } from '@prisma/client';
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
 import { LeadConvertedEvent } from './events/impl';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { ConvertLeadDto } from './dto/convert-lead.dto';
 import { SyncLeadsDto } from './dto/sync-leads.dto';
-import { LeadRepository } from './lead.repository';
+import { LeadReferenceKind, LeadRepository } from './lead.repository';
 import { RbacService } from '../rbac/rbac.service';
 
 // Leads are visible to their owner and creator within the caller's data
 // scope (DataScope.md §9 "Leads").
 const LEAD_SCOPE_FIELDS = ['ownerUserId', 'createdBy'] as const;
+
+const REFERENCE_FIELDS: readonly LeadReferenceKind[] = [
+  'pipelineStageId',
+  'statusId',
+  'sourceId',
+  'campaignId',
+  'priorityId',
+  'ownerUserId',
+];
+
+type LeadAction = 'READ' | 'UPDATE' | 'DELETE' | 'CONVERT';
+
+/** 3.4 LeadManagement README "Lead Pipeline" default stages, in order. */
+export const DEFAULT_PIPELINE_STAGES = [
+  'New',
+  'Assigned',
+  'Contacted',
+  'Qualified',
+  'Proposal Sent',
+  'Negotiation',
+  'Won',
+  'Lost',
+  'Archived',
+] as const;
+
+/**
+ * Stable UUID-shaped id for a tenant's default stage, so two concurrent
+ * first loads insert the same rows and `skipDuplicates` drops the second.
+ */
+export function defaultStageId(tenantId: string, name: string): string {
+  const h = createHash('sha256')
+    .update(`pipeline-stage:${tenantId}:${name}`)
+    .digest('hex');
+  const variant = ((parseInt(h[16], 16) & 0x3) | 0x8).toString(16);
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${variant}${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
 
 export interface LeadSyncItemResult {
   readonly clientRef: string;
@@ -35,21 +73,52 @@ export class LeadService {
     private readonly rbacService: RbacService,
   ) {}
 
-  async create(tenantId: string, createLeadDto: CreateLeadDto) {
-    return await this.leadRepository.create(tenantId, createLeadDto);
+  async create(
+    tenantId: string,
+    actorUserId: string,
+    createLeadDto: CreateLeadDto,
+  ): Promise<Lead> {
+    await this.assertReferences(tenantId, createLeadDto);
+    // createdBy is one of the two scope fields: without it a READ_OWN user
+    // could not see a lead they just created without owning it.
+    return this.leadRepository.createLead(tenantId, createLeadDto, actorUserId);
   }
 
   private async leadScopeWhere(
     tenantId: string,
     requesterUserId: string,
+    action: LeadAction = 'READ',
   ): Promise<Record<string, unknown> | null> {
     const scope = await this.rbacService.resolveScopeIds(
       tenantId,
       requesterUserId,
       'LEADS',
-      ['READ'],
+      [action],
     );
     return this.rbacService.userScopeWhere(scope, LEAD_SCOPE_FIELDS);
+  }
+
+  /**
+   * One lead the caller may act on. Out of tenant, out of scope and missing
+   * all answer 404, so an id never reveals whether a lead exists elsewhere.
+   */
+  private async findVisibleOr404(
+    tenantId: string,
+    id: string,
+    requesterUserId: string,
+    action: LeadAction,
+  ): Promise<Lead> {
+    const scopeWhere = await this.leadScopeWhere(
+      tenantId,
+      requesterUserId,
+      action,
+    );
+    const lead =
+      scopeWhere === null
+        ? null
+        : await this.leadRepository.findVisible(tenantId, id, scopeWhere);
+    if (!lead) throw new NotFoundException(`Lead ${id} not found`);
+    return lead;
   }
 
   async findAll(
@@ -57,15 +126,10 @@ export class LeadService {
     requesterUserId: string,
     cursor?: string,
     take?: number,
-  ) {
+  ): Promise<Lead[]> {
     const scopeWhere = await this.leadScopeWhere(tenantId, requesterUserId);
     if (scopeWhere === null) return [];
-    return await this.leadRepository.findAll(
-      tenantId,
-      cursor,
-      take,
-      scopeWhere,
-    );
+    return this.leadRepository.findAll(tenantId, cursor, take, scopeWhere);
   }
 
   async getPipeline(
@@ -73,35 +137,89 @@ export class LeadService {
     requesterUserId: string,
     cursor?: string,
     take?: number,
-  ) {
+  ): Promise<Lead[]> {
     const scopeWhere = await this.leadScopeWhere(tenantId, requesterUserId);
     if (scopeWhere === null) return [];
-    return await this.leadRepository.getPipeline(
-      tenantId,
-      cursor,
-      take,
-      scopeWhere,
+    return this.leadRepository.getPipeline(tenantId, cursor, take, scopeWhere);
+  }
+
+  /**
+   * The tenant's pipeline stages for the board. A tenant that has never had
+   * stages gets the spec defaults on first read; stage editing is not built
+   * yet, so this is the only way stages come into existence.
+   */
+  async listStages(tenantId: string): Promise<PipelineStage[]> {
+    const stages = await this.leadRepository.listStages(tenantId);
+    if (stages.length > 0) return stages;
+    await this.leadRepository.createStages(
+      DEFAULT_PIPELINE_STAGES.map((name, index) => ({
+        id: defaultStageId(tenantId, name),
+        tenantId,
+        name,
+        order: index + 1,
+      })),
     );
+    return this.leadRepository.listStages(tenantId);
   }
 
-  async findOne(tenantId: string, id: string) {
-    return await this.leadRepository.findById(tenantId, id);
+  async findOne(
+    tenantId: string,
+    id: string,
+    requesterUserId: string,
+  ): Promise<Lead> {
+    return this.findVisibleOr404(tenantId, id, requesterUserId, 'READ');
   }
 
-  async update(tenantId: string, id: string, updateLeadDto: UpdateLeadDto) {
-    return await this.leadRepository.update(tenantId, id, updateLeadDto);
+  async update(
+    tenantId: string,
+    id: string,
+    actorUserId: string,
+    updateLeadDto: UpdateLeadDto,
+  ): Promise<Lead> {
+    await this.findVisibleOr404(tenantId, id, actorUserId, 'UPDATE');
+    await this.assertReferences(tenantId, updateLeadDto);
+    return this.leadRepository.updateLead(tenantId, id, {
+      ...updateLeadDto,
+      updatedBy: actorUserId,
+    });
   }
 
-  async assignOwner(tenantId: string, id: string, ownerUserId: string) {
-    return await this.leadRepository.assignOwner(tenantId, id, ownerUserId);
+  async assignOwner(
+    tenantId: string,
+    id: string,
+    actorUserId: string,
+    ownerUserId: string,
+  ): Promise<Lead> {
+    await this.findVisibleOr404(tenantId, id, actorUserId, 'UPDATE');
+    await this.assertReferences(tenantId, { ownerUserId });
+    return this.leadRepository.updateLead(tenantId, id, {
+      ownerUserId,
+      updatedBy: actorUserId,
+    });
   }
 
-  async updateStage(tenantId: string, id: string, pipelineStageId: string) {
-    return await this.leadRepository.updateStage(tenantId, id, pipelineStageId);
+  async updateStage(
+    tenantId: string,
+    id: string,
+    actorUserId: string,
+    pipelineStageId: string,
+  ): Promise<Lead> {
+    await this.findVisibleOr404(tenantId, id, actorUserId, 'UPDATE');
+    await this.assertReferences(tenantId, { pipelineStageId });
+    return this.leadRepository.updateLead(tenantId, id, {
+      pipelineStageId,
+      updatedBy: actorUserId,
+    });
   }
 
-  async remove(tenantId: string, id: string) {
-    return await this.leadRepository.delete(tenantId, id);
+  /** Soft delete: the Prisma extension turns delete into deletedAt = now(). */
+  async remove(
+    tenantId: string,
+    id: string,
+    actorUserId: string,
+  ): Promise<Lead> {
+    await this.findVisibleOr404(tenantId, id, actorUserId, 'DELETE');
+    return this.leadRepository.delete(tenantId, id);
   }
 
   /**
@@ -118,7 +236,10 @@ export class LeadService {
     id: string,
     actorUserId: string,
     dto: ConvertLeadDto,
-  ) {
+  ): Promise<Lead | Customer> {
+    // Scope check outside the transaction: same 404 as any other lead action.
+    await this.findVisibleOr404(tenantId, id, actorUserId, 'CONVERT');
+
     const { result, converted } = await this.prisma.$transaction(async (tx) => {
       const lead = await tx.lead.findFirst({
         where: { id, tenantId, deletedAt: null },
@@ -148,7 +269,7 @@ export class LeadService {
           },
         });
         return {
-          result: updatedLead,
+          result: updatedLead as Lead | Customer,
           converted: {
             leadNumber: lead.leadNumber,
             customerId: existing.id,
@@ -207,7 +328,7 @@ export class LeadService {
       });
 
       return {
-        result: customer,
+        result: customer as Lead | Customer,
         converted: {
           leadNumber: lead.leadNumber,
           customerId: customer.id,
@@ -238,6 +359,7 @@ export class LeadService {
    */
   async syncLeads(
     tenantId: string,
+    actorUserId: string,
     dto: SyncLeadsDto,
   ): Promise<{ results: LeadSyncItemResult[] }> {
     const ordered = [...dto.leads].sort(
@@ -249,10 +371,10 @@ export class LeadService {
       const { clientRef, timestamp, ...createDto } = item;
       void timestamp;
       try {
-        const existing = await this.prisma.lead.findFirst({
-          where: { tenantId, leadNumber: item.leadNumber },
-          select: { id: true },
-        });
+        const existing = await this.leadRepository.findByLeadNumber(
+          tenantId,
+          item.leadNumber,
+        );
         if (existing) {
           results.push({
             clientRef,
@@ -261,8 +383,9 @@ export class LeadService {
           });
           continue;
         }
-        const lead = await this.leadRepository.create(
+        const lead = await this.create(
           tenantId,
+          actorUserId,
           createDto as CreateLeadDto,
         );
         results.push({ clientRef, status: 'APPLIED', leadId: lead.id });
@@ -276,6 +399,25 @@ export class LeadService {
     }
 
     return { results };
+  }
+
+  /**
+   * Every stage, status, source, campaign, priority and owner a lead points
+   * at must belong to the caller's tenant. Without this a lead could be
+   * linked to another tenant's rows, and the detail includes would return
+   * them (for an owner: their email and phone).
+   */
+  private async assertReferences(
+    tenantId: string,
+    refs: Partial<Record<LeadReferenceKind, string | undefined>>,
+  ): Promise<void> {
+    for (const field of REFERENCE_FIELDS) {
+      const id = refs[field];
+      if (!id) continue;
+      if (!(await this.leadRepository.referenceExists(field, tenantId, id))) {
+        throw new BadRequestException(`Invalid ${field} for this tenant`);
+      }
+    }
   }
 
   private generateCustomerCode(): string {
