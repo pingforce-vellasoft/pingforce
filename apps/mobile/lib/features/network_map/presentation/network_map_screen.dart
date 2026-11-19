@@ -1,37 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../core/auth/auth_session.dart';
 import 'network_map_notifier.dart';
 import 'network_map_state.dart';
 import 'widgets/free_map_view.dart';
-
-const _statusColors = <String, Color>{
-  'ACTIVE': Color(0xFF2E7D32),
-  'PENDING_INSTALLATION': Color(0xFFF9A825),
-  'SUSPENDED': Color(0xFFEF6C00),
-  'DISCONNECTED': Color(0xFFC62828),
-  'FAULTY': Color(0xFF212121),
-  'MAINTENANCE': Color(0xFF6A1B9A),
-};
-
-double _statusHue(String status) {
-  switch (status) {
-    case 'ACTIVE':
-      return BitmapDescriptor.hueGreen;
-    case 'PENDING_INSTALLATION':
-      return BitmapDescriptor.hueYellow;
-    case 'SUSPENDED':
-      return BitmapDescriptor.hueOrange;
-    case 'DISCONNECTED':
-      return BitmapDescriptor.hueRed;
-    case 'FAULTY':
-      return BitmapDescriptor.hueViolet;
-    default:
-      return BitmapDescriptor.hueCyan;
-  }
-}
 
 /// Connection Map (3.7_ConnectionMap): OLTE → customer topology on a real
 /// map, for tenant admins (all connections, filterable) and employees
@@ -44,8 +17,6 @@ class NetworkMapScreen extends ConsumerStatefulWidget {
 }
 
 class _NetworkMapScreenState extends ConsumerState<NetworkMapScreen> {
-  GoogleMapController? _controller;
-
   @override
   void initState() {
     super.initState();
@@ -58,14 +29,9 @@ class _NetworkMapScreenState extends ConsumerState<NetworkMapScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(networkMapNotifierProvider);
     final notifier = ref.read(networkMapNotifierProvider.notifier);
-    final isEmployee =
-        (AuthSession.instance.roleCode ?? '').startsWith('EMPLOYEE');
-
-    ref.listen(networkMapNotifierProvider, (previous, next) {
-      if (previous?.mapData != next.mapData) {
-        _fitBounds(next.mapData);
-      }
-    });
+    final isEmployee = (AuthSession.instance.roleCode ?? '').startsWith(
+      'EMPLOYEE',
+    );
 
     if (state.featureDisabled) {
       return Scaffold(
@@ -113,30 +79,13 @@ class _NetworkMapScreenState extends ConsumerState<NetworkMapScreen> {
           Expanded(
             child: Stack(
               children: [
-                // Provider comes from the Super Admin platform setting:
-                // GOOGLE_MAPS → native Google map; OSM/Mapbox → flutter_map.
-                if (state.mapConfig.useGoogle)
-                  GoogleMap(
-                    initialCameraPosition: const CameraPosition(
-                      target: LatLng(13.6288, 79.4192),
-                      zoom: 12,
-                    ),
-                    markers: _buildMarkers(state.mapData),
-                    polylines: _buildPolylines(state.mapData),
-                    onMapCreated: (controller) {
-                      _controller = controller;
-                      _fitBounds(state.mapData);
-                    },
-                    myLocationButtonEnabled: false,
-                  )
-                else
-                  FreeMapView(
-                    data: state.mapData,
-                    mapboxKey: state.mapConfig.provider == 'MAPBOX'
-                        ? state.mapConfig.mapboxKey
-                        : '',
-                    onNodeTap: (node) => _openDetail(node.id),
-                  ),
+                // One map library on mobile (flutter_map); the tile source
+                // follows the Super Admin platform map setting.
+                FreeMapView(
+                  data: state.mapData,
+                  config: state.mapConfig,
+                  onNodeTap: (node) => _openDetail(node.id),
+                ),
                 if (state.isLoading)
                   const Positioned.fill(
                     child: ColoredBox(
@@ -161,74 +110,11 @@ class _NetworkMapScreenState extends ConsumerState<NetworkMapScreen> {
                       ),
                     ),
                   ),
-                Positioned(
-                  right: 12,
-                  bottom: 24,
-                  child: _Legend(),
-                ),
+                Positioned(right: 12, bottom: 24, child: _Legend()),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Set<Marker> _buildMarkers(NetworkMapData data) {
-    return data.nodes.map((node) {
-      return Marker(
-        markerId: MarkerId(node.id),
-        position: LatLng(node.latitude, node.longitude),
-        icon: node.isOlte
-            ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure)
-            : BitmapDescriptor.defaultMarkerWithHue(_statusHue(node.status)),
-        infoWindow: InfoWindow(
-          title: node.code,
-          snippet: node.isOlte ? node.name : '${node.name} • ${node.status}',
-        ),
-        onTap: node.isOlte ? null : () => _openDetail(node.id),
-      );
-    }).toSet();
-  }
-
-  Set<Polyline> _buildPolylines(NetworkMapData data) {
-    var index = 0;
-    return data.edges.map((edge) {
-      index++;
-      return Polyline(
-        polylineId: PolylineId('edge-$index'),
-        points: [
-          LatLng(edge.fromLat, edge.fromLng),
-          LatLng(edge.toLat, edge.toLng),
-        ],
-        color: _statusColors[edge.status] ?? Colors.blueGrey,
-        width: 3,
-        patterns: edge.status == 'DISCONNECTED'
-            ? [PatternItem.dash(12), PatternItem.gap(8)]
-            : const [],
-      );
-    }).toSet();
-  }
-
-  void _fitBounds(NetworkMapData data) {
-    if (_controller == null || data.nodes.isEmpty) return;
-    var minLat = data.nodes.first.latitude;
-    var maxLat = data.nodes.first.latitude;
-    var minLng = data.nodes.first.longitude;
-    var maxLng = data.nodes.first.longitude;
-    for (final node in data.nodes) {
-      if (node.latitude < minLat) minLat = node.latitude;
-      if (node.latitude > maxLat) maxLat = node.latitude;
-      if (node.longitude < minLng) minLng = node.longitude;
-      if (node.longitude > maxLng) maxLng = node.longitude;
-    }
-    _controller!.animateCamera(
-      CameraUpdate.newLatLngBounds(
-        LatLngBounds(
-          southwest: LatLng(minLat, minLng),
-          northeast: LatLng(maxLat, maxLng),
-        ),
-        60,
       ),
     );
   }
@@ -374,7 +260,7 @@ class _Legend extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             _legendRow(const Color(0xFF1565C0), 'OLTE'),
-            for (final entry in _statusColors.entries)
+            for (final entry in networkStatusColors.entries)
               _legendRow(entry.value, entry.key.replaceAll('_', ' ')),
           ],
         ),
@@ -428,22 +314,26 @@ class _ConnectionDetailSheet extends StatelessWidget {
                   style: const TextStyle(color: Colors.white, fontSize: 11),
                 ),
                 backgroundColor:
-                    _statusColors[detail.status] ?? Colors.blueGrey,
+                    networkStatusColors[detail.status] ?? Colors.blueGrey,
               ),
             ],
           ),
           const SizedBox(height: 8),
           if (detail.customerName != null)
-            _row('Customer',
-                '${detail.customerName} (${detail.customerCode ?? '—'})'),
+            _row(
+              'Customer',
+              '${detail.customerName} (${detail.customerCode ?? '—'})',
+            ),
           _row('Type', '${detail.nodeType} / ${detail.connectionType ?? '—'}'),
           if (detail.olteCode != null) _row('OLTE', detail.olteCode!),
           if (detail.parentConnectionCode != null)
             _row('Parent', detail.parentConnectionCode!),
           _row('Downstream', '${detail.downstreamCount} node(s)'),
           if (detail.cableType != null)
-            _row('Cable',
-                '${detail.cableType} ${detail.fiberCoreDetails ?? ''}'.trim()),
+            _row(
+              'Cable',
+              '${detail.cableType} ${detail.fiberCoreDetails ?? ''}'.trim(),
+            ),
           if (detail.distanceMeters != null)
             _row('Distance', '${detail.distanceMeters!.toStringAsFixed(0)} m'),
           if (detail.installationDate != null)
@@ -471,9 +361,7 @@ class _ConnectionDetailSheet extends StatelessWidget {
               style: const TextStyle(color: Colors.grey, fontSize: 13),
             ),
           ),
-          Expanded(
-            child: Text(value, style: const TextStyle(fontSize: 13)),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
         ],
       ),
     );

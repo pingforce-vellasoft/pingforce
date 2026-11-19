@@ -44,8 +44,6 @@ class MapProviderConfig {
 
   final String provider; // OPENSTREETMAP | GOOGLE_MAPS | MAPBOX
   final String mapboxKey;
-
-  bool get useGoogle => provider == 'GOOGLE_MAPS';
 }
 
 @immutable
