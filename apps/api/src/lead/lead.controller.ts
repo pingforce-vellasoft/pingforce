@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { LeadService } from './lead.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
@@ -34,15 +35,20 @@ export class LeadController {
   @RequirePermission('LEADS', 'CREATE')
   create(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
     @Body() createLeadDto: CreateLeadDto,
   ) {
-    return this.leadService.create(tenantId, createLeadDto);
+    return this.leadService.create(tenantId, user.userId, createLeadDto);
   }
 
   @Post('sync')
   @RequirePermission('LEADS', 'CREATE')
-  sync(@CurrentTenant() tenantId: string, @Body() dto: SyncLeadsDto) {
-    return this.leadService.syncLeads(tenantId, dto);
+  sync(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Body() dto: SyncLeadsDto,
+  ) {
+    return this.leadService.syncLeads(tenantId, user.userId, dto);
   }
 
   @Get()
@@ -77,47 +83,71 @@ export class LeadController {
     );
   }
 
+  /** Board columns; seeds the default stages for a tenant that has none. */
+  @Get('stages')
+  @RequirePermission('LEADS', 'READ')
+  listStages(@CurrentTenant() tenantId: string) {
+    return this.leadService.listStages(tenantId);
+  }
+
   @Get(':id')
   @RequirePermission('LEADS', 'READ')
-  findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.leadService.findOne(tenantId, id);
+  findOne(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserContext,
+  ) {
+    return this.leadService.findOne(tenantId, id, user.userId);
   }
 
   @Patch(':id')
   @RequirePermission('LEADS', 'UPDATE')
   update(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserContext,
     @Body() updateLeadDto: UpdateLeadDto,
   ) {
-    return this.leadService.update(tenantId, id, updateLeadDto);
+    return this.leadService.update(tenantId, id, user.userId, updateLeadDto);
   }
 
   @Patch(':id/assign')
   @RequirePermission('LEADS', 'UPDATE')
   assignOwner(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserContext,
     @Body() dto: UpdateLeadOwnerDto,
   ) {
-    return this.leadService.assignOwner(tenantId, id, dto.ownerUserId);
+    return this.leadService.assignOwner(
+      tenantId,
+      id,
+      user.userId,
+      dto.ownerUserId,
+    );
   }
 
   @Patch(':id/stage')
   @RequirePermission('LEADS', 'UPDATE')
   updateStage(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserContext,
     @Body() dto: UpdateLeadStageDto,
   ) {
-    return this.leadService.updateStage(tenantId, id, dto.pipelineStageId);
+    return this.leadService.updateStage(
+      tenantId,
+      id,
+      user.userId,
+      dto.pipelineStageId,
+    );
   }
 
   @Post(':id/convert')
   @RequirePermission('LEADS', 'CONVERT')
   convert(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: CurrentUserContext,
     @Body() dto: ConvertLeadDto,
   ) {
@@ -126,7 +156,11 @@ export class LeadController {
 
   @Delete(':id')
   @RequirePermission('LEADS', 'DELETE')
-  remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.leadService.remove(tenantId, id);
+  remove(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserContext,
+  ) {
+    return this.leadService.remove(tenantId, id, user.userId);
   }
 }

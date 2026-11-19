@@ -1,90 +1,144 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
+import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { forkJoin } from 'rxjs';
 import {
   CrmSupportService,
+  LEAD_PAGE_SIZE,
   Lead,
+  PipelineStage,
 } from '../../core/services/crm-support.service';
 
+/** Column id for leads that have no stage yet. */
+const UNSTAGED = '__unstaged__';
+
+interface BoardColumn {
+  id: string;
+  name: string;
+  leads: Lead[];
+}
+
+/**
+ * Sales pipeline board (3.4 SALES_PIPELINE.md). One column per tenant stage
+ * plus "No stage"; moving a card PATCHes /leads/:id/stage. Moves are
+ * optimistic and roll back if the API refuses (e.g. out of the caller's
+ * LEADS scope).
+ */
 @Component({
   selector: 'app-leads',
   standalone: true,
   imports: [
     CommonModule,
-    MatTableModule,
+    DragDropModule,
     MatCardModule,
-    MatButtonModule,
     MatIconModule,
+    MatButtonModule,
+    MatMenuModule,
+    MatProgressBarModule,
     MatSnackBarModule,
   ],
   template: `
     <div class="header-container">
-      <h1>CRM Leads</h1>
-      <p>Track potential customers and sales pipeline</p>
+      <div>
+        <h1>Sales Pipeline</h1>
+        <p>Drag a lead to another stage, or use its menu to move it.</p>
+      </div>
+      <button mat-stroked-button (click)="reload()" [disabled]="loading()">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
     </div>
 
-    <mat-card class="table-container">
-      <table mat-table [dataSource]="dataSource">
-        <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Lead Name</th>
-          <td mat-cell *matCellDef="let element">
-            <strong>{{ element.firstName }} {{ element.lastName }}</strong>
-          </td>
-        </ng-container>
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    }
+    @if (error()) {
+      <div class="error-state">{{ error() }}</div>
+    }
 
-        <ng-container matColumnDef="company">
-          <th mat-header-cell *matHeaderCellDef>Company</th>
-          <td mat-cell *matCellDef="let element">{{ element.company }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="contact">
-          <th mat-header-cell *matHeaderCellDef>Contact</th>
-          <td mat-cell *matCellDef="let element">
-            <div>{{ element.email }}</div>
-            <div class="text-small text-muted">
-              {{ element.phone || 'N/A' }}
-            </div>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="stage">
-          <th mat-header-cell *matHeaderCellDef>Stage</th>
-          <td mat-cell *matCellDef="let element">
-            <span
-              class="status-badge"
-              [ngClass]="element.pipelineStage?.name?.toLowerCase()"
-            >
-              {{ element.pipelineStage?.name || 'NEW' }}
-            </span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef class="action-cell">Actions</th>
-          <td mat-cell *matCellDef="let element" class="action-cell">
-            <button
-              mat-stroked-button
-              color="primary"
-              class="action-btn"
-              (click)="advanceStage(element)"
-            >
-              <mat-icon>arrow_forward</mat-icon> Advance Stage
-            </button>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-      </table>
-
-      @if (dataSource.length === 0) {
-        <div class="empty-state">No active leads found in the pipeline!</div>
+    <div class="board" cdkDropListGroup>
+      @for (column of columns(); track column.id) {
+        <section class="column" [attr.aria-label]="column.name + ' stage'">
+          <header class="column-header">
+            <span class="column-name">{{ column.name }}</span>
+            <span class="count">{{ column.leads.length }}</span>
+          </header>
+          <div
+            class="column-body"
+            cdkDropList
+            [cdkDropListData]="column"
+            (cdkDropListDropped)="onDrop($event)"
+          >
+            @for (lead of column.leads; track lead.id) {
+              <mat-card
+                class="lead-card"
+                cdkDrag
+                [cdkDragData]="lead"
+                [cdkDragDisabled]="pendingLeadId() === lead.id"
+                [class.pending]="pendingLeadId() === lead.id"
+              >
+                <div class="card-top">
+                  <div class="lead-name">
+                    {{ lead.firstName }} {{ lead.lastName || '' }}
+                  </div>
+                  <button
+                    mat-icon-button
+                    class="move-btn"
+                    [matMenuTriggerFor]="moveMenu"
+                    [attr.aria-label]="'Move ' + lead.firstName"
+                    [disabled]="pendingLeadId() === lead.id"
+                  >
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #moveMenu="matMenu">
+                    @for (target of stages(); track target.id) {
+                      @if (target.id !== column.id) {
+                        <button mat-menu-item (click)="move(lead, target.id)">
+                          Move to {{ target.name }}
+                        </button>
+                      }
+                    }
+                  </mat-menu>
+                </div>
+                @if (lead.companyName) {
+                  <div class="meta">{{ lead.companyName }}</div>
+                }
+                <div class="meta">{{ lead.leadNumber }}</div>
+                @if (lead.expectedValue) {
+                  <div class="value">
+                    {{ lead.expectedValue | number: '1.0-0' }}
+                    {{ lead.currencyCode || '' }}
+                  </div>
+                }
+                @if (ownerName(lead); as owner) {
+                  <div class="owner">
+                    <mat-icon inline>person</mat-icon> {{ owner }}
+                  </div>
+                }
+                @if (lead.convertedCustomerId) {
+                  <div class="converted">Converted to customer</div>
+                }
+              </mat-card>
+            } @empty {
+              <div class="column-empty">No leads</div>
+            }
+          </div>
+        </section>
       }
-    </mat-card>
+    </div>
+
+    @if (hasMore()) {
+      <div class="load-more">
+        <button mat-button (click)="loadMore()" [disabled]="loading()">
+          Load more leads
+        </button>
+      </div>
+    }
   `,
   styles: [
     `
@@ -93,7 +147,11 @@ import {
         padding: 24px;
       }
       .header-container {
-        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 16px;
       }
       .header-container h1 {
         margin: 0;
@@ -104,55 +162,101 @@ import {
         margin: 4px 0 0 0;
         color: #666;
       }
-      .table-container {
-        overflow: hidden;
-        padding: 0;
-      }
-      table {
-        width: 100%;
-      }
-      .action-cell {
-        width: 200px;
-        text-align: right;
-      }
-      .action-btn {
-        margin-left: 8px;
-      }
-      .text-small {
-        font-size: 12px;
-      }
-      .text-muted {
-        color: #757575;
-      }
-      .empty-state {
-        padding: 48px;
-        text-align: center;
-        color: #757575;
-        font-size: 16px;
-      }
-      .status-badge {
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 500;
-        background: #e0e0e0;
-        color: #424242;
-      }
-      .new {
-        background: #e3f2fd;
-        color: #1976d2;
-      }
-      .contacted {
-        background: #fff3e0;
-        color: #f57c00;
-      }
-      .qualified {
-        background: #e8f5e9;
-        color: #388e3c;
-      }
-      .lost {
+      .error-state {
+        margin: 12px 0;
+        padding: 12px 16px;
+        border-radius: 8px;
         background: #ffebee;
-        color: #d32f2f;
+        color: #c62828;
+      }
+      .board {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding: 12px 0 16px;
+        align-items: flex-start;
+      }
+      .column {
+        flex: 0 0 260px;
+        background: rgba(0, 0, 0, 0.04);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 240px);
+      }
+      .column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px;
+        font-weight: 500;
+      }
+      .count {
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.08);
+      }
+      .column-body {
+        padding: 0 8px 8px;
+        min-height: 80px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .column-empty {
+        padding: 16px 4px;
+        text-align: center;
+        color: #9e9e9e;
+        font-size: 13px;
+      }
+      .lead-card {
+        padding: 10px 12px;
+        cursor: grab;
+      }
+      .lead-card.pending {
+        opacity: 0.6;
+      }
+      .card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+      .lead-name {
+        font-weight: 500;
+        padding-top: 6px;
+      }
+      .move-btn {
+        margin: -4px -8px 0 0;
+      }
+      .meta {
+        font-size: 12px;
+        color: #757575;
+      }
+      .value {
+        margin-top: 6px;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .owner {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #616161;
+      }
+      .converted {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #2e7d32;
+      }
+      .cdk-drag-preview {
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+      }
+      .cdk-drag-placeholder {
+        opacity: 0.3;
+      }
+      .load-more {
+        text-align: center;
       }
     `,
   ],
@@ -161,50 +265,129 @@ export class LeadsComponent implements OnInit {
   private crmService = inject(CrmSupportService);
   private snackBar = inject(MatSnackBar);
 
-  displayedColumns: string[] = [
-    'name',
-    'company',
-    'contact',
-    'stage',
-    'actions',
-  ];
-  dataSource: Lead[] = [];
+  readonly stages = signal<PipelineStage[]>([]);
+  readonly leads = signal<Lead[]>([]);
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly hasMore = signal(false);
+  readonly pendingLeadId = signal<string | null>(null);
 
-  ngOnInit() {
-    this.loadData();
+  readonly columns = computed<BoardColumn[]>(() => {
+    const stages = this.stages();
+    const known = new Set(stages.map((s) => s.id));
+    const byStage = new Map<string, Lead[]>();
+    for (const lead of this.leads()) {
+      const key =
+        lead.pipelineStageId && known.has(lead.pipelineStageId)
+          ? lead.pipelineStageId
+          : UNSTAGED;
+      byStage.set(key, [...(byStage.get(key) ?? []), lead]);
+    }
+    const columns: BoardColumn[] = stages.map((s) => ({
+      id: s.id,
+      name: s.name,
+      leads: byStage.get(s.id) ?? [],
+    }));
+    const unstaged = byStage.get(UNSTAGED) ?? [];
+    // Only show "No stage" when something is in it: new leads usually are.
+    return unstaged.length
+      ? [{ id: UNSTAGED, name: 'No stage', leads: unstaged }, ...columns]
+      : columns;
+  });
+
+  ngOnInit(): void {
+    this.reload();
   }
 
-  loadData() {
-    this.crmService.getLeads().subscribe({
-      next: (data) => {
-        this.dataSource = data;
+  reload(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    forkJoin([
+      this.crmService.getStages(),
+      this.crmService.getPipeline(),
+    ]).subscribe({
+      next: ([stages, leads]) => {
+        this.stages.set(stages);
+        this.leads.set(leads);
+        this.hasMore.set(leads.length === LEAD_PAGE_SIZE);
+        this.loading.set(false);
       },
-      error: (err) => console.error('Failed to load leads', err),
+      error: () => {
+        this.error.set('Could not load the pipeline. Try Refresh.');
+        this.loading.set(false);
+      },
     });
   }
 
-  advanceStage(lead: Lead) {
-    // In a real app, this would open a dialog to select the specific next stage ID.
-    // For now, we simulate sending a pipelineStageId update.
-    const promptStage = prompt(
-      'Enter new stage ID (e.g., Contacted, Qualified):',
+  loadMore(): void {
+    const current = this.leads();
+    const cursor = current[current.length - 1]?.id;
+    if (!cursor) return;
+    this.loading.set(true);
+    this.crmService.getPipeline(cursor).subscribe({
+      next: (page) => {
+        this.leads.set([...current, ...page]);
+        this.hasMore.set(page.length === LEAD_PAGE_SIZE);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.snackBar.open('Could not load more leads', 'Close', {
+          duration: 3000,
+        });
+        this.loading.set(false);
+      },
+    });
+  }
+
+  onDrop(event: CdkDragDrop<BoardColumn>): void {
+    if (event.previousContainer === event.container) return;
+    const lead = event.item.data as Lead;
+    this.move(lead, event.container.data.id);
+  }
+
+  /** Optimistic move; restores the previous stage if the API refuses. */
+  move(lead: Lead, stageId: string): void {
+    if (stageId === UNSTAGED || stageId === lead.pipelineStageId) return;
+    const stage = this.stages().find((s) => s.id === stageId);
+    if (!stage || this.pendingLeadId()) return;
+
+    const previous = {
+      pipelineStageId: lead.pipelineStageId ?? null,
+      pipelineStage: lead.pipelineStage ?? null,
+    };
+    this.patchLead(lead.id, { pipelineStageId: stageId, pipelineStage: stage });
+    this.pendingLeadId.set(lead.id);
+
+    this.crmService.updateLeadStage(lead.id, stageId).subscribe({
+      next: () => {
+        this.pendingLeadId.set(null);
+        this.snackBar.open(`Moved to ${stage.name}`, 'Close', {
+          duration: 2000,
+        });
+      },
+      error: (err: { status?: number }) => {
+        this.patchLead(lead.id, previous);
+        this.pendingLeadId.set(null);
+        const message =
+          err.status === 404
+            ? 'You cannot move this lead'
+            : err.status === 403
+              ? 'Your role cannot change lead stages'
+              : 'Could not move the lead';
+        this.snackBar.open(message, 'Close', { duration: 3000 });
+      },
+    });
+  }
+
+  ownerName(lead: Lead): string | null {
+    const p = lead.ownerUser?.profile;
+    const name = [p?.firstName, p?.lastName].filter(Boolean).join(' ');
+    return name || lead.ownerUser?.email || null;
+  }
+
+  private patchLead(id: string, changes: Partial<Lead>): void {
+    this.leads.update((all) =>
+      all.map((l) => (l.id === id ? { ...l, ...changes } : l)),
     );
-    if (promptStage) {
-      this.crmService.updateLeadStage(lead.id, promptStage).subscribe({
-        next: () => {
-          this.snackBar.open('Lead stage advanced successfully', 'Close', {
-            duration: 3000,
-          });
-          this.loadData();
-        },
-        error: (err) => {
-          console.error('Update failed', err);
-          this.snackBar.open('Lead stage advanced successfully', 'Close', {
-            duration: 3000,
-          });
-          this.loadData(); // Assuming success for demonstration
-        },
-      });
-    }
   }
 }

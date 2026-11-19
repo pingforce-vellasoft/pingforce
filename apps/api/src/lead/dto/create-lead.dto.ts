@@ -5,6 +5,7 @@ import {
   IsEmail,
   IsObject,
   IsNumber,
+  IsUUID,
 } from 'class-validator';
 
 export class CreateLeadDto {
@@ -49,27 +50,27 @@ export class CreateLeadDto {
   qualificationScore?: number;
 
   // Relations
-  @IsString()
+  @IsUUID()
   @IsOptional()
   sourceId?: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
   campaignId?: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
   priorityId?: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
   ownerUserId?: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
   statusId?: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
   pipelineStageId?: string;
 
