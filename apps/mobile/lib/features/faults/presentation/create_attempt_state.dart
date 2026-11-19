@@ -77,10 +77,36 @@ class CreateAttemptState {
   const CreateAttemptState({
     this.isSubmitting = false,
     this.saved = false,
+    this.queuedOffline = false,
     this.errorMessage,
   });
 
   final bool isSubmitting;
+
+  /// Recorded on the server.
   final bool saved;
+
+  /// No connection: queued for POST /faults/sync (ADD_ATTEMPT).
+  final bool queuedOffline;
   final String? errorMessage;
+
+  bool get done => saved || queuedOffline;
+}
+
+/// The /faults/sync ADD_ATTEMPT item for an attempt captured offline. The
+/// request's clientRef becomes the sync clientRef, which the API dedupes on.
+Map<String, dynamic> offlineAttemptAction(
+  String faultId,
+  CreateAttemptRequest request,
+  DateTime capturedAt,
+) {
+  final attempt = Map<String, dynamic>.of(request.toJson())
+    ..remove('clientRef');
+  return {
+    'clientRef': request.clientRef,
+    'action': 'ADD_ATTEMPT',
+    'timestamp': capturedAt.toUtc().toIso8601String(),
+    'faultId': faultId,
+    'attempt': attempt,
+  };
 }

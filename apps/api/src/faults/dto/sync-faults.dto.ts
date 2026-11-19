@@ -14,8 +14,13 @@ import {
 } from 'class-validator';
 import { FaultPriority } from '@pingforce-monorepo/shared';
 import { FaultState } from '../domain/fault-state';
+import { CreateFaultAttemptDto } from './create-fault-attempt.dto';
 
-export const OFFLINE_FAULT_ACTIONS = ['CREATE', 'UPDATE_STATUS'] as const;
+export const OFFLINE_FAULT_ACTIONS = [
+  'CREATE',
+  'UPDATE_STATUS',
+  'ADD_ATTEMPT',
+] as const;
 
 export class OfflineFaultActionDto {
   /** Client-generated id used for idempotent replay. */
@@ -63,6 +68,12 @@ export class OfflineFaultActionDto {
   @IsOptional()
   @IsString()
   readonly notes?: string;
+
+  /** ADD_ATTEMPT: the attempt as captured on the device (faultId above). */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateFaultAttemptDto)
+  readonly attempt?: CreateFaultAttemptDto;
 }
 
 export class SyncFaultsDto {

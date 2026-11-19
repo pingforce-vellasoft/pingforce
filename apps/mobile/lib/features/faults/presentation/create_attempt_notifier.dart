@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/hardware/hardware_service.dart';
 import '../../../core/network/connectivity_provider.dart';
+import '../../../core/sync/sync_provider.dart';
+import '../../../core/sync/sync_state.dart';
 import '../../../injection_container.dart';
 import '../data/faults_remote_data_source.dart';
 import 'create_attempt_state.dart';
@@ -10,9 +12,10 @@ import 'fault_notifier.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CREATE ATTEMPT NOTIFIER — POST /faults/:id/attempts.
-// Online only for now: /faults/sync replays CREATE and UPDATE_STATUS, not
-// attempts. The clientRef is fixed for the life of the screen, so a retry after
-// a dropped response returns the first attempt instead of recording a second.
+// Offline (or when the connection drops mid-request) the attempt is queued
+// and replayed through POST /faults/sync as ADD_ATTEMPT. The clientRef is
+// fixed for the life of the screen and the API dedupes on it, so a retry or a
+// request that did reach the server never records a second attempt.
 // ─────────────────────────────────────────────────────────────────────────────
 
 final createAttemptProvider = NotifierProvider.autoDispose
@@ -40,14 +43,6 @@ class CreateAttemptNotifier
     required bool captureLocation,
   }) async {
     if (state.isSubmitting) return;
-    if (!ref.read(isOnlineProvider)) {
-      state = const CreateAttemptState(
-        errorMessage:
-            'You are offline. Recording an attempt needs a connection.',
-      );
-      return;
-    }
-
     state = const CreateAttemptState(isSubmitting: true);
 
     double? latitude;
@@ -62,31 +57,60 @@ class CreateAttemptNotifier
       }
     }
 
+    final request = CreateAttemptRequest(
+      attemptType: attemptType,
+      outcome: outcome,
+      startedAt: startedAt,
+      endedAt: endedAt,
+      latitude: latitude,
+      longitude: longitude,
+      workNotes: workNotes?.trim(),
+      nextAction: nextAction?.trim(),
+      clientRef: _clientRef!,
+    );
+
+    if (!ref.read(isOnlineProvider)) {
+      _queueOffline(request);
+      return;
+    }
+
     try {
-      await sl<FaultsRemoteDataSource>().createAttempt(
-        arg,
-        CreateAttemptRequest(
-          attemptType: attemptType,
-          outcome: outcome,
-          startedAt: startedAt,
-          endedAt: endedAt,
-          latitude: latitude,
-          longitude: longitude,
-          workNotes: workNotes?.trim(),
-          nextAction: nextAction?.trim(),
-          clientRef: _clientRef!,
-        ),
-      );
+      await sl<FaultsRemoteDataSource>().createAttempt(arg, request);
       // Refresh the detail behind this screen so the new attempt shows.
       await ref.read(faultNotifierProvider.notifier).loadDetail(arg);
       state = const CreateAttemptState(saved: true);
     } on DioException catch (e) {
+      if (e.response == null) {
+        // Connection dropped: queue it; the clientRef makes a replay of a
+        // request that did reach the server a DUPLICATE, not a second row.
+        _queueOffline(request);
+        return;
+      }
       state = CreateAttemptState(errorMessage: _messageFor(e));
     } catch (_) {
       state = const CreateAttemptState(
         errorMessage: 'Could not save the attempt. Try again.',
       );
     }
+  }
+
+  void _queueOffline(CreateAttemptRequest request) {
+    final now = DateTime.now();
+    ref
+        .read(syncProvider.notifier)
+        .enqueue(
+          SyncQueueItem(
+            id: request.clientRef,
+            module: SyncItemModule.faults,
+            entityId: arg,
+            operationType: 'create',
+            description:
+                'Fault attempt: ${prettyAttemptValue(request.outcome)}',
+            queuedAt: now,
+            payload: offlineAttemptAction(arg, request, now),
+          ),
+        );
+    state = const CreateAttemptState(queuedOffline: true);
   }
 
   String _messageFor(DioException e) {
