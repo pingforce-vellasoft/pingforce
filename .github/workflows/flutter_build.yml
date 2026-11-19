@@ -34,6 +34,10 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          # Pinned: unpinned "stable" moved to 3.50.0 (2026-11-11) and broke
+          # analyze/test on unchanged code. 3.47.x is the line that last passed
+          # (3.47.5 on 2026-09-22). Upgrade deliberately in its own PR.
+          flutter-version: '3.47.9'
           cache: true
 
       - name: Install Dependencies
