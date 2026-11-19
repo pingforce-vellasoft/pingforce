@@ -56,6 +56,26 @@ async function main() {
   assert.deepEqual(qs.parse('__proto__[dependencySmokePolluted]=true'), {});
   assert.equal({}.dependencySmokePolluted, undefined);
 
+  // decode-uri-component is overridden to 0.5.1 (ESM-only) under minio's
+  // query-string 7. Node 22 require(esm) hands query-string a namespace, so
+  // only stringify is safe; minio must never start calling parse paths.
+  currentCheck = 'minio query-string stringify';
+  const minioRequire = createRequire(require.resolve('minio'));
+  const minioQs = minioRequire('query-string');
+  assert.equal(minioQs.stringify({ b: 1, a: 'x y' }), 'a=x%20y&b=1');
+  const fs = require('node:fs');
+  const minioDist = path.dirname(require.resolve('minio'));
+  const parseCalls = fs
+    .readdirSync(minioDist, { recursive: true })
+    .filter((f) => String(f).endsWith('.js'))
+    .filter((f) =>
+      /(qs|querystring)\.(parse|parseUrl)\(/.test(
+        fs.readFileSync(path.join(minioDist, String(f)), 'utf8'),
+      ),
+    );
+  assert.deepEqual(parseCalls, [], 'minio now calls query-string parse');
+  console.log('minio query-string usage is stringify-only.');
+
   console.log('Patched dependency compatibility checks passed.');
 }
 
