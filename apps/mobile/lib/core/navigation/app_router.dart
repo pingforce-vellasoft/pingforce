@@ -25,6 +25,8 @@ import '../../features/faults/presentation/create_fault_screen.dart';
 import '../../features/customer_faults/presentation/my_complaints_screen.dart';
 import '../../features/customer_faults/presentation/raise_complaint_screen.dart';
 import '../../features/customer_faults/presentation/complaint_detail_screen.dart';
+import '../../features/visits/presentation/create_visit_screen.dart';
+import '../../features/visits/presentation/visit_detail_screen.dart';
 import '../../features/visits/presentation/visit_list_screen.dart';
 import '../../features/sync/sync_monitor_screen.dart';
 import '../../features/network_map/presentation/network_map_screen.dart';
@@ -308,15 +310,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'new',
                     name: 'create-visit',
-                    builder: (context, state) =>
-                        const _PlaceholderScreen(name: 'Create Visit'),
+                    builder: (context, state) => const CreateVisitScreen(),
                   ),
                   GoRoute(
                     path: ':visitId',
                     name: 'visit-detail',
                     builder: (context, state) {
                       final id = state.pathParameters['visitId']!;
-                      return _PlaceholderScreen(name: 'Visit $id');
+                      return VisitDetailScreen(visitId: id);
                     },
                   ),
                 ],

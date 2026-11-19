@@ -21,6 +21,16 @@ abstract class VisitsRemoteDataSource {
   /// POST /visits/sync — replay one offline-captured action
   /// (idempotent via clientRef; see 3.2 OFFLINE_SYNC.md).
   Future<void> syncActions(List<Map<String, dynamic>> actions);
+
+  /// GET /visits/{id} — detail with geofence, status history and notes.
+  /// The API scopes this to the caller (404 outside scope).
+  Future<VisitDetail> fetchVisit(String visitId);
+
+  /// POST /visits/{id}/notes
+  Future<VisitNote> addNote(String visitId, String note);
+
+  /// POST /visits — returns the new visit id (needs VISITS:CREATE).
+  Future<String> createVisit(CreateVisitRequest request);
 }
 
 class VisitsRemoteDataSourceImpl implements VisitsRemoteDataSource {
@@ -77,6 +87,60 @@ class VisitsRemoteDataSourceImpl implements VisitsRemoteDataSource {
   Future<void> syncActions(List<Map<String, dynamic>> actions) async {
     await dio.post('/api/v1/visits/sync', data: {'actions': actions});
   }
+
+  @override
+  Future<VisitDetail> fetchVisit(String visitId) async {
+    final response = await dio.get('/api/v1/visits/$visitId');
+    final json = response.data as Map<String, dynamic>;
+
+    final history = (json['statusHistory'] as List? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(
+          (h) => VisitHistoryEntry(
+            fromStatus: h['fromStatus'] == null
+                ? null
+                : VisitStatus.fromApi(h['fromStatus'] as String?),
+            toStatus: VisitStatus.fromApi(h['toStatus'] as String?),
+            at: DateTime.parse(h['createdAt'] as String),
+            notes: h['notes'] as String?,
+          ),
+        )
+        .toList(growable: false);
+
+    final notes = (json['visitNotes'] as List? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(_mapNote)
+        .toList(growable: false);
+
+    return VisitDetail(
+      summary: _mapVisit(json),
+      geofenceName: json['geofence']?['name'] as String?,
+      outcome: json['outcome'] as String?,
+      history: history,
+      notes: notes,
+    );
+  }
+
+  @override
+  Future<VisitNote> addNote(String visitId, String note) async {
+    final response = await dio.post(
+      '/api/v1/visits/$visitId/notes',
+      data: {'note': note},
+    );
+    return _mapNote(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<String> createVisit(CreateVisitRequest request) async {
+    final response = await dio.post('/api/v1/visits', data: request.toJson());
+    return (response.data as Map<String, dynamic>)['id'] as String;
+  }
+
+  VisitNote _mapNote(Map<String, dynamic> json) => VisitNote(
+        id: json['id'] as String,
+        note: (json['note'] ?? '') as String,
+        at: DateTime.parse(json['createdAt'] as String),
+      );
 
   VisitSummary _mapVisit(Map<String, dynamic> json) {
     return VisitSummary(
