@@ -28,6 +28,7 @@ import 'features/customer_faults/data/customer_faults_remote_data_source.dart';
 import 'features/customer_faults/data/portal_auth_data_source.dart';
 import 'features/network_map/data/network_map_remote_data_source.dart';
 import 'features/visits/data/visits_remote_data_source.dart';
+import 'features/leads/data/leads_remote_data_source.dart';
 import 'features/profile/data/profile_remote_data_source.dart';
 import 'features/attendance/data/datasources/attendance_history_remote_data_source.dart';
 import 'features/dashboard/data/datasources/dashboard_remote_data_source.dart';
@@ -136,6 +137,9 @@ Future<void> init() async {
   // --- Features: Visits ---
   sl.registerLazySingleton<VisitsRemoteDataSource>(
     () => VisitsRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<LeadsRemoteDataSource>(
+    () => LeadsRemoteDataSourceImpl(dio: sl()),
   );
 
   // --- Features: Connection Map (3.7) ---
