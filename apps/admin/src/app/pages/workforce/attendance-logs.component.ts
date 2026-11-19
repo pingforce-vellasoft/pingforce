@@ -16,12 +16,23 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatInputModule } from '@angular/material/input';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, forkJoin } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { WorkforceService } from '../../core/services/workforce.service';
 import { RouterModule } from '@angular/router';
 import { MatRippleModule } from '@angular/material/core';
 import { ManualCheckoutDialogComponent } from './dialogs/manual-checkout-dialog.component';
 import { AttendanceTimelineDialogComponent } from './dialogs/attendance-timeline-dialog.component';
+import {
+  AssignVisitToEmployeeDialogComponent,
+  CreateVisitDialogComponent,
+  PLAN_NEW_VISIT,
+} from './dialogs/visit-dialogs.component';
+import {
+  CreateVisitPayload,
+  VisitEmployee,
+  VisitsService,
+} from '../../core/services/visits.service';
 @Component({
   selector: 'app-attendance-logs',
   standalone: true,
@@ -193,9 +204,9 @@ import { AttendanceTimelineDialogComponent } from './dialogs/attendance-timeline
                   <mat-icon>fact_check</mat-icon>
                   <span>Manual Checkout</span>
                 </button>
-                <button mat-menu-item (click)="assignTask(element)">
+                <button mat-menu-item (click)="assignVisit(element)">
                   <mat-icon>assignment_ind</mat-icon>
-                  <span>Assign Task</span>
+                  <span>Assign Visit</span>
                 </button>
                 <mat-divider></mat-divider>
                 <button mat-menu-item (click)="viewTimeline(element)">
@@ -658,6 +669,8 @@ import { AttendanceTimelineDialogComponent } from './dialogs/attendance-timeline
 export class AttendanceLogsComponent implements OnInit, AfterViewInit {
   private workforceService = inject(WorkforceService);
   private dialog = inject(MatDialog);
+  private visitsService = inject(VisitsService);
+  private snackBar = inject(MatSnackBar);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -829,9 +842,66 @@ export class AttendanceLogsComponent implements OnInit, AfterViewInit {
     });
   }
 
-  assignTask(log: any) {
-    console.log('Assigning task for', log);
-    // TODO: Implement task assignment
+  /**
+   * "Assign visit" on an attendance row: reuses visit assignment
+   * (POST /visits/:id/assign) instead of a separate task module. Offers the
+   * open visits (PLANNED / REJECTED), or planning a new one for this employee.
+   */
+  assignVisit(log: any): void {
+    const employeeId: string | undefined = log.employee?.id;
+    if (!employeeId) return;
+    const employeeName = this.getName(log);
+    const employee: VisitEmployee = {
+      id: employeeId,
+      employeeCode: log.employee?.employeeCode ?? '',
+      firstName: log.employee?.user?.profile?.firstName ?? '',
+      lastName: log.employee?.user?.profile?.lastName ?? '',
+    };
+
+    forkJoin([
+      this.visitsService.getVisits({ status: 'PLANNED' }),
+      this.visitsService.getVisits({ status: 'REJECTED' }),
+    ]).subscribe({
+      next: ([planned, rejected]) => {
+        const dialogRef = this.dialog.open(
+          AssignVisitToEmployeeDialogComponent,
+          {
+            panelClass: 'premium-dialog',
+            data: { employeeName, visits: [...planned, ...rejected] },
+          },
+        );
+        dialogRef.afterClosed().subscribe((choice?: string) => {
+          if (!choice) return;
+          if (choice === PLAN_NEW_VISIT) {
+            this.planVisitFor(employee);
+            return;
+          }
+          this.visitsService.assign(choice, employeeId).subscribe({
+            next: () => this.toast(`Visit assigned to ${employeeName}`),
+            error: () => this.toast('Failed to assign visit'),
+          });
+        });
+      },
+      error: () => this.toast('Could not load open visits'),
+    });
+  }
+
+  private planVisitFor(employee: VisitEmployee): void {
+    const dialogRef = this.dialog.open(CreateVisitDialogComponent, {
+      panelClass: 'premium-dialog',
+      data: { employees: [employee], preselectedEmployeeId: employee.id },
+    });
+    dialogRef.afterClosed().subscribe((payload?: CreateVisitPayload) => {
+      if (!payload) return;
+      this.visitsService.createVisit(payload).subscribe({
+        next: () => this.toast('Visit planned and assigned'),
+        error: () => this.toast('Failed to create visit'),
+      });
+    });
+  }
+
+  private toast(message: string): void {
+    this.snackBar.open(message, 'Close', { duration: 3000 });
   }
 
   viewTimeline(log: any) {

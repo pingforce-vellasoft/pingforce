@@ -10,11 +10,22 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
-import { VisitEmployee } from '../../../core/services/visits.service';
+import { Visit, VisitEmployee } from '../../../core/services/visits.service';
 
 export interface CreateVisitDialogData {
   employees: VisitEmployee[];
+  /** Pre-fills "Assign To" (e.g. when planning from an attendance row). */
+  preselectedEmployeeId?: string;
 }
+
+export interface AssignVisitToEmployeeDialogData {
+  employeeName: string;
+  /** Open visits that can still be (re)assigned: PLANNED / REJECTED. */
+  visits: Visit[];
+}
+
+/** Closed with a visit id, PLAN_NEW_VISIT, or nothing (cancelled). */
+export const PLAN_NEW_VISIT = '__plan_new__';
 
 @Component({
   selector: 'app-create-visit-dialog',
@@ -133,7 +144,7 @@ export class CreateVisitDialogComponent {
     visitType: ['PLANNED'],
     priority: ['MEDIUM'],
     plannedStartAt: ['', Validators.required],
-    employeeId: [''],
+    employeeId: [this.data.preselectedEmployeeId ?? ''],
   });
 
   save(): void {
@@ -208,5 +219,89 @@ export class AssignVisitDialogComponent {
 
   readonly form = this.fb.nonNullable.group({
     employeeId: ['', Validators.required],
+  });
+}
+
+/**
+ * Employee-first assignment (attendance logs "Assign visit"): pick one of the
+ * open visits for a known employee. Uses the same POST /visits/:id/assign as
+ * AssignVisitDialogComponent; there is no separate task module.
+ */
+@Component({
+  selector: 'app-assign-visit-to-employee-dialog',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatButtonModule,
+  ],
+  template: `
+    <h2 mat-dialog-title>Assign visit to {{ data.employeeName }}</h2>
+    <mat-dialog-content>
+      @if (data.visits.length) {
+        <form [formGroup]="form" class="dialog-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Open visit</mat-label>
+            <mat-select formControlName="visitId" required>
+              @for (visit of data.visits; track visit.id) {
+                <mat-option [value]="visit.id">
+                  {{ visit.visitNumber }} — {{ visit.purpose }} ({{
+                    visit.plannedStartAt | date: 'MMM d, HH:mm'
+                  }})
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </form>
+      } @else {
+        <p class="empty">No open visits to assign. Plan a new one instead.</p>
+      }
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Cancel</button>
+      <button mat-stroked-button (click)="dialogRef.close(planNew)">
+        Plan new visit
+      </button>
+      @if (data.visits.length) {
+        <button
+          mat-flat-button
+          color="primary"
+          [disabled]="form.invalid"
+          (click)="dialogRef.close(form.getRawValue().visitId)"
+        >
+          Assign
+        </button>
+      }
+    </mat-dialog-actions>
+  `,
+  styles: [
+    `
+      .dialog-form {
+        min-width: 360px;
+        padding-top: 8px;
+      }
+      mat-form-field {
+        width: 100%;
+      }
+      .empty {
+        min-width: 320px;
+        color: var(--text-secondary, #666);
+      }
+    `,
+  ],
+})
+export class AssignVisitToEmployeeDialogComponent {
+  private fb = inject(FormBuilder);
+  readonly dialogRef = inject(
+    MatDialogRef<AssignVisitToEmployeeDialogComponent>,
+  );
+  readonly data = inject<AssignVisitToEmployeeDialogData>(MAT_DIALOG_DATA);
+  readonly planNew = PLAN_NEW_VISIT;
+
+  readonly form = this.fb.nonNullable.group({
+    visitId: ['', Validators.required],
   });
 }
