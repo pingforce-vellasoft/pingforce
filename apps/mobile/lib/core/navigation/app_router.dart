@@ -20,6 +20,9 @@ import '../../features/documents/document_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/attendance/presentation/check_in/attendance_screen.dart';
 import '../../features/faults/presentation/fault_list_screen.dart';
+import '../../features/leads/presentation/lead_list_screen.dart';
+import '../../features/leads/presentation/lead_detail_screen.dart';
+import '../../features/leads/presentation/create_lead_screen.dart';
 import '../../features/faults/presentation/fault_detail_screen.dart';
 import '../../features/faults/presentation/create_fault_screen.dart';
 import '../../features/faults/presentation/create_attempt_screen.dart';
@@ -328,21 +331,19 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/leads',
                 name: 'leads',
-                builder: (context, state) =>
-                    const _PlaceholderScreen(name: 'Lead List'),
+                builder: (context, state) => const LeadListScreen(),
                 routes: [
                   GoRoute(
                     path: 'new',
                     name: 'create-lead',
-                    builder: (context, state) =>
-                        const _PlaceholderScreen(name: 'Create Lead'),
+                    builder: (context, state) => const CreateLeadScreen(),
                   ),
                   GoRoute(
                     path: ':leadId',
                     name: 'lead-detail',
                     builder: (context, state) {
                       final id = state.pathParameters['leadId']!;
-                      return _PlaceholderScreen(name: 'Lead $id');
+                      return LeadDetailScreen(leadId: id);
                     },
                   ),
                 ],

@@ -9,6 +9,7 @@ import '../../features/attendance/domain/repositories/attendance_repository.dart
 import '../../features/tracking/data/datasources/tracking_remote_data_source.dart';
 import '../../features/faults/data/faults_remote_data_source.dart';
 import '../../features/visits/data/visits_remote_data_source.dart';
+import '../../features/leads/data/leads_remote_data_source.dart';
 import '../../injection_container.dart';
 import 'sync_state.dart';
 import '../network/connectivity_provider.dart';
@@ -402,8 +403,10 @@ class SyncNotifier extends Notifier<SyncState> {
       case SyncItemModule.faults:
         // Idempotent replay via clientRef (POST /faults/sync)
         await sl<FaultsRemoteDataSource>().syncActions(payloads);
-      // Remaining modules gain client sync flows in a later phase
       case SyncItemModule.leads:
+        // Offline lead captures (POST /leads/sync); leadNumber dedupes.
+        await sl<LeadsRemoteDataSource>().syncLeads(payloads);
+      // Remaining modules gain client sync flows in a later phase
       case SyncItemModule.documents:
       case SyncItemModule.profile:
         return;
