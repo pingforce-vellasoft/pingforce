@@ -12,6 +12,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import {
   ImpactResult,
   NetworkConnection,
@@ -696,5 +697,223 @@ export class ImpactDialogComponent {
     this.networkService
       .getImpact(this.data.connection.id)
       .subscribe((impact) => this.impact.set(impact));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Split dialog: insert a junction under a node and hang chosen children on it
+// (3.7_ConnectionMap §5.3, NETWORK:MOVE).
+// ---------------------------------------------------------------------------
+
+@Component({
+  selector: 'app-split-connection-dialog',
+  standalone: true,
+  imports: [...DIALOG_IMPORTS, MatCheckboxModule],
+  template: `
+    <h2 mat-dialog-title>Split {{ data.connection.connectionCode }}</h2>
+    <mat-dialog-content class="dialog-form">
+      <p class="note">
+        Adds a new junction under this connection and moves the selected
+        children (with everything under them) onto it.
+      </p>
+      <mat-form-field appearance="outline">
+        <mat-label>Junction code</mat-label>
+        <input
+          matInput
+          [value]="junctionCode()"
+          (input)="junctionCode.set($any($event.target).value)"
+          placeholder="JN-1001"
+        />
+      </mat-form-field>
+      <div class="children">
+        <mat-checkbox
+          *ngFor="let child of data.connection.childConnections ?? []"
+          [checked]="selected().has(child.id)"
+          (change)="toggle(child.id, $event.checked)"
+        >
+          {{ child.connectionCode }}
+          <span *ngIf="child.customer as c">
+            — {{ c.displayName || c.legalName }}</span
+          >
+        </mat-checkbox>
+      </div>
+      <p class="error" *ngIf="error()">{{ error() }}</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Cancel</button>
+      <button
+        mat-flat-button
+        color="primary"
+        [disabled]="saving() || !junctionCode().trim() || selected().size === 0"
+        (click)="save()"
+      >
+        Split
+      </button>
+    </mat-dialog-actions>
+  `,
+  styles: [
+    `
+      .dialog-form {
+        display: flex;
+        flex-direction: column;
+        min-width: 400px;
+        padding-top: 8px;
+      }
+      .note {
+        margin-top: 0;
+        color: #555;
+      }
+      .children {
+        display: flex;
+        flex-direction: column;
+        max-height: 240px;
+        overflow-y: auto;
+      }
+      .error {
+        color: #c62828;
+        font-size: 13px;
+      }
+    `,
+  ],
+})
+export class SplitConnectionDialogComponent {
+  private networkService = inject(NetworkService);
+  readonly dialogRef = inject(MatDialogRef<SplitConnectionDialogComponent>);
+  readonly data: { connection: NetworkConnection } = inject(MAT_DIALOG_DATA);
+
+  readonly junctionCode = signal('');
+  readonly selected = signal<ReadonlySet<string>>(new Set());
+  readonly saving = signal(false);
+  readonly error = signal('');
+
+  toggle(id: string, checked: boolean): void {
+    const next = new Set(this.selected());
+    if (checked) next.add(id);
+    else next.delete(id);
+    this.selected.set(next);
+  }
+
+  save(): void {
+    this.saving.set(true);
+    this.error.set('');
+    this.networkService
+      .splitConnection(this.data.connection.id, {
+        junctionCode: this.junctionCode().trim(),
+        childConnectionIds: [...this.selected()],
+      })
+      .subscribe({
+        next: (junction) => this.dialogRef.close(junction),
+        error: (err) => {
+          this.saving.set(false);
+          this.error.set(err?.error?.message ?? 'Split failed');
+        },
+      });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Merge dialog: move all children onto another node and archive this one
+// (3.7_ConnectionMap §5.3, NETWORK:MOVE).
+// ---------------------------------------------------------------------------
+
+@Component({
+  selector: 'app-merge-connection-dialog',
+  standalone: true,
+  imports: DIALOG_IMPORTS,
+  template: `
+    <h2 mat-dialog-title>Merge {{ data.connection.connectionCode }}</h2>
+    <mat-dialog-content class="dialog-form">
+      <p class="warn">
+        Its {{ data.connection.childConnections?.length ?? 0 }} direct
+        child(ren) move onto the target, and
+        <strong>{{ data.connection.connectionCode }}</strong> is archived
+        (disconnected). This cannot be undone from here.
+      </p>
+      <mat-form-field appearance="outline">
+        <mat-label>Merge into</mat-label>
+        <mat-select
+          [value]="targetId()"
+          (selectionChange)="targetId.set($event.value)"
+        >
+          <mat-option *ngFor="let o of options()" [value]="o.id">
+            <span class="tree-label">{{ o.label }}</span>
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-spinner *ngIf="loading()" diameter="24"></mat-spinner>
+      <p class="error" *ngIf="error()">{{ error() }}</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Cancel</button>
+      <button
+        mat-flat-button
+        color="warn"
+        [disabled]="saving() || loading() || !targetId()"
+        (click)="save()"
+      >
+        Merge and archive
+      </button>
+    </mat-dialog-actions>
+  `,
+  styles: [
+    `
+      .dialog-form {
+        display: flex;
+        flex-direction: column;
+        min-width: 420px;
+        padding-top: 8px;
+      }
+      .warn {
+        margin-top: 0;
+        color: #c62828;
+      }
+      .tree-label {
+        white-space: pre;
+      }
+      .error {
+        color: #c62828;
+        font-size: 13px;
+      }
+    `,
+  ],
+})
+export class MergeConnectionDialogComponent {
+  private networkService = inject(NetworkService);
+  readonly dialogRef = inject(MatDialogRef<MergeConnectionDialogComponent>);
+  readonly data: { connection: NetworkConnection } = inject(MAT_DIALOG_DATA);
+
+  readonly targetId = signal('');
+  readonly options = signal<ParentOption[]>([]);
+  readonly loading = signal(true);
+  readonly saving = signal(false);
+  readonly error = signal('');
+
+  constructor() {
+    // Targets come from the same OLTE; the node and its subtree are excluded
+    // (the API also rejects merging into a descendant).
+    this.networkService.getTree(this.data.connection.olteId).subscribe({
+      next: (tree) => {
+        this.options.set(parentOptions(tree.tree, this.data.connection.id));
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.error.set('Could not load the OLTE tree');
+      },
+    });
+  }
+
+  save(): void {
+    this.saving.set(true);
+    this.error.set('');
+    this.networkService
+      .mergeConnection(this.data.connection.id, this.targetId())
+      .subscribe({
+        next: (target) => this.dialogRef.close(target),
+        error: (err) => {
+          this.saving.set(false);
+          this.error.set(err?.error?.message ?? 'Merge failed');
+        },
+      });
   }
 }

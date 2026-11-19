@@ -42,8 +42,10 @@ import {
   AssignableUser,
   ConnectionFormDialogComponent,
   ImpactDialogComponent,
+  MergeConnectionDialogComponent,
   MoveConnectionDialogComponent,
   OlteFormDialogComponent,
+  SplitConnectionDialogComponent,
 } from './network-dialogs.component';
 import { EmployeeService } from '../../core/services/employee.service';
 
@@ -386,7 +388,17 @@ const JUNCTION_COLOR = '#6a1b9a';
               <mat-icon>edit</mat-icon> Edit / Assign
             </button>
             <button mat-stroked-button (click)="openMoveDialog(conn)">
-              <mat-icon>call_split</mat-icon> Move
+              <mat-icon>open_with</mat-icon> Move
+            </button>
+            <button
+              mat-stroked-button
+              *ngIf="conn.childConnections?.length"
+              (click)="openSplitDialog(conn)"
+            >
+              <mat-icon>call_split</mat-icon> Split
+            </button>
+            <button mat-stroked-button (click)="openMergeDialog(conn)">
+              <mat-icon>call_merge</mat-icon> Merge
             </button>
             <button
               mat-stroked-button
@@ -1098,6 +1110,31 @@ export class NetworkMapComponent implements AfterViewInit, OnDestroy {
         if (moved) {
           this.snackBar.open('Connection moved', 'OK', { duration: 2500 });
           this.afterTopologyChange(conn.id);
+        }
+      });
+  }
+
+  openSplitDialog(conn: NetworkConnection): void {
+    this.dialog
+      .open(SplitConnectionDialogComponent, { data: { connection: conn } })
+      .afterClosed()
+      .subscribe((junction?: NetworkConnection) => {
+        if (junction) {
+          this.snackBar.open('Junction added', 'OK', { duration: 2500 });
+          this.afterTopologyChange(junction.id);
+        }
+      });
+  }
+
+  openMergeDialog(conn: NetworkConnection): void {
+    this.dialog
+      .open(MergeConnectionDialogComponent, { data: { connection: conn } })
+      .afterClosed()
+      .subscribe((target?: NetworkConnection) => {
+        if (target) {
+          this.snackBar.open('Connections merged', 'OK', { duration: 2500 });
+          // The source is archived; show the target it merged into.
+          this.afterTopologyChange(target.id);
         }
       });
   }
