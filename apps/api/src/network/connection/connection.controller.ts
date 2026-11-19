@@ -7,6 +7,7 @@ import {
   Post,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../../rbac/guards/rbac.guard';
@@ -55,15 +56,27 @@ export class ConnectionController {
     );
   }
 
+  /** Map-tap detail: READ_OWN is enough; the service applies the scope. */
   @Get(':id')
-  @RequirePermission('NETWORK', 'READ')
-  findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.connectionService.findOne(tenantId, id);
+  @RequirePermission('NETWORK', 'READ_OWN')
+  findOne(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() currentUser: CurrentUserContext,
+  ) {
+    return this.connectionService.findOneForUser(
+      tenantId,
+      id,
+      currentUser.userId,
+    );
   }
 
   @Get(':id/impact')
   @RequirePermission('NETWORK', 'READ')
-  getImpact(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+  getImpact(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.connectionService.getImpact(tenantId, id);
   }
 
@@ -71,7 +84,7 @@ export class ConnectionController {
   @RequirePermission('NETWORK', 'READ')
   getHistory(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
@@ -87,7 +100,7 @@ export class ConnectionController {
   @RequirePermission('NETWORK', 'UPDATE')
   update(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() currentUser: CurrentUserContext,
     @Body() dto: UpdateConnectionDto,
   ) {
@@ -98,7 +111,7 @@ export class ConnectionController {
   @RequirePermission('NETWORK', 'MOVE')
   move(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() currentUser: CurrentUserContext,
     @Body() dto: MoveConnectionDto,
   ) {
@@ -109,7 +122,7 @@ export class ConnectionController {
   @RequirePermission('NETWORK', 'MOVE')
   split(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() currentUser: CurrentUserContext,
     @Body() dto: SplitConnectionDto,
   ) {
@@ -120,7 +133,7 @@ export class ConnectionController {
   @RequirePermission('NETWORK', 'MOVE')
   merge(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() currentUser: CurrentUserContext,
     @Body() dto: MergeConnectionDto,
   ) {
@@ -131,7 +144,7 @@ export class ConnectionController {
   @RequirePermission('NETWORK', 'UPDATE')
   disconnect(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() currentUser: CurrentUserContext,
   ) {
     return this.connectionService.disconnect(tenantId, id, currentUser);
@@ -141,7 +154,7 @@ export class ConnectionController {
   @RequirePermission('NETWORK', 'UPDATE')
   reconnect(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() currentUser: CurrentUserContext,
   ) {
     return this.connectionService.reconnect(tenantId, id, currentUser);

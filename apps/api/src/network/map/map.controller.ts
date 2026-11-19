@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../../rbac/guards/rbac.guard';
 import { RequirePermission } from '../../rbac/decorators/require-permission.decorator';
@@ -60,7 +67,10 @@ export class NetworkMapController {
 
   @Get('oltes/:id/tree')
   @RequirePermission('NETWORK', 'READ')
-  getTree(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+  getTree(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.mapService.getOlteTree(tenantId, id);
   }
 

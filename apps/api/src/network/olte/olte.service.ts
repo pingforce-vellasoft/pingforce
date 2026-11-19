@@ -100,6 +100,16 @@ export class OlteService {
     if (!existing) {
       throw new NotFoundException(`OLTE with ID ${id} not found`);
     }
+    // 0 means "unlimited"; any other capacity must still fit what is in use.
+    if (
+      dto.totalPorts !== undefined &&
+      dto.totalPorts > 0 &&
+      dto.totalPorts < existing.usedPorts
+    ) {
+      throw new BadRequestException(
+        `totalPorts cannot be below the ${existing.usedPorts} port(s) in use`,
+      );
+    }
     const olte = await this.prisma.olte.update({
       where: { id_tenantId: { id, tenantId } },
       data: { ...dto, updatedBy: currentUser.userId },

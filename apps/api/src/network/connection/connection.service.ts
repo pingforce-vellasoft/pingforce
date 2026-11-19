@@ -8,6 +8,7 @@ import {
 import { IPrismaService, CurrentUserContext } from '@pingforce-monorepo/shared';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../../audit/audit.service';
+import { RbacService } from '../../rbac/rbac.service';
 import { TopologyService, ImpactResult } from './topology.service';
 import { CreateConnectionDto } from './dto/create-connection.dto';
 import { UpdateConnectionDto } from './dto/update-connection.dto';
@@ -46,7 +47,55 @@ export class ConnectionService {
     @Inject('IPrismaService') private readonly prisma: IPrismaService,
     private readonly topology: TopologyService,
     private readonly auditService: AuditService,
+    private readonly rbacService: RbacService,
   ) {}
+
+  /**
+   * A customer or assigned employee on a connection must belong to the
+   * caller's tenant. Without this an update could point a connection at
+   * another tenant's customer, and the detail view would return that
+   * customer's code, name and mobile.
+   */
+  private async assertReferences(
+    tenantId: string,
+    refs: { customerId?: string; assignedEmployeeId?: string },
+  ): Promise<void> {
+    if (refs.customerId) {
+      const customer = await this.prisma.customer.findFirst({
+        where: { id: refs.customerId, tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!customer) {
+        throw new NotFoundException(
+          `Customer with ID ${refs.customerId} not found`,
+        );
+      }
+    }
+    if (refs.assignedEmployeeId) {
+      const user = await this.prisma.user.findFirst({
+        where: { id: refs.assignedEmployeeId, tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!user) {
+        throw new BadRequestException(
+          'assignedEmployeeId is not a user in this tenant',
+        );
+      }
+    }
+  }
+
+  /** Root attachment consumes an OLTE port (DISCONNECTED nodes do not). */
+  private assertPortAvailable(olte: {
+    code: string;
+    totalPorts: number;
+    usedPorts: number;
+  }): void {
+    if (olte.totalPorts > 0 && olte.usedPorts >= olte.totalPorts) {
+      throw new BadRequestException(
+        `OLTE ${olte.code} has no available ports (${olte.usedPorts}/${olte.totalPorts} used)`,
+      );
+    }
+  }
 
   private async writeHistory(
     tx: Tx,
@@ -99,22 +148,11 @@ export class ConnectionService {
           'Parent connection belongs to a different OLTE',
         );
       }
-    } else if (olte.totalPorts > 0 && olte.usedPorts >= olte.totalPorts) {
-      throw new BadRequestException(
-        `OLTE ${olte.code} has no available ports (${olte.usedPorts}/${olte.totalPorts} used)`,
-      );
+    } else if (dto.status !== 'DISCONNECTED') {
+      this.assertPortAvailable(olte);
     }
 
-    if (dto.customerId) {
-      const customer = await this.prisma.customer.findFirst({
-        where: { id: dto.customerId, tenantId, deletedAt: null },
-      });
-      if (!customer) {
-        throw new NotFoundException(
-          `Customer with ID ${dto.customerId} not found`,
-        );
-      }
-    }
+    await this.assertReferences(tenantId, dto);
 
     try {
       const created = await this.prisma.$transaction(async (tx) => {
@@ -196,6 +234,50 @@ export class ConnectionService {
     return { ...connection, downstreamCount };
   }
 
+  /**
+   * Detail for the map tap. Users whose NETWORK read scope is ALL see any
+   * connection in the tenant; anyone narrower (field staff hold READ_OWN
+   * only) sees a connection assigned to someone in their scope, or one
+   * upstream of such a connection — the same route context their
+   * /network/map/assigned view draws. Everything else is 404.
+   */
+  async findOneForUser(
+    tenantId: string,
+    id: string,
+    userId: string,
+  ): Promise<unknown> {
+    const scope = await this.rbacService.resolveScopeIds(
+      tenantId,
+      userId,
+      'NETWORK',
+      ['READ', 'READ_OWN'],
+    );
+    if (scope.kind === 'ALL') return this.findOne(tenantId, id);
+
+    const userIds = scope.kind === 'IDS' ? [...scope.userIds] : [];
+    const node = await this.prisma.networkConnection.findFirst({
+      where: { id, tenantId, deletedAt: null },
+      select: { path: true, assignedEmployeeId: true },
+    });
+    const visible =
+      node !== null &&
+      userIds.length > 0 &&
+      ((node.assignedEmployeeId !== null &&
+        userIds.includes(node.assignedEmployeeId)) ||
+        (await this.prisma.networkConnection.count({
+          where: {
+            tenantId,
+            deletedAt: null,
+            assignedEmployeeId: { in: userIds },
+            path: { startsWith: `${node.path}.` },
+          },
+        })) > 0);
+    if (!visible) {
+      throw new NotFoundException(`Connection with ID ${id} not found`);
+    }
+    return this.findOne(tenantId, id);
+  }
+
   async findAssigned(
     tenantId: string,
     userId: string,
@@ -221,6 +303,9 @@ export class ConnectionService {
     dto: UpdateConnectionDto,
   ): Promise<unknown> {
     const existing = await this.topology.getNode(tenantId, id);
+    await this.assertReferences(tenantId, dto);
+    const statusChanged =
+      dto.status !== undefined && dto.status !== existing.status;
     const { installationDate, ...rest } = dto;
     const updated = await this.prisma.$transaction(async (tx) => {
       const connection = await tx.networkConnection.update({
@@ -240,6 +325,10 @@ export class ConnectionService {
         newStatus: connection.status,
         details: dto as unknown as Prisma.InputJsonValue,
       });
+      // A root node moving into or out of DISCONNECTED frees or takes a port.
+      if (statusChanged) {
+        await this.topology.recalcUsedPorts(tx, tenantId, [existing.olteId]);
+      }
       return connection;
     });
     this.audit(tenantId, currentUser, id, 'UPDATE', existing, dto);
@@ -274,6 +363,12 @@ export class ConnectionService {
       });
       if (!olte) {
         throw new NotFoundException(`OLTE with ID ${dto.newOlteId} not found`);
+      }
+      // Becoming a root of this OLTE takes a port, unless it already was one.
+      const alreadyRootHere =
+        node.parentConnectionId === null && node.olteId === olte.id;
+      if (!alreadyRootHere && node.status !== 'DISCONNECTED') {
+        this.assertPortAvailable(olte);
       }
       newOlteId = dto.newOlteId;
     }
