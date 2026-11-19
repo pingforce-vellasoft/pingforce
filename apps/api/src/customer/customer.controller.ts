@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -47,7 +48,10 @@ export class CustomerController {
 
   @Get(':id')
   @RequirePermission('CUSTOMERS', 'READ')
-  findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+  findOne(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.customerService.findOne(tenantId, id);
   }
 
@@ -55,7 +59,7 @@ export class CustomerController {
   @RequirePermission('CUSTOMERS', 'UPDATE')
   update(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCustomerDto: UpdateCustomerDto,
   ) {
     return this.customerService.update(tenantId, id, updateCustomerDto);
@@ -63,7 +67,10 @@ export class CustomerController {
 
   @Delete(':id')
   @RequirePermission('CUSTOMERS', 'DELETE')
-  remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+  remove(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.customerService.remove(tenantId, id);
   }
 }

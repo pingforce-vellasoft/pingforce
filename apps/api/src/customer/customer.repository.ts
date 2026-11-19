@@ -1,13 +1,8 @@
-import {
-  Injectable,
-  Inject,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Customer, Prisma } from '@prisma/client';
 import { PrismaRepository, IPrismaService } from '@pingforce-monorepo/shared';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { Prisma } from '@prisma/client';
 
 // Safe projection for User relations — never expose passwordHash/tokenVersion
 const SAFE_USER_SELECT = {
@@ -20,25 +15,35 @@ const SAFE_USER_SELECT = {
   },
 } as const;
 
+function hasPrismaCode(error: unknown, code: string): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === code
+  );
+}
+
 @Injectable()
 export class CustomerRepository extends PrismaRepository<
-  any,
+  Customer,
   CreateCustomerDto,
   UpdateCustomerDto,
-  Prisma.CustomerDelegate<any>
+  Prisma.CustomerDelegate
 > {
-  constructor(@Inject('IPrismaService') prisma: IPrismaService) {
+  constructor(
+    @Inject('IPrismaService') private readonly prisma: IPrismaService,
+  ) {
     super(prisma.customer);
   }
 
   override async create(
     tenantId: string,
     data: CreateCustomerDto,
-  ): Promise<any> {
+  ): Promise<Customer> {
     try {
       return await super.create(tenantId, data);
-    } catch (error: any) {
-      if (error.code === 'P2002') {
+    } catch (error: unknown) {
+      if (hasPrismaCode(error, 'P2002')) {
         throw new BadRequestException('Customer code already exists');
       }
       throw error;
@@ -49,20 +54,24 @@ export class CustomerRepository extends PrismaRepository<
     tenantId: string,
     skip?: number,
     take?: number,
-  ): Promise<any[]> {
+  ): Promise<Customer[]> {
     return this.delegate.findMany({
       where: { tenantId },
       include: {
         parentCustomer: true,
         accountManager: SAFE_USER_SELECT,
       },
+      orderBy: { createdAt: 'desc' },
       skip,
       take,
     });
   }
 
-  override async findById(tenantId: string, id: string): Promise<any | null> {
-    const customer = await this.delegate.findFirst({
+  override async findById(
+    tenantId: string,
+    id: string,
+  ): Promise<Customer | null> {
+    return this.delegate.findFirst({
       where: { id, tenantId },
       include: {
         parentCustomer: true,
@@ -70,11 +79,32 @@ export class CustomerRepository extends PrismaRepository<
         accountManager: SAFE_USER_SELECT,
       },
     });
+  }
 
-    if (!customer) {
-      return null;
-    }
+  // Reference checks: every id a customer points at must live in the same
+  // tenant (soft-deleted rows are excluded by the Prisma extension).
 
-    return customer;
+  async companyExists(tenantId: string, id: string): Promise<boolean> {
+    return (await this.prisma.company.count({ where: { id, tenantId } })) > 0;
+  }
+
+  async userExists(tenantId: string, id: string): Promise<boolean> {
+    return (await this.prisma.user.count({ where: { id, tenantId } })) > 0;
+  }
+
+  async customerExists(tenantId: string, id: string): Promise<boolean> {
+    return (await this.prisma.customer.count({ where: { id, tenantId } })) > 0;
+  }
+
+  /** Parent id of a customer in this tenant, or undefined when not found. */
+  async parentOf(
+    tenantId: string,
+    id: string,
+  ): Promise<string | null | undefined> {
+    const row = await this.prisma.customer.findFirst({
+      where: { id, tenantId },
+      select: { parentCustomerId: true },
+    });
+    return row === null ? undefined : row.parentCustomerId;
   }
 }

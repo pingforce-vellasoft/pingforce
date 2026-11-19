@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsEmail,
   IsObject,
+  IsUUID,
 } from 'class-validator';
 
 export class CreateCustomerDto {
@@ -56,15 +57,15 @@ export class CreateCustomerDto {
   metadata?: any;
 
   // Relations
-  @IsString()
+  @IsUUID()
   @IsOptional()
   companyId?: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
   accountManagerId?: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
   parentCustomerId?: string;
 
