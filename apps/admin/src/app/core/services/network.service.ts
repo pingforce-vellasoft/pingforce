@@ -257,6 +257,28 @@ export class NetworkService {
     );
   }
 
+  /** Inserts a JUNCTION under `id` and moves the chosen children onto it. */
+  splitConnection(
+    id: string,
+    payload: { junctionCode: string; childConnectionIds: string[] },
+  ): Observable<NetworkConnection> {
+    return this.http.post<NetworkConnection>(
+      `${this.api}/connections/${id}/split`,
+      payload,
+    );
+  }
+
+  /** Moves every child of `id` onto the target, then archives `id`. */
+  mergeConnection(
+    id: string,
+    targetConnectionId: string,
+  ): Observable<NetworkConnection> {
+    return this.http.post<NetworkConnection>(
+      `${this.api}/connections/${id}/merge`,
+      { targetConnectionId },
+    );
+  }
+
   getImpact(id: string): Observable<ImpactResult> {
     return this.http.get<ImpactResult>(`${this.api}/connections/${id}/impact`);
   }
