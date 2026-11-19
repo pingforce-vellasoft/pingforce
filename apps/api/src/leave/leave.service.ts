@@ -360,76 +360,81 @@ export class LeaveService {
     reason: string,
     requestId?: string,
   ): Promise<LeaveRequest> {
-    const result = await this.repository.transaction(async (repo) => {
-      const leave = await repo.request(tenantId, id);
-      if (!leave) throw new NotFoundException('Leave request not found');
-      if (approved)
-        await this.approvalsService.authorizeDecision({
+    // `changed` is false for an idempotent replay of an already-cancelled
+    // request, so a double-tap or offline retry never re-notifies.
+    const { result, changed } = await this.repository.transaction(
+      async (repo): Promise<{ result: LeaveRequest; changed: boolean }> => {
+        const leave = await repo.request(tenantId, id);
+        if (!leave) throw new NotFoundException('Leave request not found');
+        if (approved)
+          await this.approvalsService.authorizeDecision({
+            tenantId,
+            module: 'LEAVES',
+            entityName: 'leave_request',
+            entityId: id,
+            ownerEmployeeId: leave.employeeId,
+            actorUserId: userId,
+            decision: 'REJECTED',
+          });
+        else if (
+          (await this.employee(repo, tenantId, userId)) !== leave.employeeId
+        )
+          throw new NotFoundException('Leave request not found');
+        if (leave.status === 'CANCELLED')
+          return { result: leave, changed: false };
+        const expected = approved ? 'APPROVED' : 'PENDING';
+        if (leave.status !== expected)
+          throw new ConflictException(
+            'Only ' +
+              expected.toLowerCase() +
+              ' requests can be ' +
+              (approved ? 'cancelled' : 'withdrawn'),
+          );
+        const balance = await repo.balance(
           tenantId,
-          module: 'LEAVES',
-          entityName: 'leave_request',
-          entityId: id,
-          ownerEmployeeId: leave.employeeId,
-          actorUserId: userId,
-          decision: 'REJECTED',
+          leave.employeeId,
+          leave.leaveTypeId,
+          leave.startDate.getUTCFullYear(),
+        );
+        if (
+          !balance ||
+          (approved ? balance.usedDays : balance.reservedDays) <
+            leave.requestedDays
+        )
+          throw new ConflictException(
+            'Leave balance requires administrator reconciliation',
+          );
+        const updatedRows = await repo.update(tenantId, id, expected, {
+          status: 'CANCELLED',
+          cancelledAt: new Date(),
+          decisionReason: reason,
+          updatedBy: userId,
         });
-      else if (
-        (await this.employee(repo, tenantId, userId)) !== leave.employeeId
-      )
-        throw new NotFoundException('Leave request not found');
-      if (leave.status === 'CANCELLED') return leave;
-      const expected = approved ? 'APPROVED' : 'PENDING';
-      if (leave.status !== expected)
-        throw new ConflictException(
-          'Only ' +
-            expected.toLowerCase() +
-            ' requests can be ' +
-            (approved ? 'cancelled' : 'withdrawn'),
+        if (updatedRows.count !== 1)
+          throw new ConflictException(
+            'Leave request has already changed; refresh and retry',
+          );
+        await repo.changeBalance(tenantId, balance.id, {
+          availableDays: { increment: leave.requestedDays },
+          ...(approved
+            ? { usedDays: { decrement: leave.requestedDays } }
+            : { reservedDays: { decrement: leave.requestedDays } }),
+          updatedBy: userId,
+        });
+        await repo.cancelWorkflow(tenantId, id);
+        const updated = await repo.request(tenantId, id);
+        if (!updated) throw new NotFoundException('Leave request not found');
+        await this.record(
+          repo,
+          updated,
+          approved ? 'CANCELLED' : 'WITHDRAWN',
+          userId,
+          requestId,
         );
-      const balance = await repo.balance(
-        tenantId,
-        leave.employeeId,
-        leave.leaveTypeId,
-        leave.startDate.getUTCFullYear(),
-      );
-      if (
-        !balance ||
-        (approved ? balance.usedDays : balance.reservedDays) <
-          leave.requestedDays
-      )
-        throw new ConflictException(
-          'Leave balance requires administrator reconciliation',
-        );
-      const changed = await repo.update(tenantId, id, expected, {
-        status: 'CANCELLED',
-        cancelledAt: new Date(),
-        decisionReason: reason,
-        updatedBy: userId,
-      });
-      if (changed.count !== 1)
-        throw new ConflictException(
-          'Leave request has already changed; refresh and retry',
-        );
-      await repo.changeBalance(tenantId, balance.id, {
-        availableDays: { increment: leave.requestedDays },
-        ...(approved
-          ? { usedDays: { decrement: leave.requestedDays } }
-          : { reservedDays: { decrement: leave.requestedDays } }),
-        updatedBy: userId,
-      });
-      await repo.cancelWorkflow(tenantId, id);
-      const updated = await repo.request(tenantId, id);
-      if (!updated) throw new NotFoundException('Leave request not found');
-      await this.record(
-        repo,
-        updated,
-        approved ? 'CANCELLED' : 'WITHDRAWN',
-        userId,
-        requestId,
-      );
-      return updated;
-    });
-    await this.notify(result, requestId);
+        return { result: updated, changed: true };
+      },
+    );
+    if (changed) await this.notify(result, requestId);
     return result;
   }
 
