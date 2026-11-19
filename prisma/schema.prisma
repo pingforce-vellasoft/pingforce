@@ -103,6 +103,7 @@ model Tenant {
   claimTimelines        ClaimTimeline[]
   faults                Fault[]
   faultTimelines        FaultTimeline[]
+  faultAttempts         FaultAttempt[]
   visits                Visit[]
   visitStatusHistory    VisitStatusHistory[]
   visitNotes            VisitNote[]
@@ -203,6 +204,7 @@ model User {
   customers            Customer[]             @relation("CustomerAccountManager")
   approvedCorrections  AttendanceCorrection[]
   assignedFaults       Fault[]                @relation("FaultAssignee")
+  faultAttempts        FaultAttempt[]         @relation("FaultAttemptTechnician")
   escalatedSlaPolicies SlaPolicy[]            @relation("SlaEscalationUser")
   scopeOverrides       UserScopeOverride[]
   passwordHistory      PasswordHistory[]
@@ -2204,6 +2206,7 @@ model Fault {
   customer       Customer?       @relation(fields: [customerId], references: [id])
   assignedToUser User?           @relation("FaultAssignee", fields: [assignedToId], references: [id])
   faultTimelines FaultTimeline[]
+  faultAttempts  FaultAttempt[]
 
   @@unique([tenantId, faultNumber])
   @@unique([id, tenantId])
@@ -2237,6 +2240,44 @@ model FaultTimeline {
   @@index([tenantId, faultId])
   @@unique([faultId, clientRef])
   @@map("fault_timelines")
+}
+
+/// One field visit / troubleshooting attempt on a fault
+/// (3.3 ATTEMPT_MANAGEMENT.md). Immutable once recorded: there is no update
+/// endpoint, and attemptNumber is sequential per fault.
+model FaultAttempt {
+  id              String    @id @default(uuid())
+  tenantId        String
+  faultId         String
+  attemptNumber   Int
+  attemptType     String // INITIAL_VISIT, FOLLOW_UP_VISIT, REMOTE_TROUBLESHOOTING, ...
+  outcome         String // RESOLVED, PARTIALLY_RESOLVED, CUSTOMER_NOT_AVAILABLE, ...
+  technicianId    String
+  startedAt       DateTime
+  endedAt         DateTime?
+  durationMinutes Int?
+  latitude        Float?
+  longitude       Float?
+  workNotes       String?
+  nextAction      String?
+  clientRef       String? // device-generated idempotency key for retries
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+  deletedAt       DateTime?
+
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fault      Fault  @relation(fields: [faultId], references: [id], onDelete: Cascade)
+  technician User   @relation("FaultAttemptTechnician", fields: [technicianId], references: [id])
+
+  @@unique([id, tenantId])
+  @@unique([faultId, attemptNumber])
+  @@unique([faultId, clientRef])
+  @@index([tenantId])
+  @@index([tenantId, faultId])
+  @@index([tenantId, technicianId])
+  @@map("fault_attempts")
 }
 
 // -----------------------------------------------------------------------------

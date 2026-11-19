@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/network/connectivity_provider.dart';
@@ -9,6 +10,7 @@ import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/app_states.dart';
 import '../../../injection_container.dart';
 import '../data/faults_remote_data_source.dart';
+import 'create_attempt_state.dart';
 import 'fault_notifier.dart';
 import 'fault_state.dart';
 
@@ -397,15 +399,29 @@ class _FaultDetailScreenState extends ConsumerState<FaultDetailScreen>
           AppSpacing.screenHorizontal,
           AppSpacing.space4,
         ),
+        // Attempts are refused server-side once a fault is RESOLVED/CLOSED,
+        // which is exactly when isClosed hides the bar.
         child: isClosed
             ? const SizedBox.shrink()
-            : SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () => _showStatusChangeSheet(context, fault),
-                  icon: const Icon(Icons.swap_horiz_rounded),
-                  label: const Text('Change Status'),
-                ),
+            : Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          context.push('/faults/${s.id}/attempts/new'),
+                      icon: const Icon(Icons.add_task_rounded),
+                      label: const Text('Add Attempt'),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.space2),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => _showStatusChangeSheet(context, fault),
+                      icon: const Icon(Icons.swap_horiz_rounded),
+                      label: const Text('Change Status'),
+                    ),
+                  ),
+                ],
               ),
       ),
     );
@@ -769,31 +785,36 @@ class _AttemptCard extends StatelessWidget {
   }
 
   (Color, Color, String) _outcomeStyle(BuildContext ctx, String outcome) {
+    // API wire values (3.3 ATTEMPT_MANAGEMENT.md §6).
+    final label = prettyAttemptValue(outcome);
     return switch (outcome) {
-      'resolved' => (
+      'RESOLVED' => (
         PingForceColors.statusSuccess,
         PingForceColors.statusSuccessContainer,
-        'Resolved',
+        label,
       ),
-      'partial' => (
+      'PARTIALLY_RESOLVED' => (
         PingForceColors.statusWarning,
         PingForceColors.statusWarningContainer,
-        'Partial Fix',
+        label,
       ),
-      'failed' => (
+      'ESCALATED' || 'CANCELLED' || 'INVALID_COMPLAINT' => (
         PingForceColors.statusCritical,
         PingForceColors.statusCriticalContainer,
-        'Failed',
+        label,
       ),
-      'requires_revisit' => (
+      'REVISIT_REQUIRED' ||
+      'WAITING_FOR_PARTS' ||
+      'VENDOR_REQUIRED' ||
+      'CUSTOMER_NOT_AVAILABLE' => (
         Theme.of(ctx).colorScheme.primary,
         Theme.of(ctx).colorScheme.primaryContainer,
-        'Revisit Required',
+        label,
       ),
       _ => (
         Theme.of(ctx).colorScheme.onSurfaceVariant,
         Theme.of(ctx).colorScheme.surfaceContainerHigh,
-        outcome,
+        label,
       ),
     };
   }
