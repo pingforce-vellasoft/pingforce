@@ -8,6 +8,8 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { forkJoin } from 'rxjs';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { StageManagerDialogComponent } from './stage-manager-dialog.component';
 import {
   CrmSupportService,
   LEAD_PAGE_SIZE,
@@ -42,6 +44,7 @@ interface BoardColumn {
     MatMenuModule,
     MatProgressBarModule,
     MatSnackBarModule,
+    MatDialogModule,
   ],
   template: `
     <div class="header-container">
@@ -49,9 +52,18 @@ interface BoardColumn {
         <h1>Sales Pipeline</h1>
         <p>Drag a lead to another stage, or use its menu to move it.</p>
       </div>
-      <button mat-stroked-button (click)="reload()" [disabled]="loading()">
-        <mat-icon>refresh</mat-icon> Refresh
-      </button>
+      <div class="header-actions">
+        <button
+          mat-stroked-button
+          (click)="manageStages()"
+          [disabled]="loading()"
+        >
+          <mat-icon>view_column</mat-icon> Manage stages
+        </button>
+        <button mat-stroked-button (click)="reload()" [disabled]="loading()">
+          <mat-icon>refresh</mat-icon> Refresh
+        </button>
+      </div>
     </div>
 
     @if (loading()) {
@@ -152,6 +164,10 @@ interface BoardColumn {
         align-items: flex-start;
         gap: 16px;
         margin-bottom: 16px;
+      }
+      .header-actions {
+        display: flex;
+        gap: 8px;
       }
       .header-container h1 {
         margin: 0;
@@ -264,6 +280,7 @@ interface BoardColumn {
 export class LeadsComponent implements OnInit {
   private crmService = inject(CrmSupportService);
   private snackBar = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
 
   readonly stages = signal<PipelineStage[]>([]);
   readonly leads = signal<Lead[]>([]);
@@ -317,6 +334,16 @@ export class LeadsComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  manageStages(): void {
+    this.dialog
+      .open(StageManagerDialogComponent, {
+        data: { stages: this.stages() },
+      })
+      .afterClosed()
+      // Escape or a backdrop click also closes it, so always refresh.
+      .subscribe(() => this.reload());
   }
 
   loadMore(): void {

@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Patch,
+  Put,
   Param,
   Delete,
   UseGuards,
@@ -17,6 +18,12 @@ import { ConvertLeadDto } from './dto/convert-lead.dto';
 import { SyncLeadsDto } from './dto/sync-leads.dto';
 import { UpdateLeadStageDto } from './dto/update-lead-stage.dto';
 import { UpdateLeadOwnerDto } from './dto/update-lead-owner.dto';
+import {
+  CreatePipelineStageDto,
+  RenamePipelineStageDto,
+  ReorderPipelineStagesDto,
+} from './dto/pipeline-stage.dto';
+import { PipelineStageService } from './pipeline-stage.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
@@ -29,7 +36,10 @@ import {
 @UseGuards(JwtAuthGuard, RbacGuard)
 @Controller('leads')
 export class LeadController {
-  constructor(private readonly leadService: LeadService) {}
+  constructor(
+    private readonly leadService: LeadService,
+    private readonly pipelineStageService: PipelineStageService,
+  ) {}
 
   @Post()
   @RequirePermission('LEADS', 'CREATE')
@@ -88,6 +98,57 @@ export class LeadController {
   @RequirePermission('LEADS', 'READ')
   listStages(@CurrentTenant() tenantId: string) {
     return this.leadService.listStages(tenantId);
+  }
+
+  /** 3.4 SALES_PIPELINE.md §4: tenants add, rename, reorder, remove stages. */
+  @Post('stages')
+  @RequirePermission('LEADS', 'UPDATE')
+  createStage(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Body() dto: CreatePipelineStageDto,
+  ) {
+    return this.pipelineStageService.create(tenantId, user.userId, dto.name);
+  }
+
+  @Put('stages/order')
+  @RequirePermission('LEADS', 'UPDATE')
+  reorderStages(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Body() dto: ReorderPipelineStagesDto,
+  ) {
+    return this.pipelineStageService.reorder(
+      tenantId,
+      user.userId,
+      dto.stageIds,
+    );
+  }
+
+  @Patch('stages/:stageId')
+  @RequirePermission('LEADS', 'UPDATE')
+  renameStage(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Param('stageId', ParseUUIDPipe) stageId: string,
+    @Body() dto: RenamePipelineStageDto,
+  ) {
+    return this.pipelineStageService.rename(
+      tenantId,
+      stageId,
+      user.userId,
+      dto.name,
+    );
+  }
+
+  /** Only empty stages can be removed (409 while leads are in it). */
+  @Delete('stages/:stageId')
+  @RequirePermission('LEADS', 'UPDATE')
+  removeStage(
+    @CurrentTenant() tenantId: string,
+    @Param('stageId', ParseUUIDPipe) stageId: string,
+  ) {
+    return this.pipelineStageService.remove(tenantId, stageId);
   }
 
   @Get(':id')
