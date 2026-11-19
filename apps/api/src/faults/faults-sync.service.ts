@@ -11,6 +11,7 @@ import { CreateFaultCommand, UpdateFaultStatusCommand } from './commands/impl';
 import { OfflineFaultActionDto, SyncFaultsDto } from './dto/sync-faults.dto';
 import { assertTransitionNote } from './domain/fault-state';
 import { FaultAccessService } from './fault-access.service';
+import { FaultAttemptsService } from './fault-attempts.service';
 
 export interface FaultSyncItemResult {
   readonly clientRef: string;
@@ -36,7 +37,8 @@ function hasPrismaCode(error: unknown, code: string): boolean {
  * SLA computation, validation and notification events all run exactly as
  * they do online. Idempotency: CREATE dedupes on the client-generated
  * faultNumber (unique per tenant); UPDATE_STATUS dedupes on the clientRef
- * persisted to the fault timeline.
+ * persisted to the fault timeline; ADD_ATTEMPT dedupes on the attempt's
+ * clientRef (unique per fault).
  */
 @Injectable()
 export class FaultsSyncService {
@@ -45,6 +47,7 @@ export class FaultsSyncService {
     private readonly commandBus: CommandBus,
     private readonly auditService: AuditService,
     private readonly faultAccess: FaultAccessService,
+    private readonly faultAttempts: FaultAttemptsService,
   ) {}
 
   async syncActions(
@@ -62,7 +65,9 @@ export class FaultsSyncService {
         results.push(
           item.action === 'CREATE'
             ? await this.applyCreate(tenantId, actor, item)
-            : await this.applyStatusUpdate(tenantId, actor, item),
+            : item.action === 'ADD_ATTEMPT'
+              ? await this.applyAttempt(tenantId, actor, item)
+              : await this.applyStatusUpdate(tenantId, actor, item),
         );
       } catch (error) {
         results.push({
@@ -133,6 +138,41 @@ export class FaultsSyncService {
       clientRef: item.clientRef,
       status: 'APPLIED',
       faultId: fault.id,
+    };
+  }
+
+  /**
+   * Offline field attempt. FaultAttemptsService enforces scope, fault state
+   * and the attempt rules exactly as online, and dedupes on clientRef; the
+   * pre-check only decides whether to report APPLIED or DUPLICATE.
+   */
+  private async applyAttempt(
+    tenantId: string,
+    actor: CurrentUserContext,
+    item: OfflineFaultActionDto,
+  ): Promise<FaultSyncItemResult> {
+    if (!item.faultId || !item.attempt) {
+      throw new BadRequestException('ADD_ATTEMPT requires faultId and attempt');
+    }
+    const replayed = await this.prisma.faultAttempt.findFirst({
+      where: { tenantId, faultId: item.faultId, clientRef: item.clientRef },
+      select: { id: true },
+    });
+    if (replayed) {
+      return {
+        clientRef: item.clientRef,
+        status: 'DUPLICATE',
+        faultId: item.faultId,
+      };
+    }
+    await this.faultAttempts.create(tenantId, item.faultId, actor.userId, {
+      ...item.attempt,
+      clientRef: item.clientRef,
+    });
+    return {
+      clientRef: item.clientRef,
+      status: 'APPLIED',
+      faultId: item.faultId,
     };
   }
 

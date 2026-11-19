@@ -21,22 +21,28 @@ function makeService() {
         ),
     },
     faultTimeline: { findFirst: jest.fn().mockResolvedValue(null) },
+    faultAttempt: { findFirst: jest.fn().mockResolvedValue(null) },
   };
   const commandBus = {
     execute: jest.fn().mockResolvedValue({ id: 'fault-1' }),
   };
   const audit = { log: jest.fn().mockResolvedValue(undefined) };
   const faultAccess = { scopeForAction: jest.fn().mockResolvedValue({}) };
+  const faultAttempts = {
+    create: jest.fn().mockResolvedValue({ id: 'attempt-1' }),
+  };
   return {
     service: new FaultsSyncService(
       prisma as unknown as ServiceArgs[0],
       commandBus as unknown as ServiceArgs[1],
       audit as unknown as ServiceArgs[2],
       faultAccess as unknown as ServiceArgs[3],
+      faultAttempts as unknown as ServiceArgs[4],
     ),
     prisma,
     commandBus,
     faultAccess,
+    faultAttempts,
   };
 }
 
@@ -165,5 +171,79 @@ describe('FaultsSyncService', () => {
     expect(result.results[0].status).toBe('FAILED');
     expect(commandBus.execute).not.toHaveBeenCalled();
     expect(prisma.faultTimeline.findFirst).not.toHaveBeenCalled();
+  });
+});
+
+describe('FaultsSyncService ADD_ATTEMPT', () => {
+  const attemptItem = {
+    clientRef: 'att-1',
+    action: 'ADD_ATTEMPT' as const,
+    timestamp: '2026-11-19T09:00:00.000Z',
+    faultId: 'fault-1',
+    attempt: {
+      attemptType: 'INITIAL_VISIT' as const,
+      outcome: 'REVISIT_REQUIRED' as const,
+      startedAt: '2026-11-19T08:00:00.000Z',
+    },
+  };
+
+  it('records the attempt with the sync clientRef', async () => {
+    const { service, faultAttempts } = makeService();
+    const { results } = await service.syncActions('tenant-1', actor, {
+      actions: [attemptItem],
+    });
+    expect(results).toEqual([
+      { clientRef: 'att-1', status: 'APPLIED', faultId: 'fault-1' },
+    ]);
+    expect(faultAttempts.create).toHaveBeenCalledWith(
+      'tenant-1',
+      'fault-1',
+      'user-1',
+      expect.objectContaining({
+        clientRef: 'att-1',
+        outcome: 'REVISIT_REQUIRED',
+      }),
+    );
+  });
+
+  it('reports a replayed attempt as a duplicate without writing', async () => {
+    const { service, prisma, faultAttempts } = makeService();
+    prisma.faultAttempt.findFirst.mockResolvedValue({ id: 'attempt-1' });
+    const { results } = await service.syncActions('tenant-1', actor, {
+      actions: [attemptItem],
+    });
+    expect(results[0].status).toBe('DUPLICATE');
+    expect(faultAttempts.create).not.toHaveBeenCalled();
+  });
+
+  it('fails the item when the attempt is missing, and keeps going', async () => {
+    const { service } = makeService();
+    const { results } = await service.syncActions('tenant-1', actor, {
+      actions: [
+        { ...attemptItem, attempt: undefined },
+        {
+          ...attemptItem,
+          clientRef: 'att-2',
+          timestamp: '2026-11-19T10:00:00.000Z',
+        },
+      ],
+    });
+    expect(results.map((r) => r.status)).toEqual(['FAILED', 'APPLIED']);
+  });
+
+  it('surfaces attempt rule failures (e.g. resolved fault) as FAILED', async () => {
+    const { service, faultAttempts } = makeService();
+    faultAttempts.create.mockRejectedValue(
+      new Error(
+        'Fault is RESOLVED; reopen it before recording another attempt',
+      ),
+    );
+    const { results } = await service.syncActions('tenant-1', actor, {
+      actions: [attemptItem],
+    });
+    expect(results[0]).toMatchObject({
+      status: 'FAILED',
+      error: expect.stringContaining('RESOLVED'),
+    });
   });
 });

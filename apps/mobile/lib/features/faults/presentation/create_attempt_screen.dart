@@ -82,10 +82,16 @@ class _CreateAttemptScreenState extends ConsumerState<CreateAttemptScreen> {
     final state = ref.watch(provider);
 
     ref.listen(provider, (previous, next) {
-      if (next.saved && previous?.saved != true) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Attempt recorded')));
+      if (next.done && previous?.done != true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              next.queuedOffline
+                  ? 'Saved offline — the attempt will sync when you are back online'
+                  : 'Attempt recorded',
+            ),
+          ),
+        );
         context.pop();
         return;
       }

@@ -46,4 +46,38 @@ void main() {
     expect(prettyAttemptValue('PARTIALLY_RESOLVED'), 'Partially resolved');
     expect(prettyAttemptValue('RESOLVED'), 'Resolved');
   });
+
+  test('offlineAttemptAction builds the /faults/sync ADD_ATTEMPT item', () {
+    final request = CreateAttemptRequest(
+      attemptType: 'INITIAL_VISIT',
+      outcome: 'REVISIT_REQUIRED',
+      startedAt: DateTime.utc(2026, 11, 19, 8),
+      workNotes: 'Pole damaged',
+      clientRef: 'att-1',
+    );
+    final action = offlineAttemptAction(
+      'fault-1',
+      request,
+      DateTime.utc(2026, 11, 19, 9),
+    );
+
+    expect(action, {
+      'clientRef': 'att-1',
+      'action': 'ADD_ATTEMPT',
+      'timestamp': '2026-11-19T09:00:00.000Z',
+      'faultId': 'fault-1',
+      'attempt': {
+        'attemptType': 'INITIAL_VISIT',
+        'outcome': 'REVISIT_REQUIRED',
+        'startedAt': '2026-11-19T08:00:00.000Z',
+        'workNotes': 'Pole damaged',
+      },
+    });
+  });
+
+  test('CreateAttemptState.done covers saved and queued', () {
+    expect(const CreateAttemptState().done, isFalse);
+    expect(const CreateAttemptState(saved: true).done, isTrue);
+    expect(const CreateAttemptState(queuedOffline: true).done, isTrue);
+  });
 }
