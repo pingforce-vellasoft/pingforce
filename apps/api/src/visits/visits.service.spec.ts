@@ -124,14 +124,82 @@ describe('VisitsService — queries', () => {
   });
 
   it('findOne 404s for another tenant or a deleted visit', async () => {
-    const { service, prisma } = makeService();
+    const { service, prisma, rbac } = makeService();
+    rbac.resolveScopeIds.mockResolvedValue({ kind: 'ALL' });
     prisma.visit.findFirst.mockResolvedValue(null);
-    await expect(service.findOne(T, 'v1')).rejects.toThrow(NotFoundException);
+    await expect(service.findOne(T, 'v1', 'u')).rejects.toThrow(
+      NotFoundException,
+    );
     expect(prisma.visit.findFirst.mock.calls[0][0].where).toEqual({
       id: 'v1',
       tenantId: T,
       deletedAt: null,
     });
+  });
+});
+
+describe('VisitsService — per-visit data scope (detail + notes)', () => {
+  const OWN = {
+    kind: 'IDS',
+    employeeIds: ['emp-1'],
+    userIds: ['field-user'],
+  };
+
+  it('a field employee cannot read a visit outside their scope', async () => {
+    const { service, prisma, rbac } = makeService();
+    rbac.resolveScopeIds.mockResolvedValue(OWN);
+    prisma.visit.findFirst.mockResolvedValue(null); // not assigned to them
+    await expect(service.findOne(T, 'v-other', 'field-user')).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(rbac.resolveScopeIds).toHaveBeenCalledWith(
+      T,
+      'field-user',
+      'VISITS',
+      ['READ', 'READ_OWN'],
+    );
+    expect(prisma.visit.findFirst.mock.calls[0][0].where).toEqual({
+      id: 'v-other',
+      tenantId: T,
+      deletedAt: null,
+      OR: [
+        { employeeId: { in: ['emp-1'] } },
+        { createdBy: { in: ['field-user'] } },
+      ],
+    });
+  });
+
+  it('a field employee can read their own assigned visit', async () => {
+    const { service, prisma, rbac } = makeService();
+    rbac.resolveScopeIds.mockResolvedValue(OWN);
+    prisma.visit.findFirst
+      .mockResolvedValueOnce({ id: 'v1' }) // scope check
+      .mockResolvedValueOnce(visitRow()); // full load
+    await expect(service.findOne(T, 'v1', 'field-user')).resolves.toMatchObject(
+      { id: 'v1' },
+    );
+  });
+
+  it('NONE scope 404s without loading the visit', async () => {
+    const { service, prisma, rbac } = makeService();
+    rbac.resolveScopeIds.mockResolvedValue({ kind: 'NONE' });
+    await expect(service.getNotes(T, 'v1', 'u')).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(prisma.visit.findFirst).not.toHaveBeenCalled();
+    expect(prisma.visitNote.findMany).not.toHaveBeenCalled();
+  });
+
+  it('cannot add a note to a visit outside scope', async () => {
+    const { service, prisma, rbac } = makeService();
+    rbac.resolveScopeIds.mockResolvedValue(OWN);
+    prisma.visit.findFirst.mockResolvedValue(null);
+    await expect(
+      service.addNote(T, 'v-other', { userId: 'field-user' }, {
+        note: 'x',
+      } as never),
+    ).rejects.toThrow(NotFoundException);
+    expect(prisma.visitNote.create).not.toHaveBeenCalled();
   });
 
   it('findAssigned rejects users with no employee record', async () => {

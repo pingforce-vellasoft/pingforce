@@ -100,8 +100,12 @@ export class VisitsController {
 
   @Get(':id')
   @RequirePermission('VISITS', 'READ_OWN')
-  findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.visitsService.findOne(tenantId, id);
+  findOne(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserContext,
+  ) {
+    return this.visitsService.findOne(tenantId, id, user.userId);
   }
 
   @Patch(':id')
@@ -270,7 +274,11 @@ export class VisitsController {
 
   @Get(':id/notes')
   @RequirePermission('VISITS', 'READ_OWN')
-  getNotes(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.visitsService.getNotes(tenantId, id);
+  getNotes(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserContext,
+  ) {
+    return this.visitsService.getNotes(tenantId, id, user.userId);
   }
 }

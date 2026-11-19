@@ -79,23 +79,61 @@ export class VisitsService {
     cursor?: string,
     take?: number,
   ) {
+    const scopeWhere = await this.visitScopeWhere(tenantId, requesterUserId, [
+      'READ',
+    ]);
+    if (scopeWhere === null) return [];
+    return this.findAll(tenantId, filters, cursor, take, scopeWhere);
+  }
+
+  /**
+   * Visit-level data-scope filter (DataScope.md §9 "Assignment"): visits
+   * assigned to an employee in scope or created by a user in scope. null =
+   * no visibility. READ_OWN holders (field staff) resolve to their own
+   * assigned/created visits.
+   */
+  private async visitScopeWhere(
+    tenantId: string,
+    requesterUserId: string,
+    actions: readonly string[],
+  ): Promise<Record<string, unknown> | null> {
     const scope = await this.rbacService.resolveScopeIds(
       tenantId,
       requesterUserId,
       'VISITS',
-      ['READ'],
+      actions,
     );
-    if (scope.kind === 'NONE') return [];
-    const scopeWhere: Record<string, unknown> =
-      scope.kind === 'ALL'
-        ? {}
-        : {
-            OR: [
-              { employeeId: { in: [...scope.employeeIds] } },
-              { createdBy: { in: [...scope.userIds] } },
-            ],
-          };
-    return this.findAll(tenantId, filters, cursor, take, scopeWhere);
+    if (scope.kind === 'NONE') return null;
+    if (scope.kind === 'ALL') return {};
+    return {
+      OR: [
+        { employeeId: { in: [...scope.employeeIds] } },
+        { createdBy: { in: [...scope.userIds] } },
+      ],
+    };
+  }
+
+  /**
+   * 404s unless the visit is in the caller's READ/READ_OWN scope. Same
+   * response for "not in scope" and "does not exist", so visit ids from other
+   * teams are never confirmed.
+   */
+  private async assertVisible(
+    tenantId: string,
+    requesterUserId: string,
+    id: string,
+  ): Promise<void> {
+    const scopeWhere = await this.visitScopeWhere(tenantId, requesterUserId, [
+      'READ',
+      'READ_OWN',
+    ]);
+    const visible =
+      scopeWhere !== null &&
+      (await this.prisma.visit.findFirst({
+        where: { id, tenantId, deletedAt: null, ...scopeWhere },
+        select: { id: true },
+      }));
+    if (!visible) throw new NotFoundException(`Visit ${id} not found`);
   }
 
   async findAll(
@@ -148,7 +186,8 @@ export class VisitsService {
     );
   }
 
-  async findOne(tenantId: string, id: string) {
+  async findOne(tenantId: string, id: string, requesterUserId: string) {
+    await this.assertVisible(tenantId, requesterUserId, id);
     const visit = await this.prisma.visit.findFirst({
       where: { id, tenantId, deletedAt: null },
       include: {
@@ -439,7 +478,7 @@ export class VisitsService {
     actor: CurrentUserContext,
     dto: AddVisitNoteDto,
   ) {
-    await this.getVisitOrThrow(tenantId, id);
+    await this.assertVisible(tenantId, actor.userId, id);
     return this.prisma.visitNote.create({
       data: {
         tenantId,
@@ -450,8 +489,8 @@ export class VisitsService {
     });
   }
 
-  async getNotes(tenantId: string, id: string) {
-    await this.getVisitOrThrow(tenantId, id);
+  async getNotes(tenantId: string, id: string, requesterUserId: string) {
+    await this.assertVisible(tenantId, requesterUserId, id);
     return this.prisma.visitNote.findMany({
       where: { tenantId, visitId: id },
       orderBy: { createdAt: 'asc' },
