@@ -37,6 +37,7 @@ import {
   NODE_STATUS_COLORS,
 } from './network-tree-node.component';
 import { buildTileLayer } from './map-tile-providers';
+import { clusterPoints, coordKey } from './map-clustering';
 import {
   AssignableUser,
   ConnectionFormDialogComponent,
@@ -416,6 +417,19 @@ const JUNCTION_COLOR = '#6a1b9a';
   `,
   styles: [
     `
+      /* Leaflet creates cluster icons outside Angular's view. */
+      :host ::ng-deep .map-cluster {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba(21, 101, 192, 0.85);
+        border: 3px solid rgba(255, 255, 255, 0.9);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+        color: #fff;
+        font: 600 12px/1 sans-serif;
+        cursor: pointer;
+      }
       .page-container {
         padding: 20px;
         display: flex;
@@ -710,6 +724,8 @@ export class NetworkMapComponent implements AfterViewInit, OnDestroy {
   private map: L.Map | null = null;
   private overlay: L.LayerGroup | null = null;
   private tileLayer: L.TileLayer | null = null;
+  /** Last map payload; redrawn on zoom so clusters regroup. */
+  private lastGeo: NetworkGeoJson | null = null;
 
   ngAfterViewInit(): void {
     this.map = L.map(this.mapContainer.nativeElement, {
@@ -730,6 +746,8 @@ export class NetworkMapComponent implements AfterViewInit, OnDestroy {
       },
     });
     this.overlay = L.layerGroup().addTo(this.map);
+    // Clusters are computed per zoom level, so regroup when it changes.
+    this.map.on('zoomend', () => this.drawOverlay());
     this.loadAll();
   }
 
@@ -808,62 +826,156 @@ export class NetworkMapComponent implements AfterViewInit, OnDestroy {
 
   private renderMap(geo: NetworkGeoJson): void {
     if (!this.map || !this.overlay) return;
-    this.overlay.clearLayers();
+    this.lastGeo = geo;
     this.mapTruncated.set(geo.truncated);
+
     const bounds: L.LatLngExpression[] = [];
-
     for (const feature of geo.features) {
-      if (feature.geometry.type === 'LineString') {
-        const coords = feature.geometry.coordinates.map(
-          ([lng, lat]) => [lat, lng] as [number, number],
-        );
-        L.polyline(coords, {
-          color:
-            NODE_STATUS_COLORS[feature.properties['status'] as string] ??
-            '#78909c',
-          weight: 2,
-          opacity: 0.75,
-          dashArray:
-            feature.properties['status'] === 'DISCONNECTED' ? '6 6' : undefined,
-        }).addTo(this.overlay);
-        continue;
-      }
-
-      const [lng, lat] = feature.geometry.coordinates;
-      bounds.push([lat, lng]);
-      const props = feature.properties;
-
-      if (props.featureType === 'OLTE') {
-        L.circleMarker([lat, lng], {
-          radius: 11,
-          color: '#fff',
-          weight: 2,
-          fillColor: OLTE_COLOR,
-          fillOpacity: 1,
-        })
-          .bindTooltip(`${props['code']} — ${props['name']}`)
-          .on('click', () => this.selectOlte(props.id))
-          .addTo(this.overlay);
-      } else {
-        const isJunction = props['nodeType'] !== 'CUSTOMER';
-        L.circleMarker([lat, lng], {
-          radius: isJunction ? 6 : 8,
-          color: '#fff',
-          weight: 1.5,
-          fillColor: isJunction
-            ? JUNCTION_COLOR
-            : (NODE_STATUS_COLORS[props['status'] as string] ?? '#607d8b'),
-          fillOpacity: 1,
-        })
-          .bindTooltip(String(props['connectionCode']))
-          .on('click', () => this.loadConnection(props.id))
-          .addTo(this.overlay);
+      if (feature.geometry.type === 'Point') {
+        const [lng, lat] = feature.geometry.coordinates;
+        bounds.push([lat, lng]);
       }
     }
-
     if (bounds.length > 0) {
+      // fitBounds may not change the zoom, so draw explicitly as well.
       this.map.fitBounds(L.latLngBounds(bounds).pad(0.2));
     }
+    this.drawOverlay();
+  }
+
+  /**
+   * Draws the last payload at the current zoom. Connection nodes that share
+   * a grid cell collapse into a count bubble (click to zoom in); OLTEs are
+   * always drawn. Links are only drawn between nodes shown on their own, so
+   * no line points into the middle of a bubble.
+   */
+  private drawOverlay(): void {
+    const map = this.map;
+    const overlay = this.overlay;
+    const geo = this.lastGeo;
+    if (!map || !overlay || !geo) return;
+    overlay.clearLayers();
+    const zoom = map.getZoom();
+
+    type PointFeature = (typeof geo.features)[number] & {
+      geometry: { type: 'Point'; coordinates: [number, number] };
+    };
+    const nodes: PointFeature[] = [];
+    const oltes: PointFeature[] = [];
+    for (const feature of geo.features) {
+      if (feature.geometry.type !== 'Point') continue;
+      (feature.properties.featureType === 'OLTE' ? oltes : nodes).push(
+        feature as PointFeature,
+      );
+    }
+
+    const clusters = clusterPoints(
+      nodes.map((f) => {
+        const [lng, lat] = f.geometry.coordinates;
+        const px = map.project([lat, lng], zoom);
+        return { x: px.x, y: px.y, item: f };
+      }),
+      zoom,
+    );
+
+    // Endpoints that are drawn individually (OLTEs and singleton nodes).
+    const drawnPoints = new Set<string>();
+    for (const f of oltes) {
+      const [lng, lat] = f.geometry.coordinates;
+      drawnPoints.add(coordKey(lat, lng));
+    }
+    for (const c of clusters) {
+      if (c.items.length === 1) {
+        const [lng, lat] = c.items[0].geometry.coordinates;
+        drawnPoints.add(coordKey(lat, lng));
+      }
+    }
+
+    for (const feature of geo.features) {
+      if (feature.geometry.type !== 'LineString') continue;
+      const coords = feature.geometry.coordinates.map(
+        ([lng, lat]) => [lat, lng] as [number, number],
+      );
+      if (!coords.every(([lat, lng]) => drawnPoints.has(coordKey(lat, lng)))) {
+        continue;
+      }
+      L.polyline(coords, {
+        color:
+          NODE_STATUS_COLORS[feature.properties['status'] as string] ??
+          '#78909c',
+        weight: 2,
+        opacity: 0.75,
+        dashArray:
+          feature.properties['status'] === 'DISCONNECTED' ? '6 6' : undefined,
+      }).addTo(overlay);
+    }
+
+    for (const c of clusters) {
+      if (c.items.length === 1) {
+        this.drawNode(c.items[0], overlay);
+        continue;
+      }
+      const center = map.unproject([c.x, c.y], zoom);
+      const count = c.items.length;
+      const size = count < 10 ? 30 : count < 100 ? 36 : 44;
+      L.marker(center, {
+        icon: L.divIcon({
+          className: 'map-cluster',
+          html: `<span>${count}</span>`,
+          iconSize: [size, size],
+        }),
+        keyboard: true,
+        title: `${count} connections`,
+      })
+        .on('click', () => {
+          const memberBounds = L.latLngBounds(
+            c.items.map((f) => {
+              const [lng, lat] = f.geometry.coordinates;
+              return [lat, lng] as [number, number];
+            }),
+          );
+          map.fitBounds(memberBounds.pad(0.3), { maxZoom: zoom + 3 });
+        })
+        .addTo(overlay);
+    }
+
+    for (const f of oltes) {
+      const [lng, lat] = f.geometry.coordinates;
+      const props = f.properties;
+      L.circleMarker([lat, lng], {
+        radius: 11,
+        color: '#fff',
+        weight: 2,
+        fillColor: OLTE_COLOR,
+        fillOpacity: 1,
+      })
+        .bindTooltip(`${props['code']} — ${props['name']}`)
+        .on('click', () => this.selectOlte(props.id))
+        .addTo(overlay);
+    }
+  }
+
+  private drawNode(
+    feature: { geometry: { coordinates: [number, number] } } & {
+      properties: Record<string, unknown> & { id: string };
+    },
+    overlay: L.LayerGroup,
+  ): void {
+    const [lng, lat] = feature.geometry.coordinates;
+    const props = feature.properties;
+    const isJunction = props['nodeType'] !== 'CUSTOMER';
+    L.circleMarker([lat, lng], {
+      radius: isJunction ? 6 : 8,
+      color: '#fff',
+      weight: 1.5,
+      fillColor: isJunction
+        ? JUNCTION_COLOR
+        : (NODE_STATUS_COLORS[props['status'] as string] ?? '#607d8b'),
+      fillOpacity: 1,
+    })
+      .bindTooltip(String(props['connectionCode']))
+      .on('click', () => this.loadConnection(props.id))
+      .addTo(overlay);
   }
 
   selectOlte(olteId: string): void {
