@@ -486,7 +486,7 @@ jobs:
           host: ${{ secrets.OCI_HOST }}
           username: ${{ secrets.OCI_SSH_USER }}
           key: ${{ secrets.OCI_SSH_KEY }}
-          envs: GH_TOKEN,GITHUB_REPOSITORY,GITHUB_SHA
+          envs: GH_TOKEN,GITHUB_ACTOR,GITHUB_REPOSITORY,GITHUB_SHA
           script: |
             set -euo pipefail
             cd /opt/pingforce
@@ -534,6 +534,15 @@ jobs:
             else
               echo "postgres not running yet — skipping pre-deploy backup"
             fi
+
+            # Authenticate to GHCR with this run's short-lived token. A stale
+            # login left in the VM's docker config (an expired PAT) makes GHCR
+            # answer "denied" even for the public image, which broke every
+            # deploy from 7504862 to 0ca2e74. Logging in per run replaces it;
+            # logging out afterwards leaves no credential behind, and anonymous
+            # pulls of the public image keep working for manual recovery.
+            echo "${GH_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+            trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
 
             # api + migrate share the GHCR image built by the package job; the
             # rest are third-party. `up -d` runs jwt-keygen and migrate as gated
