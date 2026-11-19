@@ -6,11 +6,9 @@ import { PasswordPolicyService } from './password-policy.service';
 function makeService(opts: { failedCountAfterIncrement?: number } = {}) {
   const prisma = {
     user: {
-      update: jest
-        .fn()
-        .mockResolvedValue({
-          failedLoginCount: opts.failedCountAfterIncrement ?? 1,
-        }),
+      update: jest.fn().mockResolvedValue({
+        failedLoginCount: opts.failedCountAfterIncrement ?? 1,
+      }),
       findFirst: jest.fn(),
     },
     passwordHistory: {
