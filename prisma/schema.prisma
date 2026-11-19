@@ -180,6 +180,11 @@ model User {
   // Forces a password change on next login — set when an account is
   // provisioned with a password chosen by an admin (e.g. tenant-admin welcome).
   mustChangePassword Boolean @default(false)
+  // Account lockout (PasswordPolicy.md §12): consecutive failed password
+  // attempts; lockedUntil set once the threshold is reached.
+  failedLoginCount   Int       @default(0)
+  lockedUntil        DateTime?
+  passwordChangedAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
@@ -200,6 +205,7 @@ model User {
   assignedFaults       Fault[]                @relation("FaultAssignee")
   escalatedSlaPolicies SlaPolicy[]            @relation("SlaEscalationUser")
   scopeOverrides       UserScopeOverride[]
+  passwordHistory      PasswordHistory[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, phone])
@@ -590,6 +596,23 @@ model DeviceToken {
 
 // Immutable authentication-activity trail (LoginHistory.md §5/§13). Tenant
 // users only — SYSTEM (super-admin) logins have no Tenant row to reference.
+/// Previous password hashes (PasswordPolicy.md §7) — hash-only, append-only;
+/// reuse check reads the newest PASSWORD_HISTORY_DEPTH rows.
+model PasswordHistory {
+  id           String   @id @default(uuid())
+  tenantId     String
+  userId       String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  createdBy    String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId, createdAt])
+  @@map("password_history")
+}
+
 model LoginHistory {
   id            String    @id @default(uuid())
   tenantId      String

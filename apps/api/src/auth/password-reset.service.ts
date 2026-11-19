@@ -5,6 +5,7 @@ import { OtpService } from './otp.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionService } from './session.service';
+import { PasswordPolicyService } from './password-policy.service';
 
 const GENERIC_RESPONSE = {
   message: 'If the account exists, a verification code has been sent.',
@@ -22,6 +23,7 @@ export class PasswordResetService {
     private readonly notifications: NotificationsService,
     private readonly auditService: AuditService,
     private readonly sessionService: SessionService,
+    private readonly passwordPolicy: PasswordPolicyService,
   ) {}
 
   async requestReset(
@@ -73,7 +75,7 @@ export class PasswordResetService {
 
     const user = await this.prisma.user.findFirst({
       where: { tenantId: tenant.id, email, status: 'ACTIVE', deletedAt: null },
-      select: { id: true },
+      select: { id: true, passwordHash: true },
     });
     if (!user) {
       // Same error as an invalid OTP — no enumeration
@@ -88,14 +90,32 @@ export class PasswordResetService {
       requestMeta,
     );
 
+    // PWD-002 reuse check (PasswordPolicy.md §7). Runs after OTP verify so
+    // the history check can't be probed without a valid code.
+    await this.passwordPolicy.assertNotReused(
+      user.id,
+      user.passwordHash,
+      newPassword,
+    );
+
     const passwordHash = await argon2.hash(newPassword);
 
     // New password + global session invalidation (tokenVersion bump revokes
-    // every outstanding access/refresh token)
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash, tokenVersion: { increment: 1 } },
-    });
+    // every outstanding access/refresh token). A verified email OTP also
+    // clears any lockout — the owner proved control of the account.
+    await this.prisma.$transaction([
+      this.passwordPolicy.archiveHash(tenant.id, user.id, user.passwordHash),
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash,
+          tokenVersion: { increment: 1 },
+          passwordChangedAt: new Date(),
+          failedLoginCount: 0,
+          lockedUntil: null,
+        },
+      }),
+    ]);
 
     await this.sessionService.revokeAllForUser(
       tenant.id,

@@ -125,3 +125,47 @@ Tenant isolation, audit trails on sensitive ops, structured logging with correla
 4. Login history model + self-service endpoint (LoginHistory.md)
 5. Email queueing/retries + per-tenant provider config (Email.md)
 6. OTP standalone endpoints + SMS channel stub (OTP.md)
+
+---
+
+## 5. Re-check 2026-11-19 — status of every open item above
+
+Verified against code on branch `codex/qa-automation`.
+
+### Closed since the original review (earlier phases)
+
+| Item                                                     | Where                                                                    |
+| -------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Opaque refresh tokens + super-admin refresh persistence  | Phase 3 (`auth.service.ts` `randomBytes(48)`, SHA-256 hashed)            |
+| Change-password endpoint                                 | `POST /auth/change-password`                                             |
+| Login history table + self-service API                   | `login_history`, `GET /auth/login-history`                               |
+| Per-tenant email providers, BullMQ dispatch + retries    | `tenant_email_configs`, `notifications-email` queue                      |
+| FCM push, WhatsApp channel                               | `PushService`, `WhatsAppService`                                         |
+| Object storage + upload validation, guarded downloads    | `files/storage.service.ts`, `FilesController` (no ServeStatic)           |
+| Audit export, retention, archive, hash-chain integrity   | Gap-review C6 (`/audit/export`, `/audit/retention`, `/audit/integrity`)  |
+| Data scope DEPARTMENT/REGION/BU/CUSTOM, indirect reports | Gap-review C3; applied to attendance/faults/leads/employees/reports/visits |
+
+### Closed in this pass (2026-11-19)
+
+| Spec                         | Change                                                                                                                                                                                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PasswordPolicy.md §12        | **Account lockout** — 5 failed passwords → 30-min lock (`PASSWORD_LOCKOUT_THRESHOLD` / `PASSWORD_LOCKOUT_MINUTES`), gate runs before password verify, PWD-006, `ACCOUNT_LOCKED` audit + login-history outcome; verified reset-OTP clears lock |
+| PasswordPolicy.md §7         | **Password history** — `password_history` table, last 10 (`PASSWORD_HISTORY_DEPTH`, max 24) + current rejected with PWD-002 on change-password and reset-confirm; archive + update in one `$transaction`; `passwordChangedAt` stamped |
+| SessionManagement.md §2      | **Admin session control** — `GET /security/users/:id/status`, `GET /security/users/:id/sessions` (USERS:READ), `POST …/sessions/:sid/revoke`, `POST …/sessions/revoke-all` (bumps tokenVersion), `POST …/unlock` (USERS:UPDATE); tenant-checked, admin recorded as audit actor |
+| Upload.md §4/§6 (audit B4)   | **Onboarding logo** — base64 decoded with strict alphabet, 2 MB cap, PNG/JPEG/WebP magic-byte sniff (SVG rejected), real extension; invalid input now 400 instead of silent write                                         |
+| DeviceSecurity.md            | Fake static `X-Device-Attestation` header removed from Flutter `TokenInterceptor` (API never read it)                                                                                                                       |
+
+Migration `20261119090000_password_lockout_history` (handwritten, unapplied).
+
+### Still open
+
+| Item                                                                            | Why not now                                                       |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Tenant-configurable password policy / OTP lengths / refresh lifetimes / idle timeout (`password_policies` table, PUT API) | Needs policy-table design + admin UI; env-level defaults in place |
+| Password expiry + reminders (§8), strength meter, breach check                 | Product decision on defaults; breach check needs external API     |
+| SMS OTP channel, TOTP/MFA                                                       | SMS provider creds; MFA is its own feature                        |
+| Concurrent-session limits, suspicious-activity detection                        | Needs policy decision (limit N, evict oldest vs. deny)            |
+| Audit record fields company_id/employee_id/session_id/location, critical-event alerting, monthly partitioning/WORM | Schema + infra work                                               |
+| Admin UI for the new `/security/users/*` endpoints                              | Angular follow-up                                                 |
+| Tenant logo serving — `logoUrl` points to `/api/v1/uploads/logos/*`, which is no longer served (static serving removed in B4) | Needs public, tenant-branded asset route or object-storage public bucket |
+| API keys, in-app notification center, template versioning/localization, menu/screen/field permissions | Later milestones                                                  |

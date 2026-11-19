@@ -98,12 +98,16 @@ export class SessionService {
     });
   }
 
-  /** Revokes one of the caller's own sessions plus its refresh tokens. */
+  /**
+   * Revokes one session of `userId` plus its refresh tokens. `actorId`
+   * defaults to the owner (self-service); admins pass their own id.
+   */
   async revoke(
     tenantId: string,
     userId: string,
     sessionId: string,
     reason: string,
+    actorId: string = userId,
   ): Promise<void> {
     const session = await this.prisma.session.findFirst({
       where: { id: sessionId, tenantId, userId },
@@ -129,7 +133,7 @@ export class SessionService {
 
     void this.auditService.log({
       tenantId,
-      actorId: userId,
+      actorId,
       module: 'AUTH',
       entityName: 'session',
       entityId: sessionId,
@@ -143,6 +147,7 @@ export class SessionService {
     tenantId: string,
     userId: string,
     reason: string,
+    actorId: string = userId,
   ): Promise<void> {
     const now = new Date();
     await this.prisma.$transaction([
@@ -160,7 +165,7 @@ export class SessionService {
 
     void this.auditService.log({
       tenantId,
-      actorId: userId,
+      actorId,
       module: 'AUTH',
       entityName: 'session',
       entityId: userId,

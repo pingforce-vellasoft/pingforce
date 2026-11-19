@@ -11,6 +11,9 @@ import { OtpService } from './otp.service';
 import { PasswordResetService } from './password-reset.service';
 import { SessionService } from './session.service';
 import { LoginHistoryService } from './login-history.service';
+import { PasswordPolicyService } from './password-policy.service';
+import { UserSecurityService } from './user-security.service';
+import { UserSecurityController } from './user-security.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
@@ -36,7 +39,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       },
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, UserSecurityController],
   providers: [
     AuthService,
     { provide: 'IAuthService', useExisting: AuthService },
@@ -46,6 +49,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
     PasswordResetService,
     SessionService,
     LoginHistoryService,
+    PasswordPolicyService,
+    UserSecurityService,
   ],
   exports: [
     AuthService,

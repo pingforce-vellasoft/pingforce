@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class OnboardingTenantDto {
@@ -52,9 +52,14 @@ export class OnboardingTenantDto {
   @IsOptional()
   themeColor?: string;
 
-  @ApiProperty({ description: 'Logo in Base64 format', required: false })
+  @ApiProperty({
+    description: 'Logo as base64 / data URL (PNG, JPEG or WebP, max 2 MB)',
+    required: false,
+  })
   @IsString()
   @IsOptional()
+  // ~2 MB decoded + data-URL prefix; exact checks in decodeImageDataUrl
+  @MaxLength(2_800_100)
   logoBase64?: string;
 
   @ApiProperty({ description: 'Postal/ZIP Code', required: false })
