@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../presentation/network_map_state.dart';
+import 'network_map_offline_store.dart';
 
 /// Remote datasource for the Connection Map module (3.7_ConnectionMap).
 /// Parses the API's GeoJSON FeatureCollection into presentation models.
@@ -24,15 +25,54 @@ abstract class NetworkMapRemoteDataSource {
   Future<ConnectionDetail> fetchConnection(String id);
 }
 
+/// True when the request never reached the API (no signal, DNS, timeout),
+/// as opposed to the API answering with an error status.
+bool isOfflineError(Object error) =>
+    error is DioException &&
+    error.response == null &&
+    (error.type == DioExceptionType.connectionError ||
+        error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.unknown);
+
 class NetworkMapRemoteDataSourceImpl implements NetworkMapRemoteDataSource {
-  NetworkMapRemoteDataSourceImpl({required this.dio});
+  NetworkMapRemoteDataSourceImpl({
+    required this.dio,
+    NetworkMapOfflineStore? offlineStore,
+  }) : offlineStore = offlineStore ?? HiveNetworkMapOfflineStore();
 
   final Dio dio;
 
+  /// Last successful responses, served when the device is offline.
+  final NetworkMapOfflineStore offlineStore;
+
+  /// GETs [path]; saves the response for offline use, and when the device is
+  /// offline returns the saved copy (with its save time) instead of failing.
+  /// API errors (401/403/404/5xx) are never masked by the cache.
+  Future<CachedJson> _getJson(
+    String path, {
+    Map<String, dynamic>? query,
+  }) async {
+    final key = query == null || query.isEmpty
+        ? path
+        : '$path?${(query.keys.toList()..sort()).map((k) => '$k=${query[k]}').join('&')}';
+    try {
+      final response = await dio.get<dynamic>(path, queryParameters: query);
+      final json = response.data as Map<String, dynamic>;
+      await offlineStore.save(key, json);
+      return CachedJson(json, DateTime.now());
+    } catch (error) {
+      if (!isOfflineError(error)) rethrow;
+      final cached = await offlineStore.read(key);
+      if (cached == null) rethrow;
+      return CachedJson(cached.json, cached.savedAt, fromCache: true);
+    }
+  }
+
   @override
   Future<NetworkFilters> fetchFilters() async {
-    final response = await dio.get('/api/v1/network/filters');
-    final data = response.data as Map<String, dynamic>;
+    final data = (await _getJson('/api/v1/network/filters')).json;
     return NetworkFilters(
       oltes: (data['oltes'] as List? ?? [])
           .whereType<Map<String, dynamic>>()
@@ -54,8 +94,7 @@ class NetworkMapRemoteDataSourceImpl implements NetworkMapRemoteDataSource {
 
   @override
   Future<MapProviderConfig> fetchMapConfig() async {
-    final response = await dio.get('/api/v1/network/map-config');
-    final data = response.data as Map<String, dynamic>;
+    final data = (await _getJson('/api/v1/network/map-config')).json;
     return MapProviderConfig(
       provider: (data['provider'] ?? 'OPENSTREETMAP') as String,
       mapboxKey: (data['mapboxKey'] ?? '') as String,
@@ -69,22 +108,28 @@ class NetworkMapRemoteDataSourceImpl implements NetworkMapRemoteDataSource {
     String? district,
     String? status,
   }) async {
-    final response = await dio.get(
+    final result = await _getJson(
       '/api/v1/network/map',
-      queryParameters: {
+      query: {
         if (olteId != null && olteId.isNotEmpty) 'olteId': olteId,
         if (area != null && area.isNotEmpty) 'area': area,
         if (district != null && district.isNotEmpty) 'district': district,
         if (status != null && status.isNotEmpty) 'status': status,
       },
     );
-    return _parseGeoJson(response.data as Map<String, dynamic>);
+    return _parseGeoJson(
+      result.json,
+      offlineSavedAt: result.fromCache ? result.savedAt : null,
+    );
   }
 
   @override
   Future<NetworkMapData> fetchAssignedMap() async {
-    final response = await dio.get('/api/v1/network/map/assigned');
-    return _parseGeoJson(response.data as Map<String, dynamic>);
+    final result = await _getJson('/api/v1/network/map/assigned');
+    return _parseGeoJson(
+      result.json,
+      offlineSavedAt: result.fromCache ? result.savedAt : null,
+    );
   }
 
   @override
@@ -116,12 +161,16 @@ class NetworkMapRemoteDataSourceImpl implements NetworkMapRemoteDataSource {
     );
   }
 
-  NetworkMapData _parseGeoJson(Map<String, dynamic> geoJson) {
+  NetworkMapData _parseGeoJson(
+    Map<String, dynamic> geoJson, {
+    DateTime? offlineSavedAt,
+  }) {
     final nodes = <MapNode>[];
     final edges = <MapEdge>[];
 
     for (final feature
-        in (geoJson['features'] as List? ?? []).whereType<Map<String, dynamic>>()) {
+        in (geoJson['features'] as List? ?? [])
+            .whereType<Map<String, dynamic>>()) {
       final props = feature['properties'] as Map<String, dynamic>? ?? {};
       final geometry = feature['geometry'] as Map<String, dynamic>? ?? {};
       final type = props['featureType'] as String?;
@@ -152,14 +201,13 @@ class NetworkMapRemoteDataSourceImpl implements NetworkMapRemoteDataSource {
         MapNode(
           id: props['id'] as String,
           isOlte: type == 'OLTE',
-          code: (type == 'OLTE'
-              ? props['code']
-              : props['connectionCode'] ?? '') as String,
+          code:
+              (type == 'OLTE' ? props['code'] : props['connectionCode'] ?? '')
+                  as String,
           name: type == 'OLTE'
               ? (props['name'] ?? '') as String
-              : (customer?['displayName'] ??
-                      customer?['legalName'] ??
-                      '') as String,
+              : (customer?['displayName'] ?? customer?['legalName'] ?? '')
+                    as String,
           status: (props['status'] ?? '') as String,
           nodeType: (props['nodeType'] ?? 'OLTE') as String,
           latitude: (coords[1] as num).toDouble(),
@@ -173,6 +221,7 @@ class NetworkMapRemoteDataSourceImpl implements NetworkMapRemoteDataSource {
       nodes: nodes,
       edges: edges,
       truncated: geoJson['truncated'] == true,
+      offlineSavedAt: offlineSavedAt,
     );
   }
 }

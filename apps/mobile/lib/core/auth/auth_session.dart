@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../features/network_map/data/network_map_offline_store.dart';
+
 /// Process-wide authentication state (4.2 AUTHENTICATION.md).
 ///
 /// GoRouter's redirect is a static function without provider access, so the
@@ -138,5 +140,12 @@ class AuthSession {
     // on a device someone else may now be holding.
     await storage.delete(key: 'refresh_token');
     await storage.delete(key: 'user_cache');
+    // The offline connection map holds tenant topology and customer names;
+    // the next person to sign in on this device must not see it.
+    try {
+      await HiveNetworkMapOfflineStore.clear();
+    } catch (_) {
+      // Hive unavailable (tests) — nothing cached to clear.
+    }
   }
 }

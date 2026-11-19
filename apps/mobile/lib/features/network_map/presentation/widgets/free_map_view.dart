@@ -30,6 +30,25 @@ String tileUrlFor(MapProviderConfig config) {
   return _osmTiles;
 }
 
+/// Tiles kept on the device for offline use (flutter_map's built-in cache).
+const mapTileCacheBytes = 200 * 1024 * 1024;
+
+/// How long a cached tile is served without asking the server again. Tiles
+/// are only cached as they are viewed (no bulk download — OSM's tile policy
+/// forbids it), and a stale tile cannot be shown offline, so this is what
+/// lets a technician open an area they viewed in the last month without
+/// signal.
+const mapTileFreshAge = Duration(days: 30);
+
+/// Cache key for a tile URL, ignoring the query string so a rotated Mapbox
+/// access token does not throw the cache away.
+String tileCacheKey(String url) {
+  final q = url.indexOf('?');
+  return BuiltInMapCachingProvider.uuidTileKeyGenerator(
+    q < 0 ? url : url.substring(0, q),
+  );
+}
+
 /// Attribution text required by the tile provider's terms.
 String attributionFor(MapProviderConfig config) =>
     tileUrlFor(config) == _osmTiles
@@ -103,6 +122,13 @@ class _FreeMapViewState extends State<FreeMapView> {
         TileLayer(
           urlTemplate: tileUrlFor(widget.config),
           userAgentPackageName: 'com.vellasoft.pingforce',
+          tileProvider: NetworkTileProvider(
+            cachingProvider: BuiltInMapCachingProvider.getOrCreateInstance(
+              maxCacheSize: mapTileCacheBytes,
+              overrideFreshAge: mapTileFreshAge,
+              tileKeyGenerator: tileCacheKey,
+            ),
+          ),
         ),
         _ClusteredNetworkLayer(data: widget.data, onNodeTap: widget.onNodeTap),
         SimpleAttributionWidget(source: Text(attributionFor(widget.config))),

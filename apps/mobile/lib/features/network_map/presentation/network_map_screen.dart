@@ -9,6 +9,16 @@ import 'widgets/free_map_view.dart';
 /// Connection Map (3.7_ConnectionMap): OLTE → customer topology on a real
 /// map, for tenant admins (all connections, filterable) and employees
 /// (assigned routes by default when permitted).
+/// "5 min ago", "3 h ago", "2 days ago" for the offline banner.
+String savedAgo(DateTime savedAt, [DateTime? now]) {
+  final diff = (now ?? DateTime.now()).difference(savedAt);
+  if (diff.inMinutes < 1) return 'just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+  if (diff.inHours < 24) return '${diff.inHours} h ago';
+  final days = diff.inDays;
+  return days == 1 ? '1 day ago' : '$days days ago';
+}
+
 class NetworkMapScreen extends ConsumerStatefulWidget {
   const NetworkMapScreen({super.key});
 
@@ -66,6 +76,17 @@ class _NetworkMapScreenState extends ConsumerState<NetworkMapScreen> {
             notifier: notifier,
             showAssignedToggle: isEmployee,
           ),
+          if (state.mapData.offlineSavedAt case final savedAt?)
+            Container(
+              width: double.infinity,
+              color: Colors.blueGrey.shade100,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Text(
+                'Offline — showing the map saved ${savedAgo(savedAt)}. '
+                'Map tiles appear for areas viewed before.',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
           if (state.mapData.truncated)
             Container(
               width: double.infinity,
