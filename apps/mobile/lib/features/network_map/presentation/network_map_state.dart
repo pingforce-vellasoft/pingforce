@@ -94,11 +94,16 @@ class NetworkMapData {
     this.nodes = const [],
     this.edges = const [],
     this.truncated = false,
+    this.offlineSavedAt,
   });
 
   final List<MapNode> nodes;
   final List<MapEdge> edges;
   final bool truncated;
+
+  /// Set when the device was offline and this is the copy saved at that
+  /// time; null for live data.
+  final DateTime? offlineSavedAt;
 }
 
 @immutable
