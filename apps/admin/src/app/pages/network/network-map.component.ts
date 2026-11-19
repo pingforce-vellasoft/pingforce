@@ -38,10 +38,13 @@ import {
 } from './network-tree-node.component';
 import { buildTileLayer } from './map-tile-providers';
 import {
+  AssignableUser,
   ConnectionFormDialogComponent,
   ImpactDialogComponent,
+  MoveConnectionDialogComponent,
   OlteFormDialogComponent,
 } from './network-dialogs.component';
+import { EmployeeService } from '../../core/services/employee.service';
 
 const OLTE_COLOR = '#1565c0';
 const JUNCTION_COLOR = '#6a1b9a';
@@ -340,6 +343,10 @@ const JUNCTION_COLOR = '#6a1b9a';
               <span>{{ conn.olte?.code }}</span>
             </div>
             <div class="detail-row">
+              <span class="label">Assigned to</span>
+              <span>{{ assigneeName(conn.assignedEmployeeId) }}</span>
+            </div>
+            <div class="detail-row">
               <span class="label">Downstream</span>
               <span>{{ conn.downstreamCount ?? 0 }} node(s)</span>
             </div>
@@ -374,6 +381,12 @@ const JUNCTION_COLOR = '#6a1b9a';
             </div>
           </div>
           <div class="detail-actions">
+            <button mat-stroked-button (click)="openEditDialog(conn)">
+              <mat-icon>edit</mat-icon> Edit / Assign
+            </button>
+            <button mat-stroked-button (click)="openMoveDialog(conn)">
+              <mat-icon>call_split</mat-icon> Move
+            </button>
             <button
               mat-stroked-button
               (click)="openConnectionDialog(conn.olteId, conn.id)"
@@ -640,6 +653,7 @@ const JUNCTION_COLOR = '#6a1b9a';
 })
 export class NetworkMapComponent implements AfterViewInit, OnDestroy {
   private networkService = inject(NetworkService);
+  private employeeService = inject(EmployeeService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
 
@@ -679,6 +693,8 @@ export class NetworkMapComponent implements AfterViewInit, OnDestroy {
   readonly stats = signal<NetworkStats | null>(null);
   readonly tree = signal<OlteTree | null>(null);
   readonly selected = signal<NetworkConnection | null>(null);
+  /** Employees with a login, for assignment (assignedEmployeeId = userId). */
+  readonly assignableUsers = signal<AssignableUser[]>([]);
   readonly selectedOlteId = signal<string>('');
   readonly statusFilter = signal<string>('');
   readonly searchTerm = signal<string>('');
@@ -722,6 +738,20 @@ export class NetworkMapComponent implements AfterViewInit, OnDestroy {
   }
 
   private loadAll(): void {
+    // The API returns at most 100 employees per page; enough for the picker.
+    this.employeeService.findAll(100).subscribe({
+      next: (employees) =>
+        this.assignableUsers.set(
+          employees
+            .filter((e) => !!e.userId)
+            .map((e) => ({
+              userId: e.userId as string,
+              label:
+                `${e.employeeCode} — ${e.firstName} ${e.lastName ?? ''}`.trim(),
+            })),
+        ),
+      error: () => this.assignableUsers.set([]),
+    });
     this.networkService.getFilters().subscribe({
       next: (filters) => this.filters.set(filters),
       error: () => this.filters.set(null),
@@ -908,6 +938,7 @@ export class NetworkMapComponent implements AfterViewInit, OnDestroy {
           oltes: this.oltes(),
           olteId: olteId ?? this.selectedOlteId() ?? undefined,
           parentConnectionId,
+          employees: this.assignableUsers(),
         },
       })
       .afterClosed()
@@ -915,6 +946,46 @@ export class NetworkMapComponent implements AfterViewInit, OnDestroy {
         if (created) {
           this.snackBar.open('Connection created', 'OK', { duration: 2500 });
           this.afterTopologyChange();
+        }
+      });
+  }
+
+  assigneeName(userId?: string | null): string {
+    if (!userId) return 'Unassigned';
+    return (
+      this.assignableUsers().find((u) => u.userId === userId)?.label ??
+      'Assigned employee'
+    );
+  }
+
+  openEditDialog(conn: NetworkConnection): void {
+    this.dialog
+      .open(ConnectionFormDialogComponent, {
+        data: {
+          oltes: this.oltes(),
+          connection: conn,
+          employees: this.assignableUsers(),
+        },
+      })
+      .afterClosed()
+      .subscribe((saved) => {
+        if (saved) {
+          this.snackBar.open('Connection saved', 'OK', { duration: 2500 });
+          this.afterTopologyChange(conn.id);
+        }
+      });
+  }
+
+  openMoveDialog(conn: NetworkConnection): void {
+    this.dialog
+      .open(MoveConnectionDialogComponent, {
+        data: { connection: conn, oltes: this.oltes() },
+      })
+      .afterClosed()
+      .subscribe((moved) => {
+        if (moved) {
+          this.snackBar.open('Connection moved', 'OK', { duration: 2500 });
+          this.afterTopologyChange(conn.id);
         }
       });
   }

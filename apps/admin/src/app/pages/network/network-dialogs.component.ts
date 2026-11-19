@@ -17,7 +17,14 @@ import {
   NetworkConnection,
   NetworkService,
   Olte,
+  TreeNode,
 } from '../../core/services/network.service';
+
+/** A user who can be assigned to a connection (Employee with a login). */
+export interface AssignableUser {
+  userId: string;
+  label: string;
+}
 
 const DIALOG_IMPORTS = [
   CommonModule,
@@ -202,6 +209,10 @@ export class OlteFormDialogComponent {
           placeholder="CONN-1001"
         />
       </mat-form-field>
+      <p class="hint" *ngIf="isEdit">
+        Code, OLTE and parent are changed with <strong>Move</strong>, so the
+        topology stays consistent.
+      </p>
       <mat-form-field appearance="outline">
         <mat-label>OLTE</mat-label>
         <mat-select formControlName="olteId">
@@ -210,7 +221,7 @@ export class OlteFormDialogComponent {
           </mat-option>
         </mat-select>
       </mat-form-field>
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" *ngIf="!isEdit">
         <mat-label
           >Parent Connection (optional — blank = direct to OLTE)</mat-label
         >
@@ -267,6 +278,19 @@ export class OlteFormDialogComponent {
         </mat-form-field>
       </div>
       <mat-form-field appearance="outline">
+        <mat-label>Assigned employee</mat-label>
+        <mat-select formControlName="assignedEmployeeId">
+          <mat-option [value]="''">Unassigned</mat-option>
+          <mat-option *ngFor="let u of employees" [value]="u.userId">
+            {{ u.label }}
+          </mat-option>
+        </mat-select>
+        <mat-hint
+          >Field staff see assigned connections and their route on the mobile
+          map.</mat-hint
+        >
+      </mat-form-field>
+      <mat-form-field appearance="outline">
         <mat-label>Remarks</mat-label>
         <input matInput formControlName="remarks" />
       </mat-form-field>
@@ -280,7 +304,7 @@ export class OlteFormDialogComponent {
         [disabled]="form.invalid || saving()"
         (click)="save()"
       >
-        Create
+        {{ isEdit ? 'Save' : 'Create' }}
       </button>
     </mat-dialog-actions>
   `,
@@ -303,6 +327,11 @@ export class OlteFormDialogComponent {
         color: #c62828;
         font-size: 13px;
       }
+      .hint {
+        margin: -8px 0 12px;
+        font-size: 12px;
+        color: #666;
+      }
     `,
   ],
 })
@@ -314,30 +343,58 @@ export class ConnectionFormDialogComponent {
     oltes: Olte[];
     olteId?: string;
     parentConnectionId?: string;
+    /** Present = edit mode. */
+    connection?: NetworkConnection;
+    employees?: AssignableUser[];
   } = inject(MAT_DIALOG_DATA);
 
   readonly saving = signal(false);
   readonly error = signal('');
   readonly statuses = CONNECTION_STATUSES;
+  readonly isEdit = !!this.data.connection;
+  readonly employees: AssignableUser[] = this.withCurrentAssignee();
+
+  private readonly c = this.data.connection;
 
   readonly form = this.fb.group({
-    connectionCode: ['', Validators.required],
-    olteId: [this.data.olteId ?? '', Validators.required],
+    connectionCode: [this.c?.connectionCode ?? '', Validators.required],
+    olteId: [this.c?.olteId ?? this.data.olteId ?? '', Validators.required],
     parentConnectionId: [this.data.parentConnectionId ?? ''],
-    customerId: [''],
-    nodeType: ['CUSTOMER'],
-    status: ['PENDING_INSTALLATION'],
-    latitude: [null as number | null],
-    longitude: [null as number | null],
-    connectionType: ['FIBER'],
-    cableType: [''],
-    remarks: [''],
+    customerId: [this.c?.customerId ?? ''],
+    nodeType: [this.c?.nodeType ?? 'CUSTOMER'],
+    status: [this.c?.status ?? 'PENDING_INSTALLATION'],
+    latitude: [this.c?.latitude ?? (null as number | null)],
+    longitude: [this.c?.longitude ?? (null as number | null)],
+    connectionType: [this.c?.connectionType ?? 'FIBER'],
+    cableType: [this.c?.cableType ?? ''],
+    assignedEmployeeId: [this.c?.assignedEmployeeId ?? ''],
+    remarks: [this.c?.remarks ?? ''],
   });
+
+  constructor() {
+    if (this.isEdit) {
+      this.form.controls.connectionCode.disable();
+      this.form.controls.olteId.disable();
+    }
+  }
+
+  /** Keep a current assignee selectable even if they are not in the page. */
+  private withCurrentAssignee(): AssignableUser[] {
+    const list = this.data.employees ?? [];
+    const current = this.data.connection?.assignedEmployeeId;
+    return current && !list.some((u) => u.userId === current)
+      ? [...list, { userId: current, label: 'Current assignee' }]
+      : list;
+  }
 
   save(): void {
     this.saving.set(true);
     this.error.set('');
     const raw = this.form.getRawValue();
+    if (this.c) {
+      this.saveEdit(this.c.id, raw);
+      return;
+    }
     this.networkService
       .createConnection({
         connectionCode: raw.connectionCode ?? '',
@@ -350,6 +407,7 @@ export class ConnectionFormDialogComponent {
         longitude: raw.longitude !== null ? Number(raw.longitude) : undefined,
         connectionType: raw.connectionType || undefined,
         cableType: raw.cableType || undefined,
+        assignedEmployeeId: raw.assignedEmployeeId || undefined,
         remarks: raw.remarks || undefined,
       })
       .subscribe({
@@ -357,6 +415,204 @@ export class ConnectionFormDialogComponent {
         error: (err) => {
           this.saving.set(false);
           this.error.set(err?.error?.message ?? 'Failed to create connection');
+        },
+      });
+  }
+
+  /**
+   * Metadata only (PATCH). Topology moves go through the Move dialog.
+   * Clearing customer or assignee sends null so the API unlinks it.
+   */
+  private saveEdit(
+    id: string,
+    raw: ReturnType<typeof this.form.getRawValue>,
+  ): void {
+    this.networkService
+      .updateConnection(id, {
+        customerId: raw.customerId || null,
+        nodeType: raw.nodeType ?? undefined,
+        status: raw.status ?? undefined,
+        latitude: raw.latitude !== null ? Number(raw.latitude) : undefined,
+        longitude: raw.longitude !== null ? Number(raw.longitude) : undefined,
+        connectionType: raw.connectionType || undefined,
+        cableType: raw.cableType || undefined,
+        assignedEmployeeId: raw.assignedEmployeeId || null,
+        remarks: raw.remarks || undefined,
+      })
+      .subscribe({
+        next: (conn) => this.dialogRef.close(conn),
+        error: (err) => {
+          this.saving.set(false);
+          this.error.set(err?.error?.message ?? 'Failed to save connection');
+        },
+      });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Move dialog: re-attach a connection (and its subtree) under another node
+// or directly on an OLTE (3.7_ConnectionMap §5.3, NETWORK:MOVE).
+// ---------------------------------------------------------------------------
+
+interface ParentOption {
+  id: string;
+  label: string;
+}
+
+/** Flattens an OLTE tree, skipping `excludeId` and everything under it. */
+export function parentOptions(
+  nodes: readonly TreeNode[],
+  excludeId: string,
+  prefix = '',
+): ParentOption[] {
+  const out: ParentOption[] = [];
+  for (const n of nodes) {
+    if (n.id === excludeId) continue;
+    const name = n.customer?.displayName || n.customer?.legalName;
+    out.push({
+      id: n.id,
+      label: `${prefix}${n.connectionCode}${name ? ' — ' + name : ''}`,
+    });
+    out.push(...parentOptions(n.children, excludeId, prefix + '  '));
+  }
+  return out;
+}
+
+@Component({
+  selector: 'app-move-connection-dialog',
+  standalone: true,
+  imports: DIALOG_IMPORTS,
+  template: `
+    <h2 mat-dialog-title>Move {{ data.connection.connectionCode }}</h2>
+    <mat-dialog-content class="dialog-form">
+      <p class="note">
+        Moves this connection with its
+        {{ data.connection.downstreamCount ?? 0 }} downstream node(s).
+      </p>
+      <mat-form-field appearance="outline">
+        <mat-label>OLTE</mat-label>
+        <mat-select
+          [value]="olteId()"
+          (selectionChange)="pickOlte($event.value)"
+        >
+          <mat-option *ngFor="let olte of data.oltes" [value]="olte.id">
+            {{ olte.code }} — {{ olte.name }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>New parent</mat-label>
+        <mat-select
+          [value]="parentId()"
+          (selectionChange)="parentId.set($event.value)"
+        >
+          <mat-option [value]="''"
+            >Directly on the OLTE (uses a port)</mat-option
+          >
+          <mat-option *ngFor="let o of options()" [value]="o.id">
+            <span class="tree-label">{{ o.label }}</span>
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-spinner *ngIf="loading()" diameter="24"></mat-spinner>
+      <p class="error" *ngIf="error()">{{ error() }}</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Cancel</button>
+      <button
+        mat-flat-button
+        color="primary"
+        [disabled]="saving() || loading() || unchanged()"
+        (click)="save()"
+      >
+        Move
+      </button>
+    </mat-dialog-actions>
+  `,
+  styles: [
+    `
+      .dialog-form {
+        display: flex;
+        flex-direction: column;
+        min-width: 420px;
+        padding-top: 8px;
+      }
+      .note {
+        margin-top: 0;
+        color: #555;
+      }
+      .tree-label {
+        white-space: pre;
+      }
+      .error {
+        color: #c62828;
+        font-size: 13px;
+      }
+    `,
+  ],
+})
+export class MoveConnectionDialogComponent {
+  private networkService = inject(NetworkService);
+  readonly dialogRef = inject(MatDialogRef<MoveConnectionDialogComponent>);
+  readonly data: { connection: NetworkConnection; oltes: Olte[] } =
+    inject(MAT_DIALOG_DATA);
+
+  readonly olteId = signal(this.data.connection.olteId);
+  readonly parentId = signal(this.data.connection.parentConnectionId ?? '');
+  readonly options = signal<ParentOption[]>([]);
+  readonly loading = signal(false);
+  readonly saving = signal(false);
+  readonly error = signal('');
+
+  constructor() {
+    this.loadTree(this.olteId());
+  }
+
+  unchanged(): boolean {
+    const c = this.data.connection;
+    return (
+      this.olteId() === c.olteId &&
+      this.parentId() === (c.parentConnectionId ?? '')
+    );
+  }
+
+  pickOlte(olteId: string): void {
+    this.olteId.set(olteId);
+    this.parentId.set('');
+    this.loadTree(olteId);
+  }
+
+  private loadTree(olteId: string): void {
+    this.loading.set(true);
+    this.networkService.getTree(olteId).subscribe({
+      next: (tree) => {
+        this.options.set(parentOptions(tree.tree, this.data.connection.id));
+        this.loading.set(false);
+      },
+      error: () => {
+        this.options.set([]);
+        this.loading.set(false);
+        this.error.set('Could not load the OLTE tree');
+      },
+    });
+  }
+
+  save(): void {
+    this.saving.set(true);
+    this.error.set('');
+    const parent = this.parentId();
+    this.networkService
+      .moveConnection(
+        this.data.connection.id,
+        parent
+          ? { newParentConnectionId: parent }
+          : { newOlteId: this.olteId() },
+      )
+      .subscribe({
+        next: (conn) => this.dialogRef.close(conn),
+        error: (err) => {
+          this.saving.set(false);
+          this.error.set(err?.error?.message ?? 'Move failed');
         },
       });
   }
