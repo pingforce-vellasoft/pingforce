@@ -40,6 +40,16 @@ not on the development laptop.
 
 ## Before deployment
 
+- Registry recovery for the failed `e277618` deployment: both Compose files
+  now use the official Quay MinIO image pinned to the verified multi-platform
+  manifest. Commands, credentials and `minio_data:/data` are unchanged. CI
+  validates the Compose files, matching image references and manifest access
+  without pulling layers or starting containers. This is registry recovery,
+  not a MinIO security upgrade; track migration to maintained storage separately.
+- That failed attempt completed its pre-deploy SQL backup and stopped at image
+  pull, before `docker compose up` or migrations. Do not restore the database,
+  run `down -v`, or delete object-storage volumes to recover this pull failure.
+  A SQL backup is not a backup of the MinIO objects; preserve both data stores.
 - Review the combined attendance/auth/fault changes on the working branch.
 - Push the reviewed branch and open a pull request targeting `main`.
 - Wait for both **CI** and **Flutter Mobile Build** to pass on the PR commit.
