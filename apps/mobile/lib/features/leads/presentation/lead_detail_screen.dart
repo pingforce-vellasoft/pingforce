@@ -143,13 +143,18 @@ class LeadDetailScreen extends ConsumerWidget {
       ),
     );
     if (picked == null) return;
-    final moved = await ref
+    final result = await ref
         .read(leadDetailProvider(leadId).notifier)
         .moveToStage(picked);
-    if (moved && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Moved to ${picked.name}')));
-    }
+    if (result == StageMoveResult.failed || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result == StageMoveResult.queuedOffline
+              ? 'Moved to ${picked.name} — will sync when back online'
+              : 'Moved to ${picked.name}',
+        ),
+      ),
+    );
   }
 }

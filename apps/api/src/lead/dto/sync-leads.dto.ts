@@ -2,11 +2,12 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   ArrayMaxSize,
-  ArrayMinSize,
   ValidateNested,
   IsString,
   IsNotEmpty,
   IsISO8601,
+  IsOptional,
+  IsUUID,
 } from 'class-validator';
 import { CreateLeadDto } from './create-lead.dto';
 
@@ -24,11 +25,36 @@ export class OfflineLeadItemDto extends CreateLeadDto {
   readonly timestamp!: string;
 }
 
+/** A stage change made on the device while offline. */
+export class OfflineLeadStageMoveDto {
+  @IsString()
+  @IsNotEmpty()
+  readonly clientRef!: string;
+
+  /** When the move was made on the device. */
+  @IsISO8601()
+  readonly timestamp!: string;
+
+  @IsUUID()
+  readonly leadId!: string;
+
+  @IsUUID()
+  readonly pipelineStageId!: string;
+}
+
+/** At least one of `leads` and `stageMoves` must be non-empty. */
 export class SyncLeadsDto {
+  @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
   @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => OfflineLeadItemDto)
-  readonly leads!: OfflineLeadItemDto[];
+  readonly leads?: OfflineLeadItemDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => OfflineLeadStageMoveDto)
+  readonly stageMoves?: OfflineLeadStageMoveDto[];
 }

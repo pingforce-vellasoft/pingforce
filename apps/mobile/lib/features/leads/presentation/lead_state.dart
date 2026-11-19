@@ -245,3 +245,41 @@ class CreateLeadState {
 
   bool get done => savedOnline || queuedOffline;
 }
+
+/// Marks a sync-queue payload as an offline stage move (vs a new lead).
+const leadSyncKindStageMove = 'STAGE_MOVE';
+
+/// Sync-queue payload for a stage change made offline. The API skips it if
+/// the lead changed on the server after [movedAt].
+Map<String, dynamic> offlineStageMove({
+  required String leadId,
+  required String pipelineStageId,
+  required DateTime movedAt,
+}) => {
+  'kind': leadSyncKindStageMove,
+  'clientRef': 'lead-stage-$leadId-${movedAt.toUtc().microsecondsSinceEpoch}',
+  'timestamp': movedAt.toUtc().toIso8601String(),
+  'leadId': leadId,
+  'pipelineStageId': pipelineStageId,
+};
+
+/// Splits queued lead payloads into the POST /leads/sync body: new leads
+/// and stage moves travel in their own arrays; empty arrays are omitted.
+Map<String, dynamic> leadSyncBody(List<Map<String, dynamic>> payloads) {
+  final leads = <Map<String, dynamic>>[];
+  final moves = <Map<String, dynamic>>[];
+  for (final p in payloads) {
+    if (p['kind'] == leadSyncKindStageMove) {
+      moves.add(Map<String, dynamic>.of(p)..remove('kind'));
+    } else {
+      leads.add(p);
+    }
+  }
+  return {
+    if (leads.isNotEmpty) 'leads': leads,
+    if (moves.isNotEmpty) 'stageMoves': moves,
+  };
+}
+
+/// Result of a stage change from the detail screen.
+enum StageMoveResult { moved, queuedOffline, failed }

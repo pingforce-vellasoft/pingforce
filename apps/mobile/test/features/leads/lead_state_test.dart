@@ -95,4 +95,42 @@ void main() {
     expect(filtered.copyWith(errorMessage: null).errorMessage, isNull);
     expect(filtered.copyWith(stageFilter: null).visibleLeads.length, 3);
   });
+
+  group('offline stage moves', () {
+    test('offlineStageMove builds a tagged, timestamped payload', () {
+      final move = offlineStageMove(
+        leadId: 'lead-1',
+        pipelineStageId: 'stage-2',
+        movedAt: DateTime.utc(2026, 11, 19, 10),
+      );
+      expect(move['kind'], leadSyncKindStageMove);
+      expect(move['timestamp'], '2026-11-19T10:00:00.000Z');
+      expect(move['leadId'], 'lead-1');
+      expect(move['pipelineStageId'], 'stage-2');
+      expect(move['clientRef'], startsWith('lead-stage-lead-1-'));
+    });
+
+    test('leadSyncBody splits new leads from stage moves', () {
+      final move = offlineStageMove(
+        leadId: 'lead-1',
+        pipelineStageId: 'stage-2',
+        movedAt: DateTime.utc(2026, 11, 19, 10),
+      );
+      final newLead = {'clientRef': 'c1', 'leadNumber': 'LD-1'};
+      final body = leadSyncBody([newLead, move]);
+      expect(body['leads'], [newLead]);
+      final moves = body['stageMoves'] as List;
+      expect(moves.single.containsKey('kind'), isFalse);
+      expect(moves.single['leadId'], 'lead-1');
+    });
+
+    test('leadSyncBody omits empty arrays', () {
+      expect(
+        leadSyncBody([
+          {'clientRef': 'c1', 'leadNumber': 'LD-1'},
+        ]).keys,
+        ['leads'],
+      );
+    });
+  });
 }

@@ -138,31 +138,65 @@ class LeadDetailNotifier
     }
   }
 
-  /// Online only: stage moves are not in the offline queue.
-  Future<bool> moveToStage(PipelineStageItem stage) async {
+  /// Online: PATCH /leads/:id/stage. Offline, or if the connection drops,
+  /// the move is queued for /leads/sync and shown locally right away.
+  Future<StageMoveResult> moveToStage(PipelineStageItem stage) async {
     final lead = state.lead;
-    if (lead == null || state.isMoving) return false;
+    if (lead == null || state.isMoving) return StageMoveResult.failed;
     if (!ref.read(isOnlineProvider)) {
-      state = LeadDetailState(
-        lead: lead,
-        errorMessage: 'You are offline. Changing the stage needs a connection.',
-      );
-      return false;
+      _queueMove(lead, stage);
+      return StageMoveResult.queuedOffline;
     }
     state = LeadDetailState(lead: lead, isMoving: true);
     try {
       await _remote.updateStage(lead.id, stage.id);
-      final moved = lead.copyWith(stageId: stage.id, stageName: stage.name);
-      state = LeadDetailState(lead: moved);
-      ref.read(leadListProvider.notifier).replaceLocal(moved);
-      return true;
+      _showMoved(lead, stage);
+      return StageMoveResult.moved;
+    } on DioException catch (e) {
+      if (e.response == null) {
+        _queueMove(lead, stage);
+        return StageMoveResult.queuedOffline;
+      }
+      state = LeadDetailState(
+        lead: lead,
+        errorMessage: _messageFor(e, 'Could not change the stage.'),
+      );
+      return StageMoveResult.failed;
     } catch (e) {
       state = LeadDetailState(
         lead: lead,
         errorMessage: _messageFor(e, 'Could not change the stage.'),
       );
-      return false;
+      return StageMoveResult.failed;
     }
+  }
+
+  void _queueMove(LeadSummary lead, PipelineStageItem stage) {
+    final payload = offlineStageMove(
+      leadId: lead.id,
+      pipelineStageId: stage.id,
+      movedAt: DateTime.now(),
+    );
+    ref
+        .read(syncProvider.notifier)
+        .enqueue(
+          SyncQueueItem(
+            id: payload['clientRef'] as String,
+            module: SyncItemModule.leads,
+            entityId: lead.id,
+            operationType: 'update',
+            description: '${lead.displayName} → ${stage.name}',
+            queuedAt: DateTime.now(),
+            payload: payload,
+          ),
+        );
+    _showMoved(lead, stage);
+  }
+
+  void _showMoved(LeadSummary lead, PipelineStageItem stage) {
+    final moved = lead.copyWith(stageId: stage.id, stageName: stage.name);
+    state = LeadDetailState(lead: moved);
+    ref.read(leadListProvider.notifier).replaceLocal(moved);
   }
 
   void clearError() {
