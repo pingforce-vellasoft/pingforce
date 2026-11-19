@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../../rbac/guards/rbac.guard';
@@ -55,7 +56,10 @@ export class OlteController {
 
   @Get(':id')
   @RequirePermission('NETWORK', 'READ')
-  findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+  findOne(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.olteService.findOne(tenantId, id);
   }
 
@@ -63,7 +67,7 @@ export class OlteController {
   @RequirePermission('NETWORK', 'OLTE_MANAGE')
   update(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() currentUser: CurrentUserContext,
     @Body() dto: UpdateOlteDto,
   ) {
@@ -74,7 +78,7 @@ export class OlteController {
   @RequirePermission('NETWORK', 'OLTE_MANAGE')
   archive(
     @CurrentTenant() tenantId: string,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() currentUser: CurrentUserContext,
   ) {
     return this.olteService.archive(tenantId, id, currentUser);
