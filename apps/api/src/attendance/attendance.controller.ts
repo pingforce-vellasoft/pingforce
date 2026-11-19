@@ -28,6 +28,7 @@ import { CorrectionsService } from './corrections.service';
 import { SyncPunchesDto } from './dto/sync-punches.dto';
 import { OfflineSyncService } from './offline-sync.service';
 import { AttendanceLogService } from './attendance-log.service';
+import { AttendanceTimelineService } from './attendance-timeline.service';
 import { AttendanceAdminService } from './attendance-admin.service';
 import { TrackingGapService } from './tracking-gap.service';
 import { GeofenceAssignmentService } from './geofence-assignment.service';
@@ -64,6 +65,7 @@ export class AttendanceController {
     private readonly correctionsService: CorrectionsService,
     private readonly offlineSyncService: OfflineSyncService,
     private readonly attendanceLogService: AttendanceLogService,
+    private readonly attendanceTimelineService: AttendanceTimelineService,
     private readonly attendanceAdminService: AttendanceAdminService,
     private readonly trackingGapService: TrackingGapService,
     private readonly geofenceAssignmentService: GeofenceAssignmentService,
@@ -214,6 +216,20 @@ export class AttendanceController {
     @Query() query: AttendanceDailyLogQueryDto,
   ) {
     return this.attendanceLogService.getDailyLogs(req.user, query);
+  }
+
+  /**
+   * Chronological events of one session (punches, breaks, tracking gaps,
+   * corrections) for the admin "View timeline" action. Same data scope as
+   * the logs; out-of-scope sessions are a 404.
+   */
+  @Get('sessions/:id/timeline')
+  @RequirePermission('ATTENDANCE', 'READ_OWN')
+  async getSessionTimeline(
+    @Req() req: AuthRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.attendanceTimelineService.getSessionTimeline(req.user, id);
   }
 
   // ── Admin adjustments (exceptional cases) ─────────────────────────────────

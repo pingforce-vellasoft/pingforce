@@ -6,6 +6,7 @@ import { CorrectionsService } from './corrections.service';
 import { OfflineSyncService } from './offline-sync.service';
 import { GeofenceCacheService } from './geofence-cache.service';
 import { AttendanceLogService } from './attendance-log.service';
+import { AttendanceTimelineService } from './attendance-timeline.service';
 import { AttendanceAdminService } from './attendance-admin.service';
 import { TrackingGapService } from './tracking-gap.service';
 import { GeofenceAssignmentService } from './geofence-assignment.service';
@@ -23,6 +24,7 @@ import { AttendanceEventHandlers } from './events/handlers';
     OfflineSyncService,
     GeofenceCacheService,
     AttendanceLogService,
+    AttendanceTimelineService,
     AttendanceAdminService,
     TrackingGapService,
     GeofenceAssignmentService,
