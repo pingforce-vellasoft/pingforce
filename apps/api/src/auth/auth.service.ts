@@ -26,6 +26,8 @@ import { LoginHistoryService } from './login-history.service';
 import { OtpService } from './otp.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { generateStrongPassword } from '../common/utils/password-generator';
+import { PasswordPolicyService } from './password-policy.service';
+import { decodeImageDataUrl } from '../common/utils/image-data-url';
 
 const googleClient = new OAuth2Client();
 
@@ -39,6 +41,7 @@ export class AuthService implements IAuthService {
     private readonly loginHistory: LoginHistoryService,
     private readonly otpService: OtpService,
     private readonly notifications: NotificationsService,
+    private readonly passwordPolicy: PasswordPolicyService,
   ) {}
 
   async login(loginDto: LoginDto, meta: SessionMeta = {}) {
@@ -121,11 +124,43 @@ export class AuthService implements IAuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Lockout gate runs BEFORE password verification so a locked account
+    // cannot be brute-forced during the lock window (PasswordPolicy.md §12).
+    if (this.passwordPolicy.isLocked(user)) {
+      void this.auditService.log({
+        tenantId: tenant.id,
+        actorId: user.id,
+        module: 'AUTH',
+        entityName: 'user',
+        entityId: user.id,
+        action: 'LOGIN_FAILED',
+        outcome: 'FAILURE',
+        severity: 'HIGH',
+        newValue: { reason: 'ACCOUNT_LOCKED' },
+        ipAddress: meta.ip,
+        userAgent: meta.userAgent,
+      });
+      this.loginHistory.record({
+        tenantId: tenant.id,
+        userId: user.id,
+        username: loginDto.email ?? loginDto.phone ?? '-',
+        outcome: 'ACCOUNT_LOCKED',
+        deviceId: meta.deviceId,
+        ipAddress: meta.ip,
+        userAgent: meta.userAgent,
+      });
+      this.passwordPolicy.assertNotLocked(user);
+    }
+
     const isPasswordValid = await argon2.verify(
       user.passwordHash,
       loginDto.password,
     );
     if (!isPasswordValid) {
+      await this.passwordPolicy.registerFailedAttempt(tenant.id, user.id, {
+        ip: meta.ip,
+        userAgent: meta.userAgent,
+      });
       void this.auditService.log({
         tenantId: tenant.id,
         actorId: user.id,
@@ -175,6 +210,8 @@ export class AuthService implements IAuthService {
       });
       throw new UnauthorizedException('Account is inactive or suspended');
     }
+
+    await this.passwordPolicy.resetFailedAttempts(user);
 
     // Role-based platform access control
     const roleCode =
@@ -517,24 +554,28 @@ export class AuthService implements IAuthService {
       throw new UnauthorizedException('Current password is incorrect');
     }
 
-    const sameAsOld = await argon2.verify(user.passwordHash, newPassword);
-    if (sameAsOld) {
-      throw new BadRequestException(
-        'New password must be different from the current password',
-      );
-    }
+    // PWD-002: current + last N hashes may not be reused (PasswordPolicy.md §7)
+    await this.passwordPolicy.assertNotReused(
+      user.id,
+      user.passwordHash,
+      newPassword,
+    );
 
     const newHash = await argon2.hash(newPassword);
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash: newHash,
-        mustChangePassword: false,
-        // Invalidate all other sessions/tokens issued before the change.
-        tokenVersion: { increment: 1 },
-      },
-    });
+    await this.prisma.$transaction([
+      this.passwordPolicy.archiveHash(tenantId, user.id, user.passwordHash),
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: newHash,
+          mustChangePassword: false,
+          passwordChangedAt: new Date(),
+          // Invalidate all other sessions/tokens issued before the change.
+          tokenVersion: { increment: 1 },
+        },
+      }),
+    ]);
     await this.sessionService.revokeAllForUser(
       tenantId,
       user.id,
@@ -1047,24 +1088,23 @@ export class AuthService implements IAuthService {
 
     let logoUrl = null;
     if (dto.logoBase64) {
+      // Validate BEFORE touching disk: strict base64, 2 MB cap, PNG/JPEG/WebP
+      // magic bytes (Upload.md §4/§6). Invalid input is a 400, not a silent skip.
+      const image = decodeImageDataUrl(dto.logoBase64);
       try {
         const fs = require('fs');
         const path = require('path');
-        const crypto = require('crypto');
 
         const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
         }
 
-        const base64Data = dto.logoBase64.replace(
-          /^data:image\/\w+;base64,/,
-          '',
-        );
-        const filename = `${tenantId}-${crypto.randomBytes(4).toString('hex')}.png`;
+        // tenantId comes from the JWT (UUID) — no user-controlled path parts.
+        const filename = `${tenantId}-${randomBytes(4).toString('hex')}.${image.ext}`;
         const filepath = path.join(uploadsDir, filename);
 
-        fs.writeFileSync(filepath, base64Data, 'base64');
+        fs.writeFileSync(filepath, image.buffer);
         logoUrl = `/api/v1/uploads/logos/${filename}`;
       } catch (err) {
         console.error('Failed to save logo:', err);

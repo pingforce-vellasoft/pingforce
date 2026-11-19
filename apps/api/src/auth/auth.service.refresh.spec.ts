@@ -68,6 +68,12 @@ function makeService(stored: StoredToken | null) {
   const notifications = {
     sendRawEmail: jest.fn().mockResolvedValue(true),
   };
+  const passwordPolicy = {
+    isLocked: jest.fn().mockReturnValue(false),
+    assertNotLocked: jest.fn(),
+    registerFailedAttempt: jest.fn().mockResolvedValue(false),
+    resetFailedAttempts: jest.fn().mockResolvedValue(undefined),
+  };
 
   const service = new AuthService(
     prisma as unknown as ConstructorParameters<typeof AuthService>[0],
@@ -77,6 +83,7 @@ function makeService(stored: StoredToken | null) {
     loginHistory as unknown as ConstructorParameters<typeof AuthService>[4],
     otpService as unknown as ConstructorParameters<typeof AuthService>[5],
     notifications as unknown as ConstructorParameters<typeof AuthService>[6],
+    passwordPolicy as unknown as ConstructorParameters<typeof AuthService>[7],
   );
   return { service, prisma, sessionService, loginHistory };
 }

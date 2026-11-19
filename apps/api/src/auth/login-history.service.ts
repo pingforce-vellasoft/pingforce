@@ -6,6 +6,7 @@ export type LoginOutcome =
   | 'UNKNOWN_ACCOUNT'
   | 'INVALID_PASSWORD'
   | 'ACCOUNT_INACTIVE'
+  | 'ACCOUNT_LOCKED'
   | 'PORTAL_RESTRICTED'
   | 'TOKEN_REPLAY';
 

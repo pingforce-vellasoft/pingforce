@@ -50,8 +50,8 @@ class TokenInterceptor extends QueuedInterceptor {
     if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
-    // Anti-tamper tracking ID for zero-trust (Hardness)
-    options.headers['X-Device-Attestation'] = 'trusted-mobile-client';
+    // No device-attestation header: a static value proves nothing and the API
+    // never read it. Real device trust = device binding + punch signatures.
     return handler.next(options);
   }
 
