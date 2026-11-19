@@ -46,6 +46,16 @@ export type FaultDetail = Prisma.FaultGetPayload<{
     customer: true;
     assignedToUser: typeof SAFE_USER_SELECT;
     faultTimelines: true;
+    faultAttempts: {
+      include: {
+        technician: {
+          select: {
+            id: true;
+            profile: { select: { firstName: true; lastName: true } };
+          };
+        };
+      };
+    };
   };
 }>;
 
@@ -184,6 +194,18 @@ export class FaultsRepository extends PrismaRepository<
         assignedToUser: SAFE_USER_SELECT,
         faultTimelines: {
           orderBy: { createdAt: 'desc' },
+        },
+        faultAttempts: {
+          where: { deletedAt: null },
+          orderBy: { attemptNumber: 'asc' },
+          include: {
+            technician: {
+              select: {
+                id: true,
+                profile: { select: { firstName: true, lastName: true } },
+              },
+            },
+          },
         },
       },
     });

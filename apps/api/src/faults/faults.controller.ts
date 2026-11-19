@@ -23,6 +23,11 @@ import {
   UpdateTimelineVisibilityDto,
 } from './dto/fault-note.dto';
 import { FaultsSyncService } from './faults-sync.service';
+import { CreateFaultAttemptDto } from './dto/create-fault-attempt.dto';
+import {
+  FaultAttemptsService,
+  FaultAttemptView,
+} from './fault-attempts.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
@@ -57,6 +62,7 @@ export class FaultsController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly faultsSyncService: FaultsSyncService,
+    private readonly faultAttemptsService: FaultAttemptsService,
   ) {}
 
   @Post('sync')
@@ -193,6 +199,34 @@ export class FaultsController {
   ) {
     return this.commandBus.execute(
       new AddFaultNoteCommand(tenantId, id, currentUser, dto),
+    );
+  }
+
+  /** 3.3 API.md §6: field attempts, oldest first. */
+  @Get(':id/attempts')
+  @RequirePermission('FAULTS', 'READ_OWN')
+  listAttempts(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() currentUser: CurrentUserContext,
+  ): Promise<FaultAttemptView[]> {
+    return this.faultAttemptsService.list(tenantId, id, currentUser.userId);
+  }
+
+  /** Records one immutable attempt; a repeated clientRef returns the first. */
+  @Post(':id/attempts')
+  @RequirePermission('FAULTS', 'UPDATE')
+  createAttempt(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() currentUser: CurrentUserContext,
+    @Body() dto: CreateFaultAttemptDto,
+  ): Promise<FaultAttemptView> {
+    return this.faultAttemptsService.create(
+      tenantId,
+      id,
+      currentUser.userId,
+      dto,
     );
   }
 

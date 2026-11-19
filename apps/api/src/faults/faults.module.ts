@@ -11,6 +11,7 @@ import { QueryHandlers } from './queries/handlers';
 import { SlaMonitorProcessor } from './sla-monitor.processor';
 import { FaultsSyncService } from './faults-sync.service';
 import { FaultAccessModule } from './fault-access.module';
+import { FaultAttemptsService } from './fault-attempts.service';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { FaultAccessModule } from './fault-access.module';
     FaultsRepository,
     SlaMonitorProcessor,
     FaultsSyncService,
+    FaultAttemptsService,
   ],
   exports: [SlaPolicyService, FaultsRepository],
 })

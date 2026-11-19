@@ -22,6 +22,7 @@ import '../../features/attendance/presentation/check_in/attendance_screen.dart';
 import '../../features/faults/presentation/fault_list_screen.dart';
 import '../../features/faults/presentation/fault_detail_screen.dart';
 import '../../features/faults/presentation/create_fault_screen.dart';
+import '../../features/faults/presentation/create_attempt_screen.dart';
 import '../../features/customer_faults/presentation/my_complaints_screen.dart';
 import '../../features/customer_faults/presentation/raise_complaint_screen.dart';
 import '../../features/customer_faults/presentation/complaint_detail_screen.dart';
@@ -271,8 +272,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                       GoRoute(
                         path: 'attempts/new',
                         name: 'create-attempt',
-                        builder: (context, state) =>
-                            const _PlaceholderScreen(name: 'Add Attempt'),
+                        builder: (context, state) => CreateAttemptScreen(
+                          faultId: state.pathParameters['faultId']!,
+                        ),
                       ),
                     ],
                   ),
@@ -386,7 +388,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Modal routes (pushed over the shell) ───────────────────────────
-
       GoRoute(
         path: '/notifications',
         name: 'notifications',
@@ -429,8 +430,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         name: 'settings',
-        builder: (context, state) =>
-            const _PlaceholderScreen(name: 'Settings'),
+        builder: (context, state) => const _PlaceholderScreen(name: 'Settings'),
       ),
 
       // ── Geofences (attendance zones) — admin, opened from dashboard ──────
@@ -514,7 +514,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Utility screens (reusable across modules) ──────────────────────
-
       GoRoute(
         path: '/qr-scanner',
         name: 'qr-scanner',
@@ -545,7 +544,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           children: [
             const Icon(Icons.error_outline_rounded, size: 64),
             const SizedBox(height: 16),
-            Text('Page not found', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Page not found',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             Text(state.error?.message ?? state.uri.toString()),
             const SizedBox(height: 24),
             FilledButton(
@@ -581,17 +583,13 @@ class _PlaceholderScreen extends StatelessWidget {
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(height: 16),
-            Text(
-              name,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text(name, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               'Screen under development',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color:
-                        Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

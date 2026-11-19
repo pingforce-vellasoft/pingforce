@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../presentation/create_attempt_state.dart';
 import '../presentation/fault_state.dart';
 
 /// Remote datasource for the faults module (3.3 API.md).
@@ -28,6 +29,10 @@ abstract class FaultsRemoteDataSource {
 
   /// Replays queued offline actions (POST /faults/sync).
   Future<void> syncActions(List<Map<String, dynamic>> actions);
+
+  /// Records one field attempt (POST /faults/:id/attempts). Idempotent on
+  /// the request's clientRef.
+  Future<void> createAttempt(String faultId, CreateAttemptRequest request);
 
   /// Attaches evidence to a fault. Internal by default — resolution photos are
   /// work records, and only what staff explicitly flag reaches the customer.
@@ -73,6 +78,7 @@ class FaultsRemoteDataSourceImpl implements FaultsRemoteDataSource {
 
     return FaultDetail(
       summary: _mapFault(json),
+      attempts: _mapAttempts(json['faultAttempts']),
       timeline: _mapTimeline(json['faultTimelines']),
       customerPhone: json['customer']?['phone'] as String?,
       customerEmail: json['customer']?['email'] as String?,
@@ -134,6 +140,52 @@ class FaultsRemoteDataSourceImpl implements FaultsRemoteDataSource {
       'isCustomerVisible': isCustomerVisible.toString(),
     });
     await dio.post<dynamic>('/api/v1/files/upload', data: form);
+  }
+
+  @override
+  Future<void> createAttempt(
+    String faultId,
+    CreateAttemptRequest request,
+  ) async {
+    await dio.post<dynamic>(
+      '/api/v1/faults/$faultId/attempts',
+      data: request.toJson(),
+    );
+  }
+
+  /// Attempt rows, oldest first (attemptNumber ascending from the API).
+  List<FaultAttempt> _mapAttempts(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map((a) {
+          final profile = a['technician']?['profile'];
+          final name = [
+            profile?['firstName'],
+            profile?['lastName'],
+          ].whereType<String>().where((s) => s.isNotEmpty).join(' ');
+          final lat = (a['latitude'] as num?)?.toDouble();
+          final lng = (a['longitude'] as num?)?.toDouble();
+          return FaultAttempt(
+            id: (a['id'] ?? '') as String,
+            attemptNumber: '${a['attemptNumber'] ?? ''}',
+            startTime:
+                DateTime.tryParse(
+                  (a['startedAt'] ?? '') as String,
+                )?.toLocal() ??
+                DateTime.now(),
+            endTime: DateTime.tryParse(
+              (a['endedAt'] ?? '') as String,
+            )?.toLocal(),
+            technicianName: name.isEmpty ? 'Technician' : name,
+            workNotes: a['workNotes'] as String?,
+            outcome: (a['outcome'] ?? '') as String,
+            gpsLocation: lat != null && lng != null
+                ? '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}'
+                : null,
+          );
+        })
+        .toList(growable: false);
   }
 
   /// Fault timeline rows, newest first, rendered as lifecycle events.
