@@ -13,7 +13,7 @@ import { LeadConvertedEvent } from './events/impl';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { ConvertLeadDto } from './dto/convert-lead.dto';
-import { SyncLeadsDto } from './dto/sync-leads.dto';
+import { OfflineLeadStageMoveDto, SyncLeadsDto } from './dto/sync-leads.dto';
 import { LeadReferenceKind, LeadRepository } from './lead.repository';
 import { RbacService } from '../rbac/rbac.service';
 
@@ -59,7 +59,8 @@ export function defaultStageId(tenantId: string, name: string): string {
 
 export interface LeadSyncItemResult {
   readonly clientRef: string;
-  readonly status: 'APPLIED' | 'DUPLICATE' | 'FAILED';
+  /** SKIPPED: an offline stage move older than the lead's last change. */
+  readonly status: 'APPLIED' | 'DUPLICATE' | 'FAILED' | 'SKIPPED';
   readonly leadId?: string;
   readonly error?: string;
 }
@@ -362,7 +363,12 @@ export class LeadService {
     actorUserId: string,
     dto: SyncLeadsDto,
   ): Promise<{ results: LeadSyncItemResult[] }> {
-    const ordered = [...dto.leads].sort(
+    const leads = dto.leads ?? [];
+    const stageMoves = dto.stageMoves ?? [];
+    if (leads.length === 0 && stageMoves.length === 0) {
+      throw new BadRequestException('Nothing to sync');
+    }
+    const ordered = [...leads].sort(
       (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp),
     );
 
@@ -398,7 +404,64 @@ export class LeadService {
       }
     }
 
+    const moves = [...stageMoves].sort(
+      (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp),
+    );
+    for (const move of moves) {
+      try {
+        results.push(await this.applyStageMove(tenantId, actorUserId, move));
+      } catch (error) {
+        results.push({
+          clientRef: move.clientRef,
+          status: 'FAILED',
+          leadId: move.leadId,
+          error: error instanceof Error ? error.message : 'Sync failed',
+        });
+      }
+    }
+
     return { results };
+  }
+
+  /**
+   * Offline stage move: same scope and tenant checks as PATCH /:id/stage.
+   * A move captured before the lead's last server-side change is SKIPPED,
+   * so replaying an old offline action never overwrites newer work. Setting
+   * the stage it already has is a DUPLICATE (idempotent replay).
+   */
+  private async applyStageMove(
+    tenantId: string,
+    actorUserId: string,
+    move: OfflineLeadStageMoveDto,
+  ): Promise<LeadSyncItemResult> {
+    const lead = await this.findVisibleOr404(
+      tenantId,
+      move.leadId,
+      actorUserId,
+      'UPDATE',
+    );
+    if (lead.pipelineStageId === move.pipelineStageId) {
+      return {
+        clientRef: move.clientRef,
+        status: 'DUPLICATE',
+        leadId: lead.id,
+      };
+    }
+    if (lead.updatedAt.getTime() > Date.parse(move.timestamp)) {
+      return {
+        clientRef: move.clientRef,
+        status: 'SKIPPED',
+        leadId: lead.id,
+        error: 'The lead changed after this offline move was made',
+      };
+    }
+    await this.updateStage(
+      tenantId,
+      move.leadId,
+      actorUserId,
+      move.pipelineStageId,
+    );
+    return { clientRef: move.clientRef, status: 'APPLIED', leadId: lead.id };
   }
 
   /**

@@ -423,3 +423,99 @@ describe('LeadService', () => {
     });
   });
 });
+
+describe('LeadService.syncLeads stage moves', () => {
+  const TENANT2 = 'tenant-1';
+  const USER2 = 'user-1';
+  const capturedAt = '2026-11-19T10:00:00.000Z';
+
+  function build(lead: Record<string, unknown> | null) {
+    const repo = {
+      findVisible: jest.fn().mockResolvedValue(lead),
+      updateLead: jest.fn(async (_t: string, id: string, data: object) => ({
+        id,
+        ...data,
+      })),
+      referenceExists: jest.fn().mockResolvedValue(true),
+      findByLeadNumber: jest.fn(),
+      createLead: jest.fn(),
+    };
+    const rbac = {
+      resolveScopeIds: jest.fn().mockResolvedValue({ kind: 'ALL' }),
+      userScopeWhere: jest.fn().mockReturnValue({}),
+    };
+    const service = new LeadService(
+      repo as unknown as LeadRepository,
+      {} as never,
+      { publish: jest.fn() } as unknown as EventBus,
+      rbac as unknown as RbacService,
+    );
+    return { service, repo };
+  }
+
+  const move = {
+    clientRef: 'mv-1',
+    timestamp: capturedAt,
+    leadId: 'lead-1',
+    pipelineStageId: 'stage-2',
+  };
+
+  it('applies a move made after the last server change', async () => {
+    const { service, repo } = build({
+      id: 'lead-1',
+      pipelineStageId: 'stage-1',
+      updatedAt: new Date('2026-11-19T09:00:00.000Z'),
+    });
+    const { results } = await service.syncLeads(TENANT2, USER2, {
+      stageMoves: [move],
+    } as SyncLeadsDto);
+    expect(results).toEqual([
+      { clientRef: 'mv-1', status: 'APPLIED', leadId: 'lead-1' },
+    ]);
+    expect(repo.updateLead).toHaveBeenCalledWith(TENANT2, 'lead-1', {
+      pipelineStageId: 'stage-2',
+      updatedBy: USER2,
+    });
+  });
+
+  it('skips a move older than the lead change, without writing', async () => {
+    const { service, repo } = build({
+      id: 'lead-1',
+      pipelineStageId: 'stage-1',
+      updatedAt: new Date('2026-11-19T11:00:00.000Z'),
+    });
+    const { results } = await service.syncLeads(TENANT2, USER2, {
+      stageMoves: [move],
+    } as SyncLeadsDto);
+    expect(results[0].status).toBe('SKIPPED');
+    expect(repo.updateLead).not.toHaveBeenCalled();
+  });
+
+  it('reports a replayed move as a duplicate', async () => {
+    const { service, repo } = build({
+      id: 'lead-1',
+      pipelineStageId: 'stage-2',
+      updatedAt: new Date('2026-11-19T11:00:00.000Z'),
+    });
+    const { results } = await service.syncLeads(TENANT2, USER2, {
+      stageMoves: [move],
+    } as SyncLeadsDto);
+    expect(results[0].status).toBe('DUPLICATE');
+    expect(repo.updateLead).not.toHaveBeenCalled();
+  });
+
+  it('fails a move on a lead outside the caller scope', async () => {
+    const { service } = build(null);
+    const { results } = await service.syncLeads(TENANT2, USER2, {
+      stageMoves: [move],
+    } as SyncLeadsDto);
+    expect(results[0]).toMatchObject({ status: 'FAILED', leadId: 'lead-1' });
+  });
+
+  it('rejects an empty sync', async () => {
+    const { service } = build(null);
+    await expect(
+      service.syncLeads(TENANT2, USER2, {} as SyncLeadsDto),
+    ).rejects.toThrow('Nothing to sync');
+  });
+});

@@ -21,9 +21,10 @@ abstract class LeadsRemoteDataSource {
   /// PATCH /leads/:id/stage
   Future<void> updateStage(String id, String pipelineStageId);
 
-  /// POST /leads/sync — replays offline captures; leadNumber dedupes.
-  /// Throws when any item FAILED so the queue keeps it for retry.
-  Future<void> syncLeads(List<Map<String, dynamic>> leads);
+  /// POST /leads/sync — replays offline captures (new leads, dedupe on
+  /// leadNumber) and offline stage moves. Throws when any item FAILED so the
+  /// queue keeps it for retry; SKIPPED (superseded) moves are dropped.
+  Future<void> syncLeads(List<Map<String, dynamic>> payloads);
 }
 
 /// The API caps a page at 100.
@@ -86,10 +87,10 @@ class LeadsRemoteDataSourceImpl implements LeadsRemoteDataSource {
   }
 
   @override
-  Future<void> syncLeads(List<Map<String, dynamic>> leads) async {
+  Future<void> syncLeads(List<Map<String, dynamic>> payloads) async {
     final response = await dio.post<Map<String, dynamic>>(
       '$_base/sync',
-      data: {'leads': leads},
+      data: leadSyncBody(payloads),
     );
     final results = response.data?['results'];
     if (results is! List) return;
