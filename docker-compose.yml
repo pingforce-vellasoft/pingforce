@@ -40,8 +40,12 @@ services:
 
   # MinIO (OCI Object Storage Emulator)
   minio:
-    # Official Quay mirror, pinned to the verified multi-platform manifest.
-    image: quay.io/minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    # MinIO stopped publishing public images (quay.io + Docker Hub now 401).
+    # Chainguard's free build from MinIO source, pinned multi-arch digest —
+    # must match deploy/docker-compose.yml (CI enforces it).
+    image: cgr.dev/chainguard/minio@sha256:16b824a0016ffad3dfa8b059755f83800aa42ca68fe86f1782cabd0c5a16d322
+    # Image defaults to uid 65532; root keeps volumes written by the old image readable.
+    user: '0:0'
     container_name: pingforce_minio
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-admin}
@@ -53,7 +57,8 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      # No curl in the Chainguard image; bash /dev/tcp checks the API port.
+      test: ['CMD', 'bash', '-c', ':> /dev/tcp/127.0.0.1/9000']
       interval: 10s
       timeout: 5s
       retries: 3

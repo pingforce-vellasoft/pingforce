@@ -164,9 +164,13 @@ services:
       - redis_data:/data
 
   minio:
-    # Docker Hub no longer serves this image; keep the verified Quay snapshot.
-    # Registry recovery only, not a MinIO security upgrade. Preserve /data.
-    image: quay.io/minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    # MinIO no longer publishes public images (quay.io + Docker Hub return
+    # 401). Chainguard's free build from MinIO source, pinned multi-arch
+    # (amd64/arm64) digest. Self-hosted on the VM's free block volume — no
+    # OCI Object Storage request/egress charges. Preserve /data.
+    image: cgr.dev/chainguard/minio@sha256:16b824a0016ffad3dfa8b059755f83800aa42ca68fe86f1782cabd0c5a16d322
+    # Image defaults to uid 65532; existing minio_data was written as root.
+    user: '0:0'
     container_name: pingforce_minio
     restart: unless-stopped
     command: ['server', '/data', '--console-address', ':9001']
