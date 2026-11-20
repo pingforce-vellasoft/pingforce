@@ -6,6 +6,9 @@ const baseURL = assertQaOrigin(
 );
 export default defineConfig({
   testDir: './tests',
+  // One login per shared account per run (login is limited to 10/min/IP).
+  globalSetup: './tests/global-setup.ts',
+  globalTeardown: './tests/global-teardown.ts',
   workers: 1,
   fullyParallel: false,
   retries: 0,

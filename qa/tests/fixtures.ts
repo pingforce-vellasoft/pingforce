@@ -1,4 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test as base, expect, APIRequestContext } from '@playwright/test';
+
+/** Written by global-setup.ts; git-ignored (qa/.auth/). */
+export const SESSIONS_FILE = join(__dirname, '..', '.auth', 'sessions.json');
 
 export interface Session {
   accessToken: string;
@@ -21,7 +26,11 @@ export async function login(
     data: credentials(role, tenant),
     maxRedirects: 0,
   });
-  expect(response.status()).toBe(200);
+  // The message carries the API's answer (no secrets: error bodies only).
+  expect(
+    response.status(),
+    `login ${role}@${tenant}: ${await response.text()}`,
+  ).toBe(200);
   const session: Session = await response.json();
   expect(session.accessToken).toBeTruthy();
   expect(session.refreshToken).toBeTruthy();
@@ -32,23 +41,15 @@ export const bearer = (session: Session) => ({
   Authorization: `Bearer ${session.accessToken}`,
 });
 
+// Shared sessions come from global-setup.ts (one login per account per run),
+// so a worker restart after a failed test costs no extra logins.
 export const test = base.extend<object, { accounts: Record<string, Session> }>({
   accounts: [
-    async ({ playwright }, use, workerInfo) => {
-      const baseURL = workerInfo.project.use.baseURL;
-      const request = await playwright.request.newContext({
-        baseURL,
-        maxRedirects: 0,
-      });
-      const accounts: Record<string, Session> = {};
-      for (const role of ['admin', 'employee', 'restricted'])
-        accounts[role] = await login(request, role);
-      accounts.other = await login(request, 'admin', 'QA_BETA');
+    async ({}, use) => {
+      const accounts = JSON.parse(
+        readFileSync(SESSIONS_FILE, 'utf8'),
+      ) as Record<string, Session>;
       await use(accounts);
-      for (const account of Object.values(accounts)) {
-        await request.post('/api/v1/auth/logout', { headers: bearer(account) });
-      }
-      await request.dispose();
     },
     { scope: 'worker' },
   ],

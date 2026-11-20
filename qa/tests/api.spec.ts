@@ -146,7 +146,7 @@ test('FAULT-001 create/read and cross-tenant isolation', async ({
       description: 'Synthetic regression fault',
     },
   });
-  expect(response.status()).toBe(201);
+  expect(response.status(), await response.text()).toBe(201);
   const fault = await response.json();
   expect(fault.id).toBeTruthy();
   const own = await request.get(`/api/v1/faults/${fault.id}`, {
