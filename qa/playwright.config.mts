@@ -14,6 +14,9 @@ export default defineConfig({
   outputDir: '../artifacts/qa/results',
   reporter: [
     ['list'],
+    // In CI, failures also become check annotations, readable without
+    // downloading the report artifact.
+    ...(process.env.CI ? [['github'] as ['github']] : []),
     ['html', { outputFolder: 'artifacts/qa/html', open: 'never' }],
     ['junit', { outputFile: 'artifacts/qa/junit.xml' }],
   ],
