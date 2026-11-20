@@ -1,0 +1,82 @@
+name: Isolated QA regression
+on:
+  pull_request:
+  push:
+    branches: ['codex/qa-automation']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: qa-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NX_DAEMON: 'false'
+      NX_ISOLATE_PLUGINS: 'false'
+      QA_BASE_URL: http://127.0.0.1:4300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run qa:safety && npm run qa:catalogue
+      - run: npx tsc -p qa/tsconfig.json
+      - run: npx jest --config apps/api/jest.config.cts --runInBand --coverage
+      - run: npx vitest run --config apps/admin/leave.vitest.config.mts
+      - name: Generate disposable QA credentials
+        shell: bash
+        run: |
+          password=$(openssl rand -hex 24)
+          db_password=$(openssl rand -hex 24)
+          echo "::add-mask::$password"
+          echo "::add-mask::$db_password"
+          echo "QA_TEST_PASSWORD=$password" >> "$GITHUB_ENV"
+          printf 'QA_TEST_PASSWORD=%s\nQA_DB_PASSWORD=%s\n' "$password" "$db_password" > deploy/qa/.env
+      - name: Build and start isolated QA
+        run: docker compose --env-file deploy/qa/.env -f deploy/qa/compose.yml up -d --build
+      - name: Wait for QA backend
+        shell: bash
+        run: |
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:4300/api/docs-json > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          echo 'QA backend did not become ready'
+          exit 1
+      - run: npx playwright install --with-deps chromium
+      - run: npm run qa:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-reports
+          path: |
+            artifacts/qa/
+            coverage/apps/api/
+          retention-days: 7
+      - name: Stop disposable CI stack
+        if: always()
+        run: docker compose --env-file deploy/qa/.env -f deploy/qa/compose.yml down
+  mobile-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: apps/mobile
+      - run: flutter test --coverage
+        working-directory: apps/mobile
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-mobile-coverage
+          path: apps/mobile/coverage/
+          retention-days: 7

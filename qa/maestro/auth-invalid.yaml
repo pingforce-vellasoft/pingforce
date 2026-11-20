@@ -1,0 +1,31 @@
+appId: com.vellasoft.pingforce.qa
+name: MOBILE-AUTH-001 Invalid credentials remain on login
+tags: [smoke, auth]
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: 'Welcome to PingForce|Workspace Code'
+    timeout: 30000
+- runFlow:
+    when:
+      visible: 'Skip'
+    commands:
+      - tapOn: 'Skip'
+- extendedWaitUntil:
+    visible: 'Workspace Code'
+    timeout: 30000
+- tapOn: 'Workspace Code'
+- inputText: 'QA_ALPHA'
+- tapOn: 'Email / Employee ID'
+- inputText: 'absent@qa.pingforce.test'
+- tapOn: 'Password'
+- inputText: 'invalid-synthetic-password'
+- hideKeyboard
+- tapOn:
+    text: 'Sign In'
+    index: 1
+- extendedWaitUntil:
+    visible: 'Invalid email or password'
+    timeout: 15000
+- assertVisible: 'Workspace Code'

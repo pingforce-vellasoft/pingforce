@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
 import '../auth/auth_session.dart';
+import '../network/app_environment.dart';
 import '../hardware/device_identity.dart';
 
 /// FCM push notifications (Master Plan Phase 2, project pingforce-db47a).
@@ -35,6 +36,8 @@ class PushNotificationsService {
   /// Initializes Firebase and wires the token-refresh listener. Safe to call
   /// unconditionally from main() — no-ops on unsupported platforms.
   Future<void> initialize() async {
+    // QA uses synthetic notifications until a dedicated Firebase project is provisioned.
+    if (AppEnvironment.isQa) return;
     if (!_supported) return;
 
     try {

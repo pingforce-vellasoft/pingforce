@@ -1,0 +1,170 @@
+<testsuites id="" name="" tests="41" failures="0" skipped="41" errors="0" time="0.3793280000000002">
+<testsuite name="api.spec.ts" timestamp="2026-11-20T18:58:03.709Z" hostname="api" tests="39" failures="0" skipped="39" time="0" errors="0">
+<testcase name="AUTH-001 anonymous access rejected: auth/me" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="AUTH-001 anonymous access rejected: employees" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="AUTH-001 anonymous access rejected: customers" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="AUTH-001 anonymous access rejected: attendance/today" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="AUTH-001 anonymous access rejected: attendance/policy" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="AUTH-001 anonymous access rejected: leaves/my" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="AUTH-001 anonymous access rejected: leaves/types" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="AUTH-001 anonymous access rejected: faults" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="AUTH-002 malformed credentials rejected" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="AUTH-003 wrong password rejected" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="AUTH-004 employee cannot enter admin portal" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="AUTH-005 rotation and logout revoke refresh tokens" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RBAC-001 authenticated account without grants denied: employees" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RBAC-001 authenticated account without grants denied: customers" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RBAC-001 authenticated account without grants denied: faults" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RBAC-001 authenticated account without grants denied: leaves/my" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RBAC-001 authenticated account without grants denied: attendance/today" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="CORE-001 employee self service: attendance/today" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="CORE-001 employee self service: attendance/policy" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="CORE-001 employee self service: leaves/types" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="CORE-001 employee self service: leaves/my" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="CORE-001 employee self service: leaves/my-balance" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="LEAVE-001 rejects invalid query take=101" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="LEAVE-001 rejects invalid query skip=-1" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="LEAVE-001 rejects invalid query year=1999" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="LEAVE-001 rejects invalid query status=UNKNOWN" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="LEAVE-002 rejects missing fields and injected tenant" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="FAULT-001 create/read and cross-tenant isolation" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="FAULT-002 rejects invalid input" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="LEAVE-003 reserve then withdraw restores balance" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="LEAVE-006 preview FULL_DAY 2026-10-19..2026-10-19" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="LEAVE-006 preview FIRST_HALF 2026-10-19..2026-10-19" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="LEAVE-006 preview SECOND_HALF 2026-10-19..2026-10-20" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="LEAVE-006 preview FULL_DAY 2026-12-31..2027-01-01" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="LEAVE-006 preview FULL_DAY 2026-10-20..2026-10-19" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="LEAVE-008 employee cannot approve requests" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="FAULT-004 lifecycle enforces transitions and required notes" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="ATT-010 rejects malformed punch before business mutation" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="ATT-011 unbound handset cannot punch" classname="api.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="web.spec.ts" timestamp="2026-11-20T18:58:03.709Z" hostname="chromium" tests="2" failures="0" skipped="2" time="0" errors="0">
+<testcase name="WEB-AUTH-001 protected route redirects to login" classname="web.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WEB-AUTH-002 admin credential login reaches dashboard" classname="web.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>

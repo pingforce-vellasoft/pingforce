@@ -1,0 +1,87 @@
+# Standalone stack. Never combine with the production Compose files.
+name: pingforce-qa
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/qa/Dockerfile
+      target: web
+    ports:
+      - '127.0.0.1:4300:80'
+    depends_on:
+      - api
+    networks: [edge, isolated]
+  qa-postgres:
+    image: kartoza/postgis:16-3.4
+    environment:
+      POSTGRES_USER: pingforce_qa
+      POSTGRES_PASS: ${QA_DB_PASSWORD:?Set QA_DB_PASSWORD}
+      POSTGRES_DBNAME: pingforce_qa
+      DATADIR: /var/lib/postgresql/data/pgdata
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pingforce_qa -d pingforce_qa']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [isolated]
+  redis:
+    image: redis:7-alpine
+    networks: [isolated]
+  mailpit:
+    image: axllent/mailpit:v1.27
+    networks: [isolated]
+  jwt-keygen:
+    image: node:22-bookworm-slim
+    user: root
+    command: ['node', '-e', 'const fs=require("fs"),c=require("crypto");if(!fs.existsSync("/keys/private.pem")){const k=c.generateKeyPairSync("rsa",{modulusLength:2048,publicKeyEncoding:{type:"spki",format:"pem"},privateKeyEncoding:{type:"pkcs8",format:"pem"}});fs.writeFileSync("/keys/private.pem",k.privateKey,{mode:0o640});fs.writeFileSync("/keys/public.pem",k.publicKey);fs.chownSync("/keys/private.pem",1000,1000);}']
+    volumes: [jwt:/keys]
+    networks: [isolated]
+  migrate:
+    build:
+      context: ../..
+      dockerfile: deploy/qa/Dockerfile
+      target: api
+    environment: &qa-env
+      NODE_ENV: production
+      PINGFORCE_ENV: qa
+      DATABASE_URL: postgresql://pingforce_qa:${QA_DB_PASSWORD:?Set QA_DB_PASSWORD}@qa-postgres:5432/pingforce_qa?schema=public
+      REDIS_URL: redis://redis:6379
+      ALLOWED_ORIGINS: https://qa.pingforce.com,http://localhost:4300,http://127.0.0.1:4300
+      JWT_KEYS_DIR: /keys
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      SMTP_FROM: qa@pingforce.test
+      ALLOW_TEST_RESET_ENDPOINT: 'false'
+    command: ['sh', '-c', 'node --input-type=module -e "import {assertQaDatabase} from ''./qa/lib/safety.mjs''; assertQaDatabase(process.env)" && npx --no-install prisma migrate deploy && npx --no-install tsx qa/seed.ts']
+    env_file: .env
+    depends_on:
+      qa-postgres:
+        condition: service_healthy
+    networks: [isolated]
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/qa/Dockerfile
+      target: api
+    environment: *qa-env
+    volumes: [jwt:/keys:ro, uploads:/app/uploads]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      jwt-keygen:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      mailpit:
+        condition: service_started
+    networks: [isolated]
+volumes:
+  database:
+  jwt:
+  uploads:
+networks:
+  edge:
+  isolated:
+    internal: true

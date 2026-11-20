@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import java.util.Base64
 
 plugins {
     id("com.android.application")
@@ -17,6 +18,11 @@ plugins {
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 val hasReleaseSigning = keystorePropertiesFile.exists()
+// Flutter forwards --dart-define values to Gradle as base64-encoded entries.
+val isQaBuild = (project.findProperty("dart-defines") as? String)
+    ?.split(",")
+    ?.map { String(Base64.getDecoder().decode(it)) }
+    ?.contains("PINGFORCE_ENV=qa") == true
 if (hasReleaseSigning) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
@@ -37,7 +43,9 @@ android {
 
     defaultConfig {
         // Must match the Firebase Android app registration (pingforce-db47a)
-        applicationId = "com.vellasoft.pingforce"
+        applicationId = if (isQaBuild) "com.vellasoft.pingforce.qa" else "com.vellasoft.pingforce"
+        manifestPlaceholders["appLabel"] = if (isQaBuild) "PingForce QA" else "PingForce"
+        manifestPlaceholders["qaCleartext"] = if (isQaBuild) "true" else "false"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -78,4 +86,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// Never generate production Firebase resources for the separate QA package.
+tasks.configureEach {
+    if (isQaBuild && name.endsWith("GoogleServices")) enabled = false
 }
