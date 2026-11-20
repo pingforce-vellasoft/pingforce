@@ -429,8 +429,9 @@ export class PortalAuthService {
       throw new UnauthorizedException('Refresh token is invalid or expired');
     }
 
-    if (stored.revokedAt) {
-      // Replay: kill every session for this portal user.
+    if (stored.revokedAt && stored.revokeReason === 'ROTATED') {
+      // Replay of a rotated token: kill every session for this portal user.
+      // Tokens revoked by logout are only rejected (below).
       await this.prisma.$transaction([
         this.prisma.customerPortalUser.update({
           where: { id: stored.portalUserId },
@@ -444,7 +445,7 @@ export class PortalAuthService {
       throw new UnauthorizedException('Refresh token is invalid or expired');
     }
 
-    if (stored.expiresAt < new Date()) {
+    if (stored.revokedAt || stored.expiresAt < new Date()) {
       throw new UnauthorizedException('Refresh token is invalid or expired');
     }
 

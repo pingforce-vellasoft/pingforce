@@ -43,6 +43,7 @@ test('AUTH-004 employee cannot enter admin portal', async ({ request }) => {
 
 test('AUTH-005 rotation and logout revoke refresh tokens', async ({
   request,
+  accounts,
 }) => {
   const session = await login(request, 'admin');
   const refreshed = await request.post('/api/v1/auth/refresh', {
@@ -62,7 +63,12 @@ test('AUTH-005 rotation and logout revoke refresh tokens', async ({
         data: { refreshToken: rotated.refreshToken },
       })
     ).status(),
-  ).toBe(401);
+  ).toBe(401); // Refreshing after logout is not a stolen-token replay: the admin's other
+  // sessions must stay signed in.
+  const me = await request.get('/api/v1/auth/me', {
+    headers: bearer(accounts.admin),
+  });
+  expect(me.status(), await me.text()).toBe(200);
 });
 
 for (const role of ['admin', 'employee'] as const) {

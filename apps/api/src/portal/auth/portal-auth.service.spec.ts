@@ -176,12 +176,13 @@ describe('PortalAuthService — invites', () => {
 });
 
 describe('PortalAuthService — refresh rotation & replay', () => {
-  it('replayed (revoked) token kills all sessions and bumps tokenVersion', async () => {
+  it('replayed rotated token kills all sessions and bumps tokenVersion', async () => {
     const stored = {
       id: 'rt1',
       portalUserId: 'pu1',
       tenantId: 't1',
       revokedAt: new Date(),
+      revokeReason: 'ROTATED',
       expiresAt: FUTURE,
     };
     const { service, prisma } = makeService({ storedRefresh: stored });
@@ -201,6 +202,23 @@ describe('PortalAuthService — refresh rotation & replay', () => {
         data: expect.objectContaining({ revokeReason: 'TOKEN_REPLAY' }),
       }),
     );
+  });
+
+  it('token revoked by logout is rejected without killing other sessions', async () => {
+    const stored = {
+      id: 'rt1',
+      portalUserId: 'pu1',
+      tenantId: 't1',
+      revokedAt: new Date(),
+      revokeReason: 'LOGOUT',
+      expiresAt: FUTURE,
+    };
+    const { service, prisma } = makeService({ storedRefresh: stored });
+    await expect(service.refresh('after-logout')).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(prisma.customerPortalUser.update).not.toHaveBeenCalled();
+    expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
   });
 
   it('rejects expired tokens without side effects', async () => {
