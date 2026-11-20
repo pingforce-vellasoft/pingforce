@@ -123,9 +123,15 @@ async function seed(): Promise<void> {
 
 seed()
   .finally(() => prisma.$disconnect())
-  .catch(() => {
-    console.error(
-      'QA seed failed. Inspect database service logs; connection details omitted.',
-    );
+  .catch((error: unknown) => {
+    // Show the cause, never the connection string: redact any postgres URL.
+    const redact = (text: string): string =>
+      text.replace(/postgres(?:ql)?:\/\/[^\s'"]+/gi, 'postgresql://<redacted>');
+    const code =
+      typeof error === 'object' && error !== null && 'code' in error
+        ? ` [${String((error as { code?: unknown }).code)}]`
+        : '';
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`QA seed failed${code}: ${redact(message).slice(0, 2000)}`);
     process.exitCode = 1;
   });

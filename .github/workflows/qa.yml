@@ -41,6 +41,11 @@ jobs:
           printf 'QA_TEST_PASSWORD=%s\nQA_DB_PASSWORD=%s\n' "$password" "$db_password" > deploy/qa/.env
       - name: Build and start isolated QA
         run: docker compose --env-file deploy/qa/.env -f deploy/qa/compose.yml up -d --build
+      - name: Show QA stack logs on failure
+        if: failure()
+        run: |
+          docker compose --env-file deploy/qa/.env -f deploy/qa/compose.yml ps -a
+          docker compose --env-file deploy/qa/.env -f deploy/qa/compose.yml logs --no-color --tail 150 migrate api qa-postgres
       - name: Wait for QA backend
         shell: bash
         run: |
