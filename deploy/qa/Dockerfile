@@ -3,7 +3,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
-RUN npm ci
+# npm install like apps/api/Dockerfile and ci.yml: npm ci refuses the lock
+# file until it is synced with package.json (open checklist item).
+RUN npm install --no-fund --no-audit
 COPY . .
 ENV NX_DAEMON=false
 RUN npx nx build api --configuration=production && npx nx build admin --configuration=qa
