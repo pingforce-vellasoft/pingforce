@@ -392,9 +392,12 @@ export class AuthService implements IAuthService {
       throw new UnauthorizedException('Refresh token is invalid or expired');
     }
 
-    // Replay detection (RefreshToken.md §8): a rotated/revoked token being
-    // presented again means it was stolen or replayed. Kill every session.
-    if (storedToken.revokedAt) {
+    // Replay detection (RefreshToken.md §8): a ROTATED token being presented
+    // again means it was stolen or replayed. Kill every session. A token
+    // revoked for another reason (logout, session revoke, earlier replay) is
+    // only rejected below: a stale tab refreshing after logout must not sign
+    // the user out of every other device.
+    if (storedToken.revokedAt && storedToken.revokeReason === 'ROTATED') {
       if (storedToken.userId) {
         await this.prisma.user.update({
           where: { id: storedToken.userId },
@@ -428,7 +431,7 @@ export class AuthService implements IAuthService {
       throw new UnauthorizedException('Refresh token is invalid or expired');
     }
 
-    if (storedToken.expiresAt < new Date()) {
+    if (storedToken.revokedAt || storedToken.expiresAt < new Date()) {
       throw new UnauthorizedException('Refresh token is invalid or expired');
     }
 

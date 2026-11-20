@@ -1,0 +1,1128 @@
+[
+  {
+    "id": "AUTH-001",
+    "module": "Authentication",
+    "title": "Anonymous business access",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Call each protected route without a bearer token"],
+    "expected": ["401 without business data or stack trace"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/api.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "AUTH-002",
+    "module": "Authentication",
+    "title": "Credential validation",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Submit missing password and malformed email"],
+    "expected": ["400 with validation errors"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/api.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "AUTH-003",
+    "module": "Authentication",
+    "title": "Wrong password",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Submit valid workspace/email with a wrong password"],
+    "expected": ["401; no tokens returned"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/api.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "AUTH-004",
+    "module": "Authentication",
+    "title": "Portal separation",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Use employee credentials with ADMIN_PORTAL"],
+    "expected": ["401; employee remains restricted to mobile"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/api.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "AUTH-005",
+    "module": "Authentication",
+    "title": "Rotation and logout",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Login, refresh, logout, retry rotated refresh token"],
+    "expected": ["New token differs; logged-out refresh rejected"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/api.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "AUTH-006",
+    "module": "Authentication",
+    "title": "Refresh replay",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Refresh twice using the old token"],
+    "expected": ["Replay rejects and revokes the token family"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "AUTH-007",
+    "module": "Authentication",
+    "title": "Disabled account and suspended tenant",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Suspend a synthetic account/tenant and attempt login"],
+    "expected": ["Login rejected without leaking tenant data"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "AUTH-008",
+    "module": "Authentication",
+    "title": "Password recovery and OTP",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Request reset via captured mail; test wrong, expired, reused and valid OTP"
+    ],
+    "expected": ["One-time valid OTP changes password; sessions invalidated"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "AUTH-009",
+    "module": "Authentication",
+    "title": "Access-token revocation delay",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Revoke a session and retry its access token immediately and after expiry"
+    ],
+    "expected": [
+      "Accepted revocation policy demonstrated; record current delay"
+    ],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "WEB-AUTH-001",
+    "module": "Authentication",
+    "title": "Unauthenticated web guard",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Open /dashboard with empty browser storage"],
+    "expected": ["Redirect to login; empty form cannot submit"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/web.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "WEB-AUTH-002",
+    "module": "Authentication",
+    "title": "Admin web login",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Fill QA workspace, email and password; sign in"],
+    "expected": ["Successful API login and dashboard navigation"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/web.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "MOBILE-AUTH-001",
+    "module": "Authentication",
+    "title": "Mobile invalid credentials",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Fresh QA install; skip intro; submit nonexistent account"],
+    "expected": ["Login error and workspace field remain visible"],
+    "automation": {
+      "status": "device-unverified",
+      "file": "qa/maestro/auth-invalid.yaml"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "MOBILE-AUTH-002",
+    "module": "Authentication",
+    "title": "Mobile admin login",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/LoginFlow.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Fresh QA install; skip intro; login as QA admin"],
+    "expected": ["Home visible after permission onboarding"],
+    "automation": {
+      "status": "device-unverified",
+      "file": "qa/maestro/auth-valid.yaml"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "RBAC-001",
+    "module": "Authorization",
+    "title": "No-grant role",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.2_RBAC/PermissionMatrix.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Authenticate restricted fixture and call business endpoints"],
+    "expected": ["403 even with valid authentication"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/api.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/rbac/guards/rbac.guard.spec.ts"
+  },
+  {
+    "id": "RBAC-002",
+    "module": "Authorization",
+    "title": "Object tenant isolation",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.2_RBAC/PermissionMatrix.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Create object in alpha and read/change ID from beta token"],
+    "expected": ["404 or contract-defined denial, with no alpha data"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/rbac/guards/rbac.guard.spec.ts"
+  },
+  {
+    "id": "RBAC-003",
+    "module": "Authorization",
+    "title": "Manager scope",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.2_RBAC/PermissionMatrix.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["List and mutate employees inside/outside manager team"],
+    "expected": ["Only configured data scope accessible"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/rbac/guards/rbac.guard.spec.ts"
+  },
+  {
+    "id": "RBAC-004",
+    "module": "Authorization",
+    "title": "Portal identity boundary",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.2_RBAC/PermissionMatrix.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Send customer token to staff routes and staff token to portal routes"
+    ],
+    "expected": ["Identity boundary enforced server-side"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/rbac/guards/rbac.guard.spec.ts"
+  },
+  {
+    "id": "RBAC-005",
+    "module": "Authorization",
+    "title": "Permission changes",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.2_RBAC/PermissionMatrix.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Remove grant, expire/invalidate permission cache and repeat request"
+    ],
+    "expected": ["New permission set enforced"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/rbac/guards/rbac.guard.spec.ts"
+  },
+  {
+    "id": "CORE-001",
+    "module": "Attendance",
+    "title": "Self-service reads",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/MODULE_READINESS_AUDIT_2026-09-14.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Read own attendance, policy, leave types/history/balance"],
+    "expected": ["200 responses for employee fixtures"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/api.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
+  },
+  {
+    "id": "ATT-001",
+    "module": "Attendance",
+    "title": "Signed online punch",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/MODULE_READINESS_AUDIT_2026-09-14.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Bind a synthetic handset, sign check-in and later checkout"],
+    "expected": ["One session closes; worked minutes match server calculation"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
+  },
+  {
+    "id": "ATT-002",
+    "module": "Attendance",
+    "title": "Assigned geofence",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/MODULE_READINESS_AUDIT_2026-09-14.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Punch inside assigned, outside and in unassigned geofences"],
+    "expected": ["Only assigned valid location accepted"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
+  },
+  {
+    "id": "ATT-003",
+    "module": "Attendance",
+    "title": "Replay and tampering",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/MODULE_READINESS_AUDIT_2026-09-14.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Replay nonce; change timestamp/location after signing"],
+    "expected": ["Rejected without duplicate attendance"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
+  },
+  {
+    "id": "ATT-004",
+    "module": "Attendance",
+    "title": "Concurrent punch",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/MODULE_READINESS_AUDIT_2026-09-14.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Submit two valid check-ins concurrently"],
+    "expected": ["One active session; duplicate prevented"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
+  },
+  {
+    "id": "ATT-005",
+    "module": "Attendance",
+    "title": "Offline ordered sync",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/MODULE_READINESS_AUDIT_2026-09-14.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Queue signed IN/OUT offline; reconnect and replay twice"],
+    "expected": ["One ordered session, idempotent results and correct minutes"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
+  },
+  {
+    "id": "ATT-006",
+    "module": "Attendance",
+    "title": "Device replacement",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/MODULE_READINESS_AUDIT_2026-09-14.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Bind second handset; approve replacement then use old handset"],
+    "expected": ["Approval required; old device rejected"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
+  },
+  {
+    "id": "ATT-007",
+    "module": "Attendance",
+    "title": "GPS and biometric failure",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/MODULE_READINESS_AUDIT_2026-09-14.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Deny permission, provide poor accuracy/mock GPS or fail biometric"
+    ],
+    "expected": ["Actionable failure and no accepted punch"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
+  },
+  {
+    "id": "ATT-008",
+    "module": "Attendance",
+    "title": "Correction workflow",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/MODULE_READINESS_AUDIT_2026-09-14.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Request correction; approve/reject with authorized manager"],
+    "expected": ["Audited outcome; employee cannot self-approve"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
+  },
+  {
+    "id": "ATT-009",
+    "module": "Attendance",
+    "title": "Cross-day timing",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/MODULE_READINESS_AUDIT_2026-09-14.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Punch across midnight and DST boundary; inspect totals"],
+    "expected": ["No negative or duplicate time; documented timezone behavior"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
+  },
+  {
+    "id": "LEAVE-001",
+    "module": "Leave",
+    "title": "Query boundaries",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/LEAVE_MANAGEMENT_IMPLEMENTATION_PLAN.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Request negative skip, take over 100, invalid year/status"],
+    "expected": ["400 for each invalid query"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/api.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
+  },
+  {
+    "id": "LEAVE-002",
+    "module": "Leave",
+    "title": "Payload boundaries",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/LEAVE_MANAGEMENT_IMPLEMENTATION_PLAN.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Submit missing required values and injected tenantId"],
+    "expected": ["400; tenant comes from JWT"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/api.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
+  },
+  {
+    "id": "LEAVE-003",
+    "module": "Leave",
+    "title": "Reservation and withdrawal",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/LEAVE_MANAGEMENT_IMPLEMENTATION_PLAN.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Record balance; submit one day; withdraw"],
+    "expected": ["Reserve one day then restore balance exactly"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/api.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
+  },
+  {
+    "id": "LEAVE-004",
+    "module": "Leave",
+    "title": "Approval then cancellation",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/LEAVE_MANAGEMENT_IMPLEMENTATION_PLAN.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Submit, manager approve, manager cancel with reason"],
+    "expected": ["Reserved converts to used; cancellation credits once"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
+  },
+  {
+    "id": "LEAVE-005",
+    "module": "Leave",
+    "title": "Reject and duplicate decision",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/LEAVE_MANAGEMENT_IMPLEMENTATION_PLAN.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Reject pending request twice"],
+    "expected": ["Single refund and ledger entry; documented repeat response"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
+  },
+  {
+    "id": "LEAVE-006",
+    "module": "Leave",
+    "title": "Half days and calendar",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/LEAVE_MANAGEMENT_IMPLEMENTATION_PLAN.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Preview full/half day, holiday, weekend, reversed and cross-year dates"
+    ],
+    "expected": ["Consistent charge; invalid dates rejected"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
+  },
+  {
+    "id": "LEAVE-007",
+    "module": "Leave",
+    "title": "Overlap and concurrency",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/LEAVE_MANAGEMENT_IMPLEMENTATION_PLAN.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Submit overlapping requests and concurrent last-balance requests"
+    ],
+    "expected": ["No duplicate reservation or negative balance"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
+  },
+  {
+    "id": "LEAVE-008",
+    "module": "Leave",
+    "title": "Self-approval and scope",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/LEAVE_MANAGEMENT_IMPLEMENTATION_PLAN.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Employee attempts approve; other tenant tries balance/request ID"
+    ],
+    "expected": ["Permission, ownership and tenant boundaries enforced"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
+  },
+  {
+    "id": "LEAVE-009",
+    "module": "Leave",
+    "title": "Notification failure",
+    "priority": "P0",
+    "requirement": "docs/audit_and_plans/LEAVE_MANAGEMENT_IMPLEMENTATION_PLAN.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Make captured transport unavailable during request"],
+    "expected": ["Valid leave stays committed; failure logged"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
+  },
+  {
+    "id": "FAULT-001",
+    "module": "Faults",
+    "title": "Create/read and tenant denial",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.3_FaultManagement/BUSINESS_RULES.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Create alpha fault, read as alpha, read ID as beta"],
+    "expected": ["201 then 200 then 404; beta learns no title"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/api.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/domain/fault-state.spec.ts"
+  },
+  {
+    "id": "FAULT-002",
+    "module": "Faults",
+    "title": "Required fields",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.3_FaultManagement/BUSINESS_RULES.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Submit empty title and invalid priority"],
+    "expected": ["400 with no fault persisted"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/api.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/domain/fault-state.spec.ts"
+  },
+  {
+    "id": "FAULT-003",
+    "module": "Faults",
+    "title": "Assignment and scope",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.3_FaultManagement/BUSINESS_RULES.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Assign/reassign technician within and outside allowed scope"],
+    "expected": ["Authorized change audited; out-of-scope denied"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/faults/domain/fault-state.spec.ts"
+  },
+  {
+    "id": "FAULT-004",
+    "module": "Faults",
+    "title": "Lifecycle",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.3_FaultManagement/BUSINESS_RULES.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Follow permitted open/in-progress/resolved/closed/reopen transitions"
+    ],
+    "expected": [
+      "Invalid transitions denied; resolution requirements enforced"
+    ],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/faults/domain/fault-state.spec.ts"
+  },
+  {
+    "id": "FAULT-005",
+    "module": "Faults",
+    "title": "SLA escalation",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.3_FaultManagement/BUSINESS_RULES.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Create synthetic due/breached tickets; run scheduled monitor twice"
+    ],
+    "expected": ["Correct escalation with no duplicate notification"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/faults/domain/fault-state.spec.ts"
+  },
+  {
+    "id": "FAULT-006",
+    "module": "Faults",
+    "title": "Duplicate and offline retry",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.3_FaultManagement/BUSINESS_RULES.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Create same fault number; replay same offline action"],
+    "expected": ["Uniqueness and replay idempotency preserved"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/faults/domain/fault-state.spec.ts"
+  },
+  {
+    "id": "FAULT-007",
+    "module": "Faults",
+    "title": "Customer attachments",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.3_FaultManagement/BUSINESS_RULES.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Upload internal/customer-visible files; fetch as customer and stranger"
+    ],
+    "expected": ["Only authorized visible files returned"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/faults/domain/fault-state.spec.ts"
+  },
+  {
+    "id": "FAULT-008",
+    "module": "Faults",
+    "title": "Specification gap review",
+    "priority": "P0",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.3_FaultManagement/BUSINESS_RULES.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Compare BR-004 mandatory fields and configurable workflow with DTO/domain"
+    ],
+    "expected": [
+      "Record missing requirements rather than deriving expectations only from code"
+    ],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": "apps/api/src/faults/domain/fault-state.spec.ts"
+  },
+  {
+    "id": "PLAT-001",
+    "module": "Platform and supporting modules",
+    "title": "Employees and customers",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Create/edit/search synthetic records; archive and list"],
+    "expected": ["Tenant scoped; archived rows hidden; pagination works"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-002",
+    "module": "Platform and supporting modules",
+    "title": "Master data and settings",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Change leave types, policies and branding in alpha"],
+    "expected": ["Only alpha changes; invalid values rejected"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-003",
+    "module": "Platform and supporting modules",
+    "title": "Uploads",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Submit allowed file, oversize file, wrong MIME, traversal and foreign file ID"
+    ],
+    "expected": ["Limits and authorization enforced; no path disclosure"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-004",
+    "module": "Platform and supporting modules",
+    "title": "Notifications",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Trigger email/in-app events; read as another account"],
+    "expected": ["Mail captured locally; recipient isolation maintained"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-005",
+    "module": "Platform and supporting modules",
+    "title": "Audit",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Mutate a record with a correlation ID; inspect audit"],
+    "expected": ["Tenant, actor, request ID and before/after values captured"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-006",
+    "module": "Platform and supporting modules",
+    "title": "Workflow",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Execute multi-stage approval, rejection and SLA escalation"],
+    "expected": ["Only current approver advances; repeat decisions idempotent"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-007",
+    "module": "Platform and supporting modules",
+    "title": "Reports and dashboards",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Compare aggregates with fixture records and export CSV"],
+    "expected": ["Correct scoped totals; export rejects formula injection"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-008",
+    "module": "Platform and supporting modules",
+    "title": "Visits and tracking",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Start/end visit; ingest offline locations and duplicate payloads"
+    ],
+    "expected": ["State, tenant, device and tracking policy respected"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-009",
+    "module": "Platform and supporting modules",
+    "title": "Leads and CRM",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Create lead, assign owner, convert to customer, retry conversion"
+    ],
+    "expected": ["Scoped ownership and single conversion"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-010",
+    "module": "Platform and supporting modules",
+    "title": "Customer portal",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Activate invite; login; raise complaint and service request"],
+    "expected": ["Customer sees only its own account and visible updates"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-011",
+    "module": "Platform and supporting modules",
+    "title": "Billing and payments",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Use sandbox payment events and invalid webhook signature"],
+    "expected": [
+      "No real charges; valid event idempotent and invalid signature denied"
+    ],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-012",
+    "module": "Platform and supporting modules",
+    "title": "Payroll and claims",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Submit claim and approve/reject; calculate synthetic payroll"],
+    "expected": ["Correct authorization and totals; real payments disabled"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-013",
+    "module": "Platform and supporting modules",
+    "title": "Connection map",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Create/move topology nodes; attempt cycle and cross-tenant link"
+    ],
+    "expected": ["Tree integrity and feature permissions enforced"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-014",
+    "module": "Platform and supporting modules",
+    "title": "Recovery",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Restart QA API/Redis; replay pending operations"],
+    "expected": ["No lost committed transactions or duplicate actions"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-015",
+    "module": "Platform and supporting modules",
+    "title": "Load",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Run agreed concurrent punch/read workload on disposable stack"],
+    "expected": [
+      "Document p95, error rate and DB contention; compare agreed thresholds"
+    ],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  },
+  {
+    "id": "PLAT-016",
+    "module": "Platform and supporting modules",
+    "title": "Accessibility",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-1-Foundation/docs/00_Project/ROADMAP.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Keyboard/screen reader login and key workflows; test mobile text scaling"
+    ],
+    "expected": ["Usable focus, labels and errors; no blocked primary actions"],
+    "automation": {
+      "status": "planned",
+      "file": null
+    }
+  }
+]

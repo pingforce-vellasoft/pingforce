@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
+import 'core/network/app_environment.dart';
 
 import 'features/attendance/data/datasources/attendance_remote_data_source.dart';
 import 'features/attendance/data/repositories/attendance_repository_impl.dart';
@@ -72,7 +73,7 @@ Future<void> init() async {
     // Note: If testing locally, use 'http://10.0.2.2:3000' for emulator
     // Or run 'adb reverse tcp:3000 tcp:3000' and use 'http://localhost:3000'
     // For Production / Staging, use the real OCI Server IP (NGINX will forward this to 3000):
-    const baseUrl = 'https://api.pingforce.in';
+    final baseUrl = AppEnvironment.baseUrl;
     final dio = Dio(BaseOptions(baseUrl: baseUrl));
     dio.interceptors.add(
       TokenInterceptor(secureStorage: sl(), baseUrl: baseUrl),

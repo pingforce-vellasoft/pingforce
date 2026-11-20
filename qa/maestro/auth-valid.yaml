@@ -1,0 +1,46 @@
+appId: com.vellasoft.pingforce.qa
+name: MOBILE-AUTH-002 Admin login reaches home
+tags: [smoke, auth]
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: 'Welcome to PingForce|Workspace Code'
+    timeout: 30000
+- runFlow:
+    when:
+      visible: 'Skip'
+    commands:
+      - tapOn: 'Skip'
+- extendedWaitUntil:
+    visible: 'Workspace Code'
+    timeout: 30000
+- tapOn: 'Workspace Code'
+- inputText: 'QA_ALPHA'
+- tapOn: 'Email / Employee ID'
+- inputText: 'admin@qa.pingforce.test'
+- tapOn: 'Password'
+- inputText: '${QA_TEST_PASSWORD}'
+- hideKeyboard
+- tapOn:
+    text: 'Sign In'
+    index: 1
+- extendedWaitUntil:
+    visible: 'Not now|Home'
+    timeout: 30000
+- repeat:
+    times: 5
+    commands:
+      - runFlow:
+          when:
+            visible: 'Not now'
+          commands:
+            - tapOn: 'Not now'
+      - runFlow:
+          when:
+            visible: 'Skip Anyway'
+          commands:
+            - tapOn: 'Skip Anyway'
+- extendedWaitUntil:
+    visible: 'Home'
+    timeout: 30000

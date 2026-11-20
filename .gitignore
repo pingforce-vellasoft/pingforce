@@ -75,4 +75,7 @@ secrets/
 *firebase-adminsdk*.json
 # Keep the example file committed
 !.env.example
+artifacts/qa/
+qa/artifacts/
+qa/.auth/
 docker-compose.override.yml

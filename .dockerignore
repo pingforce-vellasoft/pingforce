@@ -17,6 +17,11 @@ out-tsc
 *.pem
 *.key
 *.cert
+**/secrets
+**/secrets/**
+**/.env
+**/.env.*
+artifacts
 
 # Other
 apps/mobile

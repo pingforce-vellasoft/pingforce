@@ -15,6 +15,7 @@ interface StoredToken {
   sessionId: string | null;
   tenantId: string;
   revokedAt: Date | null;
+  revokeReason?: string | null;
   expiresAt: Date;
 }
 
@@ -120,6 +121,7 @@ describe('AuthService.refreshToken', () => {
       sessionId: 's1',
       tenantId: 't1',
       revokedAt: new Date(),
+      revokeReason: 'ROTATED',
       expiresAt: FUTURE,
     });
     await expect(service.refreshToken('stolen')).rejects.toThrow(
@@ -134,6 +136,25 @@ describe('AuthService.refreshToken', () => {
       'u1',
       'TOKEN_REPLAY',
     );
+  });
+
+  it('a token revoked by logout is rejected without killing other sessions', async () => {
+    const { service, prisma, sessionService } = makeService({
+      id: 'rt1',
+      userId: 'u1',
+      superAdminId: null,
+      sessionId: 's1',
+      tenantId: 't1',
+      revokedAt: new Date(),
+      revokeReason: 'LOGOUT',
+      expiresAt: FUTURE,
+    });
+    await expect(service.refreshToken('after-logout')).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(sessionService.revokeAllForUser).not.toHaveBeenCalled();
+    expect(prisma.refreshToken.update).not.toHaveBeenCalled();
   });
 
   it('rotates a valid token: old one revoked, new opaque token issued', async () => {
