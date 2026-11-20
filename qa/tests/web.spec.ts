@@ -32,7 +32,14 @@ test('WEB-AUTH-002 admin credential login reaches dashboard', async ({
   const response = page.waitForResponse((r) =>
     r.url().endsWith('/api/v1/auth/login'),
   );
+  // After login the page loads the profile; if /auth/me fails it clears the
+  // session and the guard sends the user back to /login. Capture it.
+  const profile = page.waitForResponse((r) =>
+    r.url().endsWith('/api/v1/auth/me'),
+  );
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
   expect((await response).status()).toBe(200);
+  const me = await profile;
+  expect(me.status(), `/auth/me: ${await me.text()}`).toBe(200);
   await expect(page).toHaveURL(/\/dashboard/);
 });

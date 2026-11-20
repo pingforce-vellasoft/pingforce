@@ -65,6 +65,20 @@ test('AUTH-005 rotation and logout revoke refresh tokens', async ({
   ).toBe(401);
 });
 
+for (const role of ['admin', 'employee'] as const) {
+  test(`AUTH-006 profile loads for a signed-in ${role}`, async ({
+    request,
+    accounts,
+  }) => {
+    const me = await request.get('/api/v1/auth/me', {
+      headers: bearer(accounts[role]),
+    });
+    expect(me.status(), await me.text()).toBe(200);
+    const profile = await me.json();
+    expect(profile.roleCode).toBeTruthy();
+  });
+}
+
 for (const path of [
   'employees',
   'customers',
@@ -313,6 +327,28 @@ test('FAULT-004 lifecycle enforces transitions and required notes', async ({
       })
     ).status(),
   ).toBe(409);
+  // Work can't start on an unassigned fault (faults.repository updateStatus).
+  expect(
+    (
+      await request.patch(path, {
+        headers,
+        data: { status: 'IN_PROGRESS', notes: 'No technician yet' },
+      })
+    ).status(),
+  ).toBe(400);
+
+  // The full lifecycle runs on a fault assigned to the caller.
+  const assigned = await request.post('/api/v1/faults', {
+    headers,
+    data: {
+      faultNumber: `QA-${randomUUID()}`,
+      title: 'QA lifecycle (assigned)',
+      description: 'Synthetic lifecycle regression',
+      assignToSelf: true,
+    },
+  });
+  expect(assigned.status(), await assigned.text()).toBe(201);
+  const assignedPath = `/api/v1/faults/${(await assigned.json()).id}/status`;
   for (const status of [
     'IN_PROGRESS',
     'ON_HOLD',
@@ -320,16 +356,19 @@ test('FAULT-004 lifecycle enforces transitions and required notes', async ({
     'RESOLVED',
     'CLOSED',
   ]) {
-    const result = await request.patch(path, {
+    const result = await request.patch(assignedPath, {
       headers,
       data: { status, notes: 'QA transition evidence' },
     });
-    expect(result.status()).toBe(200);
+    expect(result.status(), `${status}: ${await result.text()}`).toBe(200);
     expect((await result.json()).status).toBe(status);
   }
   expect(
     (
-      await request.patch(path, { headers, data: { status: 'IN_PROGRESS' } })
+      await request.patch(assignedPath, {
+        headers,
+        data: { status: 'IN_PROGRESS' },
+      })
     ).status(),
   ).toBe(409);
 });
