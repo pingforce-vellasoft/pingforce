@@ -23,7 +23,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # Same as ci.yml: the lock file is not fully synced with package.json yet
+      # (checklist: "Use npm ci with a synced lock file"), so npm ci refuses it.
+      - run: npm install --no-fund --no-audit
       - run: npm run qa:safety && npm run qa:catalogue
       - run: npx tsc -p qa/tsconfig.json
       - run: npx jest --config apps/api/jest.config.cts --runInBand --coverage

@@ -35,7 +35,12 @@ services:
   jwt-keygen:
     image: node:22-bookworm-slim
     user: root
-    command: ['node', '-e', 'const fs=require("fs"),c=require("crypto");if(!fs.existsSync("/keys/private.pem")){const k=c.generateKeyPairSync("rsa",{modulusLength:2048,publicKeyEncoding:{type:"spki",format:"pem"},privateKeyEncoding:{type:"pkcs8",format:"pem"}});fs.writeFileSync("/keys/private.pem",k.privateKey,{mode:0o640});fs.writeFileSync("/keys/public.pem",k.publicKey);fs.chownSync("/keys/private.pem",1000,1000);}']
+    command:
+      [
+        'node',
+        '-e',
+        'const fs=require("fs"),c=require("crypto");if(!fs.existsSync("/keys/private.pem")){const k=c.generateKeyPairSync("rsa",{modulusLength:2048,publicKeyEncoding:{type:"spki",format:"pem"},privateKeyEncoding:{type:"pkcs8",format:"pem"}});fs.writeFileSync("/keys/private.pem",k.privateKey,{mode:0o640});fs.writeFileSync("/keys/public.pem",k.publicKey);fs.chownSync("/keys/private.pem",1000,1000);}',
+      ]
     volumes: [jwt:/keys]
     networks: [isolated]
   migrate:
@@ -54,7 +59,12 @@ services:
       SMTP_PORT: '1025'
       SMTP_FROM: qa@pingforce.test
       ALLOW_TEST_RESET_ENDPOINT: 'false'
-    command: ['sh', '-c', 'node --input-type=module -e "import {assertQaDatabase} from ''./qa/lib/safety.mjs''; assertQaDatabase(process.env)" && npx --no-install prisma migrate deploy && npx --no-install tsx qa/seed.ts']
+    command:
+      [
+        'sh',
+        '-c',
+        'node --input-type=module -e "import {assertQaDatabase} from ''./qa/lib/safety.mjs''; assertQaDatabase(process.env)" && npx --no-install prisma migrate deploy && npx --no-install tsx qa/seed.ts',
+      ]
     env_file: .env
     depends_on:
       qa-postgres:

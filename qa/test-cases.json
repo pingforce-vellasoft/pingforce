@@ -9,12 +9,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Call each protected route without a bearer token"
-    ],
-    "expected": [
-      "401 without business data or stack trace"
-    ],
+    "steps": ["Call each protected route without a bearer token"],
+    "expected": ["401 without business data or stack trace"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/api.spec.ts"
@@ -31,12 +27,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Submit missing password and malformed email"
-    ],
-    "expected": [
-      "400 with validation errors"
-    ],
+    "steps": ["Submit missing password and malformed email"],
+    "expected": ["400 with validation errors"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/api.spec.ts"
@@ -53,12 +45,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Submit valid workspace/email with a wrong password"
-    ],
-    "expected": [
-      "401; no tokens returned"
-    ],
+    "steps": ["Submit valid workspace/email with a wrong password"],
+    "expected": ["401; no tokens returned"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/api.spec.ts"
@@ -75,12 +63,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Use employee credentials with ADMIN_PORTAL"
-    ],
-    "expected": [
-      "401; employee remains restricted to mobile"
-    ],
+    "steps": ["Use employee credentials with ADMIN_PORTAL"],
+    "expected": ["401; employee remains restricted to mobile"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/api.spec.ts"
@@ -97,12 +81,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Login, refresh, logout, retry rotated refresh token"
-    ],
-    "expected": [
-      "New token differs; logged-out refresh rejected"
-    ],
+    "steps": ["Login, refresh, logout, retry rotated refresh token"],
+    "expected": ["New token differs; logged-out refresh rejected"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/api.spec.ts"
@@ -119,12 +99,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Refresh twice using the old token"
-    ],
-    "expected": [
-      "Replay rejects and revokes the token family"
-    ],
+    "steps": ["Refresh twice using the old token"],
+    "expected": ["Replay rejects and revokes the token family"],
     "automation": {
       "status": "planned",
       "file": null
@@ -141,12 +117,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Suspend a synthetic account/tenant and attempt login"
-    ],
-    "expected": [
-      "Login rejected without leaking tenant data"
-    ],
+    "steps": ["Suspend a synthetic account/tenant and attempt login"],
+    "expected": ["Login rejected without leaking tenant data"],
     "automation": {
       "status": "planned",
       "file": null
@@ -166,9 +138,7 @@
     "steps": [
       "Request reset via captured mail; test wrong, expired, reused and valid OTP"
     ],
-    "expected": [
-      "One-time valid OTP changes password; sessions invalidated"
-    ],
+    "expected": ["One-time valid OTP changes password; sessions invalidated"],
     "automation": {
       "status": "planned",
       "file": null
@@ -207,12 +177,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Open /dashboard with empty browser storage"
-    ],
-    "expected": [
-      "Redirect to login; empty form cannot submit"
-    ],
+    "steps": ["Open /dashboard with empty browser storage"],
+    "expected": ["Redirect to login; empty form cannot submit"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/web.spec.ts"
@@ -229,12 +195,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Fill QA workspace, email and password; sign in"
-    ],
-    "expected": [
-      "Successful API login and dashboard navigation"
-    ],
+    "steps": ["Fill QA workspace, email and password; sign in"],
+    "expected": ["Successful API login and dashboard navigation"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/web.spec.ts"
@@ -251,12 +213,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Fresh QA install; skip intro; submit nonexistent account"
-    ],
-    "expected": [
-      "Login error and workspace field remain visible"
-    ],
+    "steps": ["Fresh QA install; skip intro; submit nonexistent account"],
+    "expected": ["Login error and workspace field remain visible"],
     "automation": {
       "status": "device-unverified",
       "file": "qa/maestro/auth-invalid.yaml"
@@ -273,12 +231,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Fresh QA install; skip intro; login as QA admin"
-    ],
-    "expected": [
-      "Home visible after permission onboarding"
-    ],
+    "steps": ["Fresh QA install; skip intro; login as QA admin"],
+    "expected": ["Home visible after permission onboarding"],
     "automation": {
       "status": "device-unverified",
       "file": "qa/maestro/auth-valid.yaml"
@@ -295,12 +249,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Authenticate restricted fixture and call business endpoints"
-    ],
-    "expected": [
-      "403 even with valid authentication"
-    ],
+    "steps": ["Authenticate restricted fixture and call business endpoints"],
+    "expected": ["403 even with valid authentication"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/api.spec.ts"
@@ -317,12 +267,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Create object in alpha and read/change ID from beta token"
-    ],
-    "expected": [
-      "404 or contract-defined denial, with no alpha data"
-    ],
+    "steps": ["Create object in alpha and read/change ID from beta token"],
+    "expected": ["404 or contract-defined denial, with no alpha data"],
     "automation": {
       "status": "planned",
       "file": null
@@ -339,12 +285,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "List and mutate employees inside/outside manager team"
-    ],
-    "expected": [
-      "Only configured data scope accessible"
-    ],
+    "steps": ["List and mutate employees inside/outside manager team"],
+    "expected": ["Only configured data scope accessible"],
     "automation": {
       "status": "planned",
       "file": null
@@ -364,9 +306,7 @@
     "steps": [
       "Send customer token to staff routes and staff token to portal routes"
     ],
-    "expected": [
-      "Identity boundary enforced server-side"
-    ],
+    "expected": ["Identity boundary enforced server-side"],
     "automation": {
       "status": "planned",
       "file": null
@@ -386,9 +326,7 @@
     "steps": [
       "Remove grant, expire/invalidate permission cache and repeat request"
     ],
-    "expected": [
-      "New permission set enforced"
-    ],
+    "expected": ["New permission set enforced"],
     "automation": {
       "status": "planned",
       "file": null
@@ -405,12 +343,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Read own attendance, policy, leave types/history/balance"
-    ],
-    "expected": [
-      "200 responses for employee fixtures"
-    ],
+    "steps": ["Read own attendance, policy, leave types/history/balance"],
+    "expected": ["200 responses for employee fixtures"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/api.spec.ts"
@@ -427,12 +361,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Bind a synthetic handset, sign check-in and later checkout"
-    ],
-    "expected": [
-      "One session closes; worked minutes match server calculation"
-    ],
+    "steps": ["Bind a synthetic handset, sign check-in and later checkout"],
+    "expected": ["One session closes; worked minutes match server calculation"],
     "automation": {
       "status": "planned",
       "file": null
@@ -449,12 +379,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Punch inside assigned, outside and in unassigned geofences"
-    ],
-    "expected": [
-      "Only assigned valid location accepted"
-    ],
+    "steps": ["Punch inside assigned, outside and in unassigned geofences"],
+    "expected": ["Only assigned valid location accepted"],
     "automation": {
       "status": "planned",
       "file": null
@@ -471,12 +397,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Replay nonce; change timestamp/location after signing"
-    ],
-    "expected": [
-      "Rejected without duplicate attendance"
-    ],
+    "steps": ["Replay nonce; change timestamp/location after signing"],
+    "expected": ["Rejected without duplicate attendance"],
     "automation": {
       "status": "planned",
       "file": null
@@ -493,12 +415,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Submit two valid check-ins concurrently"
-    ],
-    "expected": [
-      "One active session; duplicate prevented"
-    ],
+    "steps": ["Submit two valid check-ins concurrently"],
+    "expected": ["One active session; duplicate prevented"],
     "automation": {
       "status": "planned",
       "file": null
@@ -515,12 +433,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Queue signed IN/OUT offline; reconnect and replay twice"
-    ],
-    "expected": [
-      "One ordered session, idempotent results and correct minutes"
-    ],
+    "steps": ["Queue signed IN/OUT offline; reconnect and replay twice"],
+    "expected": ["One ordered session, idempotent results and correct minutes"],
     "automation": {
       "status": "planned",
       "file": null
@@ -537,12 +451,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Bind second handset; approve replacement then use old handset"
-    ],
-    "expected": [
-      "Approval required; old device rejected"
-    ],
+    "steps": ["Bind second handset; approve replacement then use old handset"],
+    "expected": ["Approval required; old device rejected"],
     "automation": {
       "status": "planned",
       "file": null
@@ -562,9 +472,7 @@
     "steps": [
       "Deny permission, provide poor accuracy/mock GPS or fail biometric"
     ],
-    "expected": [
-      "Actionable failure and no accepted punch"
-    ],
+    "expected": ["Actionable failure and no accepted punch"],
     "automation": {
       "status": "planned",
       "file": null
@@ -581,12 +489,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Request correction; approve/reject with authorized manager"
-    ],
-    "expected": [
-      "Audited outcome; employee cannot self-approve"
-    ],
+    "steps": ["Request correction; approve/reject with authorized manager"],
+    "expected": ["Audited outcome; employee cannot self-approve"],
     "automation": {
       "status": "planned",
       "file": null
@@ -603,12 +507,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Punch across midnight and DST boundary; inspect totals"
-    ],
-    "expected": [
-      "No negative or duplicate time; documented timezone behavior"
-    ],
+    "steps": ["Punch across midnight and DST boundary; inspect totals"],
+    "expected": ["No negative or duplicate time; documented timezone behavior"],
     "automation": {
       "status": "planned",
       "file": null
@@ -625,12 +525,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Request negative skip, take over 100, invalid year/status"
-    ],
-    "expected": [
-      "400 for each invalid query"
-    ],
+    "steps": ["Request negative skip, take over 100, invalid year/status"],
+    "expected": ["400 for each invalid query"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/api.spec.ts"
@@ -647,12 +543,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Submit missing required values and injected tenantId"
-    ],
-    "expected": [
-      "400; tenant comes from JWT"
-    ],
+    "steps": ["Submit missing required values and injected tenantId"],
+    "expected": ["400; tenant comes from JWT"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/api.spec.ts"
@@ -669,12 +561,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Record balance; submit one day; withdraw"
-    ],
-    "expected": [
-      "Reserve one day then restore balance exactly"
-    ],
+    "steps": ["Record balance; submit one day; withdraw"],
+    "expected": ["Reserve one day then restore balance exactly"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/api.spec.ts"
@@ -691,12 +579,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Submit, manager approve, manager cancel with reason"
-    ],
-    "expected": [
-      "Reserved converts to used; cancellation credits once"
-    ],
+    "steps": ["Submit, manager approve, manager cancel with reason"],
+    "expected": ["Reserved converts to used; cancellation credits once"],
     "automation": {
       "status": "planned",
       "file": null
@@ -713,12 +597,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Reject pending request twice"
-    ],
-    "expected": [
-      "Single refund and ledger entry; documented repeat response"
-    ],
+    "steps": ["Reject pending request twice"],
+    "expected": ["Single refund and ledger entry; documented repeat response"],
     "automation": {
       "status": "planned",
       "file": null
@@ -738,9 +618,7 @@
     "steps": [
       "Preview full/half day, holiday, weekend, reversed and cross-year dates"
     ],
-    "expected": [
-      "Consistent charge; invalid dates rejected"
-    ],
+    "expected": ["Consistent charge; invalid dates rejected"],
     "automation": {
       "status": "planned",
       "file": null
@@ -760,9 +638,7 @@
     "steps": [
       "Submit overlapping requests and concurrent last-balance requests"
     ],
-    "expected": [
-      "No duplicate reservation or negative balance"
-    ],
+    "expected": ["No duplicate reservation or negative balance"],
     "automation": {
       "status": "planned",
       "file": null
@@ -782,9 +658,7 @@
     "steps": [
       "Employee attempts approve; other tenant tries balance/request ID"
     ],
-    "expected": [
-      "Permission, ownership and tenant boundaries enforced"
-    ],
+    "expected": ["Permission, ownership and tenant boundaries enforced"],
     "automation": {
       "status": "planned",
       "file": null
@@ -801,12 +675,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Make captured transport unavailable during request"
-    ],
-    "expected": [
-      "Valid leave stays committed; failure logged"
-    ],
+    "steps": ["Make captured transport unavailable during request"],
+    "expected": ["Valid leave stays committed; failure logged"],
     "automation": {
       "status": "planned",
       "file": null
@@ -823,12 +693,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Create alpha fault, read as alpha, read ID as beta"
-    ],
-    "expected": [
-      "201 then 200 then 404; beta learns no title"
-    ],
+    "steps": ["Create alpha fault, read as alpha, read ID as beta"],
+    "expected": ["201 then 200 then 404; beta learns no title"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/api.spec.ts"
@@ -845,12 +711,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Submit empty title and invalid priority"
-    ],
-    "expected": [
-      "400 with no fault persisted"
-    ],
+    "steps": ["Submit empty title and invalid priority"],
+    "expected": ["400 with no fault persisted"],
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/api.spec.ts"
@@ -867,12 +729,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Assign/reassign technician within and outside allowed scope"
-    ],
-    "expected": [
-      "Authorized change audited; out-of-scope denied"
-    ],
+    "steps": ["Assign/reassign technician within and outside allowed scope"],
+    "expected": ["Authorized change audited; out-of-scope denied"],
     "automation": {
       "status": "planned",
       "file": null
@@ -914,9 +772,7 @@
     "steps": [
       "Create synthetic due/breached tickets; run scheduled monitor twice"
     ],
-    "expected": [
-      "Correct escalation with no duplicate notification"
-    ],
+    "expected": ["Correct escalation with no duplicate notification"],
     "automation": {
       "status": "planned",
       "file": null
@@ -933,12 +789,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Create same fault number; replay same offline action"
-    ],
-    "expected": [
-      "Uniqueness and replay idempotency preserved"
-    ],
+    "steps": ["Create same fault number; replay same offline action"],
+    "expected": ["Uniqueness and replay idempotency preserved"],
     "automation": {
       "status": "planned",
       "file": null
@@ -958,9 +810,7 @@
     "steps": [
       "Upload internal/customer-visible files; fetch as customer and stranger"
     ],
-    "expected": [
-      "Only authorized visible files returned"
-    ],
+    "expected": ["Only authorized visible files returned"],
     "automation": {
       "status": "planned",
       "file": null
@@ -999,12 +849,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Create/edit/search synthetic records; archive and list"
-    ],
-    "expected": [
-      "Tenant scoped; archived rows hidden; pagination works"
-    ],
+    "steps": ["Create/edit/search synthetic records; archive and list"],
+    "expected": ["Tenant scoped; archived rows hidden; pagination works"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1020,12 +866,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Change leave types, policies and branding in alpha"
-    ],
-    "expected": [
-      "Only alpha changes; invalid values rejected"
-    ],
+    "steps": ["Change leave types, policies and branding in alpha"],
+    "expected": ["Only alpha changes; invalid values rejected"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1044,9 +886,7 @@
     "steps": [
       "Submit allowed file, oversize file, wrong MIME, traversal and foreign file ID"
     ],
-    "expected": [
-      "Limits and authorization enforced; no path disclosure"
-    ],
+    "expected": ["Limits and authorization enforced; no path disclosure"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1062,12 +902,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Trigger email/in-app events; read as another account"
-    ],
-    "expected": [
-      "Mail captured locally; recipient isolation maintained"
-    ],
+    "steps": ["Trigger email/in-app events; read as another account"],
+    "expected": ["Mail captured locally; recipient isolation maintained"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1083,12 +919,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Mutate a record with a correlation ID; inspect audit"
-    ],
-    "expected": [
-      "Tenant, actor, request ID and before/after values captured"
-    ],
+    "steps": ["Mutate a record with a correlation ID; inspect audit"],
+    "expected": ["Tenant, actor, request ID and before/after values captured"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1104,12 +936,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Execute multi-stage approval, rejection and SLA escalation"
-    ],
-    "expected": [
-      "Only current approver advances; repeat decisions idempotent"
-    ],
+    "steps": ["Execute multi-stage approval, rejection and SLA escalation"],
+    "expected": ["Only current approver advances; repeat decisions idempotent"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1125,12 +953,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Compare aggregates with fixture records and export CSV"
-    ],
-    "expected": [
-      "Correct scoped totals; export rejects formula injection"
-    ],
+    "steps": ["Compare aggregates with fixture records and export CSV"],
+    "expected": ["Correct scoped totals; export rejects formula injection"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1149,9 +973,7 @@
     "steps": [
       "Start/end visit; ingest offline locations and duplicate payloads"
     ],
-    "expected": [
-      "State, tenant, device and tracking policy respected"
-    ],
+    "expected": ["State, tenant, device and tracking policy respected"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1170,9 +992,7 @@
     "steps": [
       "Create lead, assign owner, convert to customer, retry conversion"
     ],
-    "expected": [
-      "Scoped ownership and single conversion"
-    ],
+    "expected": ["Scoped ownership and single conversion"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1188,12 +1008,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Activate invite; login; raise complaint and service request"
-    ],
-    "expected": [
-      "Customer sees only its own account and visible updates"
-    ],
+    "steps": ["Activate invite; login; raise complaint and service request"],
+    "expected": ["Customer sees only its own account and visible updates"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1209,9 +1025,7 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Use sandbox payment events and invalid webhook signature"
-    ],
+    "steps": ["Use sandbox payment events and invalid webhook signature"],
     "expected": [
       "No real charges; valid event idempotent and invalid signature denied"
     ],
@@ -1230,12 +1044,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Submit claim and approve/reject; calculate synthetic payroll"
-    ],
-    "expected": [
-      "Correct authorization and totals; real payments disabled"
-    ],
+    "steps": ["Submit claim and approve/reject; calculate synthetic payroll"],
+    "expected": ["Correct authorization and totals; real payments disabled"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1254,9 +1064,7 @@
     "steps": [
       "Create/move topology nodes; attempt cycle and cross-tenant link"
     ],
-    "expected": [
-      "Tree integrity and feature permissions enforced"
-    ],
+    "expected": ["Tree integrity and feature permissions enforced"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1272,12 +1080,8 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Restart QA API/Redis; replay pending operations"
-    ],
-    "expected": [
-      "No lost committed transactions or duplicate actions"
-    ],
+    "steps": ["Restart QA API/Redis; replay pending operations"],
+    "expected": ["No lost committed transactions or duplicate actions"],
     "automation": {
       "status": "planned",
       "file": null
@@ -1293,9 +1097,7 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": [
-      "Run agreed concurrent punch/read workload on disposable stack"
-    ],
+    "steps": ["Run agreed concurrent punch/read workload on disposable stack"],
     "expected": [
       "Document p95, error rate and DB contention; compare agreed thresholds"
     ],
@@ -1317,9 +1119,7 @@
     "steps": [
       "Keyboard/screen reader login and key workflows; test mobile text scaling"
     ],
-    "expected": [
-      "Usable focus, labels and errors; no blocked primary actions"
-    ],
+    "expected": ["Usable focus, labels and errors; no blocked primary actions"],
     "automation": {
       "status": "planned",
       "file": null

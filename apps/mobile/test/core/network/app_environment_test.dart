@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../../lib/core/network/app_environment.dart';
+import 'package:mobile/core/network/app_environment.dart';
 
 void main() {
   test('build environment selects the isolated API origin', () {
