@@ -18,13 +18,24 @@ services:
       POSTGRES_PASS: ${QA_DB_PASSWORD:?Set QA_DB_PASSWORD}
       POSTGRES_DBNAME: pingforce_qa
       DATADIR: /var/lib/postgresql/data/pgdata
+      # Set it so kartoza never prints a generated replication password in
+      # the (public) Actions log; the workflow masks QA_DB_PASSWORD.
+      REPLICATION_PASS: ${QA_DB_PASSWORD:?Set QA_DB_PASSWORD}
     volumes:
       - database:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U pingforce_qa -d pingforce_qa']
+      # kartoza initialises with a temporary server, shuts it down and starts
+      # again; a socket check passes during that first phase. Check over TCP
+      # and give the restart a grace period.
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -h 127.0.0.1 -p 5432 -U pingforce_qa -d pingforce_qa',
+        ]
       interval: 5s
       timeout: 5s
       retries: 30
+      start_period: 20s
     networks: [isolated]
   redis:
     image: redis:7-alpine
@@ -63,7 +74,7 @@ services:
       [
         'sh',
         '-c',
-        'node --input-type=module -e "import {assertQaDatabase} from ''./qa/lib/safety.mjs''; assertQaDatabase(process.env)" && npx --no-install prisma migrate deploy && npx --no-install tsx qa/seed.ts',
+        'node --input-type=module -e "import {assertQaDatabase} from ''./qa/lib/safety.mjs''; assertQaDatabase(process.env)" && for i in 1 2 3 4 5 6 7 8 9 10; do npx --no-install prisma migrate deploy && break; if [ "$$i" = 10 ]; then exit 1; fi; echo "prisma migrate deploy failed (attempt $$i of 10), retrying in 3s"; sleep 3; done && npx --no-install tsx qa/seed.ts',
       ]
     env_file: .env
     depends_on:
