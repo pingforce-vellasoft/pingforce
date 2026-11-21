@@ -39,6 +39,19 @@ async function seed(): Promise<void> {
           update: {},
           create: { code, name: `Synthetic ${code}`, timezone: 'Asia/Kolkata' },
         });
+        // Connection Map is a per-tenant module (Super Admin switch). QA_ALPHA
+        // has it on with view-only field staff; QA_BETA keeps the default
+        // (off) so the gate itself is covered.
+        if (code === 'QA_ALPHA')
+          await tx.tenantSetting.upsert({
+            where: { tenantId: tenant.id },
+            update: {},
+            create: {
+              tenantId: tenant.id,
+              connectionMapEnabled: true,
+              connectionMapEmployeeAccess: 'VIEW',
+            },
+          });
         const leaveType = await tx.leaveType.upsert({
           where: { tenantId_code: { tenantId: tenant.id, code: 'QA_ANNUAL' } },
           update: {},

@@ -530,12 +530,20 @@ test('P4-MAP-01/06/08..16 connection map: ports, moves, split, merge, field scop
   );
   expect(merged.ok(), await merged.text()).toBeTruthy();
 
-  // The other tenant sees none of this.
-  expect(
-    (
-      await request.get(`/api/v1/network/connections/${rootAId}`, {
-        headers: bearer(accounts.other),
-      })
-    ).status(),
-  ).toBe(404);
+  // The other tenant sees none of this: QA_BETA does not have the module,
+  // so its admin is stopped at the gate.
+  const foreign = await request.get(`/api/v1/network/connections/${rootAId}`, {
+    headers: bearer(accounts.other),
+  });
+  expect(foreign.status(), await foreign.text()).toBe(403);
+  expect(await foreign.text()).toContain('not enabled');
+  // View-only field staff cannot change anything.
+  const staffEdit = await request.patch(
+    `/api/v1/network/connections/${rootAId}`,
+    {
+      headers: staff,
+      data: { remarks: 'QA staff edit' },
+    },
+  );
+  expect(staffEdit.status(), await staffEdit.text()).toBe(403);
 });
