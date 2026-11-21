@@ -1382,5 +1382,153 @@
       "file": "qa/tests/auth-limits.spec.ts"
     },
     "relatedUnitSuite": null
+  },
+  {
+    "id": "P3-VIS-01",
+    "module": "Visits",
+    "title": "Assigned list",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.2_GPSVisitManagement/VISIT_MANAGEMENT.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Assign a visit; employee lists assigned visits"],
+    "expected": ["Only own assigned visits listed"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/visits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/visits/domain/visit-state.spec.ts"
+  },
+  {
+    "id": "P3-VIS-02",
+    "module": "Visits",
+    "title": "Accept and start",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.2_GPSVisitManagement/VISIT_MANAGEMENT.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Accept, then start with GPS"],
+    "expected": ["STARTED with start time"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/visits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/visits/domain/visit-state.spec.ts"
+  },
+  {
+    "id": "P3-VIS-04",
+    "module": "Visits",
+    "title": "Pause and resume",
+    "priority": "P2",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.2_GPSVisitManagement/VISIT_MANAGEMENT.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Pause, resume"],
+    "expected": ["Start time unchanged; history records both"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/visits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/visits/domain/visit-state.spec.ts"
+  },
+  {
+    "id": "P3-VIS-05",
+    "module": "Visits",
+    "title": "Complete",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.2_GPSVisitManagement/VISIT_MANAGEMENT.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Complete without and with outcome"],
+    "expected": ["400 without; COMPLETED with"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/visits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/visits/domain/visit-state.spec.ts"
+  },
+  {
+    "id": "P3-VIS-07",
+    "module": "Visits",
+    "title": "Detail",
+    "priority": "P2",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.2_GPSVisitManagement/VISIT_MANAGEMENT.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Open the visit detail"],
+    "expected": ["Full status history and notes"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/visits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/visits/domain/visit-state.spec.ts"
+  },
+  {
+    "id": "P3-VIS-10",
+    "module": "Visits",
+    "title": "Create hidden for staff",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.2_GPSVisitManagement/VISIT_MANAGEMENT.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Field employee POSTs a visit"],
+    "expected": ["403"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/visits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/visits/domain/visit-state.spec.ts"
+  },
+  {
+    "id": "P3-VIS-12",
+    "module": "Visits",
+    "title": "Someone else's visit",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.2_GPSVisitManagement/VISIT_MANAGEMENT.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Employee reads, lists notes, adds a note and accepts another employee's visit"
+    ],
+    "expected": ["404 on read and notes; accept refused; not in assigned list"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/visits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/visits/domain/visit-state.spec.ts"
+  },
+  {
+    "id": "P3-VIS-13",
+    "module": "Visits",
+    "title": "Admin lifecycle",
+    "priority": "P2",
+    "requirement": "docs/project_specifications/Milestone-3-Business-Modules/3.2_GPSVisitManagement/VISIT_MANAGEMENT.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Create, assign, approve, close; skip stages; cancel then assign"
+    ],
+    "expected": ["Only valid transitions; invalid ones 409"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/visits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/visits/domain/visit-state.spec.ts"
   }
 ]

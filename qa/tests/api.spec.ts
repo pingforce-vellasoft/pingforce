@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect, bearer, credentials, login } from './fixtures';
+import { LEAVE_DAYS, MY_BALANCE_URL } from './leave-days';
 
 const protectedPaths = [
   'auth/me',
@@ -220,9 +221,7 @@ test('LEAVE-003 reserve then withdraw restores balance', async ({
     availableDays: number;
     reservedDays: number;
   }> => {
-    const response = await request.get('/api/v1/leaves/my-balance', {
-      headers,
-    });
+    const response = await request.get(MY_BALANCE_URL, { headers });
     expect(response.status()).toBe(200);
     const rows: {
       leaveTypeId: string;
@@ -234,7 +233,7 @@ test('LEAVE-003 reserve then withdraw restores balance', async ({
     return row!;
   };
   const before = await balances();
-  const day = `${new Date().getUTCFullYear()}-12-15`;
+  const day = LEAVE_DAYS[0];
   const response = await request.post('/api/v1/leaves/request', {
     headers,
     data: {
