@@ -8,6 +8,8 @@ import {
   type Session,
 } from './fixtures';
 import { newHandset, signedPunch } from './punch-signing';
+import { codeSentTo } from './mailbox';
+import { randomUUID } from 'node:crypto';
 
 /**
  * Login-heavy Phase 2 auth cases (test plan P2-AUTH-xx).
@@ -732,4 +734,174 @@ test('P2-AUTH-14 success resets the failed-attempt counter', async ({
   // Not locked: only 4 failures since the last success.
   const still = await attempt(request, 'lockout');
   expect(still.status(), await still.text()).toBe(200);
+});
+
+/**
+ * Email-code flows read from the QA mailbox (mailbox.ts): P2-AUTH-17 reset,
+ * P2-AUTH-18 OTP, P2-AUTH-19 + P2-TEN-01..04 self-signup. Fresh rate-limit
+ * window; 3 logins.
+ */
+test('P2-AUTH-17/18/19 + P2-TEN-01..04 reset, OTP, self-signup by email code', async ({
+  request,
+  accounts,
+}) => {
+  test.setTimeout(170_000);
+  await freshLoginWindow();
+  const wrongCode = (code: string) => (code === '000000' ? '111111' : '000000');
+
+  // P2-AUTH-17: reset by emailed code; the code works once; old password dies.
+  const resetUser = credentials('reset');
+  const unknown = await request.post('/api/v1/auth/reset-password', {
+    data: {
+      email: `nobody-${Date.now()}@qa.pingforce.test`,
+      tenantCode: 'QA_ALPHA',
+    },
+  });
+  const sinceReset = new Date();
+  const asked = await request.post('/api/v1/auth/reset-password', {
+    data: { email: resetUser.email, tenantCode: 'QA_ALPHA' },
+  });
+  expect(asked.status(), await asked.text()).toBe(200);
+  // No account enumeration: unknown email gets the same answer.
+  expect(unknown.status()).toBe(200);
+  expect(await unknown.json()).toEqual(await asked.json());
+  const resetCode = await codeSentTo(request, resetUser.email, sinceReset);
+  const confirm = (otp: string, newPassword: string) =>
+    request.post('/api/v1/auth/reset-password/confirm', {
+      data: {
+        email: resetUser.email,
+        tenantCode: 'QA_ALPHA',
+        otp,
+        newPassword,
+      },
+    });
+  const newPassword = strongPassword();
+  expect(
+    (await confirm(wrongCode(resetCode), newPassword)).status(),
+    'wrong code',
+  ).toBe(401);
+  const confirmed = await confirm(resetCode, newPassword);
+  expect(confirmed.status(), await confirmed.text()).toBe(200);
+  expect(
+    (await confirm(resetCode, strongPassword())).status(),
+    'code reused',
+  ).toBe(401);
+  expect((await attempt(request, 'reset')).status(), 'old password').toBe(401);
+  expect(
+    (await attempt(request, 'reset', newPassword)).status(),
+    'new password',
+  ).toBe(200);
+
+  // P2-AUTH-18: OTP for the signed-in employee; wrong, right, reused.
+  const staff = bearer(accounts.employee);
+  const sinceOtp = new Date();
+  const otpAsked = await request.post('/api/v1/auth/otp/request', {
+    headers: staff,
+    data: { purpose: 'EMAIL_VERIFICATION' },
+  });
+  expect(otpAsked.status(), await otpAsked.text()).toBe(200);
+  const otp = await codeSentTo(
+    request,
+    credentials('employee').email,
+    sinceOtp,
+  );
+  const verify = (code: string) =>
+    request.post('/api/v1/auth/otp/verify', {
+      headers: staff,
+      data: { purpose: 'EMAIL_VERIFICATION', otp: code },
+    });
+  expect((await verify(wrongCode(otp))).ok(), 'wrong OTP').toBeFalsy();
+  const verified = await verify(otp);
+  expect(verified.status(), await verified.text()).toBe(200);
+  expect((await verify(otp)).ok(), 'OTP reused').toBeFalsy();
+
+  // P2-TEN-01: no-card trial checkout, then the workspace.
+  const plans = (await (
+    await request.get('/api/v1/public/billing/plans')
+  ).json()) as {
+    code: string;
+    trialDays: number;
+  }[];
+  const trial = plans.find((p) => p.trialDays > 0);
+  expect(trial, 'a trial plan is published').toBeTruthy();
+  const tagged = Math.random().toString(36).slice(2, 10);
+  const adminEmail = `founder-${tagged}@qa.pingforce.test`;
+  const checkout = await request.post('/api/v1/public/billing/checkout', {
+    data: { planCode: trial!.code, customerEmail: adminEmail },
+  });
+  expect(checkout.status(), await checkout.text()).toBe(201);
+  const { subscriptionId, trialEnd } = (await checkout.json()) as {
+    subscriptionId: string;
+    trialEnd: string;
+  };
+  // P2-TEN-03: trial ends trialDays from now (± a day).
+  const days = (new Date(trialEnd).getTime() - Date.now()) / 86_400_000;
+  expect(Math.round(days)).toBe(trial!.trialDays);
+  // The public checkout no longer accepts a tenant to attach to.
+  const hijack = await request.post('/api/v1/public/billing/checkout', {
+    data: {
+      planCode: trial!.code,
+      customerEmail: adminEmail,
+      tenantId: randomUUID(),
+    },
+  });
+  expect(hijack.status(), 'tenantId refused').toBe(400);
+
+  const adminPassword = strongPassword();
+  const sinceSignup = new Date();
+  const signup = await request.post('/api/v1/auth/register-tenant', {
+    data: {
+      subscriptionId,
+      tenantName: `QA Signup ${tagged}`,
+      adminEmail,
+      adminPassword,
+      adminFirstName: 'Founder',
+      adminLastName: tagged,
+    },
+  });
+  expect(signup.status(), await signup.text()).toBe(201);
+  const { tenantCode } = (await signup.json()) as { tenantCode: string };
+  // P2-TEN-02: the same subscription or email cannot make a second tenant.
+  const again = await request.post('/api/v1/auth/register-tenant', {
+    data: {
+      subscriptionId,
+      tenantName: `QA Again ${tagged}`,
+      adminEmail,
+      adminPassword,
+    },
+  });
+  expect(again.status(), 'duplicate signup').toBe(400);
+
+  // P2-AUTH-19: the workspace stays inactive until the emailed code is used.
+  const signIn = () =>
+    request.post('/api/v1/auth/login', {
+      data: { email: adminEmail, password: adminPassword, tenantCode },
+    });
+  expect((await signIn()).ok(), 'sign-in before verification').toBeFalsy();
+  const emailCode = await codeSentTo(request, adminEmail, sinceSignup);
+  const verifyEmail = (otp: string) =>
+    request.post('/api/v1/auth/verify-email', {
+      data: { tenantCode, email: adminEmail, otp },
+    });
+  expect(
+    (await verifyEmail(wrongCode(emailCode))).ok(),
+    'wrong code',
+  ).toBeFalsy();
+  const activated = await verifyEmail(emailCode);
+  expect(activated.status(), await activated.text()).toBe(200);
+
+  // P2-TEN-04: the founder signs in to the new, separate workspace.
+  const first = await signIn();
+  expect(first.status(), await first.text()).toBe(200);
+  const founder = (await first.json()) as Session;
+  const me = await (
+    await request.get('/api/v1/auth/me', { headers: bearer(founder) })
+  ).json();
+  expect(me.workspaceId).toBe(tenantCode);
+  expect(me.roleCode).toBe('ADMIN_MANAGER');
+  // Nothing of QA_ALPHA is visible to it.
+  const employees = await request.get('/api/v1/employees', {
+    headers: bearer(founder),
+  });
+  expect(await employees.text()).not.toContain('QA-EMPLOYEE');
 });

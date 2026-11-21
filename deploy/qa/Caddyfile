@@ -3,6 +3,11 @@
   handle /api/* {
     reverse_proxy api:3000
   }
+  # QA only: the synthetic mailbox's API, so tests can read the codes the
+  # API emails (reset, OTP, signup). This Caddyfile is never deployed.
+  handle_path /__qa-mail/* {
+    reverse_proxy mailpit:8025
+  }
   handle {
     root * /srv
     try_files {path} /index.html

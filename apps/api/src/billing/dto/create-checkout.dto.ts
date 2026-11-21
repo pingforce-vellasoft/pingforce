@@ -30,11 +30,6 @@ export class CreateCheckoutDto {
   @MaxLength(120)
   readonly organizationName?: string;
 
-  /** Optional: link checkout to an existing tenant (super-admin flows). */
-  @IsOptional()
-  @IsString()
-  readonly tenantId?: string;
-
   /** Override the gateway; defaults to the first configured one. */
   @IsOptional()
   @IsIn(['RAZORPAY', 'STRIPE'])

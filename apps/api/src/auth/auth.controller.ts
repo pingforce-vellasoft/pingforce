@@ -25,7 +25,6 @@ import {
   ResetPasswordDto,
 } from '@pingforce-monorepo/dto';
 import { RegisterTenantDto } from './dto/register-tenant.dto';
-import { RegisterEmployeeDto } from './dto/register-employee.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { OnboardingTenantDto } from './dto/onboarding-tenant.dto';
@@ -292,15 +291,10 @@ export class AuthController {
     return (this.authService as any).verifyEmail(dto);
   }
 
-  @ApiOperation({ summary: 'Register a new employee' })
-  @ApiResponse({
-    status: 201,
-    description: 'Employee registered successfully.',
-  })
-  @Post('register-employee')
-  async registerEmployee(@Body() registerDto: RegisterEmployeeDto) {
-    return (this.authService as any).registerEmployee(registerDto);
-  }
+  // POST /auth/register-employee was removed: it was public and let anyone
+  // who knew a workspace code create an ACTIVE field-staff login in that
+  // tenant. Staff logins are provisioned by an admin (POST /employees with a
+  // role), which issues a temporary password that must be changed.
 
   @ApiBearerAuth()
   @ApiOperation({
