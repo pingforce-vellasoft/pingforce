@@ -475,8 +475,13 @@ test('P3-ATT-15..18/20 history, corrections, manual check-out, timeline', async 
   });
   expect(rejected.ok(), await rejected.text()).toBeTruthy();
 
-  // A valid correction is applied to the session.
-  const fixedOut = new Date(Date.now() - 1_000).toISOString();
+  // A valid correction is applied to the session. The punch case checked in
+  // only moments ago, so "now minus a second" can fall before the check-in:
+  // use check-in + 1 s, once that instant is safely in the past.
+  const fixedOutMs = new Date(punchIn!).getTime() + 1_000;
+  const waitMs = fixedOutMs + 1_000 - Date.now();
+  if (waitMs > 0) await new Promise((r) => setTimeout(r, waitMs));
+  const fixedOut = new Date(fixedOutMs).toISOString();
   const good = await correction('WRONG_CHECK_OUT_TIME', fixedOut);
   expect(good.status(), await good.text()).toBe(201);
   const approved = await request.post(
