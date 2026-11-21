@@ -1078,6 +1078,112 @@ test('P2-AUTH-12 + P2-WF-01/02 lock expires; approval routing and delegation', a
 });
 
 /**
+ * P2-RBAC-04 + P4-LD-01/02/11: TEAM scope follows the reporting line, and an
+ * OWN-scope lead user sees what they created. Fresh window; 2 logins
+ * (manager@ with QA_TEAM_MANAGER, leadrep@ with QA_LEADS_OWN; seeded).
+ */
+test('P2-RBAC-04 + P4-LD-01/02/11 team scope and own-lead scope', async ({
+  request,
+  accounts,
+}) => {
+  test.setTimeout(170_000);
+  await freshLoginWindow();
+  const admin = bearer(accounts.admin);
+  const manager = bearer(await login(request, 'manager'));
+  const leadrep = bearer(await login(request, 'leadrep'));
+  const employees = (await (
+    await request.get('/api/v1/employees?take=100', { headers: admin })
+  ).json()) as { id: string; employeeCode: string; userId: string | null }[];
+  const byCode = (code: string) =>
+    employees.find((e) => e.employeeCode === code)!;
+  const report = byCode('QA-REPORT');
+  const outsider = byCode('QA-EMPLOYEE');
+
+  // P2-RBAC-04: the manager sees self and the direct report, nobody else.
+  const team = await request.get('/api/v1/employees?take=100', {
+    headers: manager,
+  });
+  expect(team.status(), await team.text()).toBe(200);
+  const codes = ((await team.json()) as { employeeCode: string }[]).map(
+    (e) => e.employeeCode,
+  );
+  expect(codes).toEqual(expect.arrayContaining(['QA-MGR', 'QA-REPORT']));
+  expect(codes).not.toContain('QA-EMPLOYEE');
+  expect(
+    (
+      await request.get(`/api/v1/employees/${outsider.id}`, {
+        headers: manager,
+      })
+    ).status(),
+    'outside the team by id',
+  ).toBe(404);
+  expect(
+    (
+      await request.get(`/api/v1/employees/${report.id}`, { headers: manager })
+    ).status(),
+  ).toBe(200);
+
+  // P4-LD-01: leads owned in the team are visible; others are not.
+  const stages = (await (
+    await request.get('/api/v1/leads/stages', { headers: admin })
+  ).json()) as { id: string }[];
+  const createLead = async (
+    headers: Record<string, string>,
+    ownerUserId?: string,
+  ) => {
+    const lead = await request.post('/api/v1/leads', {
+      headers,
+      data: {
+        leadNumber: `QA-SC-${Math.random().toString(36).slice(2, 10)}`,
+        firstName: 'Scope',
+        ...(ownerUserId ? { ownerUserId } : {}),
+      },
+    });
+    expect(lead.status(), await lead.text()).toBe(201);
+    return (await lead.json()).id as string;
+  };
+  const teamLead = await createLead(admin, report.userId!);
+  const otherLead = await createLead(admin);
+  const visible = await (
+    await request.get('/api/v1/leads', { headers: manager })
+  ).text();
+  expect(visible).toContain(teamLead);
+  expect(visible).not.toContain(otherLead);
+  expect(
+    (
+      await request.get(`/api/v1/leads/${otherLead}`, { headers: manager })
+    ).status(),
+  ).toBe(404);
+  expect(
+    (
+      await request.patch(`/api/v1/leads/${otherLead}`, {
+        headers: manager,
+        data: { firstName: 'Changed' },
+      })
+    ).status(),
+  ).toBe(404);
+
+  // P4-LD-02: an OWN-scope user sees a lead they created but do not own.
+  const mine = await createLead(leadrep);
+  const ownList = await (
+    await request.get('/api/v1/leads', { headers: leadrep })
+  ).text();
+  expect(ownList).toContain(mine);
+  expect(ownList).not.toContain(teamLead);
+  // P4-LD-11: they can move their own lead, not someone else's.
+  const moveOwn = await request.patch(`/api/v1/leads/${mine}/stage`, {
+    headers: leadrep,
+    data: { pipelineStageId: stages[1].id },
+  });
+  expect(moveOwn.ok(), await moveOwn.text()).toBeTruthy();
+  const moveOther = await request.patch(`/api/v1/leads/${teamLead}/stage`, {
+    headers: leadrep,
+    data: { pipelineStageId: stages[1].id },
+  });
+  expect(moveOther.status()).toBe(404);
+});
+
+/**
  * P2-TNT-01/02 Super Admin manages tenants: lists them (tenant admins
  * cannot), edits are whitelisted, suspending QA_BETA locks its users out
  * and reactivating restores them. Then P1-API-10 spends the rest of the

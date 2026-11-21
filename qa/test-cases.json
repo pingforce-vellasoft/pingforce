@@ -3318,5 +3318,139 @@
       "file": null
     },
     "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-RBAC-04",
+    "module": "Authorization",
+    "title": "Data scope TEAM",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Seeded manager@ (QA_TEAM_MANAGER, TEAM scope) with report@ reporting to them; leadrep@ (QA_LEADS_OWN)"
+    ],
+    "steps": ["Manager lists employees and opens one outside the team"],
+    "expected": ["Self and report only; outsider 404"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/rbac/rbac.service.spec.ts"
+  },
+  {
+    "id": "P4-LD-01",
+    "module": "Leads",
+    "title": "Scoped leads only",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Seeded manager@ (QA_TEAM_MANAGER, TEAM scope) with report@ reporting to them; leadrep@ (QA_LEADS_OWN)"
+    ],
+    "steps": ["Manager lists, opens and edits leads in and out of the team"],
+    "expected": ["Team lead listed; other lead hidden, 404 on read and edit"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/lead/lead.service.spec.ts"
+  },
+  {
+    "id": "P4-LD-02",
+    "module": "Leads",
+    "title": "Creator sees own",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Seeded manager@ (QA_TEAM_MANAGER, TEAM scope) with report@ reporting to them; leadrep@ (QA_LEADS_OWN)"
+    ],
+    "steps": ["OWN-scope user creates a lead without owning it"],
+    "expected": ["Listed for them; team lead not"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/lead/lead.service.spec.ts"
+  },
+  {
+    "id": "P4-LD-11",
+    "module": "Leads",
+    "title": "Board move",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Seeded manager@ (QA_TEAM_MANAGER, TEAM scope) with report@ reporting to them; leadrep@ (QA_LEADS_OWN)"
+    ],
+    "steps": ["Move own lead; move a lead outside scope"],
+    "expected": ["Moved; 404"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/lead/lead.service.spec.ts"
+  },
+  {
+    "id": "P4-LD-12",
+    "module": "Leads",
+    "title": "Manage stages",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Seeded manager@ (QA_TEAM_MANAGER, TEAM scope) with report@ reporting to them; leadrep@ (QA_LEADS_OWN)"
+    ],
+    "steps": [
+      "Add, rename (trimmed), reorder to the front; other tenant renames"
+    ],
+    "expected": ["Saved; first in order; 404"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/admin-tools.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/lead/pipeline-stage.service.spec.ts"
+  },
+  {
+    "id": "P4-MAP-10",
+    "module": "Connection map",
+    "title": "Edit / Assign",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Seeded manager@ (QA_TEAM_MANAGER, TEAM scope) with report@ reporting to them; leadrep@ (QA_LEADS_OWN)"
+    ],
+    "steps": [
+      "Edit remarks/cable, assign an employee, clear the customer; foreign assignee"
+    ],
+    "expected": ["Saved; customer cleared; foreign 400; history readable"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/admin-tools.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/network/connection/connection.service.spec.ts"
+  },
+  {
+    "id": "X-SYNC-03",
+    "module": "Offline sync",
+    "title": "Failed item",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Seeded manager@ (QA_TEAM_MANAGER, TEAM scope) with report@ reporting to them; leadrep@ (QA_LEADS_OWN)"
+    ],
+    "steps": [
+      "Sync a status change on a fault outside scope plus one on own fault"
+    ],
+    "expected": [
+      "First FAILED with reason, second APPLIED; untouched fault unchanged"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/admin-tools.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/faults-sync.service.spec.ts"
   }
 ]

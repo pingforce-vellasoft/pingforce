@@ -39,6 +39,52 @@ async function seed(): Promise<void> {
           update: {},
           create: { code, name: `Synthetic ${code}`, timezone: 'Asia/Kolkata' },
         });
+        // Custom roles get explicit grants (system roles are synced above).
+        const grant = async (
+          roleCode: string,
+          grants: [string, string, string][],
+        ) => {
+          const role = await tx.role.findFirst({
+            where: { tenantId: tenant.id, code: roleCode },
+          });
+          if (!role) return;
+          for (const [module, action, dataScope] of grants) {
+            const permission = await tx.permission.findFirst({
+              where: { module, action },
+            });
+            if (!permission) continue;
+            const exists = await tx.rolePermission.findFirst({
+              where: { roleId: role.id, permissionId: permission.id },
+            });
+            if (!exists)
+              await tx.rolePermission.create({
+                data: {
+                  roleId: role.id,
+                  permissionId: permission.id,
+                  dataScope,
+                },
+              });
+          }
+        };
+        await grant('QA_TEAM_MANAGER', [
+          ['EMPLOYEES', 'READ', 'TEAM'],
+          ['LEADS', 'READ', 'TEAM'],
+          ['LEADS', 'UPDATE', 'TEAM'],
+        ]);
+        await grant('QA_LEADS_OWN', [
+          ['LEADS', 'READ', 'OWN'],
+          ['LEADS', 'CREATE', 'OWN'],
+          ['LEADS', 'UPDATE', 'OWN'],
+        ]);
+        // QA-REPORT reports to QA-MGR.
+        const managerEmployee = await tx.employee.findFirst({
+          where: { tenantId: tenant.id, employeeCode: 'QA-MGR' },
+        });
+        if (managerEmployee)
+          await tx.employee.updateMany({
+            where: { tenantId: tenant.id, employeeCode: 'QA-REPORT' },
+            data: { reportingManagerId: managerEmployee.id },
+          });
         // P4-CUS-08: a tenant with 200+ customers (written here, not through
         // the API, so the test does not spend the request rate limit).
         if (code === 'QA_BETA')
@@ -90,6 +136,11 @@ async function seed(): Promise<void> {
           ['lockout2', 'EMPLOYEE_FIELD_STAFF'],
           // Named workflow approver.
           ['approver', 'ADMIN_MANAGER'],
+          // TEAM-scope manager and one direct report (P2-RBAC-04, P4-LD-01).
+          ['manager', 'QA_TEAM_MANAGER'],
+          ['report', 'EMPLOYEE_FIELD_STAFF'],
+          // Leads at OWN scope (P4-LD-02).
+          ['leadrep', 'QA_LEADS_OWN'],
         ]) {
           const role = await tx.role.upsert({
             where: { tenantId_code: { tenantId: tenant.id, code: roleCode } },
@@ -120,6 +171,8 @@ async function seed(): Promise<void> {
             devices: 'QA-DEVICES',
             punch: 'QA-PUNCH',
             punch2: 'QA-PUNCH-2',
+            manager: 'QA-MGR',
+            report: 'QA-REPORT',
           };
           if (ownEmployee[name]) {
             const existing = await tx.employee.findFirst({
