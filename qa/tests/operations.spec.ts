@@ -324,25 +324,15 @@ test('P4-CUS-08 a tenant with 200+ customers gets the full list', async ({
   request,
   accounts,
 }) => {
-  test.setTimeout(120_000);
-  const admin = bearer(accounts.admin);
-  const batch = tag();
-  for (let start = 0; start < 205; start += 25) {
-    const chunk = Array.from({ length: Math.min(25, 205 - start) }, (_, i) =>
-      request.post('/api/v1/customers', {
-        headers: admin,
-        data: {
-          customerCode: `QA-BULK-${batch}-${start + i}`,
-          legalName: `QA bulk ${start + i}`,
-        },
-      }),
-    );
-    for (const r of await Promise.all(chunk)) expect(r.status()).toBe(201);
-  }
-  const list = await request.get('/api/v1/customers', { headers: admin });
-  expect(list.status()).toBe(200);
-  const mine = ((await list.json()) as { customerCode: string }[]).filter((c) =>
-    c.customerCode.startsWith(`QA-BULK-${batch}-`),
+  // qa/seed.ts writes 205 QA-BULK- customers into QA_BETA directly; creating
+  // them through the API here tripped the general rate limit for every
+  // later test that creates a customer.
+  const list = await request.get('/api/v1/customers', {
+    headers: bearer(accounts.other),
+  });
+  expect(list.status(), await list.text()).toBe(200);
+  const bulk = ((await list.json()) as { customerCode: string }[]).filter((c) =>
+    c.customerCode.startsWith('QA-BULK-'),
   );
-  expect(mine.length).toBe(205);
+  expect(bulk.length).toBe(205);
 });
