@@ -1670,5 +1670,119 @@
       "file": "qa/tests/tracking.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/tracking/tracking.service.spec.ts"
+  },
+  {
+    "id": "P3-DEV-01",
+    "module": "Devices",
+    "title": "Bind on first use",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Dedicated QA-DEVICES employee (devices@qa.pingforce.test)"
+    ],
+    "steps": ["Unbound employee binds a handset"],
+    "expected": ["201; /devices/me shows it"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/devices/devices.service.spec.ts"
+  },
+  {
+    "id": "P3-DEV-02",
+    "module": "Devices",
+    "title": "Second phone needs a request",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Dedicated QA-DEVICES employee (devices@qa.pingforce.test)"
+    ],
+    "steps": ["Raise a change request; raise another while pending"],
+    "expected": ["201, then 409"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/devices/devices.service.spec.ts"
+  },
+  {
+    "id": "P3-DEV-03",
+    "module": "Devices",
+    "title": "Change approved",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Dedicated QA-DEVICES employee (devices@qa.pingforce.test)"
+    ],
+    "steps": [
+      "Admin approves; new handset claims with its key; claims again; third request"
+    ],
+    "expected": [
+      "New handset bound and claimable once (then 409); quota spent (403)"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/devices/devices.service.spec.ts"
+  },
+  {
+    "id": "P3-DEV-04",
+    "module": "Devices",
+    "title": "Change rejected",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Dedicated QA-DEVICES employee (devices@qa.pingforce.test)"
+    ],
+    "steps": [
+      "Other tenant tries to approve; admin rejects; approve after reject"
+    ],
+    "expected": ["Other tenant 404; old handset still bound; 400 after review"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/devices/devices.service.spec.ts"
+  },
+  {
+    "id": "P3-DEV-05",
+    "module": "Devices",
+    "title": "No self-rebind",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Dedicated QA-DEVICES employee (devices@qa.pingforce.test)"
+    ],
+    "steps": ["Bind a second handset directly; coworker binds this handset"],
+    "expected": ["Both 409"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/devices/devices.service.spec.ts"
+  },
+  {
+    "id": "P3-DEV-06",
+    "module": "Devices",
+    "title": "Admin revoke",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Dedicated QA-DEVICES employee (devices@qa.pingforce.test)"
+    ],
+    "steps": ["Admin revokes the binding; employee binds again"],
+    "expected": ["Unbound after revoke; bind succeeds"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/devices/devices.service.spec.ts"
   }
 ]
