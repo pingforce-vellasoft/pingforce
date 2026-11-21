@@ -111,6 +111,9 @@ export class EmployeeService {
           phone: employeeData.primaryMobile ?? undefined,
           passwordHash,
           status: 'ACTIVE',
+          // The temporary password is shown to the admin once; the employee
+          // must replace it at first sign-in (enforced by RbacGuard).
+          mustChangePassword: true,
           clientCode: employeeData.employeeCode,
           profile: {
             create: {
@@ -177,7 +180,14 @@ export class EmployeeService {
     // Rotate tokenVersion so any prior sessions are invalidated on reset.
     await this.prisma.user.update({
       where: { id: employee.userId },
-      data: { passwordHash, tokenVersion: { increment: 1 }, status: 'ACTIVE' },
+      // A re-sent invite is a new temporary password: force the change again.
+      // Status is left alone so an invite never reactivates a deactivated
+      // employee's login.
+      data: {
+        passwordHash,
+        tokenVersion: { increment: 1 },
+        mustChangePassword: true,
+      },
     });
 
     await this.deliverInvite(
@@ -279,12 +289,47 @@ export class EmployeeService {
         : undefined,
     };
 
-    return await this.employeeRepository.update(tenantId, id, payload);
+    const updated = await this.employeeRepository.update(tenantId, id, payload);
+    if (updatable.employmentStatus !== undefined) {
+      await this.syncLogin(
+        tenantId,
+        id,
+        updatable.employmentStatus === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
+      );
+    }
+    return updated;
   }
 
   async remove(tenantId: string, id: string, requesterUserId: string) {
     await this.assertInScope(tenantId, requesterUserId, id, 'DELETE');
+    // Read the login before the soft delete hides the employee row.
+    await this.syncLogin(tenantId, id, 'INACTIVE');
     return await this.employeeRepository.delete(tenantId, id);
+  }
+
+  /**
+   * Keeps the employee's login in step with the employee record. Deleting or
+   * deactivating an employee used to leave their User ACTIVE, so a removed
+   * employee could still sign in and use every permission of their role.
+   * Deactivation also bumps tokenVersion so open sessions end at once.
+   */
+  private async syncLogin(
+    tenantId: string,
+    employeeId: string,
+    status: 'ACTIVE' | 'INACTIVE',
+  ): Promise<void> {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, tenantId },
+      select: { userId: true },
+    });
+    if (!employee?.userId) return;
+    await this.prisma.user.updateMany({
+      where: { id: employee.userId, tenantId },
+      data:
+        status === 'INACTIVE'
+          ? { status, tokenVersion: { increment: 1 } }
+          : { status },
+    });
   }
 
   /**

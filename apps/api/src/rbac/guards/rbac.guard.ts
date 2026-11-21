@@ -43,6 +43,19 @@ export class RbacGuard implements CanActivate {
       );
     }
 
+    // A temporary password (admin-created user, self-signup admin, reset)
+    // must be replaced before the account can do anything. The apps enforce
+    // this as a gate, but the API is the security boundary: until now a
+    // temporary password worked on every business route indefinitely. Auth
+    // routes (me, change-password, logout) are not RBAC-guarded, so the
+    // change itself still works.
+    if (user.mustChangePassword === true) {
+      throw new ForbiddenException({
+        errorCode: 'PASSWORD_CHANGE_REQUIRED',
+        message: 'Change your temporary password before continuing.',
+      });
+    }
+
     if (user.tenantId === 'SYSTEM') {
       return true;
     }

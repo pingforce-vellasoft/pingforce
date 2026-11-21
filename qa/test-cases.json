@@ -1880,5 +1880,303 @@
       "file": "qa/tests/auth-limits.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/attendance/domain/work-minutes.spec.ts"
+  },
+  {
+    "id": "P2-FILE-01",
+    "module": "Files",
+    "title": "Upload and download",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Admin uploads a PNG to a fault, lists and downloads it"],
+    "expected": ["Listed; downloads byte-identical with image/png"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase2.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/files/files.service.spec.ts"
+  },
+  {
+    "id": "P2-SEC-03",
+    "module": "Files",
+    "title": "Upload guarding",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Other tenant, unassigned employee and no-grant role download/delete; upload to EMPLOYEE/CUSTOMER; GIF; MIME mismatch"
+    ],
+    "expected": [
+      "403/404 for outsiders; non-attachable types 400; type rules 400; owner deletes"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase2.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/files/files.service.spec.ts"
+  },
+  {
+    "id": "P2-MD-01",
+    "module": "Master data",
+    "title": "Master data CRUD",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Create, rename, delete a department after warming the cached list"
+    ],
+    "expected": ["List reflects every change; unknown type 400"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase2.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-MD-02",
+    "module": "Master data",
+    "title": "Master data isolation",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Other tenant reads, edits, deletes the id and lists"],
+    "expected": ["404s; absent from its list"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase2.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-RBAC-05",
+    "module": "Authorization",
+    "title": "Custom role",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Create a role, grant an unknown id, then LEADS READ at ALL; other tenant edits; staff lists roles"
+    ],
+    "expected": [
+      "Unknown 400; grant saved with scope; other tenant 404; staff 403"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase2.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/rbac/rbac.role-permissions.spec.ts"
+  },
+  {
+    "id": "P2-RBAC-06",
+    "module": "Authorization",
+    "title": "Platform permissions withheld",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "List tenant permission catalogue; grant a platform module (unit)"
+    ],
+    "expected": ["No TENANTS/BILLING/SETTINGS listed; granting one is 403"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase2.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/rbac/rbac.role-permissions.spec.ts"
+  },
+  {
+    "id": "P2-SEC-02",
+    "module": "Audit",
+    "title": "Audit log",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Create a customer with a known x-request-id; query audit by it"],
+    "expected": [
+      "Entry with the actor and request id; hidden from the other tenant; staff 403"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase2.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-NOT-01",
+    "module": "Notifications",
+    "title": "In-app feed",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Clear feed; admin rejects the employee leave; read-all"],
+    "expected": [
+      "Unread count rises, other tenant never sees it, read-all returns 0"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase2.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-AUTH-08",
+    "module": "Authentication",
+    "title": "Login history",
+    "priority": "P3",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Employee reads login history"],
+    "expected": ["Own SUCCESS entries only"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase2.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-EMP-01",
+    "module": "Employees",
+    "title": "Create, edit, deactivate",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Create, edit, delete; delete a provisioned employee and sign in"
+    ],
+    "expected": [
+      "Detail reflects edits; deleted 404 and off the list; login ends (401) and sign-in refused"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase2.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/employee/employee.service.scope.spec.ts"
+  },
+  {
+    "id": "P2-EMP-03",
+    "module": "Employees",
+    "title": "Field-staff flag",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Create with isFieldStaff false"],
+    "expected": ["Detail shows isFieldStaff false"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase2.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-AUTH-14",
+    "module": "Authentication",
+    "title": "Success resets counter",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["4 wrong, 1 right, 4 wrong, 1 right"],
+    "expected": ["Not locked"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/password-policy.service.spec.ts"
+  },
+  {
+    "id": "P2-AUTH-15",
+    "module": "Authentication",
+    "title": "Password history",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Change to the current password; change back to the previous one"
+    ],
+    "expected": ["Both 400"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/password-policy.service.spec.ts"
+  },
+  {
+    "id": "P2-AUTH-20",
+    "module": "Authentication",
+    "title": "Forced first-login change",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Admin provisions a login; sign in with the temporary password and call a business route"
+    ],
+    "expected": ["mustChangePassword true; 403 PASSWORD_CHANGE_REQUIRED"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/rbac/guards/rbac.guard.spec.ts"
+  },
+  {
+    "id": "P2-AUTH-21",
+    "module": "Authentication",
+    "title": "Change password",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Change password; use the old session and password; sign in at once with the new one"
+    ],
+    "expected": [
+      "Old session 401, old password 401, new one works immediately"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/identity-cache.spec.ts"
   }
 ]

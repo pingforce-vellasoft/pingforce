@@ -1,6 +1,7 @@
 import {
   Injectable,
   Inject,
+  BadRequestException,
   NotFoundException,
   ForbiddenException,
   ConflictException,
@@ -94,6 +95,9 @@ interface EmployeeRef {
 function isDataScopeLevel(value: string): value is DataScopeLevel {
   return (DATA_SCOPE_LEVELS as readonly string[]).includes(value);
 }
+
+/** Platform-level modules only the SYSTEM tenant (platform operator) holds. */
+const TENANT_FORBIDDEN_MODULES = ['TENANTS', 'BILLING', 'SETTINGS'] as const;
 
 @Injectable()
 export class RbacService {
@@ -573,16 +577,41 @@ export class RbacService {
       throw new NotFoundException('Role not found in this tenant');
     }
 
+    // Every id must be a real permission, and a tenant may not hand out
+    // platform-level modules (TENANTS, BILLING, SETTINGS) that only the
+    // platform operator holds. Unknown ids used to surface as a database
+    // foreign-key error (500).
+    const ids = [...new Set(permissionIds ?? [])];
+    const found = ids.length
+      ? await this.prisma.permission.findMany({
+          where: { id: { in: ids } },
+          select: { id: true, module: true },
+        })
+      : [];
+    if (found.length !== ids.length) {
+      throw new BadRequestException('One or more permission ids are unknown');
+    }
+    if (
+      tenantId !== 'SYSTEM' &&
+      found.some((p) =>
+        (TENANT_FORBIDDEN_MODULES as readonly string[]).includes(p.module),
+      )
+    ) {
+      throw new ForbiddenException(
+        'Platform permissions cannot be granted to a tenant role',
+      );
+    }
+
     // Replace the grant set atomically — a crash between delete and insert
     // must never leave the role with no permissions (PRISMA_GUIDELINES.md §10)
     await this.prisma.$transaction([
       this.prisma.rolePermission.deleteMany({
         where: { roleId },
       }),
-      ...(permissionIds && permissionIds.length > 0
+      ...(ids.length > 0
         ? [
             this.prisma.rolePermission.createMany({
-              data: permissionIds.map((permissionId) => ({
+              data: ids.map((permissionId) => ({
                 roleId,
                 permissionId,
                 dataScope: dataScopes?.[permissionId] ?? 'OWN',

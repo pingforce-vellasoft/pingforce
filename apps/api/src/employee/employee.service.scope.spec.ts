@@ -15,7 +15,10 @@ function makeService(scope: ResolvedDataScope) {
     delete: jest.fn().mockResolvedValue({ id: 'e-in' }),
   };
   const rbac = { resolveScopeIds: jest.fn().mockResolvedValue(scope) };
-  const prisma = { employee: { findFirst: jest.fn().mockResolvedValue(null) } };
+  const prisma = {
+    employee: { findFirst: jest.fn().mockResolvedValue(null) },
+    user: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+  };
   const service = new EmployeeService(
     repository as unknown as Args[0],
     rbac as unknown as Args[1],
@@ -87,5 +90,41 @@ describe('EmployeeService single-record data scope', () => {
     await expect(service.findOne('t1', 'e-in', 'u1')).rejects.toThrow(
       NotFoundException,
     );
+  });
+
+  it('deleting an employee deactivates their login and ends sessions', async () => {
+    const { service, prisma } = makeService({ kind: 'ALL' });
+    prisma.employee.findFirst.mockResolvedValue({ userId: 'u-emp' });
+    await service.remove('t1', 'e-in', 'u1');
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 'u-emp', tenantId: 't1' },
+      data: { status: 'INACTIVE', tokenVersion: { increment: 1 } },
+    });
+  });
+
+  it('employment status follows onto the login', async () => {
+    const { service, prisma } = makeService({ kind: 'ALL' });
+    prisma.employee.findFirst.mockResolvedValue({ userId: 'u-emp' });
+    await service.update(
+      't1',
+      'e-in',
+      { employmentStatus: 'TERMINATED' },
+      'u1',
+    );
+    expect(prisma.user.updateMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        data: { status: 'INACTIVE', tokenVersion: { increment: 1 } },
+      }),
+    );
+    await service.update('t1', 'e-in', { employmentStatus: 'ACTIVE' }, 'u1');
+    expect(prisma.user.updateMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({ data: { status: 'ACTIVE' } }),
+    );
+  });
+
+  it('an edit that does not touch employment status leaves the login alone', async () => {
+    const { service, prisma } = makeService({ kind: 'ALL' });
+    await service.update('t1', 'e-in', { firstName: 'X' }, 'u1');
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 });

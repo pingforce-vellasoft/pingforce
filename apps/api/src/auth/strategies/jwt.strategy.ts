@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { JwtConfigService } from '../jwt-config.service';
+import { cachedIdentity } from '../identity-cache';
 import { IPrismaService } from '@pingforce-monorepo/shared';
 
 @Injectable()
@@ -36,16 +37,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // returns userType: 'CUSTOMER' so staff guards can reject portal tokens.
     if (payload.userType === 'CUSTOMER') {
       const portalCacheKey = `portal_user_validate_${payload.sub}`;
-      let portalUser = await this.cacheManager.get<any>(portalCacheKey);
-      if (!portalUser) {
-        portalUser = await this.prisma.customerPortalUser.findUnique({
-          where: { id: payload.sub },
-          include: { tenant: true },
-        });
-        if (portalUser) {
-          await this.cacheManager.set(portalCacheKey, portalUser, 5000);
-        }
-      }
+      const portalUser = await cachedIdentity<any>(
+        this.cacheManager,
+        portalCacheKey,
+        payload.tokenVersion,
+        () =>
+          this.prisma.customerPortalUser.findUnique({
+            where: { id: payload.sub },
+            include: { tenant: true },
+          }),
+      );
 
       if (
         !portalUser ||
@@ -71,15 +72,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     if (payload.tenantId === 'SYSTEM') {
-      let superAdmin = await this.cacheManager.get<any>(cacheKey);
-      if (!superAdmin) {
-        superAdmin = await this.prisma.superAdmin.findUnique({
-          where: { id: payload.sub },
-        });
-        if (superAdmin) {
-          await this.cacheManager.set(cacheKey, superAdmin, 5000);
-        }
-      }
+      const superAdmin = await cachedIdentity<any>(
+        this.cacheManager,
+        cacheKey,
+        payload.tokenVersion,
+        () => this.prisma.superAdmin.findUnique({ where: { id: payload.sub } }),
+      );
 
       if (!superAdmin || superAdmin.status !== 'ACTIVE') {
         throw new UnauthorizedException();
@@ -101,17 +99,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       };
     }
 
-    let user = await this.cacheManager.get<any>(cacheKey);
-
-    if (!user) {
-      user = await this.prisma.user.findUnique({
-        where: { id: payload.sub },
-        include: { tenant: true, role: true, profile: true },
-      });
-      if (user) {
-        await this.cacheManager.set(cacheKey, user, 5000); // 5 sec TTL for faster revocation
-      }
-    }
+    const user = await cachedIdentity<any>(
+      this.cacheManager,
+      cacheKey,
+      payload.tokenVersion,
+      () =>
+        this.prisma.user.findUnique({
+          where: { id: payload.sub },
+          include: { tenant: true, role: true, profile: true },
+        }),
+    );
 
     if (!user || user.status !== 'ACTIVE' || user.tenant.status !== 'ACTIVE') {
       throw new UnauthorizedException();

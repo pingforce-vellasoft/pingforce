@@ -99,3 +99,29 @@ describe('RbacGuard', () => {
     expect(rbacService.hasPermission).not.toHaveBeenCalled();
   });
 });
+
+describe('RbacGuard temporary password', () => {
+  it('blocks a guarded route until the temporary password is changed', async () => {
+    const { guard, rbacService } = makeGuard(
+      { module: 'EMPLOYEES', action: 'READ' },
+      true,
+    );
+    await expect(
+      guard.canActivate(
+        makeContext({ userId: 'u1', tenantId: 't1', mustChangePassword: true }),
+      ),
+    ).rejects.toMatchObject({
+      response: { errorCode: 'PASSWORD_CHANGE_REQUIRED' },
+    });
+    expect(rbacService.hasPermission).not.toHaveBeenCalled();
+  });
+
+  it('lets an unguarded route through (change-password itself)', async () => {
+    const { guard } = makeGuard(undefined, false);
+    await expect(
+      guard.canActivate(
+        makeContext({ userId: 'u1', tenantId: 't1', mustChangePassword: true }),
+      ),
+    ).resolves.toBe(true);
+  });
+});
