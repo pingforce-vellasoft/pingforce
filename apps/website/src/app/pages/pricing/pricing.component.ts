@@ -28,7 +28,11 @@ export class PricingComponent implements OnInit {
   private readonly billing = inject(BillingService);
 
   protected readonly plans = signal<PlanVm[]>([]);
-  protected readonly customPlan = this.toStaticCustomVm();
+  /**
+   * The custom plan is shown once, as the full-width block under the grid —
+   * never as a card in the grid as well.
+   */
+  protected readonly customPlan = signal<PlanVm>(this.toStaticCustomVm());
 
   /** Checkout dialog state. */
   protected readonly checkoutPlan = signal<PlanVm | null>(null);
@@ -43,9 +47,12 @@ export class PricingComponent implements OnInit {
     this.plans.set(this.staticPlanVms());
     this.billing.getPlans().subscribe({
       next: (apiPlans) => {
-        if (apiPlans.length > 0) {
-          this.plans.set(apiPlans.map((p) => this.toApiVm(p)));
+        const grid = apiPlans.filter((p) => !p.isCustom);
+        if (grid.length > 0) {
+          this.plans.set(grid.map((p) => this.toApiVm(p)));
         }
+        const custom = apiPlans.find((p) => p.isCustom);
+        if (custom) this.customPlan.set(this.toApiVm(custom));
       },
       error: () => {
         /* keep static fallback */

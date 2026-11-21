@@ -49,21 +49,21 @@
 
     <div class="custom card">
       <div class="custom-copy">
-        <span class="eyebrow">{{ customPlan.period }}</span>
-        <h3>{{ customPlan.name }} plan</h3>
-        <p>{{ customPlan.tagline }}</p>
+        <span class="eyebrow">{{ customPlan().period }}</span>
+        <h3>{{ customPlan().name }} plan</h3>
+        <p>{{ customPlan().tagline }}</p>
         <ul class="plan-features">
-          @for (feat of customPlan.features; track feat) {
+          @for (feat of customPlan().features; track feat) {
             <li>{{ feat }}</li>
           }
         </ul>
       </div>
       <div class="custom-cta">
-        <span class="custom-price">{{ customPlan.priceLabel }}</span>
+        <span class="custom-price">{{ customPlan().priceLabel }}</span>
         <button
           type="button"
           class="btn btn-primary btn-lg"
-          (click)="openCheckout(customPlan)"
+          (click)="openCheckout(customPlan())"
         >
           Contact us
         </button>
