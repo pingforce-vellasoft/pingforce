@@ -34,6 +34,17 @@ const decemberWeekdays = (): string[] => {
 };
 const DAYS = decemberWeekdays();
 
+/** Day counts only: updatedAt/updatedBy change on every write. */
+const counts = ({
+  availableDays,
+  reservedDays,
+  usedDays,
+}: Balance): Balance => ({
+  availableDays,
+  reservedDays,
+  usedDays,
+});
+
 async function annualTypeId(
   request: APIRequestContext,
   employee: Session,
@@ -170,7 +181,7 @@ test('LEAVE-004 approve moves reserved to used; cancel restores available', asyn
     expect(cancelled.status(), await cancelled.text()).toBe(201);
     expect((await cancelled.json()).status).toBe('CANCELLED');
     const afterCancel = await balance(request, employee, typeId);
-    expect(afterCancel).toEqual(expect.objectContaining({ ...before }));
+    expect(counts(afterCancel)).toEqual(counts(before));
 
     // A repeated cancel is an idempotent no-op, not a second refund.
     const again = await request.post(`/api/v1/leaves/${leave.id}/cancel`, {
@@ -178,8 +189,8 @@ test('LEAVE-004 approve moves reserved to used; cancel restores available', asyn
       data: { reason: 'QA cancel twice' },
     });
     expect(again.status(), await again.text()).toBe(201);
-    expect(await balance(request, employee, typeId)).toEqual(
-      expect.objectContaining({ ...before }),
+    expect(counts(await balance(request, employee, typeId))).toEqual(
+      counts(before),
     );
   } finally {
     await cleanUp(request, accounts, [leave.id]);
@@ -199,8 +210,8 @@ test('LEAVE-005 reject returns the day; no second decision', async ({
     const text = await rejected.text();
     expect(rejected.status(), text).toBe(201);
     expect(JSON.parse(text).status, text).toBe('REJECTED');
-    expect(await balance(request, employee, typeId)).toEqual(
-      expect.objectContaining({ ...before }),
+    expect(counts(await balance(request, employee, typeId))).toEqual(
+      counts(before),
     );
     for (const decision of ['approve', 'reject'] as const)
       expect(
@@ -214,8 +225,8 @@ test('LEAVE-005 reject returns the day; no second decision', async ({
         })
       ).status(),
     ).toBe(409);
-    expect(await balance(request, employee, typeId)).toEqual(
-      expect.objectContaining({ ...before }),
+    expect(counts(await balance(request, employee, typeId))).toEqual(
+      counts(before),
     );
   } finally {
     await cleanUp(request, accounts, [leave.id]);
