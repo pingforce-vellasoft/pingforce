@@ -54,6 +54,8 @@ export class PasswordResetService {
       'Your PingForce password reset code',
       `<p>Your verification code is <b>${otp}</b>.</p>
        <p>It expires in 10 minutes. If you did not request this, ignore this email.</p>`,
+      // Through the tenant's own email provider when it has one (Email.md §5).
+      tenant.id,
     );
 
     return GENERIC_RESPONSE;

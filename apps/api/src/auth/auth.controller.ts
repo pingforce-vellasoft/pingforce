@@ -149,6 +149,8 @@ export class AuthController {
         'Your PingForce verification code',
         `<p>Your verification code is <b>${otp}</b>.</p>
          <p>It expires in 10 minutes.</p>`,
+        // Through the tenant's own email provider when it has one (Email.md §5).
+        req.user.tenantId,
       );
     }
 
