@@ -50,6 +50,7 @@ async function seed(): Promise<void> {
               tenantId: tenant.id,
               connectionMapEnabled: true,
               connectionMapEmployeeAccess: 'VIEW',
+              customerPortalEnabled: true,
             },
           });
         const leaveType = await tx.leaveType.upsert({
@@ -164,6 +165,16 @@ async function seed(): Promise<void> {
     },
     { timeout: 60_000 },
   );
+  // Synthetic platform operator for the Super Admin cases (auth-limits).
+  await prisma.superAdmin.upsert({
+    where: { email: 'super@qa.pingforce.test' },
+    update: {},
+    create: {
+      email: 'super@qa.pingforce.test',
+      passwordHash,
+      name: 'QA Super Admin',
+    },
+  });
   // Plan catalogue + the UNASSIGNED holding tenant, for the signup tests.
   await seedBillingPlans(prisma as never);
   console.log(

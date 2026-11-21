@@ -904,4 +904,134 @@ test('P2-AUTH-17/18/19 + P2-TEN-01..04 reset, OTP, self-signup by email code', a
     headers: bearer(founder),
   });
   expect(await employees.text()).not.toContain('QA-EMPLOYEE');
+
+  // P4-LD-10: a new tenant gets the default stages once, even when two tabs
+  // open the board at the same moment.
+  const stagesUrl = '/api/v1/leads/stages';
+  const [tabA, tabB] = await Promise.all([
+    request.get(stagesUrl, { headers: bearer(founder) }),
+    request.get(stagesUrl, { headers: bearer(founder) }),
+  ]);
+  expect(tabA.status(), await tabA.text()).toBe(200);
+  expect(tabB.status(), await tabB.text()).toBe(200);
+  const stages = (await (
+    await request.get(stagesUrl, { headers: bearer(founder) })
+  ).json()) as { id: string; name: string }[];
+  expect(stages.length, stages.map((s) => s.name).join(', ')).toBe(9);
+  expect(new Set(stages.map((s) => s.name.toLowerCase())).size).toBe(9);
+
+  // P4-LD-15: every stage but the last can be removed.
+  for (const stage of stages.slice(1)) {
+    const removed = await request.delete(`${stagesUrl}/${stage.id}`, {
+      headers: bearer(founder),
+    });
+    expect(removed.ok(), await removed.text()).toBeTruthy();
+  }
+  const last = await request.delete(`${stagesUrl}/${stages[0].id}`, {
+    headers: bearer(founder),
+  });
+  expect(last.status(), await last.text()).toBe(400);
+});
+
+/**
+ * P2-TNT-01/02 Super Admin manages tenants: lists them (tenant admins
+ * cannot), edits are whitelisted, suspending QA_BETA locks its users out
+ * and reactivating restores them. Then P1-API-10 spends the rest of the
+ * window to show the login limit trips while other routes keep working.
+ * Fresh rate-limit window. Runs last: it suspends QA_BETA for a moment.
+ */
+test('P2-TNT-01/02 + P1-API-10 Super Admin tenant control, then the login limit', async ({
+  request,
+  accounts,
+}) => {
+  test.setTimeout(170_000);
+  await freshLoginWindow();
+  const superLogin = await request.post('/api/v1/auth/login', {
+    data: {
+      email: 'super@qa.pingforce.test',
+      password: process.env.QA_TEST_PASSWORD,
+      portalType: 'ADMIN_PORTAL',
+    },
+  });
+  expect(superLogin.status(), await superLogin.text()).toBe(200);
+  const platform = bearer((await superLogin.json()) as Session);
+
+  // P2-TNT-01: the tenant list is platform-only.
+  const tenants = await request.get('/api/v1/tenants', { headers: platform });
+  expect(tenants.status(), await tenants.text()).toBe(200);
+  const rows = (await tenants.json()) as
+    | { id: string; code: string }[]
+    | { items: { id: string; code: string }[] };
+  const list = Array.isArray(rows) ? rows : rows.items;
+  const beta = list.find((t) => t.code === 'QA_BETA');
+  expect(beta, 'QA_BETA listed').toBeTruthy();
+  expect(
+    (
+      await request.get('/api/v1/tenants', { headers: bearer(accounts.admin) })
+    ).status(),
+    'tenant admin',
+  ).toBe(403);
+  // Edits are whitelisted: an arbitrary column is refused.
+  const sneaky = await request.patch(`/api/v1/tenants/${beta!.id}`, {
+    headers: platform,
+    data: { code: 'HIJACKED' },
+  });
+  expect(sneaky.status(), await sneaky.text()).toBe(400);
+
+  // P2-TNT-02: suspend QA_BETA; its open session and new sign-ins stop.
+  const setStatus = (status: string) =>
+    request.patch(`/api/v1/tenants/${beta!.id}`, {
+      headers: platform,
+      data: { status },
+    });
+  try {
+    expect((await setStatus('SUSPENDED')).ok()).toBeTruthy();
+    await expect
+      .poll(
+        async () =>
+          (
+            await request.get('/api/v1/auth/me', {
+              headers: bearer(accounts.other),
+            })
+          ).status(),
+        { timeout: 10_000, intervals: [1_000] },
+      )
+      .toBe(401);
+    const blocked = await request.post('/api/v1/auth/login', {
+      data: credentials('admin', 'QA_BETA'),
+    });
+    expect(blocked.ok(), `suspended sign-in ${blocked.status()}`).toBeFalsy();
+  } finally {
+    expect((await setStatus('ACTIVE')).ok()).toBeTruthy();
+  }
+  await expect
+    .poll(
+      async () =>
+        (
+          await request.get('/api/v1/auth/me', {
+            headers: bearer(accounts.other),
+          })
+        ).status(),
+      { timeout: 10_000, intervals: [1_000] },
+    )
+    .toBe(200);
+
+  // P1-API-10: keep failing sign-ins until the limit answers 429 (2 logins
+  // spent above), while an unrelated route still answers.
+  let throttled = false;
+  for (let i = 0; i < 12 && !throttled; i++) {
+    const wrong = await attempt(
+      request,
+      'restricted',
+      `wrong-${i}-${Date.now()}`,
+    );
+    throttled = wrong.status() === 429;
+  }
+  expect(throttled, 'login limit reached').toBeTruthy();
+  expect((await request.get('/api/v1/health')).status()).toBe(200);
+  expect(
+    (
+      await request.get('/api/v1/auth/me', { headers: bearer(accounts.admin) })
+    ).status(),
+  ).toBe(200);
 });

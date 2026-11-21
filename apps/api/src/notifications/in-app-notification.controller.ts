@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { StaffUserGuard } from '../common/guards/staff-user.guard';
 import { InAppNotificationService } from './in-app-notification.service';
 
 interface AuthRequest {
@@ -27,7 +28,7 @@ interface AuthRequest {
 // suffices — no shared RBAC resource is involved.
 
 @Controller('notifications/feed')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, StaffUserGuard)
 export class InAppNotificationController {
   constructor(private readonly service: InAppNotificationService) {}
 

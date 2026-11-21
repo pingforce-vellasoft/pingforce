@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { StaffUserGuard } from '../common/guards/staff-user.guard';
 import { ResetGateChainDto } from './dto/reset-gate-chain.dto';
 import { GateChainState, TestingService } from './testing.service';
 
@@ -36,7 +37,7 @@ interface AuthRequest {
 @ApiTags('testing')
 @ApiBearerAuth()
 @Controller('testing')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, StaffUserGuard)
 export class TestingController {
   constructor(private readonly testingService: TestingService) {}
 

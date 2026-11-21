@@ -13,6 +13,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { generateStrongPassword } from '../common/utils/password-generator';
 import { AuditService } from '../audit/audit.service';
 
+import { UpdateTenantDto } from './dto/update-tenant.dto';
 @Injectable()
 export class TenantsService {
   private readonly logger = new Logger(TenantsService.name);
@@ -535,10 +536,10 @@ export class TenantsService {
     });
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: UpdateTenantDto) {
     return this.prisma.tenant.update({
       where: { id },
-      data,
+      data: { ...data },
     });
   }
 

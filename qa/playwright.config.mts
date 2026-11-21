@@ -41,6 +41,7 @@ export default defineConfig({
         /tracking\.spec\.ts/,
         /phase2\.spec\.ts/,
         /phase4\.spec\.ts/,
+        /platform-rules\.spec\.ts/,
         /spec-files\.spec\.ts/,
       ],
     },
