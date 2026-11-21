@@ -291,3 +291,27 @@ test('LEAVE-007 concurrent double submit books the day once', async ({
     await cleanUp(request, accounts, ids);
   }
 });
+
+test('P3-LV-03 a request larger than the balance is refused and reserves nothing', async ({
+  request,
+  accounts,
+}) => {
+  const { employee } = accounts;
+  const typeId = await annualTypeId(request, employee);
+  const before = await balance(request, employee, typeId);
+  // About 40 weekdays against a 30-day balance.
+  const response = await request.post('/api/v1/leaves/request', {
+    headers: bearer(employee),
+    data: {
+      leaveTypeId: typeId,
+      startDate: DAYS[21],
+      endDate: DAYS[61],
+      reason: 'QA too long',
+    },
+  });
+  expect(response.status(), await response.text()).toBe(409);
+  expect(await response.text()).toContain('Insufficient');
+  expect(counts(await balance(request, employee, typeId))).toEqual(
+    counts(before),
+  );
+});

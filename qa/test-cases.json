@@ -2178,5 +2178,157 @@
       "file": "qa/tests/auth-limits.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/auth/identity-cache.spec.ts"
+  },
+  {
+    "id": "P2-AUTH-17",
+    "module": "Authentication",
+    "title": "Password reset by email",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA and the billing plan catalogue",
+      "Synthetic mailbox (Mailpit) reachable at /__qa-mail/ in the QA stack only"
+    ],
+    "steps": [
+      "Request reset (and for an unknown email); confirm wrong, right, reused code; sign in old and new"
+    ],
+    "expected": [
+      "Same answer for unknown email; wrong 401; right 200; reuse 401; old password 401; new 200"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
+  },
+  {
+    "id": "P2-AUTH-18",
+    "module": "Authentication",
+    "title": "OTP",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA and the billing plan catalogue",
+      "Synthetic mailbox (Mailpit) reachable at /__qa-mail/ in the QA stack only"
+    ],
+    "steps": ["Request an OTP; verify wrong, right, reused"],
+    "expected": ["Only the right code once"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-AUTH-19",
+    "module": "Authentication",
+    "title": "Email verification",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA and the billing plan catalogue",
+      "Synthetic mailbox (Mailpit) reachable at /__qa-mail/ in the QA stack only"
+    ],
+    "steps": ["Sign up; sign in before verifying; wrong then right code"],
+    "expected": ["Refused before; wrong code refused; right code activates"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-TEN-01",
+    "module": "Tenants",
+    "title": "Self-signup",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA and the billing plan catalogue",
+      "Synthetic mailbox (Mailpit) reachable at /__qa-mail/ in the QA stack only"
+    ],
+    "steps": ["No-card trial checkout, then register the workspace"],
+    "expected": [
+      "Subscription and tenant created; tenantId not accepted on public checkout"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/billing/subscriptions.service.spec.ts"
+  },
+  {
+    "id": "P2-TEN-02",
+    "module": "Tenants",
+    "title": "Duplicate signup",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA and the billing plan catalogue",
+      "Synthetic mailbox (Mailpit) reachable at /__qa-mail/ in the QA stack only"
+    ],
+    "steps": ["Register again with the same subscription and email"],
+    "expected": ["400, no second tenant"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-TEN-03",
+    "module": "Tenants",
+    "title": "Trial state",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA and the billing plan catalogue",
+      "Synthetic mailbox (Mailpit) reachable at /__qa-mail/ in the QA stack only"
+    ],
+    "steps": ["Read the trial end from checkout"],
+    "expected": ["trialDays from now"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-TEN-04",
+    "module": "Tenants",
+    "title": "First admin login",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA and the billing plan catalogue",
+      "Synthetic mailbox (Mailpit) reachable at /__qa-mail/ in the QA stack only"
+    ],
+    "steps": ["Founder signs in after verifying"],
+    "expected": [
+      "ADMIN_MANAGER of the new workspace; sees nothing of other tenants"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P3-LV-03",
+    "module": "Leave",
+    "title": "Not enough balance",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA and the billing plan catalogue",
+      "Synthetic mailbox (Mailpit) reachable at /__qa-mail/ in the QA stack only"
+    ],
+    "steps": ["Request ~40 weekdays against a 30-day balance"],
+    "expected": ["409 Insufficient; balance unchanged"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/leave.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
   }
 ]

@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { hash } from 'argon2';
 import { assertQaDatabase } from './lib/safety.mjs';
+import { seedBillingPlans } from '../prisma/seed-billing-plans';
 import {
   PERMISSION_CATALOG,
   syncSystemRolePermissions,
@@ -58,6 +59,8 @@ async function seed(): Promise<void> {
           ['devices', 'EMPLOYEE_FIELD_STAFF'],
           ['punch', 'EMPLOYEE_FIELD_STAFF'],
           ['punch2', 'EMPLOYEE_FIELD_STAFF'],
+          // Password reset test: its password changes during the run.
+          ['reset', 'EMPLOYEE_FIELD_STAFF'],
         ]) {
           const role = await tx.role.upsert({
             where: { tenantId_code: { tenantId: tenant.id, code: roleCode } },
@@ -148,6 +151,8 @@ async function seed(): Promise<void> {
     },
     { timeout: 60_000 },
   );
+  // Plan catalogue + the UNASSIGNED holding tenant, for the signup tests.
+  await seedBillingPlans(prisma as never);
   console.log(
     'QA_ALPHA and QA_BETA synthetic fixtures ready; credentials were not logged.',
   );

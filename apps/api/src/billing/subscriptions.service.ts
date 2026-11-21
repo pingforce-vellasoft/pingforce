@@ -113,15 +113,17 @@ export class SubscriptionsService {
       notes: {
         planCode: plan.code,
         organizationName: dto.organizationName ?? '',
-        tenantId: dto.tenantId ?? '',
+        tenantId: '',
       },
     });
 
     const subscription = await this.prisma.tenantSubscription.create({
       data: {
-        // Website-originated checkouts may not have a tenant yet; a placeholder
-        // tenant is linked at activation. Super-admin flows pass tenantId.
-        tenantId: dto.tenantId ?? (await this.resolveOrHoldTenant(dto)),
+        // Checkouts come from the anonymous website, so they never name a
+        // tenant: a caller-supplied tenantId let anyone attach a subscription
+        // (and, once paid, its plan) to another workspace. They are held on
+        // the placeholder tenant; signup or Super Admin links the real one.
+        tenantId: await this.resolveOrHoldTenant(dto),
         planId: plan.id,
         gateway: gatewayName,
         status: 'CREATED',

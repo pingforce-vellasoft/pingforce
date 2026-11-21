@@ -13,7 +13,6 @@ import { createHash, randomBytes } from 'crypto';
 import { LoginDto } from '@pingforce-monorepo/dto';
 import { IAuthService, IPrismaService } from '@pingforce-monorepo/shared';
 import { RegisterTenantDto } from './dto/register-tenant.dto';
-import { RegisterEmployeeDto } from './dto/register-employee.dto';
 import { OnboardingTenantDto } from './dto/onboarding-tenant.dto';
 import { OnboardingEmployeeDto } from './dto/onboarding-employee.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
@@ -990,89 +989,6 @@ export class AuthService implements IAuthService {
     } catch {
       // Best-effort.
     }
-  }
-
-  async registerEmployee(dto: RegisterEmployeeDto) {
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { code: dto.tenantCode },
-    });
-
-    if (!tenant) {
-      throw new BadRequestException('Invalid tenant code provided.');
-    }
-
-    if (tenant.status !== 'ACTIVE') {
-      throw new BadRequestException('This tenant account is inactive.');
-    }
-
-    // Soft-deleted rows are intentionally included: the DB uniques
-    // ([tenantId, email] / [tenantId, phone]) apply to them too, so an email or
-    // phone released only by a soft delete is still taken.
-    const existingUser = await this.prisma.user.findFirst({
-      where: {
-        tenantId: tenant.id,
-        OR: [
-          { email: dto.email },
-          ...(dto.phone ? [{ phone: dto.phone }] : []),
-        ],
-      },
-      select: { email: true },
-    });
-
-    if (existingUser) {
-      throw new BadRequestException(
-        existingUser.email === dto.email
-          ? 'An employee with this email already exists in this tenant.'
-          : 'An employee with this phone number already exists in this tenant.',
-      );
-    }
-
-    const passwordHash = await argon2.hash(dto.password);
-
-    let employeeRole = await this.prisma.role.findFirst({
-      where: { tenantId: tenant.id, code: 'EMPLOYEE_FIELD_STAFF' },
-    });
-
-    if (!employeeRole) {
-      employeeRole = await this.prisma.role.create({
-        data: {
-          tenantId: tenant.id,
-          name: 'Employee / Field Staff',
-          code: 'EMPLOYEE_FIELD_STAFF',
-          description: 'Standard employee (Mobile App Only)',
-          isSystem: true,
-        },
-      });
-    }
-
-    await syncSystemRolePermissions(
-      this.prisma,
-      employeeRole.id,
-      'EMPLOYEE_FIELD_STAFF',
-    );
-
-    const employee = await this.prisma.user.create({
-      data: {
-        tenantId: tenant.id,
-        roleId: employeeRole.id,
-        email: dto.email,
-        passwordHash: passwordHash,
-        profile: {
-          create: {
-            firstName: dto.firstName,
-            lastName: dto.lastName,
-          },
-        },
-        phone: dto.phone,
-        status: 'ACTIVE',
-        clientCode: `EMP_${Date.now()}`,
-      },
-    });
-
-    return {
-      message: 'Employee registered successfully. You can now log in.',
-      userId: employee.id,
-    };
   }
 
   async onboardTenant(

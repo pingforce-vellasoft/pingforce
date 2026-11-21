@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { PlansService } from './plans.service';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
@@ -22,6 +23,12 @@ export class PublicBillingController {
   }
 
   /** Start a subscription checkout; returns a gateway URL or a sales fallback. */
+  // Anonymous and each call creates a subscription row: keep it to a
+  // human pace per client.
+  @Throttle({
+    burst: { limit: 10, ttl: 60000 },
+    sustained: { limit: 10, ttl: 60000 },
+  })
   @Post('checkout')
   async checkout(@Body() dto: CreateCheckoutDto) {
     return this.subscriptions.createCheckout(dto);
