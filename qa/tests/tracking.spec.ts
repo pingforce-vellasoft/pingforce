@@ -74,10 +74,13 @@ test('P3-TRK-04/05/07 pings: idempotent, ordered, clock-guarded, on the live map
 }) => {
   const { admin, employee } = accounts;
   const employeeId = await employeeIdByCode(request, admin, 'QA-EMPLOYEE');
-  // Distinct latitudes identify this run's points.
+  // Distinct latitudes identify this run's points. Positions are compared to
+  // 5 decimals (about 1 m): the live table stores them with less precision
+  // than a JS double, so 10.860999999999999 comes back as 10.861.
+  const lat = (offset: number) => Number((base + offset).toFixed(4));
   const base = 10 + Math.floor(Math.random() * 1000) / 1000;
-  const older = ping(base, 10);
-  const newer = ping(base + 0.001, 5);
+  const older = ping(lat(0), 10);
+  const newer = ping(lat(0.001), 5);
 
   const first = await upload(request, employee, [newer, older]);
   expect(first.status(), await first.text()).toBe(201);
@@ -91,23 +94,35 @@ test('P3-TRK-04/05/07 pings: idempotent, ordered, clock-guarded, on the live map
 
   // P3-TRK-05: the live map shows the newest fix, and a late older ping
   // cannot rewind it.
-  expect(await liveLatitude(request, admin, employeeId)).toBe(newer.latitude);
-  await upload(request, employee, [ping(base + 0.002, 30)]);
-  expect(await liveLatitude(request, admin, employeeId)).toBe(newer.latitude);
+  expect(await liveLatitude(request, admin, employeeId)).toBeCloseTo(
+    newer.latitude,
+    5,
+  );
+  await upload(request, employee, [ping(lat(0.002), 30)]);
+  expect(await liveLatitude(request, admin, employeeId)).toBeCloseTo(
+    newer.latitude,
+    5,
+  );
 
   // P3-TRK-07: a ping dated tomorrow is dropped and cannot pin the map.
   const future = {
-    ...ping(base + 0.003, 0),
+    ...ping(lat(0.003), 0),
     capturedAt: new Date(Date.now() + 86_400_000).toISOString(),
   };
   const guarded = await upload(request, employee, [future]);
   expect(await guarded.json()).toEqual(
     expect.objectContaining({ accepted: 0, rejected: 1 }),
   );
-  expect(await liveLatitude(request, admin, employeeId)).toBe(newer.latitude);
-  const current = ping(base + 0.004, 0);
+  expect(await liveLatitude(request, admin, employeeId)).toBeCloseTo(
+    newer.latitude,
+    5,
+  );
+  const current = ping(lat(0.004), 0);
   await upload(request, employee, [current]);
-  expect(await liveLatitude(request, admin, employeeId)).toBe(current.latitude);
+  expect(await liveLatitude(request, admin, employeeId)).toBeCloseTo(
+    current.latitude,
+    5,
+  );
 
   // The trail returns this run's points in time order, without duplicates.
   const from = new Date(Date.now() - 60 * 60_000).toISOString();
@@ -119,12 +134,14 @@ test('P3-TRK-04/05/07 pings: idempotent, ordered, clock-guarded, on the live map
   const points = ((await trail.json()).points as Point[]).filter(
     (p) => Math.abs(p.latitude - base) < 0.01,
   );
-  expect(points.map((p) => p.latitude)).toEqual([
-    base + 0.002,
+  const expected = [
+    lat(0.002),
     older.latitude,
     newer.latitude,
     current.latitude,
-  ]);
+  ];
+  expect(points).toHaveLength(expected.length);
+  points.forEach((p, i) => expect(p.latitude).toBeCloseTo(expected[i], 5));
   const summary = await request.get(`/api/v1/tracking/${employeeId}/summary`, {
     headers: bearer(admin),
   });
