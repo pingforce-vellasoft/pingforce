@@ -94,26 +94,29 @@ async function seed(): Promise<void> {
                   lastName: 'Employee',
                 },
               }));
-            const year = new Date().getUTCFullYear();
-            await tx.leaveBalance.upsert({
-              where: {
-                tenantId_employeeId_leaveTypeId_year: {
+            // This year and next: leave tests book next year's days
+            // (qa/tests/leave-days.ts) so they never fall in the past.
+            const thisYear = new Date().getUTCFullYear();
+            for (const year of [thisYear, thisYear + 1])
+              await tx.leaveBalance.upsert({
+                where: {
+                  tenantId_employeeId_leaveTypeId_year: {
+                    tenantId: tenant.id,
+                    employeeId: employee.id,
+                    leaveTypeId: leaveType.id,
+                    year,
+                  },
+                },
+                update: {},
+                create: {
                   tenantId: tenant.id,
                   employeeId: employee.id,
                   leaveTypeId: leaveType.id,
                   year,
+                  totalDays: 30,
+                  availableDays: 30,
                 },
-              },
-              update: {},
-              create: {
-                tenantId: tenant.id,
-                employeeId: employee.id,
-                leaveTypeId: leaveType.id,
-                year,
-                totalDays: 30,
-                availableDays: 30,
-              },
-            });
+              });
           }
         }
       }

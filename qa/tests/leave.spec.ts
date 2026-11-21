@@ -1,14 +1,14 @@
 import type { APIRequestContext } from '@playwright/test';
 import { test, expect, bearer, type Session } from './fixtures';
+import { LEAVE_DAYS, MY_BALANCE_URL } from './leave-days';
 
 /**
  * Leave lifecycle after submission: approve, reject, cancel, overlap and a
  * concurrent double submit. Balances are checked after every step, because a
  * wrong reserved/used/available move is the failure that costs real money.
  *
- * Each test books its own weekday in December of the current year (the seed
- * gives the QA employee a 30-day QA_ANNUAL balance for this year only), and
- * every request it makes is withdrawn or cancelled in `finally`.
+ * Each test books its own weekday of next year (leave-days.ts), and every
+ * request it makes is withdrawn or cancelled in `finally`.
  */
 
 interface Balance {
@@ -21,18 +21,8 @@ interface Leave {
   readonly status: string;
 }
 
-/** Weekdays of December this year, skipping the 15th (LEAVE-003 uses it). */
-const decemberWeekdays = (): string[] => {
-  const year = new Date().getUTCFullYear();
-  const days: string[] = [];
-  for (let d = 1; d <= 31; d++) {
-    const date = new Date(Date.UTC(year, 11, d));
-    if (d !== 15 && date.getUTCDay() !== 0 && date.getUTCDay() !== 6)
-      days.push(date.toISOString().slice(0, 10));
-  }
-  return days;
-};
-const DAYS = decemberWeekdays();
+// LEAVE_DAYS[0] belongs to LEAVE-003 in api.spec.ts.
+const DAYS = LEAVE_DAYS.slice(1);
 
 /** Day counts only: updatedAt/updatedBy change on every write. */
 const counts = ({
@@ -64,7 +54,7 @@ async function balance(
   employee: Session,
   typeId: string,
 ): Promise<Balance> {
-  const response = await request.get('/api/v1/leaves/my-balance', {
+  const response = await request.get(MY_BALANCE_URL, {
     headers: bearer(employee),
   });
   expect(response.status()).toBe(200);
