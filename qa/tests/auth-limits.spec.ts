@@ -272,6 +272,14 @@ test('P3-DEV-01..06 bind once, change only by approved request, admin revoke', a
   expect(again.status(), await again.text()).toBe(201);
 });
 
+/** Filled by the signed-punch case, read by the attendance admin case. */
+const punched: {
+  worker?: Session;
+  sessionId?: string;
+  attendanceId?: string;
+  punchIn?: string;
+} = {};
+
 /**
  * P3-ATT signed punches with a real Ed25519 handset key (ATT-001/002/003,
  * P3-GEO-03/04). One more login in the sessions window (6 in total), on the
@@ -282,6 +290,7 @@ test('ATT-001..003 signed punch: geofence, freshness, tamper, replay, in/out', a
   accounts,
 }) => {
   const worker = await login(request, 'punch');
+  punched.worker = worker;
   const staff = bearer(worker);
   const admin = bearer(accounts.admin);
   const SITE = { latitude: 12.9716, longitude: 77.5946 };
@@ -365,9 +374,13 @@ test('ATT-001..003 signed punch: geofence, freshness, tamper, replay, in/out', a
     expect(inResponse.status(), await inResponse.text()).toBe(201);
     const session = (await inResponse.json()) as {
       id: string;
+      attendanceId: string;
       punchIn: string;
       punchOut: string | null;
     };
+    punched.sessionId = session.id;
+    punched.attendanceId = session.attendanceId;
+    punched.punchIn = session.punchIn;
     expect(session.punchOut).toBeNull();
     await refusedWith(checkIn, 409);
     const today = await request.get('/api/v1/attendance/today', {
@@ -385,5 +398,182 @@ test('ATT-001..003 signed punch: geofence, freshness, tamper, replay, in/out', a
     await request.delete(`/api/v1/attendance/geofence/${siteId}`, {
       headers: admin,
     });
+  }
+});
+
+/**
+ * P3-ATT-15..18, 20: history, corrections, manual check-out and timeline on
+ * the session the signed-punch case just closed. One more login (QA-PUNCH-2,
+ * 7 in the window), because the 15-minute debounce stops QA-PUNCH opening a
+ * second session for the manual check-out.
+ */
+test('P3-ATT-15..18/20 history, corrections, manual check-out, timeline', async ({
+  request,
+  accounts,
+}) => {
+  const { worker, sessionId, attendanceId, punchIn } = punched;
+  expect(
+    worker && sessionId && attendanceId && punchIn,
+    'punch case ran',
+  ).toBeTruthy();
+  const staff = bearer(worker!);
+  const admin = bearer(accounts.admin);
+  const att = (path: string) => `/api/v1/attendance/${path}`;
+  const correction = (correctionType: string, requestedValue: string) =>
+    request.post(att('corrections'), {
+      headers: staff,
+      data: {
+        attendanceId,
+        correctionType,
+        requestedValue,
+        reason: 'QA correction',
+      },
+    });
+
+  // P3-ATT-15: the employee's own history holds the day.
+  const own = await request.get(att('daily-logs'), { headers: staff });
+  expect(own.status(), await own.text()).toBe(200);
+  expect(await own.text()).toContain(attendanceId!);
+
+  // P3-ATT-20: the session timeline, for its owner only.
+  const timeline = await request.get(att(`sessions/${sessionId}/timeline`), {
+    headers: staff,
+  });
+  expect(timeline.status(), await timeline.text()).toBe(200);
+  expect((await timeline.json()).sessionId).toBe(sessionId);
+  const foreign = await request.get(att(`sessions/${sessionId}/timeline`), {
+    headers: bearer(accounts.employee),
+  });
+  expect(foreign.status(), 'coworker timeline').toBe(404);
+
+  // P3-ATT-16: a correction to a check-out BEFORE the check-in cannot be
+  // approved (it would credit negative hours); the admin rejects it.
+  const before = new Date(new Date(punchIn!).getTime() - 60 * 60_000);
+  const bad = await correction('WRONG_CHECK_OUT_TIME', before.toISOString());
+  expect(bad.status(), await bad.text()).toBe(201);
+  const badId = (await bad.json()).id as string;
+  const duplicate = await correction(
+    'WRONG_CHECK_OUT_TIME',
+    new Date().toISOString(),
+  );
+  expect(duplicate.status(), 'duplicate open correction').toBe(409);
+  const selfApproval = await request.post(att(`corrections/${badId}/approve`), {
+    headers: staff,
+  });
+  expect(selfApproval.status(), 'self approval').toBe(403);
+  const otherTenant = await request.post(att(`corrections/${badId}/approve`), {
+    headers: bearer(accounts.other),
+  });
+  expect(otherTenant.status(), 'other tenant approval').toBe(404);
+  const refused = await request.post(att(`corrections/${badId}/approve`), {
+    headers: admin,
+  });
+  expect(refused.status(), await refused.text()).toBe(400);
+  const rejected = await request.post(att(`corrections/${badId}/reject`), {
+    headers: admin,
+    data: { notes: 'QA: before check-in' },
+  });
+  expect(rejected.ok(), await rejected.text()).toBeTruthy();
+
+  // A valid correction is applied to the session. The punch case checked in
+  // only moments ago, so "now minus a second" can fall before the check-in:
+  // use check-in + 1 s, once that instant is safely in the past.
+  const fixedOutMs = new Date(punchIn!).getTime() + 1_000;
+  const waitMs = fixedOutMs + 1_000 - Date.now();
+  if (waitMs > 0) await new Promise((r) => setTimeout(r, waitMs));
+  const fixedOut = new Date(fixedOutMs).toISOString();
+  const good = await correction('WRONG_CHECK_OUT_TIME', fixedOut);
+  expect(good.status(), await good.text()).toBe(201);
+  const approved = await request.post(
+    att(`corrections/${(await good.json()).id}/approve`),
+    { headers: admin },
+  );
+  expect(approved.ok(), await approved.text()).toBeTruthy();
+  expect(['APPLIED', 'APPROVED']).toContain(
+    (await approved.json()).workflowStatus,
+  );
+  const after = await request.get(att(`sessions/${sessionId}/timeline`), {
+    headers: staff,
+  });
+  expect(new Date((await after.json()).punchOut).toISOString()).toBe(fixedOut);
+
+  // The employee can withdraw an open request of their own.
+  const draft = await correction('MISSING_CHECK_IN', new Date().toISOString());
+  expect(draft.status(), await draft.text()).toBe(201);
+  const cancelled = await request.post(
+    att(`corrections/${(await draft.json()).id}/cancel`),
+    { headers: staff },
+  );
+  expect(cancelled.ok(), await cancelled.text()).toBeTruthy();
+
+  // P3-ATT-18: manual check-out of a still-open session, by an admin only.
+  const second = await login(request, 'punch2');
+  const handset = newHandset();
+  const bind = await request.post('/api/v1/devices/bind', {
+    headers: bearer(second),
+    data: { deviceId: handset.deviceId, publicKey: handset.publicKey },
+  });
+  expect(bind.status(), await bind.text()).toBe(201);
+  const SITE = { latitude: 12.9716, longitude: 77.5946 };
+  const site = await request.post(att('geofence'), {
+    headers: admin,
+    data: {
+      name: `QA manual site ${handset.deviceId.slice(-8)}`,
+      ...SITE,
+      radiusMeters: 150,
+    },
+  });
+  expect(site.status(), await site.text()).toBe(201);
+  const siteId = (await site.json()).id as string;
+  try {
+    const employees = (await (
+      await request.get('/api/v1/employees?take=100', { headers: admin })
+    ).json()) as { id: string; employeeCode: string }[];
+    const employeeId = employees.find(
+      (e) => e.employeeCode === 'QA-PUNCH-2',
+    )!.id;
+    const assign = await request.post(att(`geofence/${siteId}/employees`), {
+      headers: admin,
+      data: { employeeIds: [employeeId], reassign: true },
+    });
+    expect(assign.ok(), await assign.text()).toBeTruthy();
+    const checkIn = await request.post(att('punch'), {
+      headers: bearer(second),
+      data: signedPunch(handset, SITE),
+    });
+    expect(checkIn.status(), await checkIn.text()).toBe(201);
+    const open = (await checkIn.json()) as { id: string; punchIn: string };
+    const manual = (headers: Record<string, string>, checkoutTime: string) =>
+      request.post(att('manual-checkout'), {
+        headers,
+        data: {
+          attendanceSessionId: open.id,
+          checkoutTime,
+          reason: 'QA forgot to check out',
+        },
+      });
+
+    const byStaff = await manual(bearer(second), new Date().toISOString());
+    expect(byStaff.status(), 'staff').toBe(403);
+    const early = new Date(
+      new Date(open.punchIn).getTime() - 60_000,
+    ).toISOString();
+    expect((await manual(admin, early)).status(), 'before check-in').toBe(400);
+    const future = new Date(Date.now() + 3_600_000).toISOString();
+    expect((await manual(admin, future)).status(), 'in the future').toBe(400);
+    const closed = await manual(admin, new Date().toISOString());
+    expect(closed.ok(), await closed.text()).toBeTruthy();
+    const body = (await closed.json()) as {
+      punchOut: string;
+      sessionStatus: string;
+    };
+    expect(body.punchOut).toBeTruthy();
+    expect(body.sessionStatus).toBe('CHECKED_OUT');
+    expect(
+      (await manual(admin, new Date().toISOString())).status(),
+      'twice',
+    ).toBe(400);
+  } finally {
+    await request.delete(att(`geofence/${siteId}`), { headers: admin });
   }
 });

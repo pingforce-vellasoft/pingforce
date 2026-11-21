@@ -493,13 +493,17 @@
       "Isolated QA database seeded with QA_ALPHA and QA_BETA",
       "Use synthetic accounts and data only"
     ],
-    "steps": ["Request correction; approve/reject with authorized manager"],
-    "expected": ["Audited outcome; employee cannot self-approve"],
+    "steps": [
+      "Request a check-out correction before check-in, approve, reject; request a valid one, approve; request and cancel another"
+    ],
+    "expected": [
+      "Invalid correction cannot be approved (400); duplicate open 409; self 403; other tenant 404; valid one applied to the session; own request cancellable"
+    ],
     "automation": {
-      "status": "planned",
-      "file": null
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
     },
-    "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
+    "relatedUnitSuite": "apps/api/src/attendance/domain/work-minutes.spec.ts"
   },
   {
     "id": "ATT-009",
@@ -1820,5 +1824,61 @@
       "file": "qa/tests/auth-limits.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/attendance/geofence-assignment.service.spec.ts"
+  },
+  {
+    "id": "P3-ATT-15",
+    "module": "Attendance",
+    "title": "Daily history",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Dedicated QA-PUNCH and QA-PUNCH-2 employees with bound test handsets"
+    ],
+    "steps": ["Employee reads own daily logs after a punch"],
+    "expected": ["The day is listed"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/domain/work-minutes.spec.ts"
+  },
+  {
+    "id": "P3-ATT-18",
+    "module": "Attendance",
+    "title": "Manual check-out",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Dedicated QA-PUNCH and QA-PUNCH-2 employees with bound test handsets"
+    ],
+    "steps": [
+      "Staff, then admin with a time before check-in, in the future, valid, and twice"
+    ],
+    "expected": ["403; 400; 400; closed as CHECKED_OUT; 400"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/domain/work-minutes.spec.ts"
+  },
+  {
+    "id": "P3-ATT-20",
+    "module": "Attendance",
+    "title": "View timeline",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Dedicated QA-PUNCH and QA-PUNCH-2 employees with bound test handsets"
+    ],
+    "steps": ["Owner and a coworker open the session timeline"],
+    "expected": ["Owner 200 with the session; coworker 404"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/domain/work-minutes.spec.ts"
   }
 ]

@@ -10,7 +10,7 @@ import {
   UpdateAttendancePolicyDto,
 } from './dto/attendance.dto';
 import { RbacService } from '../rbac/rbac.service';
-import { creditWorkedMinutes } from './domain/work-minutes';
+import { creditWorkedMinutes, punchTimesProblem } from './domain/work-minutes';
 import { resolveState, SessionState } from './domain/session-state';
 import { GeofenceCacheService } from './geofence-cache.service';
 import * as crypto from 'crypto';
@@ -135,6 +135,10 @@ export class AttendanceService {
     }
 
     const punchOutTime = new Date(dto.checkoutTime);
+    // An admin-set check-out before the check-in, or in the future, credited
+    // negative (clamped to 0) or invented hours.
+    const problem = punchTimesProblem(session.punchIn, punchOutTime);
+    if (problem) throw new BadRequestException(problem);
 
     // Session close, work-minute credit, and audit record must land together
     return this.prisma.$transaction(async (tx) => {
@@ -142,6 +146,10 @@ export class AttendanceService {
         where: { id: session.id },
         data: {
           punchOut: punchOutTime,
+          // Without this the closed session still read CHECKED_IN, so the
+          // state machine and status-based reads saw it as open.
+          sessionStatus: SessionState.CHECKED_OUT,
+          updatedBy: admin.userId,
           attendanceMethod: 'MANUAL', // We could use an enum, or just track in corrections
         },
       });
