@@ -162,8 +162,8 @@
       "Accepted revocation policy demonstrated; record current delay"
     ],
     "automation": {
-      "status": "planned",
-      "file": null
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/auth/auth.service.refresh.spec.ts"
   },
@@ -1250,6 +1250,132 @@
     "automation": {
       "status": "implemented-unverified",
       "file": "qa/tests/platform.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "QA-000",
+    "module": "QA harness",
+    "title": "Every spec file runs",
+    "priority": "P1",
+    "requirement": "qa/playwright.config.mts",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["List qa/tests/*.spec.ts against project testMatch"],
+    "expected": ["No spec file is left out of every project"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/spec-files.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-AUTH-06",
+    "module": "Authentication",
+    "title": "Logout everywhere",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/SessionManagement.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Sign in twice, log out all on one"],
+    "expected": ["Other device: access token 401 within 10 s, refresh 401"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-AUTH-07",
+    "module": "Authentication",
+    "title": "Session list and revoke",
+    "priority": "P2",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/SessionManagement.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["List own sessions, revoke the other device"],
+    "expected": ["Revoked session gone from list; its refresh rejected"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-AUTH-10",
+    "module": "Authentication",
+    "title": "Lockout after 5 failures",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.7_SecurityFramework/PasswordPolicy.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Wrong password 5 times"],
+    "expected": ["Each 401; account locked"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-AUTH-11",
+    "module": "Authentication",
+    "title": "Locked means locked",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.7_SecurityFramework/PasswordPolicy.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Right password during lockout"],
+    "expected": ["403 PWD-006"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-AUTH-13",
+    "module": "Authentication",
+    "title": "Admin unlock",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.7_SecurityFramework/PasswordPolicy.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Admin unlocks the user"],
+    "expected": ["User signs in immediately"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/user-security.service.spec.ts"
+  },
+  {
+    "id": "P2-AUTH-16",
+    "module": "Authentication",
+    "title": "Admin session control",
+    "priority": "P1",
+    "requirement": "docs/project_specifications/Milestone-2-Core-Platform/2.1_Authentication/SessionManagement.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Admin lists a user sessions and forces logout everywhere"],
+    "expected": ["All of that user sessions end within 10 s"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
     },
     "relatedUnitSuite": null
   }

@@ -26,11 +26,29 @@ export default defineConfig({
   // Authentication payloads contain secrets: do not capture traces or video.
   use: { baseURL, trace: 'off', video: 'off', screenshot: 'only-on-failure' },
   projects: [
-    { name: 'api', testMatch: /api\.spec\.ts/ },
+    // Every spec file must belong to a project, or it silently never runs
+    // (tests/spec-files.spec.ts fails the run if one is left out).
+    {
+      name: 'api',
+      testMatch: [
+        /api\.spec\.ts/,
+        /platform\.spec\.ts/,
+        /spec-files\.spec\.ts/,
+      ],
+    },
     {
       name: 'chromium',
       testMatch: /web\.spec\.ts/,
       use: { browserName: 'chromium' },
+    },
+    // Login-heavy cases (lockout, sessions). /auth/login allows 10 requests
+    // per minute per client IP, so these run alone, after the other
+    // projects, and wait for a fresh rate-limit window first.
+    {
+      name: 'auth-limits',
+      testMatch: /auth-limits\.spec\.ts/,
+      dependencies: ['api', 'chromium'],
+      timeout: 180_000,
     },
   ],
 });

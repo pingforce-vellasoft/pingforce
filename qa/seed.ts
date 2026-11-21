@@ -51,6 +51,10 @@ async function seed(): Promise<void> {
           ['admin', 'ADMIN_MANAGER'],
           ['employee', 'EMPLOYEE_FIELD_STAFF'],
           ['restricted', 'QA_NO_GRANTS'],
+          // Dedicated to auth-limits.spec.ts: locking or force-logging-out
+          // these never disturbs the shared sessions other tests use.
+          ['lockout', 'EMPLOYEE_FIELD_STAFF'],
+          ['sessions', 'EMPLOYEE_FIELD_STAFF'],
         ]) {
           const role = await tx.role.upsert({
             where: { tenantId_code: { tenantId: tenant.id, code: roleCode } },
