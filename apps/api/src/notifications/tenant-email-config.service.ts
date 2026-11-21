@@ -9,6 +9,7 @@ import { IPrismaService } from '@pingforce-monorepo/shared';
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import { allowedSmtpHosts, checkSmtpHost } from './smtp-host-guard';
 
 export interface TenantEmailTransport {
   readonly transporter: Transporter;
@@ -45,6 +46,7 @@ export class TenantEmailConfigService {
   private readonly logger = new Logger(TenantEmailConfigService.name);
   private readonly cache = new Map<string, CacheEntry>();
   private readonly encryptionKey: Buffer | null;
+  private readonly allowedHosts: ReadonlySet<string>;
 
   constructor(
     @Inject('IPrismaService') private readonly prisma: IPrismaService,
@@ -52,6 +54,9 @@ export class TenantEmailConfigService {
   ) {
     this.encryptionKey = TenantEmailConfigService.parseKey(
       config.get<string>('EMAIL_CONFIG_ENCRYPTION_KEY'),
+    );
+    this.allowedHosts = allowedSmtpHosts(
+      config.get<string>('TENANT_SMTP_ALLOWED_HOSTS'),
     );
     if (!this.encryptionKey) {
       this.logger.warn(
@@ -128,6 +133,14 @@ export class TenantEmailConfigService {
     input: UpsertEmailConfigInput,
     updatedBy?: string,
   ): Promise<Record<string, unknown>> {
+    const hostCheck = await checkSmtpHost(input.host, this.allowedHosts);
+    if (!hostCheck.ok) {
+      throw new BadRequestException(
+        hostCheck.reason === 'UNRESOLVABLE'
+          ? 'SMTP host could not be resolved'
+          : 'SMTP host must resolve to a public internet address',
+      );
+    }
     const passwordEnc =
       input.password !== undefined && input.password !== ''
         ? this.encrypt(input.password)
@@ -175,12 +188,25 @@ export class TenantEmailConfigService {
     });
 
     let transport: TenantEmailTransport | null = null;
-    if (cfg && cfg.status === 'ACTIVE') {
+    // Re-checked at send time: the name may resolve elsewhere now than when
+    // it was saved. The transport connects to the checked address and keeps
+    // the name for TLS certificate validation.
+    const hostCheck =
+      cfg && cfg.status === 'ACTIVE'
+        ? await checkSmtpHost(cfg.host, this.allowedHosts)
+        : null;
+    if (hostCheck && !hostCheck.ok) {
+      this.logger.warn(
+        `Tenant ${tenantId} SMTP host refused (${hostCheck.reason}), falling back to global SMTP`,
+      );
+    }
+    if (cfg && hostCheck?.ok) {
       try {
         const transporter = nodemailer.createTransport({
-          host: cfg.host,
+          host: hostCheck.connectTo,
           port: cfg.port,
           secure: cfg.secure,
+          tls: { servername: cfg.host },
           auth: cfg.username
             ? {
                 user: cfg.username,

@@ -112,6 +112,20 @@ export class LeaveTransactionRepository {
       select: { id: true },
     });
   }
+  async employeeById(
+    tenantId: string,
+    id: string,
+  ): Promise<{ id: string } | null> {
+    return this.client.employee.findFirst({
+      where: { tenantId, id, deletedAt: null },
+      select: { id: true },
+    });
+  }
+  async createBalance(
+    data: Prisma.LeaveBalanceUncheckedCreateInput,
+  ): Promise<LeaveBalance> {
+    return this.client.leaveBalance.create({ data });
+  }
   async owner(
     tenantId: string,
     employeeId: string,

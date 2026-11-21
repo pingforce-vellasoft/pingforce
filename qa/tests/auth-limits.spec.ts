@@ -937,7 +937,7 @@ test('P2-AUTH-17/18/19 + P2-TEN-01..04 reset, OTP, self-signup by email code', a
 /**
  * P2-AUTH-12 part 1: lock lockout2 (QA lockout is 1 minute, see
  * deploy/qa/compose.yml). The next case starts with a fresh-window wait,
- * which also outlasts the lock. 6 logins.
+ * which also outlasts the lock. 8 logins.
  */
 test('P2-AUTH-12 lock a dedicated account (expiry checked next)', async ({
   request,
@@ -950,6 +950,28 @@ test('P2-AUTH-12 lock a dedicated account (expiry checked next)', async ({
     ).toBe(401);
   const locked = await attempt(request, 'lockout2');
   expect(locked.status(), await locked.text()).toBe(403);
+
+  // Enumeration: an unknown workspace code reads exactly like a wrong
+  // password, so codes cannot be probed.
+  const unknown = await request.post('/api/v1/auth/login', {
+    data: {
+      ...credentials('employee'),
+      tenantCode: `NOPE${Date.now()}`,
+      password: 'wrong-password',
+    },
+  });
+  // Compared with an unknown user in the real workspace, so no seeded
+  // account picks up a failed attempt.
+  const wrong = await request.post('/api/v1/auth/login', {
+    data: {
+      ...credentials('employee'),
+      email: `nobody-${Date.now()}@qa.pingforce.test`,
+      password: 'wrong-password',
+    },
+  });
+  expect(unknown.status(), await unknown.text()).toBe(401);
+  expect(wrong.status()).toBe(401);
+  expect((await unknown.json()).message).toBe((await wrong.json()).message);
 });
 
 /**

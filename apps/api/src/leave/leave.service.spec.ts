@@ -52,6 +52,10 @@ function setup() {
     notificationTemplates: jest.fn().mockResolvedValue(undefined),
     reportingManager: jest.fn().mockResolvedValue(null),
     assignedApprover: jest.fn().mockResolvedValue(null),
+    employeeById: jest.fn().mockResolvedValue({ id: 'e2' }),
+    createBalance: jest
+      .fn()
+      .mockImplementation(async (data) => ({ id: 'b-new', ...data })),
   };
   const repository = {
     read: () => repo,
@@ -264,10 +268,12 @@ describe('Leave lifecycle', () => {
     ).resolves.toMatchObject({ requestedDays: 0.5 });
   });
   it('derives self-service employee from authenticated user', async () => {
-    const { service, repo } = setup();
+    const { service, repo, rbac } = setup();
     await service.getMyBalances('t1', 'u1', 2026);
     expect(repo.employee).toHaveBeenCalledWith('t1', 'u1');
     expect(repo.balances).toHaveBeenCalledWith('t1', 'e1', 2026);
+    // Field staff hold no LEAVES:READ, so another employee is off limits.
+    rbac.hasPermission.mockResolvedValue(false);
     await expect(
       service.getLeaveBalances('t1', 'u1', 'e2', 2026),
     ).rejects.toThrow('own leave balance');
@@ -484,5 +490,103 @@ describe('Leave decision notifications to the employee', () => {
     await service.updateLeaveStatus('t1', 'r1', 'APPROVED', 'manager-user');
     expect(repo.owner).toHaveBeenCalledWith('t1', 'e1');
     expect(inApp.create.mock.calls[0][0].recipientId).toBe('u1');
+  });
+  describe('leave balances for admins', () => {
+    it('lets a leave reader see an in-scope employee balance', async () => {
+      const { service, repo, rbac } = setup();
+      rbac.buildEmployeeScopeFilter.mockResolvedValue({});
+      await service.getLeaveBalances('t1', 'admin', 'e2', 2026);
+      expect(rbac.hasPermission).toHaveBeenCalledWith(
+        'admin',
+        'LEAVES',
+        'READ',
+      );
+      expect(repo.employeeById).toHaveBeenCalledWith('t1', 'e2');
+      expect(repo.balances).toHaveBeenCalledWith('t1', 'e2', 2026);
+    });
+
+    it('refuses another employee balance without LEAVES:READ', async () => {
+      const { service, rbac } = setup();
+      rbac.hasPermission.mockResolvedValue(false);
+      await expect(
+        service.getLeaveBalances('t1', 'u1', 'e2', 2026),
+      ).rejects.toThrow('your own leave balance');
+    });
+
+    it('hides an employee outside the reader scope', async () => {
+      const { service, repo } = setup();
+      // TEAM scope covers e1 only (setup default).
+      await expect(
+        service.getLeaveBalances('t1', 'manager', 'e2', 2026),
+      ).rejects.toThrow('Employee not found');
+      expect(repo.balances).not.toHaveBeenCalled();
+    });
+
+    it('creates an entitlement when none exists', async () => {
+      const { service, repo, rbac } = setup();
+      rbac.buildEmployeeScopeFilter.mockResolvedValue({});
+      repo.balance.mockResolvedValue(null);
+      const saved = await service.setLeaveBalance(
+        't1',
+        'admin',
+        'e2',
+        { leaveTypeId: 'lt1', year: 2026, totalDays: 12 },
+        'req-1',
+      );
+      expect(saved).toMatchObject({ totalDays: 12, availableDays: 12 });
+      expect(rbac.getDataScope).toHaveBeenCalledWith(
+        'admin',
+        'LEAVES',
+        'ALLOCATE',
+      );
+      expect(repo.audit.mock.calls[0][0]).toMatchObject({
+        action: 'LEAVE_BALANCE_SET',
+        requestId: 'req-1',
+      });
+    });
+
+    it('keeps used and reserved days when the entitlement changes', async () => {
+      const { service, repo, rbac } = setup();
+      rbac.buildEmployeeScopeFilter.mockResolvedValue({});
+      // Existing: 1 used + 1 reserved.
+      const saved = await service.setLeaveBalance('t1', 'admin', 'e2', {
+        leaveTypeId: 'lt1',
+        year: 2026,
+        totalDays: 15,
+      });
+      expect(repo.changeBalance).toHaveBeenCalledWith('t1', 'b1', {
+        totalDays: 15,
+        availableDays: 13,
+        updatedBy: 'admin',
+      });
+      expect(saved.availableDays).toBe(13);
+    });
+
+    it('refuses an entitlement below days already committed', async () => {
+      const { service, repo, rbac } = setup();
+      rbac.buildEmployeeScopeFilter.mockResolvedValue({});
+      await expect(
+        service.setLeaveBalance('t1', 'admin', 'e2', {
+          leaveTypeId: 'lt1',
+          year: 2026,
+          totalDays: 1,
+        }),
+      ).rejects.toThrow('cannot be below the 2 days');
+      expect(repo.changeBalance).not.toHaveBeenCalled();
+    });
+
+    it('refuses an unknown leave type or an employee from another tenant', async () => {
+      const { service, repo, rbac } = setup();
+      rbac.buildEmployeeScopeFilter.mockResolvedValue({});
+      repo.type.mockResolvedValueOnce(null);
+      const dto = { leaveTypeId: 'lt1', year: 2026, totalDays: 5 };
+      await expect(
+        service.setLeaveBalance('t1', 'admin', 'e2', dto),
+      ).rejects.toThrow('Leave type not found');
+      repo.employeeById.mockResolvedValueOnce(null);
+      await expect(
+        service.setLeaveBalance('t1', 'admin', 'e9', dto),
+      ).rejects.toThrow('Employee not found');
+    });
   });
 });

@@ -71,6 +71,8 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: '1025'
       SMTP_FROM: qa@pingforce.test
+      # The QA operations case points a tenant at Mailpit, a private host.
+      TENANT_SMTP_ALLOWED_HOSTS: mailpit
       ALLOW_TEST_RESET_ENDPOINT: 'false'
     command:
       [

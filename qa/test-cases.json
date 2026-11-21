@@ -3542,5 +3542,24 @@
       "file": "qa/tests/auth-limits.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/qa-jobs/qa-jobs.controller.spec.ts"
+  },
+  {
+    "id": "P3-LV-13",
+    "module": "Leave",
+    "title": "Admin sets leave entitlement",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": ["Isolated QA database seeded with QA_ALPHA and QA_BETA"],
+    "steps": [
+      "Admin sets 10 then 14.5 days of QA_ANNUAL for an employee; staff and another tenant try; invalid values"
+    ],
+    "expected": [
+      "Balance saved and listed; LEAVE_BALANCE_SET audited; staff 403; other tenant 404; -1 and 1.25 rejected 400"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/timers.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
   }
 ]

@@ -58,7 +58,7 @@ void main() {
       // submitLogin() reads these off the state, but the visible text lives in
       // the screen's own TextEditingControllers. Wiping the state (as a blanket
       // ref.invalidate does) leaves a form that looks filled and submits an
-      // empty workspace code — the API answers that with 404 Tenant not found.
+      // empty workspace code — the API rejects that as invalid credentials.
       final state = container.read(loginProvider);
       expect(state.isAuthenticated, isFalse);
       expect(state.tenantCode, 'GATE100');

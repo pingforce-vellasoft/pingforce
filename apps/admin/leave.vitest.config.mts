@@ -4,7 +4,10 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['apps/admin/src/app/pages/workforce/leave.service.spec.ts'],
+    include: [
+      'apps/admin/src/app/pages/workforce/leave.service.spec.ts',
+      'apps/admin/src/app/pages/workforce/employee-details.service.spec.ts',
+    ],
     maxWorkers: 1,
     fileParallelism: false,
   },

@@ -1,6 +1,16 @@
 import { BadRequestException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import { lookup } from 'node:dns/promises';
 import { TenantEmailConfigService } from './tenant-email-config.service';
+
+// No real DNS in unit tests: *.x.io is public, internal.x.io is private.
+jest.mock('node:dns/promises', () => ({
+  lookup: jest.fn(async (host: string) =>
+    host === 'internal.x.io'
+      ? [{ address: '10.0.0.7', family: 4 }]
+      : [{ address: '93.184.216.34', family: 4 }],
+  ),
+}));
 
 /**
  * Per-tenant email provider config (Email.md §5):
@@ -15,6 +25,7 @@ type Ctor = ConstructorParameters<typeof TenantEmailConfigService>;
 function makeService(opts: {
   key?: string;
   config?: Record<string, unknown> | null;
+  allowedHosts?: string;
 }) {
   const prisma = {
     tenantEmailConfig: {
@@ -25,7 +36,11 @@ function makeService(opts: {
   };
   const config = {
     get: jest.fn((name: string) =>
-      name === 'EMAIL_CONFIG_ENCRYPTION_KEY' ? opts.key : undefined,
+      name === 'EMAIL_CONFIG_ENCRYPTION_KEY'
+        ? opts.key
+        : name === 'TENANT_SMTP_ALLOWED_HOSTS'
+          ? opts.allowedHosts
+          : undefined,
     ),
   };
   const service = new TenantEmailConfigService(
@@ -168,5 +183,51 @@ describe('TenantEmailConfigService', () => {
 
     // 1 initial load + 1 getMasked inside upsert + 1 reload after invalidation
     expect(prisma.tenantEmailConfig.findUnique).toHaveBeenCalledTimes(3);
+  });
+
+  describe('SMTP host restriction', () => {
+    it.each(['10.0.0.5', '127.0.0.1', '169.254.169.254', 'internal.x.io'])(
+      'refuses to save %s',
+      async (host) => {
+        const { service, prisma } = makeService({ key: HEX_KEY });
+        await expect(
+          service.upsert('t1', { host, fromAddress: 'a@x.io' }),
+        ).rejects.toThrow('public internet address');
+        expect(prisma.tenantEmailConfig.upsert).not.toHaveBeenCalled();
+      },
+    );
+
+    it('refuses a host that does not resolve', async () => {
+      (lookup as jest.Mock).mockRejectedValueOnce(new Error('ENOTFOUND'));
+      const { service } = makeService({ key: HEX_KEY });
+      await expect(
+        service.upsert('t1', { host: 'nope.x.io', fromAddress: 'a@x.io' }),
+      ).rejects.toThrow('could not be resolved');
+    });
+
+    it('allows an exempted host such as the QA mailbox', async () => {
+      const { service, prisma } = makeService({
+        key: HEX_KEY,
+        allowedHosts: 'mailpit, other',
+      });
+      await service.upsert('t1', { host: 'mailpit', fromAddress: 'a@x.io' });
+      expect(prisma.tenantEmailConfig.upsert).toHaveBeenCalled();
+    });
+
+    it('falls back to global SMTP when a saved host now resolves privately', async () => {
+      const { service } = makeService({
+        key: HEX_KEY,
+        config: {
+          host: 'internal.x.io',
+          port: 587,
+          secure: false,
+          username: null,
+          passwordEnc: null,
+          fromAddress: 'a@x.io',
+          status: 'ACTIVE',
+        },
+      });
+      expect(await service.getTransport('t1')).toBeNull();
+    });
   });
 });
