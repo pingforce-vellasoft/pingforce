@@ -368,8 +368,8 @@
     "steps": ["Bind a synthetic handset, sign check-in and later checkout"],
     "expected": ["One session closes; worked minutes match server calculation"],
     "automation": {
-      "status": "planned",
-      "file": null
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
   },
@@ -386,8 +386,8 @@
     "steps": ["Punch inside assigned, outside and in unassigned geofences"],
     "expected": ["Only assigned valid location accepted"],
     "automation": {
-      "status": "planned",
-      "file": null
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
   },
@@ -404,8 +404,8 @@
     "steps": ["Replay nonce; change timestamp/location after signing"],
     "expected": ["Rejected without duplicate attendance"],
     "automation": {
-      "status": "planned",
-      "file": null
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/attendance/punch-signature.service.spec.ts"
   },
@@ -1784,5 +1784,41 @@
       "file": "qa/tests/auth-limits.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/devices/devices.service.spec.ts"
+  },
+  {
+    "id": "P3-GEO-03",
+    "module": "Geofences",
+    "title": "Outside the assigned geofence",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Dedicated QA-PUNCH employee with a bound Ed25519 test handset"
+    ],
+    "steps": ["Signed punch ~60 km from the assigned site"],
+    "expected": ["400 GEOFENCE-005"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/geofence-assignment.service.spec.ts"
+  },
+  {
+    "id": "P3-GEO-04",
+    "module": "Geofences",
+    "title": "No assignment",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Dedicated QA-PUNCH employee with a bound Ed25519 test handset"
+    ],
+    "steps": ["Bound employee with no geofence punches"],
+    "expected": ["400 GEOFENCE-001 (contact admin)"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/geofence-assignment.service.spec.ts"
   }
 ]

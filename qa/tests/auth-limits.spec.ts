@@ -7,6 +7,7 @@ import {
   login,
   type Session,
 } from './fixtures';
+import { newHandset, signedPunch } from './punch-signing';
 
 /**
  * Login-heavy Phase 2 auth cases (test plan P2-AUTH-xx).
@@ -269,4 +270,120 @@ test('P3-DEV-01..06 bind once, change only by approved request, admin revoke', a
     publicKey: `ed25519:qa-key-a2-${tag}`,
   });
   expect(again.status(), await again.text()).toBe(201);
+});
+
+/**
+ * P3-ATT signed punches with a real Ed25519 handset key (ATT-001/002/003,
+ * P3-GEO-03/04). One more login in the sessions window (6 in total), on the
+ * dedicated QA-PUNCH employee.
+ */
+test('ATT-001..003 signed punch: geofence, freshness, tamper, replay, in/out', async ({
+  request,
+  accounts,
+}) => {
+  const worker = await login(request, 'punch');
+  const staff = bearer(worker);
+  const admin = bearer(accounts.admin);
+  const SITE = { latitude: 12.9716, longitude: 77.5946 };
+  const handset = newHandset();
+  const punch = (body: object) =>
+    request.post('/api/v1/attendance/punch', { headers: staff, data: body });
+  const refusedWith = async (body: object, status: number, code?: string) => {
+    const response = await punch(body);
+    const text = await response.text();
+    expect(response.status(), text).toBe(status);
+    if (code) expect(JSON.parse(text).errorCode, text).toBe(code);
+  };
+
+  const employees = (await (
+    await request.get('/api/v1/employees?take=100', { headers: admin })
+  ).json()) as { id: string; employeeCode: string }[];
+  const employeeId = employees.find((e) => e.employeeCode === 'QA-PUNCH')!.id;
+  expect(employeeId).toBeTruthy();
+
+  const bound = await request.post('/api/v1/devices/bind', {
+    headers: staff,
+    data: { deviceId: handset.deviceId, publicKey: handset.publicKey },
+  });
+  expect(bound.status(), await bound.text()).toBe(201);
+
+  // P3-GEO-04: bound, but no work location assigned.
+  await refusedWith(signedPunch(handset, SITE), 400, 'GEOFENCE-001');
+
+  const site = await request.post('/api/v1/attendance/geofence', {
+    headers: admin,
+    data: {
+      name: `QA punch site ${handset.deviceId.slice(-8)}`,
+      ...SITE,
+      radiusMeters: 150,
+    },
+  });
+  expect(site.status(), await site.text()).toBe(201);
+  const siteId = (await site.json()).id as string;
+  try {
+    const assigned = await request.post(
+      `/api/v1/attendance/geofence/${siteId}/employees`,
+      { headers: admin, data: { employeeIds: [employeeId], reassign: true } },
+    );
+    expect(assigned.ok(), await assigned.text()).toBeTruthy();
+
+    // P3-GEO-03: assigned, but standing ~60 km away.
+    await refusedWith(
+      signedPunch(handset, { latitude: 13.5, longitude: 77.5946 }),
+      400,
+      'GEOFENCE-005',
+    );
+    // ATT-003: stale, imprecise, mocked, tampered and foreign-handset punches.
+    await refusedWith(
+      signedPunch(handset, {
+        ...SITE,
+        timestamp: new Date(Date.now() - 10 * 60_000).toISOString(),
+      }),
+      400,
+      'PUNCH_TIMESTAMP_INVALID',
+    );
+    await refusedWith(
+      signedPunch(handset, { ...SITE, accuracy: 500 }),
+      400,
+      'GPS_ACCURACY_TOO_LOW',
+    );
+    await refusedWith(
+      signedPunch(handset, { ...SITE, isMockLocation: true }),
+      400,
+      'MOCK_LOCATION_DETECTED',
+    );
+    await refusedWith(
+      { ...signedPunch(handset, SITE), latitude: SITE.latitude + 0.0001 },
+      400,
+      'INVALID_DEVICE_SIGNATURE',
+    );
+    await refusedWith(signedPunch(newHandset(), SITE), 401, 'UNTRUSTED_DEVICE');
+
+    // ATT-001: a valid punch checks in; the same signed body again is a replay.
+    const checkIn = signedPunch(handset, SITE);
+    const inResponse = await punch(checkIn);
+    expect(inResponse.status(), await inResponse.text()).toBe(201);
+    const session = (await inResponse.json()) as {
+      id: string;
+      punchIn: string;
+      punchOut: string | null;
+    };
+    expect(session.punchOut).toBeNull();
+    await refusedWith(checkIn, 409);
+    const today = await request.get('/api/v1/attendance/today', {
+      headers: staff,
+    });
+    expect(today.status(), await today.text()).toBe(200);
+    expect(await today.text()).toContain(session.id);
+
+    // The next punch checks out; a third within 15 minutes is debounced.
+    const outResponse = await punch(signedPunch(handset, SITE));
+    expect(outResponse.status(), await outResponse.text()).toBe(201);
+    expect((await outResponse.json()).punchOut).toBeTruthy();
+    await refusedWith(signedPunch(handset, SITE), 400);
+  } finally {
+    await request.delete(`/api/v1/attendance/geofence/${siteId}`, {
+      headers: admin,
+    });
+  }
 });
