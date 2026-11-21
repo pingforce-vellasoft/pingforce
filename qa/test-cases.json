@@ -1592,5 +1592,83 @@
       "file": "qa/tests/geofence.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/attendance/geofence-assignment.service.spec.ts"
+  },
+  {
+    "id": "P3-TRK-03",
+    "module": "Tracking",
+    "title": "Office staff not tracked",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Tenant admin (no field employee record) posts a ping"],
+    "expected": ["Refused (401/403)"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/tracking.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/tracking/tracking.service.spec.ts"
+  },
+  {
+    "id": "P3-TRK-04",
+    "module": "Tracking",
+    "title": "Offline points",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Upload a batch, retry it, add a late older ping"],
+    "expected": [
+      "Retry stores nothing; trail in time order without duplicates"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/tracking.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/tracking/tracking.service.spec.ts"
+  },
+  {
+    "id": "P3-TRK-05",
+    "module": "Tracking",
+    "title": "Admin live map",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Admin reads live, trail, summary; staff and other tenant try the same"
+    ],
+    "expected": ["Admin sees newest fix; staff 403; other tenant sees nothing"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/tracking.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/tracking/tracking.service.spec.ts"
+  },
+  {
+    "id": "P3-TRK-07",
+    "module": "Tracking",
+    "title": "Clock guard",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Upload a ping dated tomorrow, then a current one"],
+    "expected": [
+      "Future ping dropped (rejected 1); live map follows the current ping"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/tracking.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/tracking/tracking.service.spec.ts"
   }
 ]

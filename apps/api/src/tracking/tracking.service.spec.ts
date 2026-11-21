@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   NotFoundException,
   UnauthorizedException,
@@ -109,7 +110,7 @@ describe('TrackingService.ingestBatch', () => {
       pings: [ping(), ping({ clientRef: 'c2' })],
     } as never);
 
-    expect(res).toEqual({ accepted: 2, received: 2 });
+    expect(res).toEqual({ accepted: 2, received: 2, rejected: 0 });
     const arg = prisma.employeeLocation.createMany.mock.calls[0][0];
     expect(arg.skipDuplicates).toBe(true);
     expect(arg.data[0]).toEqual(
@@ -143,6 +144,38 @@ describe('TrackingService.ingestBatch', () => {
     // Raw upsert params include the newest ping's latitude (50), not the older.
     const rawArgs = prisma.$executeRaw.mock.calls[0];
     expect(rawArgs).toContain(50);
+  });
+});
+
+describe('TrackingService.ingestBatch clock guard', () => {
+  it('drops future-dated pings so they cannot pin the live map', async () => {
+    const { service, prisma } = makeService({ createdCount: 1 });
+    const future = new Date(Date.now() + 24 * 3600_000).toISOString();
+    const now = new Date().toISOString();
+    const res = await service.ingestBatch(user, {
+      pings: [
+        ping({ clientRef: 'future', latitude: 10, capturedAt: future }),
+        ping({ clientRef: 'now', latitude: 20, capturedAt: now }),
+      ],
+    } as never);
+    expect(res).toEqual({ accepted: 1, received: 2, rejected: 1 });
+    const stored = prisma.employeeLocation.createMany.mock.calls[0][0].data;
+    expect(stored.map((p: { clientRef: string }) => p.clientRef)).toEqual([
+      'now',
+    ]);
+    // The live position comes from the accepted ping, not the future one.
+    expect(prisma.$executeRaw.mock.calls[0]).toContain(20);
+    expect(prisma.$executeRaw.mock.calls[0]).not.toContain(10);
+  });
+
+  it('writes nothing when every ping is future-dated', async () => {
+    const { service, prisma } = makeService({ createdCount: 0 });
+    const future = new Date(Date.now() + 3600_000).toISOString();
+    const res = await service.ingestBatch(user, {
+      pings: [ping({ capturedAt: future })],
+    } as never);
+    expect(res).toEqual({ accepted: 0, received: 1, rejected: 1 });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });
 
@@ -198,6 +231,14 @@ describe('TrackingService.getLive', () => {
 });
 
 describe('TrackingService.getTrail', () => {
+  it('400s on an unparseable from/to instead of a server error', async () => {
+    const { service, prisma } = makeService({ scope: { kind: 'ALL' } });
+    await expect(
+      service.getTrail(user, 'e1', 'not-a-date'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.employeeLocation.findMany).not.toHaveBeenCalled();
+  });
+
   it('404s (no query) when the target operator is outside the caller scope', async () => {
     const { service, prisma } = makeService({
       scope: { kind: 'IDS', employeeIds: ['e1'], userIds: ['u1'] },
