@@ -55,6 +55,7 @@ async function seed(): Promise<void> {
           // these never disturbs the shared sessions other tests use.
           ['lockout', 'EMPLOYEE_FIELD_STAFF'],
           ['sessions', 'EMPLOYEE_FIELD_STAFF'],
+          ['devices', 'EMPLOYEE_FIELD_STAFF'],
         ]) {
           const role = await tx.role.upsert({
             where: { tenantId_code: { tenantId: tenant.id, code: roleCode } },
@@ -79,6 +80,23 @@ async function seed(): Promise<void> {
               profile: { create: { firstName: 'QA', lastName: name } },
             },
           });
+          // Device binding tests rebind and revoke handsets, so they get
+          // their own employee record and never touch QA-EMPLOYEE's state.
+          if (name === 'devices') {
+            const existing = await tx.employee.findFirst({
+              where: { tenantId: tenant.id, userId: user.id, deletedAt: null },
+            });
+            if (!existing)
+              await tx.employee.create({
+                data: {
+                  tenantId: tenant.id,
+                  userId: user.id,
+                  employeeCode: 'QA-DEVICES',
+                  firstName: 'QA',
+                  lastName: 'Devices',
+                },
+              });
+          }
           if (name === 'employee') {
             const existing = await tx.employee.findFirst({
               where: { tenantId: tenant.id, userId: user.id, deletedAt: null },
