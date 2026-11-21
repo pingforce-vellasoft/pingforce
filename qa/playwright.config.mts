@@ -42,6 +42,7 @@ export default defineConfig({
         /phase2\.spec\.ts/,
         /phase4\.spec\.ts/,
         /platform-rules\.spec\.ts/,
+        /schema\.spec\.ts/,
         /spec-files\.spec\.ts/,
       ],
     },

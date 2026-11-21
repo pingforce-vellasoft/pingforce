@@ -3034,5 +3034,83 @@
       "file": "qa/tests/auth-limits.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/lead/pipeline-stage.service.spec.ts"
+  },
+  {
+    "id": "P2-AUTH-12",
+    "module": "Authentication",
+    "title": "Lock expires",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA (approver@ and lockout2@ accounts)",
+      "QA lockout window set to 1 minute (deploy/qa/compose.yml)"
+    ],
+    "steps": ["Lock an account, wait past the lock window, sign in"],
+    "expected": ["Locked (403) then signs in (200)"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/auth/password-policy.service.spec.ts"
+  },
+  {
+    "id": "P2-WF-01",
+    "module": "Workflows",
+    "title": "Approval routing",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA (approver@ and lockout2@ accounts)",
+      "QA lockout window set to 1 minute (deploy/qa/compose.yml)"
+    ],
+    "steps": [
+      "Active leave workflow naming one approver; another admin approves, then the named approver"
+    ],
+    "expected": ["Other admin 403; named approver approves"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/approvals/approvals.service.spec.ts"
+  },
+  {
+    "id": "P2-WF-02",
+    "module": "Workflows",
+    "title": "Delegation",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA (approver@ and lockout2@ accounts)",
+      "QA lockout window set to 1 minute (deploy/qa/compose.yml)"
+    ],
+    "steps": [
+      "Approver delegates to the admin; admin approves the next leave; self-delegation"
+    ],
+    "expected": ["Delegate approves; self-delegation 400"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/approvals/approvals.service.spec.ts"
+  },
+  {
+    "id": "P1-DB-05",
+    "module": "Database",
+    "title": "Tenant column",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA (approver@ and lockout2@ accounts)",
+      "QA lockout window set to 1 minute (deploy/qa/compose.yml)"
+    ],
+    "steps": ["Parse prisma/schema.prisma"],
+    "expected": [
+      "Every model has an indexed tenantId or a documented reason not to"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/schema.spec.ts"
+    },
+    "relatedUnitSuite": null
   }
 ]

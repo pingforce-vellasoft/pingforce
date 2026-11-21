@@ -75,6 +75,10 @@ async function seed(): Promise<void> {
           ['punch2', 'EMPLOYEE_FIELD_STAFF'],
           // Password reset test: its password changes during the run.
           ['reset', 'EMPLOYEE_FIELD_STAFF'],
+          // Lock-expiry case (QA lockout is 1 minute).
+          ['lockout2', 'EMPLOYEE_FIELD_STAFF'],
+          // Named workflow approver.
+          ['approver', 'ADMIN_MANAGER'],
         ]) {
           const role = await tx.role.upsert({
             where: { tenantId_code: { tenantId: tenant.id, code: roleCode } },

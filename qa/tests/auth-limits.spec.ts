@@ -9,6 +9,7 @@ import {
 } from './fixtures';
 import { newHandset, signedPunch } from './punch-signing';
 import { codeSentTo } from './mailbox';
+import { LEAVE_DAYS } from './leave-days';
 import { randomUUID } from 'node:crypto';
 
 /**
@@ -931,6 +932,149 @@ test('P2-AUTH-17/18/19 + P2-TEN-01..04 reset, OTP, self-signup by email code', a
     headers: bearer(founder),
   });
   expect(last.status(), await last.text()).toBe(400);
+});
+
+/**
+ * P2-AUTH-12 part 1: lock lockout2 (QA lockout is 1 minute, see
+ * deploy/qa/compose.yml). The next case starts with a fresh-window wait,
+ * which also outlasts the lock. 6 logins.
+ */
+test('P2-AUTH-12 lock a dedicated account (expiry checked next)', async ({
+  request,
+}) => {
+  test.setTimeout(150_000);
+  await freshLoginWindow();
+  for (let i = 1; i <= 5; i++)
+    expect(
+      (await attempt(request, 'lockout2', `wrong-${i}-${Date.now()}`)).status(),
+    ).toBe(401);
+  const locked = await attempt(request, 'lockout2');
+  expect(locked.status(), await locked.text()).toBe(403);
+});
+
+/**
+ * P2-AUTH-12 part 2 + P2-WF-01/02: the lock has expired; a leave workflow
+ * routes to its named approver only, and a delegate can act for them.
+ * Fresh window; 2 logins.
+ */
+test('P2-AUTH-12 + P2-WF-01/02 lock expires; approval routing and delegation', async ({
+  request,
+  accounts,
+}) => {
+  test.setTimeout(170_000);
+  await freshLoginWindow();
+  // The 1-minute lock has passed: the right password works again.
+  const expired = await attempt(request, 'lockout2');
+  expect(expired.status(), await expired.text()).toBe(200);
+
+  const admin = bearer(accounts.admin);
+  const approverSession = await login(request, 'approver');
+  const approver = bearer(approverSession);
+  const approverId = (
+    await (await request.get('/api/v1/auth/me', { headers: approver })).json()
+  ).userId as string;
+  const adminId = (
+    await (await request.get('/api/v1/auth/me', { headers: admin })).json()
+  ).userId as string;
+
+  const code = `QA_WF_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  const workflow = await request.post('/api/v1/workflows', {
+    headers: admin,
+    data: {
+      code,
+      name: 'QA leave approval',
+      module: 'LEAVES',
+      entityName: 'leave_request',
+      active: true,
+      stages: [
+        {
+          stageNumber: 1,
+          stageName: 'Named approver',
+          approverUserId: approverId,
+          slaHours: 24,
+        },
+      ],
+    },
+  });
+  expect(workflow.status(), await workflow.text()).toBe(201);
+  const workflowId = (await workflow.json()).id as string;
+  const staff = bearer(accounts.employee);
+  const types = (await (
+    await request.get('/api/v1/leaves/types', { headers: staff })
+  ).json()) as { id: string; code: string }[];
+  const typeId = types.find((t) => t.code === 'QA_ANNUAL')!.id;
+  const requestLeave = async (day: string) => {
+    const leave = await request.post('/api/v1/leaves/request', {
+      headers: staff,
+      data: {
+        leaveTypeId: typeId,
+        startDate: day,
+        endDate: day,
+        reason: 'QA workflow',
+      },
+    });
+    expect(leave.status(), await leave.text()).toBe(201);
+    return (await leave.json()).id as string;
+  };
+  const leaveIds: string[] = [];
+  try {
+    // P2-WF-01: only the named approver may decide.
+    const first = await requestLeave(LEAVE_DAYS[40]);
+    leaveIds.push(first);
+    const byAdmin = await request.post(`/api/v1/leaves/${first}/approve`, {
+      headers: admin,
+      data: { reason: 'QA not my stage' },
+    });
+    expect(byAdmin.status(), await byAdmin.text()).toBe(403);
+    const byApprover = await request.post(`/api/v1/leaves/${first}/approve`, {
+      headers: approver,
+      data: { reason: 'QA named approver' },
+    });
+    expect(byApprover.ok(), await byApprover.text()).toBeTruthy();
+    expect((await byApprover.json()).status).toBe('APPROVED');
+
+    // P2-WF-02: the approver delegates to the admin, who can then decide.
+    const delegation = await request.post('/api/v1/workflows/delegations', {
+      headers: admin,
+      data: {
+        delegatorUserId: approverId,
+        delegateUserId: adminId,
+        module: 'LEAVES',
+        reason: 'QA holiday cover',
+        startsAt: new Date(Date.now() - 60_000).toISOString(),
+        endsAt: new Date(Date.now() + 86_400_000).toISOString(),
+      },
+    });
+    expect(delegation.status(), await delegation.text()).toBe(201);
+    const second = await requestLeave(LEAVE_DAYS[41]);
+    leaveIds.push(second);
+    const byDelegate = await request.post(`/api/v1/leaves/${second}/approve`, {
+      headers: admin,
+      data: { reason: 'QA as delegate' },
+    });
+    expect(byDelegate.ok(), await byDelegate.text()).toBeTruthy();
+    expect((await byDelegate.json()).status).toBe('APPROVED');
+    // Self-delegation is refused.
+    const self = await request.post('/api/v1/workflows/delegations', {
+      headers: admin,
+      data: {
+        delegatorUserId: adminId,
+        delegateUserId: adminId,
+        startsAt: new Date().toISOString(),
+        endsAt: new Date(Date.now() + 3_600_000).toISOString(),
+      },
+    });
+    expect(self.status()).toBe(400);
+  } finally {
+    await request.post(`/api/v1/workflows/${workflowId}/deactivate`, {
+      headers: admin,
+    });
+    for (const id of leaveIds)
+      await request.post(`/api/v1/leaves/${id}/cancel`, {
+        headers: approver,
+        data: { reason: 'QA clean up' },
+      });
+  }
 });
 
 /**
