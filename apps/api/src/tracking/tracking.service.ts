@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -18,6 +19,12 @@ interface AuthUser {
 // A trail can grow large (a 10-hour shift at 60s = 600 points). Cap the trail
 // response so a wide time window can't return an unbounded result set.
 const TRAIL_MAX_POINTS = 2000;
+
+// A ping may be stamped a little ahead of the server (phone clock drift), but
+// not further: the live map keeps the newest capturedAt, so a single ping from
+// a wrong clock or a crafted request dated in the future would pin it there
+// and every real ping after it would be ignored as "older".
+const MAX_CLOCK_SKEW_MS = 5 * 60_000;
 
 @Injectable()
 export class TrackingService {
@@ -48,9 +55,19 @@ export class TrackingService {
       );
     }
 
+    // Future-dated pings are dropped, not stored: rejecting the whole batch
+    // would wedge the offline queue behind one bad fix.
+    const latestAllowed = Date.now() + MAX_CLOCK_SKEW_MS;
+    const pings = dto.pings.filter(
+      (p) => new Date(p.capturedAt).getTime() <= latestAllowed,
+    );
+    const rejected = dto.pings.length - pings.length;
+    if (pings.length === 0)
+      return { accepted: 0, received: dto.pings.length, rejected };
+
     // Newest ping in the batch drives the live-map position. Batches can arrive
     // out of order after an offline flush, so pick the max capturedAt.
-    const newest = dto.pings.reduce((a, b) =>
+    const newest = pings.reduce((a, b) =>
       new Date(a.capturedAt) >= new Date(b.capturedAt) ? a : b,
     );
 
@@ -62,7 +79,7 @@ export class TrackingService {
     // stored one, so an out-of-order offline flush can't rewind the live map.
     const [result] = await this.prisma.$transaction([
       this.prisma.employeeLocation.createMany({
-        data: dto.pings.map((p) => ({
+        data: pings.map((p) => ({
           tenantId: user.tenantId,
           employeeId: employee.id,
           latitude: p.latitude,
@@ -98,7 +115,7 @@ export class TrackingService {
       `,
     ]);
 
-    return { accepted: result.count, received: dto.pings.length };
+    return { accepted: result.count, received: dto.pings.length, rejected };
   }
 
   /**
@@ -183,8 +200,8 @@ export class TrackingService {
     }
 
     const capturedAt: Record<string, Date> = {};
-    if (from) capturedAt.gte = new Date(from);
-    if (to) capturedAt.lte = new Date(to);
+    if (from) capturedAt.gte = this.parseInstant(from, 'from');
+    if (to) capturedAt.lte = this.parseInstant(to, 'to');
 
     const points = await this.prisma.employeeLocation.findMany({
       where: {
@@ -214,6 +231,14 @@ export class TrackingService {
    * Consolidated daily summaries for one operator (field-time + top places),
    * newest day first. Same TRACKING:VIEW_LIVE scope as the live/trail reads.
    */
+  /** A bad `from`/`to` is the caller's mistake (400), not a server error. */
+  private parseInstant(value: string, name: string): Date {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime()))
+      throw new BadRequestException(`${name} must be an ISO date-time`);
+    return date;
+  }
+
   async getDailySummaries(user: AuthUser, employeeId: string, limit = 90) {
     const scope = await this.rbacService.resolveScopeIds(
       user.tenantId,

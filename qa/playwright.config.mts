@@ -38,6 +38,7 @@ export default defineConfig({
         /visits\.spec\.ts/,
         /faults\.spec\.ts/,
         /geofence\.spec\.ts/,
+        /tracking\.spec\.ts/,
         /spec-files\.spec\.ts/,
       ],
     },
