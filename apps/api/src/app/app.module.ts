@@ -39,6 +39,7 @@ import { ApprovalsModule } from '../approvals/approvals.module';
 import { VisitsModule } from '../visits/visits.module';
 import { ReportsModule } from '../reports/reports.module';
 import { SchedulerModule } from '../scheduler/scheduler.module';
+import { QaJobsModule } from '../qa-jobs/qa-jobs.module';
 import { MonitoringModule } from '../monitoring/monitoring.module';
 import { NetworkModule } from '../network/network.module';
 import { PortalModule } from '../portal/portal.module';
@@ -116,6 +117,8 @@ import { TestingService } from '../testing/testing.service';
     VisitsModule,
     ReportsModule,
     SchedulerModule,
+    // QA-only scheduled-job trigger; never loaded outside the QA stack.
+    ...(process.env.PINGFORCE_ENV === 'qa' ? [QaJobsModule] : []),
     MonitoringModule,
     NetworkModule,
     BillingModule,

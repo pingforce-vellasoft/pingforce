@@ -30,6 +30,6 @@ import { FaultAttemptsService } from './fault-attempts.service';
     FaultsSyncService,
     FaultAttemptsService,
   ],
-  exports: [SlaPolicyService, FaultsRepository],
+  exports: [SlaPolicyService, FaultsRepository, SlaMonitorProcessor],
 })
 export class FaultsModule {}

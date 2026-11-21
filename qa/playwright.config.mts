@@ -45,6 +45,7 @@ export default defineConfig({
         /schema\.spec\.ts/,
         /operations\.spec\.ts/,
         /admin-tools\.spec\.ts/,
+        /timers\.spec\.ts/,
         /spec-files\.spec\.ts/,
       ],
     },

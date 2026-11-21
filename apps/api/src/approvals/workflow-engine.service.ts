@@ -449,8 +449,8 @@ export class WorkflowEngineService {
    * SLA sweep (§12): flags in-progress instances past their stage SLA.
    * Escalation is audited (severity MEDIUM) so it feeds monitoring/alerts.
    */
-  async escalateOverdue(): Promise<number> {
-    const now = new Date();
+  /** `now` is injectable so the QA job trigger can run the sweep "as of" later. */
+  async escalateOverdue(now: Date = new Date()): Promise<number> {
     const overdue = await this.prisma.workflowInstance.findMany({
       where: {
         status: 'IN_PROGRESS',
