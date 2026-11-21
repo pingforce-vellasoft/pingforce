@@ -1124,5 +1124,133 @@
       "status": "planned",
       "file": null
     }
+  },
+  {
+    "id": "P1-API-01",
+    "module": "API platform",
+    "title": "Health check",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["GET /api/v1/health"],
+    "expected": ["200, status ok, database up"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/platform.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P1-API-02",
+    "module": "API platform",
+    "title": "API versioning",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Call /api/employees, /api/v2/employees, /api/health"],
+    "expected": ["404; /api/v1 routes answer"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/platform.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P1-API-04",
+    "module": "API platform",
+    "title": "Input validation",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["POST a lead with an unknown field and a wrong type"],
+    "expected": ["400 naming both fields"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/platform.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P1-API-05",
+    "module": "API platform",
+    "title": "Bad id in URL",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["GET /api/v1/leads/not-a-uuid"],
+    "expected": ["400, not 500"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/platform.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P1-API-06",
+    "module": "API platform",
+    "title": "No stack traces",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Trigger 401, 400 and 404 errors"],
+    "expected": ["Standard error JSON with requestId; no stack, paths or SQL"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/platform.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P1-API-07",
+    "module": "API platform",
+    "title": "Request id",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Send requests with and without x-request-id"],
+    "expected": [
+      "Header and error body share one id; unsafe client ids replaced"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/platform.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/common/request-id.spec.ts"
+  },
+  {
+    "id": "P1-API-08",
+    "module": "API platform",
+    "title": "Security headers",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Inspect API response headers"],
+    "expected": ["nosniff, frame options, HSTS, CSP; no X-Powered-By"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/platform.spec.ts"
+    },
+    "relatedUnitSuite": null
   }
 ]
