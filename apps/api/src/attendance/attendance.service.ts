@@ -512,8 +512,25 @@ export class AttendanceService {
   }
 
   async getGeofences(user: any) {
+    // GEOFENCES READ at TEAM/OWN scope (field staff hold OWN) lists only the
+    // sites assigned to employees in scope, not every site of the tenant.
+    const scope = await this.rbacService.resolveScopeIds(
+      user.tenantId,
+      user.userId,
+      'GEOFENCES',
+      ['READ'],
+    );
+    const assigned = this.rbacService.employeeScopeWhere(scope, 'employeeId');
+    if (assigned === null) return [];
     return this.prisma.geofence.findMany({
-      where: { tenantId: user.tenantId, active: true, deletedAt: null },
+      where: {
+        tenantId: user.tenantId,
+        active: true,
+        deletedAt: null,
+        ...(Object.keys(assigned).length > 0
+          ? { assignments: { some: { ...assigned, deletedAt: null } } }
+          : {}),
+      },
     });
   }
 

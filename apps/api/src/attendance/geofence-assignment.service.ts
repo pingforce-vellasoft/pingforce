@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -8,6 +9,7 @@ import {
 import { ExtendedPrismaClient } from '../prisma/prisma.module';
 import { AuditService } from '../audit/audit.service';
 import { GeofenceCacheService } from './geofence-cache.service';
+import { RbacService } from '../rbac/rbac.service';
 import {
   AssignEmployeesDto,
   AssignableEmployeesQueryDto,
@@ -43,7 +45,27 @@ export class GeofenceAssignmentService {
     @Inject('IPrismaService') private readonly prisma: ExtendedPrismaClient,
     private readonly auditService: AuditService,
     private readonly geofenceCache: GeofenceCacheService,
+    private readonly rbacService: RbacService,
   ) {}
+
+  /**
+   * Employee filter for the caller's GEOFENCES READ data scope (DataScope.md
+   * §6): `{}` for ALL, an id list for TEAM/OWN, null for none. Field staff
+   * hold READ at OWN scope so the mobile app can show their own sites; without
+   * this the roster, picker and per-employee routes listed every coworker.
+   */
+  private async readScopeWhere(
+    actor: Actor,
+    field: string,
+  ): Promise<Record<string, unknown> | null> {
+    const scope = await this.rbacService.resolveScopeIds(
+      actor.tenantId,
+      actor.userId,
+      'GEOFENCES',
+      ['READ'],
+    );
+    return this.rbacService.employeeScopeWhere(scope, field);
+  }
 
   /**
    * Resolves the geofence within the caller's tenant. Every public method
@@ -141,12 +163,20 @@ export class GeofenceAssignmentService {
   /** Employees currently assigned to one geofence. */
   async listAssigned(actor: Actor, geofenceId: string) {
     const geofence = await this.requireGeofence(actor.tenantId, geofenceId);
+    const scopeWhere = await this.readScopeWhere(actor, 'employeeId');
+    if (scopeWhere === null)
+      return {
+        geofence: { id: geofence.id, name: geofence.name },
+        total: 0,
+        employees: [],
+      };
 
     const rows = await this.prisma.employeeGeofence.findMany({
       where: {
         tenantId: actor.tenantId,
         geofenceId: geofence.id,
         deletedAt: null,
+        ...scopeWhere,
         // An employee soft-deleted after being assigned must not linger on the
         // roster. The assignment row survives for audit; the listing hides it.
         employee: { deletedAt: null },
@@ -197,6 +227,9 @@ export class GeofenceAssignmentService {
     query: AssignableEmployeesQueryDto,
   ) {
     await this.requireGeofence(actor.tenantId, geofenceId);
+    const readScope = await this.readScopeWhere(actor, 'id');
+    if (readScope === null)
+      throw new ForbiddenException('No access to employees for this geofence');
     const allowMultiple = await this.allowsMultiple(actor.tenantId);
     const scope = query.scope ?? 'ASSIGNABLE';
 
@@ -236,6 +269,7 @@ export class GeofenceAssignmentService {
       tenantId: actor.tenantId,
       deletedAt: null,
       employmentStatus: 'ACTIVE',
+      ...readScope,
       ...searchFilter,
       ...excludeClause,
     };
@@ -519,8 +553,15 @@ export class GeofenceAssignmentService {
 
   /** Geofences one employee is assigned to — powers the employee detail view. */
   async listForEmployee(actor: Actor, employeeId: string) {
+    const scopeWhere = await this.readScopeWhere(actor, 'id');
+    if (scopeWhere === null) throw new NotFoundException('Employee not found');
     const employee = await this.prisma.employee.findFirst({
-      where: { id: employeeId, tenantId: actor.tenantId, deletedAt: null },
+      where: {
+        AND: [
+          { id: employeeId, tenantId: actor.tenantId, deletedAt: null },
+          scopeWhere,
+        ],
+      },
       select: { id: true, firstName: true, lastName: true },
     });
     if (!employee) {
@@ -561,6 +602,12 @@ export class GeofenceAssignmentService {
    * per geofence plus how many active employees hold no assignment at all.
    */
   async coverageSummary(actor: Actor) {
+    // Tenant-wide head counts: only for callers who can see every employee.
+    const scopeWhere = await this.readScopeWhere(actor, 'id');
+    if (scopeWhere === null || Object.keys(scopeWhere).length > 0)
+      throw new ForbiddenException(
+        'Geofence coverage needs tenant-wide geofence access',
+      );
     const [counts, totalEmployees, assignedEmployees] = await Promise.all([
       this.prisma.employeeGeofence.groupBy({
         by: ['geofenceId'],

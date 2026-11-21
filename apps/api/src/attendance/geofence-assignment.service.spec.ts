@@ -1,9 +1,11 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { GeofenceAssignmentService } from './geofence-assignment.service';
+import type { ResolvedDataScope } from '../rbac/rbac.service';
 
 /**
  * Employee ↔ geofence assignment.
@@ -49,7 +51,10 @@ function makeService(opts: {
   }[];
   /** Assignments still held after an unassign, for the stranded calculation. */
   remainingAfterUnassign?: { employeeId: string; _count: { _all: number } }[];
+  /** Caller's GEOFENCES READ scope; tenant-wide unless a test says otherwise. */
+  scope?: ResolvedDataScope;
 }) {
+  const scope: ResolvedDataScope = opts.scope ?? { kind: 'ALL' };
   const tx = {
     employeeGeofence: {
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
@@ -105,6 +110,16 @@ function makeService(opts: {
     invalidateEmployees: jest.fn().mockResolvedValue(undefined),
   };
 
+  const rbacService = {
+    resolveScopeIds: jest.fn().mockResolvedValue(scope),
+    employeeScopeWhere: (s: ResolvedDataScope, field: string) =>
+      s.kind === 'NONE'
+        ? null
+        : s.kind === 'ALL'
+          ? {}
+          : { [field]: { in: [...s.employeeIds] } },
+  };
+
   const service = new GeofenceAssignmentService(
     prisma as unknown as ConstructorParameters<
       typeof GeofenceAssignmentService
@@ -115,6 +130,9 @@ function makeService(opts: {
     geofenceCache as unknown as ConstructorParameters<
       typeof GeofenceAssignmentService
     >[2],
+    rbacService as unknown as ConstructorParameters<
+      typeof GeofenceAssignmentService
+    >[3],
   );
 
   return { service, prisma, tx, geofenceCache, auditService };
@@ -371,6 +389,73 @@ describe('GeofenceAssignmentService', () => {
         service.unassign(ACTOR, 'g-foreign', { employeeIds: ['e1'] }),
       ).rejects.toBeInstanceOf(NotFoundException);
       expect(prisma.employeeGeofence.updateMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('read data scope (field staff hold GEOFENCES READ at OWN)', () => {
+    const OWN: ResolvedDataScope = {
+      kind: 'IDS',
+      employeeIds: ['e-self'],
+      userIds: ['u1'],
+    };
+
+    it('roster lists only employees in scope', async () => {
+      const { service, prisma } = makeService({ scope: OWN });
+      prisma.employeeGeofence.findMany.mockResolvedValue([]);
+      await service.listAssigned(ACTOR, 'g1');
+      expect(prisma.employeeGeofence.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ employeeId: { in: ['e-self'] } }),
+        }),
+      );
+    });
+
+    it('assignable picker is limited to employees in scope', async () => {
+      const { service, prisma } = makeService({ scope: OWN });
+      prisma.employee.findMany.mockResolvedValue([]);
+      prisma.employee.count.mockResolvedValue(0);
+      await service.listAssignable(ACTOR, 'g1', {});
+      expect(prisma.employee.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: { in: ['e-self'] } }),
+        }),
+      );
+    });
+
+    it("another employee's geofences are a 404", async () => {
+      const { service, prisma } = makeService({ scope: OWN });
+      prisma.employee.findFirst.mockResolvedValue(null);
+      await expect(
+        service.listForEmployee(ACTOR, 'e-coworker'),
+      ).rejects.toThrow(NotFoundException);
+      expect(prisma.employee.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            AND: [
+              { id: 'e-coworker', tenantId: 't1', deletedAt: null },
+              { id: { in: ['e-self'] } },
+            ],
+          },
+        }),
+      );
+    });
+
+    it('tenant-wide coverage needs ALL scope', async () => {
+      const { service, prisma } = makeService({ scope: OWN });
+      await expect(service.coverageSummary(ACTOR)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(prisma.employee.count).not.toHaveBeenCalled();
+    });
+
+    it('no scope at all: picker refused, roster empty', async () => {
+      const { service, prisma } = makeService({ scope: { kind: 'NONE' } });
+      await expect(service.listAssignable(ACTOR, 'g1', {})).rejects.toThrow(
+        ForbiddenException,
+      );
+      const roster = await service.listAssigned(ACTOR, 'g1');
+      expect(roster.total).toBe(0);
+      expect(prisma.employeeGeofence.findMany).not.toHaveBeenCalled();
     });
   });
 

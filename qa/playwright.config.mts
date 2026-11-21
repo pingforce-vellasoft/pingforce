@@ -37,6 +37,7 @@ export default defineConfig({
         /leave\.spec\.ts/,
         /visits\.spec\.ts/,
         /faults\.spec\.ts/,
+        /geofence\.spec\.ts/,
         /spec-files\.spec\.ts/,
       ],
     },
