@@ -2330,5 +2330,513 @@
       "file": "qa/tests/leave.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
+  },
+  {
+    "id": "P4-FLT-01",
+    "module": "Faults",
+    "title": "Lifecycle",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["In progress, hold, resolve, reopen, close; invalid moves"],
+    "expected": [
+      "Valid moves saved, invalid 409, CLOSED terminal, history kept"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/domain/fault-state.spec.ts"
+  },
+  {
+    "id": "P4-ATT-01",
+    "module": "Fault attempts",
+    "title": "Add attempt",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Assigned employee adds an attempt"],
+    "expected": ["201"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/fault-attempts.service.spec.ts"
+  },
+  {
+    "id": "P4-ATT-02",
+    "module": "Fault attempts",
+    "title": "Numbering",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Add 3 attempts"],
+    "expected": ["Numbered 1, 2, 3"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/fault-attempts.service.spec.ts"
+  },
+  {
+    "id": "P4-ATT-03",
+    "module": "Fault attempts",
+    "title": "Resolved needs notes",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Outcome RESOLVED without notes"],
+    "expected": ["400"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/fault-attempts.service.spec.ts"
+  },
+  {
+    "id": "P4-ATT-04",
+    "module": "Fault attempts",
+    "title": "End before start",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["endedAt before startedAt"],
+    "expected": ["400"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/fault-attempts.service.spec.ts"
+  },
+  {
+    "id": "P4-ATT-05",
+    "module": "Fault attempts",
+    "title": "Future start",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["startedAt an hour ahead"],
+    "expected": ["400"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/fault-attempts.service.spec.ts"
+  },
+  {
+    "id": "P4-ATT-06",
+    "module": "Fault attempts",
+    "title": "Closed fault",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Attempt on a RESOLVED fault"],
+    "expected": ["Refused"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/fault-attempts.service.spec.ts"
+  },
+  {
+    "id": "P4-ATT-07",
+    "module": "Fault attempts",
+    "title": "Status unchanged",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Record outcome RESOLVED"],
+    "expected": ["Fault stays IN_PROGRESS"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/fault-attempts.service.spec.ts"
+  },
+  {
+    "id": "P4-ATT-09",
+    "module": "Fault attempts",
+    "title": "Not my fault",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Employee posts on an unassigned fault; no-grant role posts"],
+    "expected": ["404; 403"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/fault-attempts.service.spec.ts"
+  },
+  {
+    "id": "P4-ATT-14",
+    "module": "Fault attempts",
+    "title": "Retried save",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Same clientRef twice"],
+    "expected": ["One attempt recorded"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/faults/fault-attempts.service.spec.ts"
+  },
+  {
+    "id": "P4-CUS-01",
+    "module": "Customers",
+    "title": "Create and edit",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Create, edit, duplicate code"],
+    "expected": ["Saved; duplicate refused"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/customer/customer.service.spec.ts"
+  },
+  {
+    "id": "P4-CUS-02",
+    "module": "Customers",
+    "title": "Foreign links",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Parent, account manager, company from another tenant"],
+    "expected": ["400 each"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/customer/customer.service.spec.ts"
+  },
+  {
+    "id": "P4-CUS-03",
+    "module": "Customers",
+    "title": "Own parent / loop",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Own parent; A -> B -> A"],
+    "expected": ["400 each"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/customer/customer.service.spec.ts"
+  },
+  {
+    "id": "P4-CUS-04",
+    "module": "Customers",
+    "title": "Delete",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Delete a customer"],
+    "expected": ["404 after; gone from list"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/customer/customer.service.spec.ts"
+  },
+  {
+    "id": "P4-LD-03",
+    "module": "Leads",
+    "title": "Foreign references",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Lead with another tenant stage"],
+    "expected": ["400"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/lead/lead.service.spec.ts"
+  },
+  {
+    "id": "P4-LD-04",
+    "module": "Leads",
+    "title": "Convert",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Convert, convert again"],
+    "expected": ["Customer created; second 409"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/lead/lead.service.spec.ts"
+  },
+  {
+    "id": "P4-LD-13",
+    "module": "Leads",
+    "title": "Duplicate stage name",
+    "priority": "P3",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Add a stage differing only in case"],
+    "expected": ["409"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/lead/pipeline-stage.service.spec.ts"
+  },
+  {
+    "id": "P4-LD-14",
+    "module": "Leads",
+    "title": "Remove stage with leads",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": [
+      "Remove a stage holding a lead; partial reorder; move lead and remove"
+    ],
+    "expected": ["409; 400; removed"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/lead/pipeline-stage.service.spec.ts"
+  },
+  {
+    "id": "P4-MAP-01",
+    "module": "Connection map",
+    "title": "OLTE and connections",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Create OLTE, roots and children"],
+    "expected": ["Created; ports counted"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/network/connection/connection.service.spec.ts"
+  },
+  {
+    "id": "P4-MAP-06",
+    "module": "Connection map",
+    "title": "Full OLTE",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Third root on a 2-port OLTE; a DISCONNECTED one"],
+    "expected": ["400; allowed"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/network/connection/connection.service.spec.ts"
+  },
+  {
+    "id": "P4-MAP-08",
+    "module": "Connection map",
+    "title": "Capacity",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Lower totalPorts below used"],
+    "expected": ["400"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/network/olte/olte.service.spec.ts"
+  },
+  {
+    "id": "P4-MAP-09",
+    "module": "Connection map",
+    "title": "Status edit updates ports",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Set a root DISCONNECTED"],
+    "expected": ["Used ports drop by one"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/network/connection/connection.service.spec.ts"
+  },
+  {
+    "id": "P4-MAP-11",
+    "module": "Connection map",
+    "title": "Move",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Move into own subtree; valid move"],
+    "expected": ["Refused; moved"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/network/connection/topology.service.spec.ts"
+  },
+  {
+    "id": "P4-MAP-12",
+    "module": "Connection map",
+    "title": "Split",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Split with a junction code"],
+    "expected": ["Junction created"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/network/connection/connection.service.spec.ts"
+  },
+  {
+    "id": "P4-MAP-13",
+    "module": "Connection map",
+    "title": "Merge",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Merge into self; merge into a target"],
+    "expected": ["400; merged"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/network/connection/connection.service.spec.ts"
+  },
+  {
+    "id": "P4-MAP-14",
+    "module": "Connection map",
+    "title": "Field staff assigned node",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Employee opens assigned node"],
+    "expected": ["200"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/network/connection/connection.service.spec.ts"
+  },
+  {
+    "id": "P4-MAP-15",
+    "module": "Connection map",
+    "title": "Off-route node",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Employee opens an unrelated node; OLTE detail"],
+    "expected": ["404; 403"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/network/connection/connection.service.spec.ts"
+  },
+  {
+    "id": "P4-MAP-16",
+    "module": "Connection map",
+    "title": "Foreign customer",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Use synthetic accounts and data only"
+    ],
+    "steps": ["Link another tenant customer"],
+    "expected": ["Refused"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/phase4.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/network/connection/connection.service.spec.ts"
   }
 ]
