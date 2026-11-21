@@ -66,3 +66,34 @@ export async function noMailTo(
     (m) => new Date(m.Created).getTime() >= since.getTime(),
   );
 }
+
+/** Sender address of the newest email to `to` sent after `since`. */
+export async function senderOfLatestTo(
+  request: APIRequestContext,
+  to: string,
+  since: Date,
+): Promise<string> {
+  let from = '';
+  await expect
+    .poll(
+      async () => {
+        const search = await request.get(
+          `${MAIL}/search?query=${encodeURIComponent(`to:"${to}"`)}`,
+        );
+        const { messages } = (await search.json()) as {
+          messages: (MessageSummary & { From: { Address: string } })[];
+        };
+        const fresh = messages
+          .filter(
+            (m) => new Date(m.Created).getTime() >= since.getTime() - 1000,
+          )
+          .sort((a, b) => b.Created.localeCompare(a.Created));
+        if (!fresh.length) return 'no mail yet';
+        from = fresh[0].From.Address;
+        return 'received';
+      },
+      { timeout: 20_000, intervals: [500, 1_000] },
+    )
+    .toBe('received');
+  return from;
+}

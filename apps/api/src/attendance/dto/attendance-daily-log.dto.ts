@@ -1,5 +1,13 @@
 import { Transform, Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsISO8601,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 /**
  * Query for the day-grouped attendance log (GET /attendance/daily-logs).
@@ -24,12 +32,18 @@ export class AttendanceDailyLogQueryDto {
 
   /** Inclusive ISO date (YYYY-MM-DD). Defaults to 30 days back. */
   @IsOptional()
-  @IsString()
+  @IsISO8601(
+    { strict: true },
+    { message: 'from must be an ISO date (YYYY-MM-DD)' },
+  )
   readonly from?: string;
 
   /** Inclusive ISO date (YYYY-MM-DD). Defaults to today. */
   @IsOptional()
-  @IsString()
+  @IsISO8601(
+    { strict: true },
+    { message: 'to must be an ISO date (YYYY-MM-DD)' },
+  )
   readonly to?: string;
 
   /** Tenant view only — narrow to one employee. */

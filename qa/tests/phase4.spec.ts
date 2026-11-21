@@ -471,6 +471,7 @@ test('P4-MAP-01/06/08..16 connection map: ports, moves, split, merge, field scop
     headers: bearer(accounts.other),
     data: { customerCode: `QA-BC-${tag()}`, legalName: 'QA beta customer' },
   });
+  expect(betaCustomer.status(), await betaCustomer.text()).toBe(201);
   const link = await request.patch(`/api/v1/network/connections/${childAId}`, {
     headers: admin,
     data: { customerId: (await betaCustomer.json()).id },

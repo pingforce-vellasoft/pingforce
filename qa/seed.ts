@@ -39,6 +39,17 @@ async function seed(): Promise<void> {
           update: {},
           create: { code, name: `Synthetic ${code}`, timezone: 'Asia/Kolkata' },
         });
+        // P4-CUS-08: a tenant with 200+ customers (written here, not through
+        // the API, so the test does not spend the request rate limit).
+        if (code === 'QA_BETA')
+          await tx.customer.createMany({
+            data: Array.from({ length: 205 }, (_, i) => ({
+              tenantId: tenant.id,
+              customerCode: `QA-BULK-${String(i).padStart(3, '0')}`,
+              legalName: `QA bulk customer ${i}`,
+            })),
+            skipDuplicates: true,
+          });
         // Connection Map is a per-tenant module (Super Admin switch). QA_ALPHA
         // has it on with view-only field staff; QA_BETA keeps the default
         // (off) so the gate itself is covered.

@@ -3112,5 +3112,211 @@
       "file": "qa/tests/schema.spec.ts"
     },
     "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-NOT-02",
+    "module": "Notifications",
+    "title": "Email per tenant",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": [
+      "Set a tenant email provider; request an OTP; staff reads the config"
+    ],
+    "expected": ["Mail sent from the tenant address; staff 403"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/operations.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/notifications/tenant-email-config.service.spec.ts"
+  },
+  {
+    "id": "P2-NOT-04",
+    "module": "Notifications",
+    "title": "Bad push token",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Register a stale push token; admin decides a leave"],
+    "expected": ["Decision saved"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/operations.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P3-LV-11",
+    "module": "Leave",
+    "title": "Push failure",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Decide a leave for an employee with a dead push token"],
+    "expected": ["Decision saved; nothing blocked"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/operations.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P3-LV-12",
+    "module": "Leave",
+    "title": "No duplicate refunds",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Withdraw the same request three times at once"],
+    "expected": ["No 5xx; balance restored exactly once"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/operations.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
+  },
+  {
+    "id": "P3-LV-10",
+    "module": "Leave",
+    "title": "Admin queue",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Admin lists pending; other tenant and staff try"],
+    "expected": ["Listed for admin only"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/operations.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P3-ATT-17",
+    "module": "Attendance",
+    "title": "Admin logs",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": [
+      "Filter daily logs by employee, by an empty window, by an invalid date"
+    ],
+    "expected": ["Only that employee; empty; 400"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/operations.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P3-ATT-19",
+    "module": "Attendance",
+    "title": "Tracking gaps",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": [
+      "Open with a foreign session, a future start, twice; close; no-grant role"
+    ],
+    "expected": ["404; 400; same gap; closed with duration; 403"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/operations.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/tracking-gap.service.spec.ts"
+  },
+  {
+    "id": "P3-ATT-21",
+    "module": "Attendance",
+    "title": "Assign visit: open visit",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Pick a PLANNED visit from the open list and assign it"],
+    "expected": ["Assigned and gone from the open list"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/operations.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P3-ATT-22",
+    "module": "Attendance",
+    "title": "Assign visit: plan new",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Plan a new visit for the employee"],
+    "expected": ["Created ASSIGNED"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/operations.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P4-CUS-08",
+    "module": "Customers",
+    "title": "Full list",
+    "priority": "P3",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Create 205 customers and list"],
+    "expected": ["All 205 returned"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/operations.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P3-ATT-14",
+    "module": "Attendance",
+    "title": "Breaks",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Start and end a break"],
+    "expected": [
+      "Not testable: no API route starts or ends a break (model, logs and auto-checkout exist)"
+    ],
+    "automation": {
+      "status": "planned",
+      "file": null
+    },
+    "relatedUnitSuite": null
   }
 ]

@@ -61,6 +61,27 @@ export class TrackingGapService {
     });
     if (existing) return existing;
 
+    // Both values come from the client. A session id must be one of the
+    // caller's own attendance sessions (it used to be stored as sent, so a gap
+    // could hang off another employee's or tenant's session), and a gap cannot
+    // start in the future.
+    if (dto.attendanceSessionId) {
+      const session = await this.prisma.attendanceSession.findFirst({
+        where: {
+          id: dto.attendanceSessionId,
+          tenantId: employee.tenantId,
+          employeeId: employee.id,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!session) throw new NotFoundException('Attendance session not found');
+    }
+    const startedAt = dto.startedAt ? new Date(dto.startedAt) : new Date();
+    if (startedAt.getTime() > Date.now() + 5 * 60_000) {
+      throw new BadRequestException('startedAt cannot be in the future');
+    }
+
     // A gap on an exempt device is recorded but pre-excused, so the audit
     // trail stays complete while the day does not surface as an exception.
     const isExcused = dto.deviceId
@@ -77,7 +98,7 @@ export class TrackingGapService {
         employeeId: employee.id,
         attendanceSessionId: dto.attendanceSessionId ?? null,
         reason: dto.reason,
-        startedAt: dto.startedAt ? new Date(dto.startedAt) : new Date(),
+        startedAt,
         batteryLevel: dto.batteryLevel ?? null,
         deviceId: dto.deviceId ?? null,
         isExcused,
