@@ -66,6 +66,8 @@ services:
       REDIS_URL: redis://redis:6379
       ALLOWED_ORIGINS: https://qa.pingforce.com,http://localhost:4300,http://127.0.0.1:4300
       JWT_KEYS_DIR: /keys
+      # Short lock so the lock-expiry case can wait it out (default 30).
+      PASSWORD_LOCKOUT_MINUTES: '1'
       SMTP_HOST: mailpit
       SMTP_PORT: '1025'
       SMTP_FROM: qa@pingforce.test
