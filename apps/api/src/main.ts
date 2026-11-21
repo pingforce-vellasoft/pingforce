@@ -5,6 +5,7 @@
 
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 
 import { AppModule } from './app/app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
@@ -27,11 +28,19 @@ import { Logger } from 'nestjs-pino';
 async function bootstrap() {
   // rawBody: true preserves the untouched request buffer so payment-gateway
   // webhook signatures (billing module) can be verified against it.
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     rawBody: true,
   });
   app.useLogger(app.get(Logger));
+
+  // The API is reachable only through Caddy (deploy/Caddyfile), which sets
+  // X-Forwarded-For to the real client address. Trust exactly that one hop:
+  // without it req.ip is Caddy's container address for every user, so the
+  // per-IP rate limits (login 10/min, global burst) were shared by ALL users
+  // and audit/login history recorded the proxy instead of the client.
+  // TRUST_PROXY_HOPS=0 for a deployment with no proxy in front.
+  app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
 
   // Security Headers
   app.use(helmet());
