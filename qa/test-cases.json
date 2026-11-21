@@ -586,8 +586,8 @@
     "steps": ["Submit, manager approve, manager cancel with reason"],
     "expected": ["Reserved converts to used; cancellation credits once"],
     "automation": {
-      "status": "planned",
-      "file": null
+      "status": "implemented-unverified",
+      "file": "qa/tests/leave.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
   },
@@ -604,8 +604,8 @@
     "steps": ["Reject pending request twice"],
     "expected": ["Single refund and ledger entry; documented repeat response"],
     "automation": {
-      "status": "planned",
-      "file": null
+      "status": "implemented-unverified",
+      "file": "qa/tests/leave.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
   },
@@ -644,8 +644,8 @@
     ],
     "expected": ["No duplicate reservation or negative balance"],
     "automation": {
-      "status": "planned",
-      "file": null
+      "status": "implemented-unverified",
+      "file": "qa/tests/leave.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/leave/leave.service.spec.ts"
   },
