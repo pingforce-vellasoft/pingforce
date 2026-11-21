@@ -60,11 +60,22 @@ export class RbacGuard implements CanActivate {
       return true;
     }
 
-    const hasPermission = await this.rbacService.hasPermission(
-      user.userId, // use userId from Jwt payload mapping
-      requiredPermission.module,
-      requiredPermission.action,
-    );
+    // READ (tenant/team-wide) covers a READ_OWN ("my records") route. Office
+    // roles hold READ but not the field-only READ_OWN grants, so without
+    // this the admin attendance log, timeline and dashboard were 403 for
+    // ADMIN_MANAGER. Services still apply the caller's data scope.
+    const hasPermission =
+      (await this.rbacService.hasPermission(
+        user.userId, // use userId from Jwt payload mapping
+        requiredPermission.module,
+        requiredPermission.action,
+      )) ||
+      (requiredPermission.action === 'READ_OWN' &&
+        (await this.rbacService.hasPermission(
+          user.userId,
+          requiredPermission.module,
+          'READ',
+        )));
 
     if (!hasPermission) {
       throw new ForbiddenException(

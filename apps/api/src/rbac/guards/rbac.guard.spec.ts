@@ -125,3 +125,36 @@ describe('RbacGuard temporary password', () => {
     ).resolves.toBe(true);
   });
 });
+
+describe('RbacGuard READ covers READ_OWN', () => {
+  function guardWith(grants: string[]) {
+    const reflector = {
+      getAllAndOverride: jest
+        .fn()
+        .mockReturnValue({ module: 'ATTENDANCE', action: 'READ_OWN' }),
+    } as unknown as Reflector;
+    const rbacService = {
+      hasPermission: jest.fn(async (_u: string, _m: string, action: string) =>
+        grants.includes(action),
+      ),
+    } as unknown as RbacService;
+    return new RbacGuard(reflector, rbacService);
+  }
+  const ctx = () => makeContext({ userId: 'u1', tenantId: 't1' });
+
+  it('lets an office role with READ open a READ_OWN route', async () => {
+    await expect(guardWith(['READ']).canActivate(ctx())).resolves.toBe(true);
+  });
+
+  it('still lets the field role with READ_OWN through', async () => {
+    await expect(guardWith(['READ_OWN']).canActivate(ctx())).resolves.toBe(
+      true,
+    );
+  });
+
+  it('refuses a role with neither', async () => {
+    await expect(guardWith(['CREATE']).canActivate(ctx())).rejects.toThrow(
+      'Missing required permission',
+    );
+  });
+});

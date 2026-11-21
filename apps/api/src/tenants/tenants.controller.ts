@@ -18,6 +18,7 @@ interface AuthRequest {
   user: { userId: string; tenantId: string };
 }
 
+import { UpdateTenantDto } from './dto/update-tenant.dto';
 @Controller('tenants')
 @UseGuards(JwtAuthGuard, RbacGuard)
 export class TenantsController {
@@ -73,8 +74,7 @@ export class TenantsController {
 
   @Patch(':id')
   @RequirePermission('platform', 'manage')
-  async update(@Param('id') id: string, @Body() body: any) {
-    // Basic implementation for Super Admin overriding tenant data
+  async update(@Param('id') id: string, @Body() body: UpdateTenantDto) {
     return this.tenantsService.update(id, body);
   }
 

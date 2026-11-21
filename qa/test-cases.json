@@ -2838,5 +2838,201 @@
       "file": "qa/tests/phase4.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/network/connection/connection.service.spec.ts"
+  },
+  {
+    "id": "X-PERM-01",
+    "module": "Authorization",
+    "title": "Role matrix",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA, a synthetic Super Admin and the portal/map modules on for QA_ALPHA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": [
+      "Admin, field employee and no-grant role GET 17 module routes; field role tries 5 writes"
+    ],
+    "expected": [
+      "Each matches its grants; READ covers READ_OWN for office roles; writes 403"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/platform-rules.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/rbac/guards/rbac.guard.spec.ts"
+  },
+  {
+    "id": "P2-RBAC-08",
+    "module": "Authorization",
+    "title": "Portal identity on staff API",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA, a synthetic Super Admin and the portal/map modules on for QA_ALPHA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": [
+      "Invite, verify by emailed OTP, activate, portal login; call staff routes; staff token on portal; reuse invite"
+    ],
+    "expected": [
+      "Portal routes work; staff routes 401/403; staff token refused on portal; invite single-use"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/platform-rules.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/rbac/guards/rbac.guard.spec.ts"
+  },
+  {
+    "id": "P2-SET-02",
+    "module": "Geofences",
+    "title": "Geofence one vs many policy",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA, a synthetic Super Admin and the portal/map modules on for QA_ALPHA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": [
+      "Single mode: second site without and with reassign; many mode: both; staff changes policy"
+    ],
+    "expected": ["409 then moved; both held; staff 403"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/platform-rules.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/geofence-assignment.service.spec.ts"
+  },
+  {
+    "id": "P3-GEO-05",
+    "module": "Geofences",
+    "title": "One vs many",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA, a synthetic Super Admin and the portal/map modules on for QA_ALPHA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Toggle the tenant policy and assign two sites"],
+    "expected": ["Behaviour follows the toggle"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/platform-rules.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/attendance/geofence-assignment.service.spec.ts"
+  },
+  {
+    "id": "P3-VIS-03",
+    "module": "Visits",
+    "title": "Start off site",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA, a synthetic Super Admin and the portal/map modules on for QA_ALPHA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Start a geofenced visit ~60 km away"],
+    "expected": [
+      "Allowed with gpsValidated false, or refused per policy; never 500"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/platform-rules.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/visits/visits.service.spec.ts"
+  },
+  {
+    "id": "P2-TNT-01",
+    "module": "Tenants",
+    "title": "Super Admin manages tenants",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA, a synthetic Super Admin and the portal/map modules on for QA_ALPHA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": [
+      "Super Admin lists tenants; tenant admin tries; PATCH an arbitrary column"
+    ],
+    "expected": ["Listed; tenant admin 403; unknown field 400"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P2-TNT-02",
+    "module": "Tenants",
+    "title": "Suspend tenant",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA, a synthetic Super Admin and the portal/map modules on for QA_ALPHA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Suspend QA_BETA; its session and sign-in; reactivate"],
+    "expected": ["Session 401, sign-in refused; access restored"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P1-API-10",
+    "module": "API platform",
+    "title": "Rate limits",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA, a synthetic Super Admin and the portal/map modules on for QA_ALPHA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Keep failing sign-ins from one client"],
+    "expected": [
+      "429 once the limit is hit; health and other sessions keep working"
+    ],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": null
+  },
+  {
+    "id": "P4-LD-10",
+    "module": "Leads",
+    "title": "Default stages",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA, a synthetic Super Admin and the portal/map modules on for QA_ALPHA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["New tenant opens the board in two tabs at once"],
+    "expected": ["9 distinct default stages, created once"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/lead/lead.service.spec.ts"
+  },
+  {
+    "id": "P4-LD-15",
+    "module": "Leads",
+    "title": "Last stage",
+    "priority": "P3",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA, QA_BETA, a synthetic Super Admin and the portal/map modules on for QA_ALPHA",
+      "Synthetic mailbox at /__qa-mail/ (QA stack only)"
+    ],
+    "steps": ["Remove all stages but one, then the last"],
+    "expected": ["Last one refused (400)"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/lead/pipeline-stage.service.spec.ts"
   }
 ]
