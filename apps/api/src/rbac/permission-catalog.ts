@@ -255,6 +255,11 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
     action: 'APPROVE',
     description: 'Approve or reject leave requests',
   },
+  {
+    module: 'LEAVES',
+    action: 'ALLOCATE',
+    description: 'Set employee leave entitlements',
+  },
   // Expense claims
   {
     module: 'CLAIMS',

@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Put,
   Get,
   Body,
   Param,
@@ -21,6 +22,7 @@ import {
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { LeaveQueryDto } from './dto/leave-query.dto';
 import { CancelLeaveDto, LeaveDecisionDto } from './dto/leave-decision.dto';
+import { SetLeaveBalanceDto } from './dto/set-leave-balance.dto';
 
 @Controller('leaves')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -102,6 +104,24 @@ export class LeaveController {
       user.userId,
       employeeId,
       query.year,
+    );
+  }
+
+  @Put('balance/:employeeId')
+  @RequirePermission('LEAVES', 'ALLOCATE')
+  setBalance(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CurrentUserContext,
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @Body() dto: SetLeaveBalanceDto,
+    @Req() request: { id?: string },
+  ): ReturnType<LeaveService['setLeaveBalance']> {
+    return this.service.setLeaveBalance(
+      tenantId,
+      user.userId,
+      employeeId,
+      dto,
+      request.id,
     );
   }
 

@@ -224,7 +224,7 @@ export class LoginComponent {
         error: (err: HttpErrorResponse) => {
           this.isLoading = false;
           // Surface the API's own message for the non-credential failures
-          // ("Tenant not found", "Account is inactive or suspended", the portal
+          // ("Account is inactive or suspended", the portal
           // access rejections) — collapsing them all into one string hides the
           // actual reason a sign-in was refused. 401 stays generic on purpose.
           const apiMessage = err.error?.message;

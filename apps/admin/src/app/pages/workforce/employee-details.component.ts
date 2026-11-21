@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ActivatedRoute } from '@angular/router';
+import { EmployeeDetailsService } from './employee-details.service';
 
 @Component({
   selector: 'app-employee-details',
@@ -18,6 +19,7 @@ import { ActivatedRoute } from '@angular/router';
     MatDividerModule,
     MatProgressBarModule,
   ],
+  providers: [EmployeeDetailsService],
   template: `
     <div class="page-container">
       <div class="header-actions">
@@ -25,145 +27,175 @@ import { ActivatedRoute } from '@angular/router';
           <mat-icon>arrow_back</mat-icon>
         </button>
         <div class="header-titles">
-          <h1>Employee Intelligence</h1>
-          <p>Comprehensive overview and history</p>
+          <h1>Employee Details</h1>
+          <p>Profile, employment and leave entitlements</p>
         </div>
       </div>
 
-      <div class="grid-layout">
-        <!-- Left Sidebar: Profile Overview & Contact -->
-        <div class="sidebar-column">
-          <!-- Profile Card -->
-          <div class="glass-panel profile-card">
-            <div class="avatar-large">{{ getInitials(employeeId) }}</div>
-            <h2>{{ getMockEmployee().name }}</h2>
-            <p class="role-text">
-              {{ getMockEmployee().designation }} &bull;
-              {{ getMockEmployee().department }}
-            </p>
+      @if (page.loading()) {
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      }
+      @if (page.error()) {
+        <p class="banner error" role="alert">{{ page.error() }}</p>
+      }
+      @if (page.message()) {
+        <p class="banner ok" role="status">{{ page.message() }}</p>
+      }
 
-            <div class="status-pill active">
-              <div class="pulse-dot"></div>
-              {{ getMockEmployee().status }}
-            </div>
-
-            <div class="metric-row">
-              <div class="metric-box">
-                <span class="metric-value">98%</span>
-                <span class="metric-label">Attendance</span>
+      @if (page.employee(); as e) {
+        <div class="grid-layout">
+          <div class="sidebar-column">
+            <div class="glass-panel profile-card">
+              <div class="avatar-large">
+                {{ initials(e.firstName, e.lastName) }}
               </div>
-              <div class="metric-box">
-                <span
-                  class="metric-value shortfall"
-                  [class.no-shortfall]="getMockEmployee().shortfalls === 0"
-                  >{{ getMockEmployee().shortfalls }}</span
-                >
-                <span class="metric-label">Shortfalls</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Contact Info -->
-          <div class="glass-panel details-panel" style="margin-top: 24px;">
-            <h3>
-              <mat-icon class="panel-icon">contact_mail</mat-icon> Contact
-              Information
-            </h3>
-            <div class="info-list">
-              <div class="info-item">
-                <mat-icon>email</mat-icon>
-                <div class="info-text">
-                  <span class="label">Email Address</span>
-                  <span class="value">{{ getMockEmployee().email }}</span>
-                </div>
-              </div>
-              <div class="info-item">
-                <mat-icon>phone</mat-icon>
-                <div class="info-text">
-                  <span class="label">Phone Number</span>
-                  <span class="value">{{ getMockEmployee().phone }}</span>
-                </div>
-              </div>
-              <div class="info-item">
-                <mat-icon>location_on</mat-icon>
-                <div class="info-text">
-                  <span class="label">Work Location</span>
-                  <span class="value">{{ getMockEmployee().location }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Details Column -->
-        <div class="details-column">
-          <!-- Employment Details -->
-          <div class="glass-panel details-panel">
-            <h3>
-              <mat-icon class="panel-icon">badge</mat-icon> Employment Details
-            </h3>
-            <div class="employment-grid">
-              <div class="emp-stat">
-                <span class="label">Employee ID</span>
-                <span class="value">{{ getMockEmployee().empId }}</span>
-              </div>
-              <div class="emp-stat">
-                <span class="label">Employment Type</span>
-                <span class="value">{{ getMockEmployee().type }}</span>
-              </div>
-              <div class="emp-stat">
-                <span class="label">Joining Date</span>
-                <span class="value">{{ getMockEmployee().joiningDate }}</span>
-              </div>
-              <div class="emp-stat">
-                <span class="label">Reporting Manager</span>
-                <span class="value">{{ getMockEmployee().manager }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Leave Balances -->
-          <div class="glass-panel details-panel" style="margin-top: 24px;">
-            <h3>
-              <mat-icon class="panel-icon">event_available</mat-icon> Leave
-              Balances ({{ getMockEmployee().totalLeaves }} Total)
-            </h3>
-            <div class="leave-grid">
-              <div
-                class="leave-card"
-                *ngFor="let leave of getMockEmployee().leaveBreakdown"
-              >
-                <div class="leave-header">
-                  <span class="leave-type">{{ leave.type }}</span>
-                  <span class="leave-count"
-                    >{{ leave.available }} / {{ leave.total }}</span
-                  >
-                </div>
-                <mat-progress-bar
-                  mode="determinate"
-                  [value]="(leave.available / leave.total) * 100"
-                  [color]="leave.color"
-                ></mat-progress-bar>
-                <span class="leave-desc">Days Remaining</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Activity Timeline Placeholder -->
-          <div class="glass-panel details-panel" style="margin-top: 24px;">
-            <h3>
-              <mat-icon class="panel-icon">timeline</mat-icon> Activity Timeline
-            </h3>
-            <div class="empty-state">
-              <mat-icon class="empty-icon">pending_actions</mat-icon>
-              <h4>No recent activity</h4>
-              <p>
-                Activity timeline module will be integrated in the next phase.
+              <h2>{{ e.firstName }} {{ e.lastName }}</h2>
+              <p class="role-text">
+                {{ e.designation?.name || 'No designation' }} &bull;
+                {{ e.department?.name || 'No department' }}
               </p>
+              <div class="status-pill active">
+                <div class="pulse-dot"></div>
+                {{ e.employmentStatus || 'ACTIVE' }}
+              </div>
+            </div>
+
+            <div class="glass-panel details-panel" style="margin-top: 24px;">
+              <h3>
+                <mat-icon class="panel-icon">contact_mail</mat-icon> Contact
+                Information
+              </h3>
+              <div class="info-list">
+                <div class="info-item">
+                  <mat-icon>email</mat-icon>
+                  <div class="info-text">
+                    <span class="label">Email Address</span>
+                    <span class="value">{{ e.primaryEmail || '—' }}</span>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <mat-icon>phone</mat-icon>
+                  <div class="info-text">
+                    <span class="label">Phone Number</span>
+                    <span class="value">{{ e.primaryMobile || '—' }}</span>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <mat-icon>location_on</mat-icon>
+                  <div class="info-text">
+                    <span class="label">Branch</span>
+                    <span class="value">{{ e.branch?.name || '—' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="details-column">
+            <div class="glass-panel details-panel">
+              <h3>
+                <mat-icon class="panel-icon">badge</mat-icon> Employment Details
+              </h3>
+              <div class="employment-grid">
+                <div class="emp-stat">
+                  <span class="label">Employee ID</span>
+                  <span class="value">{{ e.employeeCode }}</span>
+                </div>
+                <div class="emp-stat">
+                  <span class="label">Employment Type</span>
+                  <span class="value">{{ e.employmentType || '—' }}</span>
+                </div>
+                <div class="emp-stat">
+                  <span class="label">Joining Date</span>
+                  <span class="value">{{
+                    e.joiningDate ? (e.joiningDate | date: 'mediumDate') : '—'
+                  }}</span>
+                </div>
+                <div class="emp-stat">
+                  <span class="label">Reporting Manager</span>
+                  <span class="value">{{
+                    e.reportingManager
+                      ? e.reportingManager.firstName +
+                        ' ' +
+                        e.reportingManager.lastName
+                      : '—'
+                  }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="glass-panel details-panel" style="margin-top: 24px;">
+              <h3>
+                <mat-icon class="panel-icon">event_available</mat-icon> Leave
+                Balances ({{ page.totalAvailable() }} available)
+                <span class="year-switch">
+                  <button
+                    mat-icon-button
+                    aria-label="Previous year"
+                    (click)="page.changeYear(e.id, page.year() - 1)"
+                  >
+                    <mat-icon>chevron_left</mat-icon>
+                  </button>
+                  {{ page.year() }}
+                  <button
+                    mat-icon-button
+                    aria-label="Next year"
+                    (click)="page.changeYear(e.id, page.year() + 1)"
+                  >
+                    <mat-icon>chevron_right</mat-icon>
+                  </button>
+                </span>
+              </h3>
+              @if (page.entitlements().length === 0) {
+                <p class="leave-desc">
+                  No leave types yet. Add them under Master Data first.
+                </p>
+              }
+              <div class="leave-grid">
+                @for (row of page.entitlements(); track row.type.id) {
+                  <div class="leave-card">
+                    <div class="leave-header">
+                      <span class="leave-type">{{ row.type.name }}</span>
+                      <span class="leave-count"
+                        >{{ row.balance?.availableDays ?? 0 }} /
+                        {{ row.balance?.totalDays ?? 0 }}</span
+                      >
+                    </div>
+                    <mat-progress-bar
+                      mode="determinate"
+                      [value]="percent(row.balance)"
+                    ></mat-progress-bar>
+                    <span class="leave-desc">
+                      {{ row.balance?.usedDays ?? 0 }} used &bull;
+                      {{ row.balance?.reservedDays ?? 0 }} pending
+                    </span>
+                    <label class="entitle">
+                      Entitlement (days)
+                      <input
+                        #days
+                        type="number"
+                        min="0"
+                        max="366"
+                        step="0.5"
+                        [value]="row.balance?.totalDays ?? 0"
+                        [attr.aria-label]="row.type.name + ' entitlement'"
+                      />
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        [disabled]="page.saving() !== null"
+                        (click)="save(e.id, row.type.id, days.value)"
+                      >
+                        {{ page.saving() === row.type.id ? 'Saving…' : 'Save' }}
+                      </button>
+                    </label>
+                  </div>
+                }
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      }
     </div>
   `,
   styles: [
@@ -533,78 +565,84 @@ import { ActivatedRoute } from '@angular/router';
         margin-top: 8px;
         font-size: 14px;
       }
+      .banner {
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin: 0 0 16px;
+      }
+      .banner.error {
+        background: rgba(239, 68, 68, 0.12);
+        color: #fca5a5;
+      }
+      .banner.ok {
+        background: rgba(34, 197, 94, 0.12);
+        color: #86efac;
+      }
+      .year-switch {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 14px;
+        color: #cbd5e1;
+      }
+      .entitle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: #94a3b8;
+      }
+      .entitle input {
+        width: 72px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(15, 23, 42, 0.6);
+        color: #f8fafc;
+      }
+      @media (max-width: 960px) {
+        .grid-layout {
+          grid-template-columns: 1fr;
+        }
+        .leave-grid {
+          grid-template-columns: 1fr;
+        }
+      }
     `,
   ],
 })
 export class EmployeeDetailsComponent implements OnInit {
-  private route = inject(ActivatedRoute);
-  private location = inject(Location);
+  private readonly route = inject(ActivatedRoute);
+  private readonly location = inject(Location);
+  readonly page = inject(EmployeeDetailsService);
 
-  employeeId = '';
-
-  ngOnInit() {
+  ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
-      this.employeeId = params.get('id') || '';
+      const id = params.get('id');
+      if (id) this.page.load(id);
     });
   }
 
-  goBack() {
+  save(employeeId: string, leaveTypeId: string, value: string): void {
+    // An empty box is not "0 days": let the range check reject it.
+    const days = value.trim() === '' ? Number.NaN : Number(value);
+    this.page.setEntitlement(employeeId, leaveTypeId, days);
+  }
+
+  goBack(): void {
     this.location.back();
   }
 
-  getInitials(id: string): string {
-    const mock = this.getMockEmployee();
-    const parts = mock.name.split(' ');
-    if (parts.length > 1) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return 'EN';
+  initials(first: string, last: string): string {
+    return ((first?.[0] ?? '') + (last?.[0] ?? '')).toUpperCase() || '?';
   }
 
-  getMockEmployee() {
-    // Generate some stable mock data based on ID
-    if (this.employeeId === 'emp-1') {
-      return {
-        name: 'Sarah Connor',
-        designation: 'Senior Technician',
-        department: 'Field Operations',
-        status: 'Active',
-        shortfalls: 0,
-        email: 'sarah.connor@pingforce.com',
-        phone: '+1 (555) 123-4567',
-        location: 'HQ Building - Floor 3',
-        empId: 'EMP-0042',
-        type: 'Permanent Full-time',
-        joiningDate: 'Oct 12, 2023',
-        manager: 'Kyle Reese',
-        totalLeaves: 12,
-        leaveBreakdown: [
-          { type: 'Annual Leave', available: 8, total: 14, color: 'primary' },
-          { type: 'Sick Leave', available: 4, total: 10, color: 'accent' },
-          { type: 'Casual Leave', available: 0, total: 3, color: 'warn' },
-        ],
-      };
-    }
-
-    return {
-      name: 'John Wick',
-      designation: 'Security Specialist',
-      department: 'Security',
-      status: 'Active',
-      shortfalls: 2,
-      email: 'john.wick@pingforce.com',
-      phone: '+1 (555) 987-6543',
-      location: 'Continental Hub',
-      empId: 'EMP-0007',
-      type: 'Contract',
-      joiningDate: 'Jan 01, 2024',
-      manager: 'Winston Scott',
-      totalLeaves: 4,
-      leaveBreakdown: [
-        { type: 'Annual Leave', available: 2, total: 14, color: 'primary' },
-        { type: 'Sick Leave', available: 1, total: 10, color: 'accent' },
-        { type: 'Casual Leave', available: 1, total: 3, color: 'warn' },
-      ],
-    };
+  percent(
+    balance: { availableDays: number; totalDays: number } | null,
+  ): number {
+    return balance && balance.totalDays > 0
+      ? (balance.availableDays / balance.totalDays) * 100
+      : 0;
   }
 }

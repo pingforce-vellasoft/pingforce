@@ -84,7 +84,9 @@ export class AuthService implements IAuthService {
     });
 
     if (!tenant) {
-      throw new NotFoundException('Tenant not found');
+      // Same answer as a wrong password: a distinct 404 would let anyone
+      // probe which workspace codes exist.
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     const user = await this.prisma.user.findFirst({
@@ -629,7 +631,9 @@ export class AuthService implements IAuthService {
     });
 
     if (!tenant) {
-      throw new NotFoundException('Tenant not found');
+      // Same answer as a wrong password: a distinct 404 would let anyone
+      // probe which workspace codes exist.
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     const user = await this.prisma.user.findFirst({

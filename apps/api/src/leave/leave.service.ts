@@ -3,9 +3,11 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { LeaveRequest } from '@prisma/client';
+import { LeaveBalance, LeaveRequest } from '@prisma/client';
+import { SetLeaveBalanceDto } from './dto/set-leave-balance.dto';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { LeaveQueryDto } from './dto/leave-query.dto';
 import { RbacService } from '../rbac/rbac.service';
@@ -188,9 +190,128 @@ export class LeaveService {
     year: number,
   ): ReturnType<LeaveTransactionRepository['balances']> {
     const repo = this.repository.read();
-    if ((await this.employee(repo, tenantId, userId)) !== employeeId)
-      throw new ForbiddenException('You may only read your own leave balance');
+    const own = await repo.employee(tenantId, userId);
+    if (own?.id !== employeeId) {
+      // Leave readers (admins, managers) see the balances of employees in
+      // their LEAVES:READ scope; everyone else only their own.
+      if (!(await this.rbacService.hasPermission(userId, 'LEAVES', 'READ')))
+        throw new ForbiddenException(
+          'You may only read your own leave balance',
+        );
+      await this.assertEmployeeInScope(
+        repo,
+        tenantId,
+        userId,
+        employeeId,
+        'READ',
+      );
+    }
     return repo.balances(tenantId, employeeId, year);
+  }
+
+  /**
+   * Sets an employee's entitlement for one leave type and year. Days already
+   * used or reserved by pending requests stay put; the available days are
+   * whatever remains, so the entitlement can never drop below them.
+   */
+  async setLeaveBalance(
+    tenantId: string,
+    userId: string,
+    employeeId: string,
+    dto: SetLeaveBalanceDto,
+    requestId?: string,
+  ): Promise<LeaveBalance> {
+    return this.repository.transaction(async (repo) => {
+      await this.assertEmployeeInScope(
+        repo,
+        tenantId,
+        userId,
+        employeeId,
+        'ALLOCATE',
+      );
+      if (!(await repo.type(tenantId, dto.leaveTypeId)))
+        throw new NotFoundException('Leave type not found');
+      const existing = await repo.balance(
+        tenantId,
+        employeeId,
+        dto.leaveTypeId,
+        dto.year,
+      );
+      const committed = existing
+        ? existing.usedDays + existing.reservedDays
+        : 0;
+      if (dto.totalDays < committed)
+        throw new BadRequestException(
+          `Entitlement cannot be below the ${committed} days already used or requested`,
+        );
+      const availableDays = dto.totalDays - committed;
+      let saved: LeaveBalance;
+      if (existing) {
+        await repo.changeBalance(tenantId, existing.id, {
+          totalDays: dto.totalDays,
+          availableDays,
+          updatedBy: userId,
+        });
+        saved = { ...existing, totalDays: dto.totalDays, availableDays };
+      } else {
+        saved = await repo.createBalance({
+          tenantId,
+          employeeId,
+          leaveTypeId: dto.leaveTypeId,
+          year: dto.year,
+          totalDays: dto.totalDays,
+          availableDays,
+          createdBy: userId,
+          updatedBy: userId,
+        });
+      }
+      await repo.audit({
+        tenantId,
+        actorId: userId,
+        module: 'LEAVES',
+        entityName: 'leave_balance',
+        entityId: saved.id,
+        action: 'LEAVE_BALANCE_SET',
+        requestId,
+        oldValue: existing
+          ? {
+              totalDays: existing.totalDays,
+              availableDays: existing.availableDays,
+            }
+          : undefined,
+        newValue: {
+          employeeId,
+          leaveTypeId: dto.leaveTypeId,
+          year: dto.year,
+          totalDays: dto.totalDays,
+          availableDays,
+        },
+      });
+      return saved;
+    });
+  }
+
+  /** 404 for an employee outside the tenant or the caller's data scope. */
+  private async assertEmployeeInScope(
+    repo: LeaveTransactionRepository,
+    tenantId: string,
+    userId: string,
+    employeeId: string,
+    action: 'READ' | 'ALLOCATE',
+  ): Promise<void> {
+    const filter = await this.rbacService.buildEmployeeScopeFilter(
+      tenantId,
+      userId,
+      await this.rbacService.getDataScope(userId, 'LEAVES', action),
+      'LEAVES',
+    );
+    const ids = (filter?.employeeId as { in?: string[] } | undefined)?.in;
+    if (
+      filter === null ||
+      (ids !== undefined && !ids.includes(employeeId)) ||
+      !(await repo.employeeById(tenantId, employeeId))
+    )
+      throw new NotFoundException('Employee not found');
   }
 
   async getMyRequests(

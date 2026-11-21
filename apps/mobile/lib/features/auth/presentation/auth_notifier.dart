@@ -40,7 +40,7 @@ class LoginNotifier extends Notifier<LoginState> {
   /// workspace code and username live in this state, while the text fields have
   /// their own controllers. Resetting the whole state empties `tenantCode`
   /// without clearing the visible text, so the form looks filled but submits an
-  /// empty workspace — which the API answers with "Tenant not found".
+  /// empty workspace — which the API rejects as invalid credentials.
   void clearAuthenticatedFlag() {
     if (!state.isAuthenticated) return;
     state = state.copyWith(isAuthenticated: false);

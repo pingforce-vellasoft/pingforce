@@ -231,8 +231,8 @@ test('P2-EMP-02 employee details carry profile, org links and balance', async ({
   expect(body).toMatchObject({ employeeCode: 'QA-EMPLOYEE', firstName: 'QA' });
   for (const key of ['department', 'designation', 'branch', 'reportingManager'])
     expect(body, key).toHaveProperty(key);
-  // The balance route is self-only by design: the employee reads their own,
-  // nobody else's (an admin has no employee record here, so 404).
+  // The employee reads their own balance; a leave reader (the admin) reads
+  // any employee's in their scope.
   const own = await request.get(`/api/v1/leaves/balance/${id}`, {
     headers: bearer(accounts.employee),
   });
@@ -241,5 +241,62 @@ test('P2-EMP-02 employee details carry profile, org links and balance', async ({
   const byAdmin = await request.get(`/api/v1/leaves/balance/${id}`, {
     headers: admin,
   });
-  expect([403, 404]).toContain(byAdmin.status());
+  expect(byAdmin.status(), await byAdmin.text()).toBe(200);
+  expect(await byAdmin.text()).toContain('availableDays');
+});
+
+test('P3-LV-13 an admin sets an employee leave entitlement', async ({
+  request,
+  accounts,
+}) => {
+  const admin = bearer(accounts.admin);
+  const rows = (await (
+    await request.get('/api/v1/employees?take=100', { headers: admin })
+  ).json()) as { id: string; employeeCode: string }[];
+  const id = rows.find((r) => r.employeeCode === 'QA-REPORT')!.id;
+  const types = (await (
+    await request.get('/api/v1/leaves/types', { headers: admin })
+  ).json()) as { id: string; code: string }[];
+  const leaveTypeId = types.find((t) => t.code === 'QA_ANNUAL')!.id;
+  // A year no other case books leave in, so reruns start from the same state.
+  const year = new Date().getUTCFullYear() + 3;
+  const put = (headers: Record<string, string>, totalDays: number) =>
+    request.put(`/api/v1/leaves/balance/${id}`, {
+      headers,
+      data: { leaveTypeId, year, totalDays },
+    });
+
+  const first = await put(admin, 10);
+  expect(first.status(), await first.text()).toBe(200);
+  expect(await first.json()).toMatchObject({
+    totalDays: 10,
+    availableDays: 10,
+  });
+  const second = await put(admin, 14.5);
+  expect(second.status(), await second.text()).toBe(200);
+  const listed = (await (
+    await request.get(`/api/v1/leaves/balance/${id}?year=${year}`, {
+      headers: admin,
+    })
+  ).json()) as { leaveTypeId: string; totalDays: number }[];
+  expect(listed.find((b) => b.leaveTypeId === leaveTypeId)?.totalDays).toBe(
+    14.5,
+  );
+  // Audited, field staff cannot allocate, another tenant cannot see the
+  // employee, and nonsense values are refused.
+  await expect
+    .poll(
+      async () =>
+        (
+          await request.get('/api/v1/audit?action=LEAVE_BALANCE_SET', {
+            headers: admin,
+          })
+        ).text(),
+      { timeout: 10_000, intervals: [1_000] },
+    )
+    .toContain(id);
+  expect((await put(bearer(accounts.employee), 30)).status()).toBe(403);
+  expect((await put(bearer(accounts.other), 30)).status()).toBe(404);
+  expect((await put(admin, -1)).status()).toBe(400);
+  expect((await put(admin, 1.25)).status()).toBe(400);
 });

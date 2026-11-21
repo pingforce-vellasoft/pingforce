@@ -49,6 +49,14 @@ test('P2-NOT-02 a tenant email provider sends that tenant mail', async ({
 }) => {
   const admin = bearer(accounts.admin);
   const fromAddress = `helpdesk-${tag()}@qa-alpha.test`;
+  // Internal hosts are refused (only Mailpit is exempt in the QA stack).
+  for (const host of ['redis', '127.0.0.1', '169.254.169.254']) {
+    const internal = await request.put('/api/v1/notifications/email-config', {
+      headers: admin,
+      data: { host, port: 25, secure: false, fromAddress },
+    });
+    expect(internal.status(), `${host}: ${await internal.text()}`).toBe(400);
+  }
   const config = await request.put('/api/v1/notifications/email-config', {
     headers: admin,
     data: { host: 'mailpit', port: 1025, secure: false, fromAddress },
