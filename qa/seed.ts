@@ -56,6 +56,7 @@ async function seed(): Promise<void> {
           ['lockout', 'EMPLOYEE_FIELD_STAFF'],
           ['sessions', 'EMPLOYEE_FIELD_STAFF'],
           ['devices', 'EMPLOYEE_FIELD_STAFF'],
+          ['punch', 'EMPLOYEE_FIELD_STAFF'],
         ]) {
           const role = await tx.role.upsert({
             where: { tenantId_code: { tenantId: tenant.id, code: roleCode } },
@@ -80,9 +81,13 @@ async function seed(): Promise<void> {
               profile: { create: { firstName: 'QA', lastName: name } },
             },
           });
-          // Device binding tests rebind and revoke handsets, so they get
-          // their own employee record and never touch QA-EMPLOYEE's state.
-          if (name === 'devices') {
+          // Device binding and signed-punch tests bind handsets, so they get
+          // their own employee records and never touch QA-EMPLOYEE's state.
+          const ownEmployee: Record<string, string> = {
+            devices: 'QA-DEVICES',
+            punch: 'QA-PUNCH',
+          };
+          if (ownEmployee[name]) {
             const existing = await tx.employee.findFirst({
               where: { tenantId: tenant.id, userId: user.id, deletedAt: null },
             });
@@ -91,9 +96,9 @@ async function seed(): Promise<void> {
                 data: {
                   tenantId: tenant.id,
                   userId: user.id,
-                  employeeCode: 'QA-DEVICES',
+                  employeeCode: ownEmployee[name],
                   firstName: 'QA',
-                  lastName: 'Devices',
+                  lastName: name,
                 },
               });
           }
