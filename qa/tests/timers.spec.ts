@@ -51,26 +51,27 @@ test('P4-FLT-02 a fault past its SLA is flagged and escalated', async ({
   };
   expect(fault.slaDeadline, 'deadline set from the policy').toBeTruthy();
 
-  // Before the deadline nothing happens; after it, the fault is escalated.
+  // The deadline may count business hours, so scan relative to the fault's
+  // own deadline: just before it nothing happens; just after, it escalates.
+  const deadline = new Date(fault.slaDeadline!).getTime();
+  const before = new Date(deadline - 30 * 60_000).toISOString();
+  const after = new Date(deadline + 30 * 60_000).toISOString();
   expect(
-    (await runJob(request, accounts.admin, 'fault-sla', hoursFromNow(1))).ok(),
+    (await runJob(request, accounts.admin, 'fault-sla', before)).ok(),
   ).toBeTruthy();
   const early = await (
     await request.get(`/api/v1/faults/${fault.id}`, { headers: admin })
   ).json();
   expect(early.isEscalated ?? false).toBe(false);
-  const late = await runJob(
-    request,
-    accounts.admin,
-    'fault-sla',
-    hoursFromNow(3),
-  );
+  const late = await runJob(request, accounts.admin, 'fault-sla', after);
   expect(late.ok(), await late.text()).toBeTruthy();
   const breached = await (
     await request.get(`/api/v1/faults/${fault.id}`, { headers: admin })
   ).json();
   expect(breached.isEscalated).toBe(true);
   expect(breached.escalationLevel).toBeGreaterThanOrEqual(1);
+  const list = await request.get('/api/v1/faults/breached', { headers: admin });
+  expect(list.status(), await list.text()).toBe(200);
   // Field staff cannot run jobs.
   expect(
     (
@@ -230,9 +231,15 @@ test('P2-EMP-02 employee details carry profile, org links and balance', async ({
   expect(body).toMatchObject({ employeeCode: 'QA-EMPLOYEE', firstName: 'QA' });
   for (const key of ['department', 'designation', 'branch', 'reportingManager'])
     expect(body, key).toHaveProperty(key);
-  const balance = await request.get(`/api/v1/leaves/balance/${id}`, {
+  // The balance route is self-only by design: the employee reads their own,
+  // nobody else's (an admin has no employee record here, so 404).
+  const own = await request.get(`/api/v1/leaves/balance/${id}`, {
+    headers: bearer(accounts.employee),
+  });
+  expect(own.status(), await own.text()).toBe(200);
+  expect(await own.text()).toContain('availableDays');
+  const byAdmin = await request.get(`/api/v1/leaves/balance/${id}`, {
     headers: admin,
   });
-  expect(balance.status(), await balance.text()).toBe(200);
-  expect(await balance.text()).toContain('availableDays');
+  expect([403, 404]).toContain(byAdmin.status());
 });
