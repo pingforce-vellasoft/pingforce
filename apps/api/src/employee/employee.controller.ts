@@ -48,8 +48,12 @@ export class EmployeeController {
 
   @Post(':id/invite')
   @RequirePermission('EMPLOYEES', 'UPDATE')
-  invite(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.employeeService.invite(tenantId, id);
+  invite(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserContext,
+  ) {
+    return this.employeeService.invite(tenantId, id, user.userId);
   }
 
   @Get()
@@ -69,8 +73,12 @@ export class EmployeeController {
 
   @Get(':id')
   @RequirePermission('EMPLOYEES', 'READ')
-  findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.employeeService.findOne(tenantId, id);
+  findOne(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserContext,
+  ) {
+    return this.employeeService.findOne(tenantId, id, user.userId);
   }
 
   @Patch(':id')
@@ -79,13 +87,23 @@ export class EmployeeController {
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
+    @CurrentUser() user: CurrentUserContext,
   ) {
-    return this.employeeService.update(tenantId, id, updateEmployeeDto);
+    return this.employeeService.update(
+      tenantId,
+      id,
+      updateEmployeeDto,
+      user.userId,
+    );
   }
 
   @Delete(':id')
   @RequirePermission('EMPLOYEES', 'DELETE')
-  remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.employeeService.remove(tenantId, id);
+  remove(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserContext,
+  ) {
+    return this.employeeService.remove(tenantId, id, user.userId);
   }
 }
