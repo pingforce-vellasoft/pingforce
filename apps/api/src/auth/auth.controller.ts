@@ -27,6 +27,7 @@ import {
 import { RegisterTenantDto } from './dto/register-tenant.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { StaffUserGuard } from '../common/guards/staff-user.guard';
 import { OnboardingTenantDto } from './dto/onboarding-tenant.dto';
 import { OnboardingEmployeeDto } from './dto/onboarding-employee.dto';
 import { ConfirmPasswordResetDto } from './dto/confirm-password-reset.dto';
@@ -126,7 +127,7 @@ export class AuthController {
     burst: { limit: 3, ttl: 60000 },
     sustained: { limit: 3, ttl: 60000 },
   })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StaffUserGuard)
   @Post('otp/request')
   @HttpCode(HttpStatus.OK)
   async requestOtp(@Request() req: any, @Body() dto: RequestOtpDto) {
@@ -162,7 +163,7 @@ export class AuthController {
     burst: { limit: 5, ttl: 60000 },
     sustained: { limit: 5, ttl: 60000 },
   })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StaffUserGuard)
   @Post('otp/verify')
   @HttpCode(HttpStatus.OK)
   async verifyOtp(@Request() req: any, @Body() dto: VerifyOtpDto) {
@@ -182,7 +183,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List own active sessions' })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StaffUserGuard)
   @Get('sessions')
   async listSessions(@Request() req: any) {
     return this.sessionService.listForUser(req.user.tenantId, req.user.userId);
@@ -190,7 +191,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List own login history (LoginHistory.md §14)' })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StaffUserGuard)
   @Get('login-history')
   async listLoginHistory(@Request() req: any) {
     if (req.user.tenantId === 'SYSTEM') {
@@ -209,7 +210,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Revoke one of your sessions' })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StaffUserGuard)
   @Post('sessions/:id/revoke')
   @HttpCode(HttpStatus.OK)
   async revokeSession(@Request() req: any, @Param('id') sessionId: string) {
@@ -224,7 +225,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout current session' })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StaffUserGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Request() req: any) {
@@ -241,7 +242,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout everywhere (revokes all sessions/tokens)' })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StaffUserGuard)
   @Post('logout-all')
   @HttpCode(HttpStatus.OK)
   async logoutAll(@Request() req: any) {
@@ -306,7 +307,7 @@ export class AuthController {
     burst: { limit: 5, ttl: 60000 },
     sustained: { limit: 5, ttl: 60000 },
   })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StaffUserGuard)
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
   async changePassword(@Request() req: any, @Body() dto: ChangePasswordDto) {
@@ -322,7 +323,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StaffUserGuard)
   @Get('me')
   getProfile(@Request() req: any) {
     return req.user;
@@ -330,7 +331,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Complete tenant onboarding' })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StaffUserGuard)
   @Post('onboarding/tenant')
   async onboardTenant(@Request() req: any, @Body() dto: OnboardingTenantDto) {
     return (this.authService as any).onboardTenant(
@@ -342,7 +343,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Complete employee onboarding' })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StaffUserGuard)
   @Post('onboarding/employee')
   async onboardEmployee(
     @Request() req: any,

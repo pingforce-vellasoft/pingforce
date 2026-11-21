@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { StaffUserGuard } from '../common/guards/staff-user.guard';
 import { RbacGuard } from '../rbac/guards/rbac.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import { IPrismaService } from '@pingforce-monorepo/shared';
@@ -31,7 +32,7 @@ interface AuthRequest {
  * JwtAuthGuard suffices — no RBAC resource involved.
  */
 @Controller('notifications')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, StaffUserGuard)
 export class NotificationsController {
   constructor(
     @Inject('IPrismaService') private readonly prisma: IPrismaService,

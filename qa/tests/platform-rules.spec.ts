@@ -135,7 +135,11 @@ test('P2-RBAC-08 a customer portal identity cannot use staff routes', async ({
     'faults',
     'customers',
     'leaves/my',
+    // JWT-only staff self-service routes (no RbacGuard):
+    'auth/me',
     'auth/sessions',
+    'auth/login-history',
+    'notifications/feed',
   ]) {
     const staffRoute = await request.get(`/api/v1/${path}`, {
       headers: bearer(portal),
