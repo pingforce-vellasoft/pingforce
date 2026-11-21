@@ -13,6 +13,7 @@ import { ApprovalsService } from '../approvals/approvals.service';
 import { WorkflowEngineService } from '../approvals/workflow-engine.service';
 import { RbacService } from '../rbac/rbac.service';
 import { AuditService } from '../audit/audit.service';
+import { punchTimesProblem, recreditDay } from './domain/work-minutes';
 
 const TIME_CORRECTION_TYPES = new Set([
   'MISSING_CHECK_IN',
@@ -350,12 +351,23 @@ export class CorrectionsService {
       correction.correctionType === 'MISSING_CHECK_IN' ||
       correction.correctionType === 'WRONG_CHECK_IN_TIME';
 
+    // Same guard as the admin adjust path: an approval must not leave a
+    // check-out before its check-in or a punch in the future.
+    const problem = punchTimesProblem(
+      isCheckIn ? correctedTime : session.punchIn,
+      isCheckIn ? session.punchOut : correctedTime,
+    );
+    if (problem) throw new BadRequestException(problem);
+
     await tx.attendanceSession.update({
       where: { id: session.id },
       data: isCheckIn
         ? { punchIn: correctedTime }
         : { punchOut: correctedTime, sessionStatus: 'CHECKED_OUT' },
     });
+    // The day total was credited from the old times (or not at all for a
+    // missing check-out): re-derive it so payroll follows the correction.
+    await recreditDay(tx, correction.attendanceId);
     return true;
   }
 }

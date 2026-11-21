@@ -10,7 +10,7 @@ import {
   AdjustSessionTimesDto,
   OverrideDayStatusDto,
 } from './dto/admin-adjust.dto';
-import { creditWorkedMinutes } from './domain/work-minutes';
+import { punchTimesProblem, recreditDay } from './domain/work-minutes';
 
 /**
  * Admin corrections applied directly from the tenant attendance log, for
@@ -53,14 +53,9 @@ export class AttendanceAdminService {
     const punchIn = dto.punchIn ? new Date(dto.punchIn) : session.punchIn;
     const punchOut = dto.punchOut ? new Date(dto.punchOut) : session.punchOut;
 
-    if (punchOut && punchOut.getTime() <= punchIn.getTime()) {
-      throw new BadRequestException('Check-out must be after check-in.');
-    }
-    // A future punch would produce negative or runaway worked minutes.
-    const now = new Date();
-    if (punchIn > now || (punchOut && punchOut > now)) {
-      throw new BadRequestException('Punch times cannot be in the future.');
-    }
+    // A reversed or future punch would produce negative or runaway minutes.
+    const problem = punchTimesProblem(punchIn, punchOut);
+    if (problem) throw new BadRequestException(problem);
 
     const result = await this.prisma.$transaction(async (tx) => {
       // Recredit from zero: creditWorkedMinutes increments, so re-running it
@@ -75,21 +70,7 @@ export class AttendanceAdminService {
         },
       });
 
-      await tx.attendance.update({
-        where: { id: session.attendanceId },
-        data: { totalWorkMinutes: 0, updatedBy: admin.userId },
-      });
-
-      const siblings = await tx.attendanceSession.findMany({
-        where: {
-          attendanceId: session.attendanceId,
-          deletedAt: null,
-          punchOut: { not: null },
-        },
-      });
-      for (const s of siblings) {
-        await creditWorkedMinutes(tx, s, s.punchOut!);
-      }
+      await recreditDay(tx, session.attendanceId);
 
       const correction = await tx.attendanceCorrection.create({
         data: {

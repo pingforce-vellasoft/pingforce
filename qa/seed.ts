@@ -57,6 +57,7 @@ async function seed(): Promise<void> {
           ['sessions', 'EMPLOYEE_FIELD_STAFF'],
           ['devices', 'EMPLOYEE_FIELD_STAFF'],
           ['punch', 'EMPLOYEE_FIELD_STAFF'],
+          ['punch2', 'EMPLOYEE_FIELD_STAFF'],
         ]) {
           const role = await tx.role.upsert({
             where: { tenantId_code: { tenantId: tenant.id, code: roleCode } },
@@ -86,6 +87,7 @@ async function seed(): Promise<void> {
           const ownEmployee: Record<string, string> = {
             devices: 'QA-DEVICES',
             punch: 'QA-PUNCH',
+            punch2: 'QA-PUNCH-2',
           };
           if (ownEmployee[name]) {
             const existing = await tx.employee.findFirst({
