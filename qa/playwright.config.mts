@@ -34,6 +34,7 @@ export default defineConfig({
         /api\.spec\.ts/,
         /platform\.spec\.ts/,
         /tenant-isolation\.spec\.ts/,
+        /leave\.spec\.ts/,
         /spec-files\.spec\.ts/,
       ],
     },
