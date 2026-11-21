@@ -14,15 +14,17 @@ interface MessageSummary {
 }
 
 /**
- * Waits for the newest email to `to` sent after `since`, and returns the
- * 6-digit code in it.
+ * Waits for an email to `to`, sent after `since`, that carries a 6-digit
+ * code, and returns the code. Mail without a code (an invite link sent just
+ * before) is skipped rather than taken as "the newest", so a slow OTP mail
+ * cannot be mistaken for the invite.
  */
 export async function codeSentTo(
   request: APIRequestContext,
   to: string,
   since: Date,
 ): Promise<string> {
-  let html = '';
+  let code: string | undefined;
   await expect
     .poll(
       async () => {
@@ -38,15 +40,17 @@ export async function codeSentTo(
             (m) => new Date(m.Created).getTime() >= since.getTime() - 1000,
           )
           .sort((a, b) => b.Created.localeCompare(a.Created));
-        if (!fresh.length) return 'no mail yet';
-        const message = await request.get(`${MAIL}/message/${fresh[0].ID}`);
-        html = ((await message.json()) as { HTML: string; Text: string }).HTML;
-        return 'received';
+        for (const summary of fresh) {
+          const message = await request.get(`${MAIL}/message/${summary.ID}`);
+          const { HTML } = (await message.json()) as { HTML: string };
+          code = /\b(\d{6})\b/.exec(HTML.replace(/<[^>]+>/g, ' '))?.[1];
+          if (code) return 'received';
+        }
+        return fresh.length ? 'mail without a code yet' : 'no mail yet';
       },
       { timeout: 20_000, intervals: [500, 1_000] },
     )
     .toBe('received');
-  const code = /\b(\d{6})\b/.exec(html.replace(/<[^>]+>/g, ' '))?.[1];
   expect(code, `6-digit code in mail to ${to}`).toBeTruthy();
   return code!;
 }

@@ -44,6 +44,7 @@ export default defineConfig({
         /platform-rules\.spec\.ts/,
         /schema\.spec\.ts/,
         /operations\.spec\.ts/,
+        /admin-tools\.spec\.ts/,
         /spec-files\.spec\.ts/,
       ],
     },
