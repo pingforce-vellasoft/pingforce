@@ -146,7 +146,8 @@ export class EmployeeService {
    * the workspace (tenant) code + credentials + admin login URL. Only works for
    * employees that have a provisioned User account.
    */
-  async invite(tenantId: string, id: string) {
+  async invite(tenantId: string, id: string, requesterUserId: string) {
+    await this.assertInScope(tenantId, requesterUserId, id, 'UPDATE');
     const employee = await this.prisma.employee.findFirst({
       where: { id, tenantId, deletedAt: null },
       include: { user: true },
@@ -248,7 +249,8 @@ export class EmployeeService {
     );
   }
 
-  async findOne(tenantId: string, id: string) {
+  async findOne(tenantId: string, id: string, requesterUserId: string) {
+    await this.assertInScope(tenantId, requesterUserId, id, 'READ');
     const employee = await this.employeeRepository.findOneWithRelations(
       tenantId,
       id,
@@ -265,7 +267,9 @@ export class EmployeeService {
     tenantId: string,
     id: string,
     updateEmployeeDto: UpdateEmployeeDto,
+    requesterUserId: string,
   ) {
+    await this.assertInScope(tenantId, requesterUserId, id, 'UPDATE');
     // roleId is create-only (provisions a login account); never an Employee column.
     const { roleId: _roleId, ...updatable } = updateEmployeeDto;
     const payload = {
@@ -278,7 +282,32 @@ export class EmployeeService {
     return await this.employeeRepository.update(tenantId, id, payload);
   }
 
-  async remove(tenantId: string, id: string) {
+  async remove(tenantId: string, id: string, requesterUserId: string) {
+    await this.assertInScope(tenantId, requesterUserId, id, 'DELETE');
     return await this.employeeRepository.delete(tenantId, id);
+  }
+
+  /**
+   * Single-record routes honour the same data scope as the list
+   * (DataScope.md §9 "Users"): a custom role granted EMPLOYEES at TEAM or OWN
+   * scope must not read, edit, delete or re-invite an employee outside it by
+   * guessing the id. Out of scope answers 404, like a missing record, so ids
+   * outside the scope are not confirmed to exist.
+   */
+  private async assertInScope(
+    tenantId: string,
+    requesterUserId: string,
+    id: string,
+    action: 'READ' | 'UPDATE' | 'DELETE',
+  ): Promise<void> {
+    const scope = await this.rbacService.resolveScopeIds(
+      tenantId,
+      requesterUserId,
+      'EMPLOYEES',
+      [action],
+    );
+    if (scope.kind === 'ALL') return;
+    if (scope.kind === 'IDS' && scope.employeeIds.includes(id)) return;
+    throw new NotFoundException(`Employee with ID ${id} not found`);
   }
 }
