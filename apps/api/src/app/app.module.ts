@@ -14,6 +14,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { RequestIdMiddleware } from '../common/middlewares/request-id.middleware';
+import { resolveRequestId } from '../common/request-id';
 
 import { MasterDataModule } from '../master-data/master-data.module';
 import { EmployeeModule } from '../employee/employee.module';
@@ -67,7 +68,8 @@ import { TestingService } from '../testing/testing.service';
     ]),
     LoggerModule.forRoot({
       pinoHttp: {
-        genReqId: (req: any) => req.requestId || req.headers['x-request-id'],
+        // Same id as the x-request-id header and error bodies (request-id.ts).
+        genReqId: (req, res) => resolveRequestId(req, res),
         transport:
           process.env.NODE_ENV !== 'production'
             ? { target: 'pino-pretty', options: { singleLine: true } }

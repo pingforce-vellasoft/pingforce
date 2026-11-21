@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { resolveRequestId } from '../request-id';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -27,8 +28,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         ? exception.getResponse()
         : 'Internal server error';
 
-    const requestId =
-      request.headers['x-request-id'] || request.id || 'unknown';
+    const requestId = resolveRequestId(request, response);
 
     // Structured logging
     this.logger.error(
