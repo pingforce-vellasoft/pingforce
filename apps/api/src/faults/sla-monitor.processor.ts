@@ -98,8 +98,10 @@ export class SlaMonitorProcessor implements OnModuleInit {
   }
 
   @Process('scan-breaches')
-  async scanBreaches(): Promise<void> {
-    const now = new Date();
+  // `now` is injectable so the QA job trigger can scan "as of" later. The
+  // queue calls it with a Job, which is not a Date, so that falls back.
+  async scanBreaches(asOf?: unknown): Promise<void> {
+    const now = asOf instanceof Date ? asOf : new Date();
 
     await this.scanWarnings(now);
 

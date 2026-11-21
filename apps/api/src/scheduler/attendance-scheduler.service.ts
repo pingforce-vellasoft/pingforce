@@ -23,8 +23,9 @@ export class AttendanceSchedulerService {
   ) {}
 
   @Cron('5 0 * * *', { name: 'attendance-auto-checkout' })
-  async autoCheckoutOpenSessions(): Promise<void> {
-    const todayStart = new Date();
+  /** `now` is injectable so the QA job trigger can run it "as of" a later day. */
+  async autoCheckoutOpenSessions(now: Date = new Date()): Promise<void> {
+    const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
 
     const openSessions = await this.prisma.attendanceSession.findMany({

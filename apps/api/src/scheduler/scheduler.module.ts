@@ -5,5 +5,6 @@ import { AttendanceSchedulerService } from './attendance-scheduler.service';
 @Module({
   imports: [ScheduleModule.forRoot()],
   providers: [AttendanceSchedulerService],
+  exports: [AttendanceSchedulerService],
 })
 export class SchedulerModule {}

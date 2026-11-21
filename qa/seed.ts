@@ -84,6 +84,7 @@ async function seed(): Promise<void> {
           ['devices', 'EMPLOYEE_FIELD_STAFF'],
           ['punch', 'EMPLOYEE_FIELD_STAFF'],
           ['punch2', 'EMPLOYEE_FIELD_STAFF'],
+          ['punch3', 'EMPLOYEE_FIELD_STAFF'],
           // Password reset test: its password changes during the run.
           ['reset', 'EMPLOYEE_FIELD_STAFF'],
           // Lock-expiry case (QA lockout is 1 minute).
@@ -125,6 +126,7 @@ async function seed(): Promise<void> {
             devices: 'QA-DEVICES',
             punch: 'QA-PUNCH',
             punch2: 'QA-PUNCH-2',
+            punch3: 'QA-PUNCH-3',
             manager: 'QA-MGR',
             report: 'QA-REPORT',
           };

@@ -3452,5 +3452,95 @@
       "file": "qa/tests/admin-tools.spec.ts"
     },
     "relatedUnitSuite": "apps/api/src/faults/faults-sync.service.spec.ts"
+  },
+  {
+    "id": "P4-FLT-02",
+    "module": "Faults",
+    "title": "SLA breach",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "QA-only job trigger (POST /api/v1/qa/jobs/:job, loaded only when PINGFORCE_ENV=qa)"
+    ],
+    "steps": ["Fault with a 2 h SLA; scan as of +1 h and +3 h; staff triggers"],
+    "expected": ["Not escalated at +1 h; escalated at +3 h; staff 403"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/timers.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/qa-jobs/qa-jobs.controller.spec.ts"
+  },
+  {
+    "id": "P2-WF-03",
+    "module": "Workflows",
+    "title": "SLA timer",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "QA-only job trigger (POST /api/v1/qa/jobs/:job, loaded only when PINGFORCE_ENV=qa)"
+    ],
+    "steps": ["Pending leave under a 1 h workflow stage; sweep as of +2 h"],
+    "expected": ["WORKFLOW_ESCALATED audited for the leave"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/timers.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/qa-jobs/qa-jobs.controller.spec.ts"
+  },
+  {
+    "id": "P1-DB-04",
+    "module": "Database",
+    "title": "Soft delete",
+    "priority": "P1",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "QA-only job trigger (POST /api/v1/qa/jobs/:job, loaded only when PINGFORCE_ENV=qa)"
+    ],
+    "steps": ["Delete a customer, lead, employee and visit"],
+    "expected": ["Each 404 by id and gone from its list"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/timers.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/qa-jobs/qa-jobs.controller.spec.ts"
+  },
+  {
+    "id": "P2-EMP-02",
+    "module": "Employees",
+    "title": "Employee details",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "QA-only job trigger (POST /api/v1/qa/jobs/:job, loaded only when PINGFORCE_ENV=qa)"
+    ],
+    "steps": ["Open an employee and their leave balance"],
+    "expected": ["Profile and org links present; balance listed"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/timers.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/qa-jobs/qa-jobs.controller.spec.ts"
+  },
+  {
+    "id": "P3-ATT-13",
+    "module": "Attendance",
+    "title": "Auto check-out",
+    "priority": "P2",
+    "requirement": "CLAUDE.md",
+    "preconditions": [
+      "Isolated QA database seeded with QA_ALPHA and QA_BETA",
+      "QA-only job trigger (POST /api/v1/qa/jobs/:job, loaded only when PINGFORCE_ENV=qa)"
+    ],
+    "steps": ["Check in, run auto-checkout as of tomorrow 00:05"],
+    "expected": ["Session closed at 23:59 of the punch-in day"],
+    "automation": {
+      "status": "implemented-unverified",
+      "file": "qa/tests/auth-limits.spec.ts"
+    },
+    "relatedUnitSuite": "apps/api/src/qa-jobs/qa-jobs.controller.spec.ts"
   }
 ]

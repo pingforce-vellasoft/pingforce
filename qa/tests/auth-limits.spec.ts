@@ -1184,6 +1184,89 @@ test('P2-RBAC-04 + P4-LD-01/02/11 team scope and own-lead scope', async ({
 });
 
 /**
+ * P3-ATT-13: a session still open after midnight is auto-checked-out at
+ * 23:59:59 of its punch-in day. Runs the job "as of" tomorrow 00:05 UTC via
+ * the QA-only trigger. Fresh window; 1 login (QA-PUNCH-3).
+ */
+test('P3-ATT-13 auto check-out closes a session left open past midnight', async ({
+  request,
+  accounts,
+}) => {
+  test.setTimeout(170_000);
+  await freshLoginWindow();
+  const admin = bearer(accounts.admin);
+  const worker = bearer(await login(request, 'punch3'));
+  const handset = newHandset();
+  const bind = await request.post('/api/v1/devices/bind', {
+    headers: worker,
+    data: { deviceId: handset.deviceId, publicKey: handset.publicKey },
+  });
+  expect(bind.status(), await bind.text()).toBe(201);
+  const SITE = { latitude: 12.9716, longitude: 77.5946 };
+  const site = await request.post('/api/v1/attendance/geofence', {
+    headers: admin,
+    data: {
+      name: `QA auto ${handset.deviceId.slice(-8)}`,
+      ...SITE,
+      radiusMeters: 150,
+    },
+  });
+  const siteId = (await site.json()).id as string;
+  try {
+    const employees = (await (
+      await request.get('/api/v1/employees?take=100', { headers: admin })
+    ).json()) as { id: string; employeeCode: string }[];
+    const employeeId = employees.find(
+      (e) => e.employeeCode === 'QA-PUNCH-3',
+    )!.id;
+    await request.post(`/api/v1/attendance/geofence/${siteId}/employees`, {
+      headers: admin,
+      data: { employeeIds: [employeeId], reassign: true },
+    });
+    const checkIn = await request.post('/api/v1/attendance/punch', {
+      headers: worker,
+      data: signedPunch(handset, SITE),
+    });
+    expect(checkIn.status(), await checkIn.text()).toBe(201);
+    const session = (await checkIn.json()) as { id: string; punchIn: string };
+
+    const tomorrow = new Date();
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    tomorrow.setUTCHours(0, 5, 0, 0);
+    const job = await request.post('/api/v1/qa/jobs/auto-checkout', {
+      headers: admin,
+      data: { asOf: tomorrow.toISOString() },
+    });
+    expect(job.ok(), await job.text()).toBeTruthy();
+
+    const timeline = await request.get(
+      `/api/v1/attendance/sessions/${session.id}/timeline`,
+      {
+        headers: admin,
+      },
+    );
+    expect(timeline.status(), await timeline.text()).toBe(200);
+    const punchOut = new Date((await timeline.json()).punchOut);
+    const punchIn = new Date(session.punchIn);
+    expect(punchOut.getTime()).toBeGreaterThan(punchIn.getTime());
+    expect(punchOut.toISOString().slice(0, 10)).toBe(
+      punchIn.toISOString().slice(0, 10),
+    );
+    expect(punchOut.getUTCHours()).toBe(23);
+    expect(punchOut.getUTCMinutes()).toBe(59);
+    // The worker is no longer checked in.
+    const today = await (
+      await request.get('/api/v1/attendance/today', { headers: worker })
+    ).text();
+    expect(today).not.toContain(`"punchOut":null`);
+  } finally {
+    await request.delete(`/api/v1/attendance/geofence/${siteId}`, {
+      headers: admin,
+    });
+  }
+});
+
+/**
  * P2-TNT-01/02 Super Admin manages tenants: lists them (tenant admins
  * cannot), edits are whitelisted, suspending QA_BETA locks its users out
  * and reactivating restores them. Then P1-API-10 spends the rest of the
