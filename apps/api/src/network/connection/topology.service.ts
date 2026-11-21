@@ -135,10 +135,14 @@ export class TopologyService {
     });
 
     // Rewrite descendants in one statement. Parameterized — no interpolation.
+    // Every parameter is cast: an untyped bind for the substring start let
+    // Postgres pick substring(text FROM pattern) (the regex form), which
+    // returned NULL and failed the NOT NULL path, so moving, splitting or
+    // merging any node that has descendants was a 500.
     await tx.$executeRaw`
       UPDATE "network_connections"
-      SET "path" = ${newPath} || substring("path" from ${oldPrefix.length + 1}),
-          "depth" = "depth" + ${depthDelta},
+      SET "path" = CAST(${newPath} AS text) || substring("path" FROM CAST(${oldPrefix.length + 1} AS integer)),
+          "depth" = "depth" + CAST(${depthDelta} AS integer),
           "olteId" = ${newOlteId}
       WHERE "tenantId" = ${tenantId}
         AND "path" LIKE ${`${oldPrefix}.%`}

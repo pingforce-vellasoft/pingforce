@@ -139,6 +139,17 @@ describe('TopologyService', () => {
       });
       expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
       expect(prisma.$executeRaw).not.toHaveBeenCalled();
+
+      // Descendant rewrite: typed binds, so Postgres cannot pick the regex
+      // form of substring (which nulled every descendant path).
+      const [strings, ...values] = tx.$executeRaw.mock.calls[0] as [
+        TemplateStringsArray,
+        ...unknown[],
+      ];
+      const sql = strings.join('$');
+      expect(sql).toContain('substring("path" FROM CAST($ AS integer))');
+      expect(sql).toContain('CAST($ AS text) ||');
+      expect(values).toEqual(['x.y.b', 4, 1, 'olte-2', 't1', 'a.b.%']);
     });
 
     it('moves a subtree to OLTE root level (no parent, depth 0)', async () => {

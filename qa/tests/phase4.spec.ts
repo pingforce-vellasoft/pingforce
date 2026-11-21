@@ -512,6 +512,39 @@ test('P4-MAP-01/06/08..16 connection map: ports, moves, split, merge, field scop
     },
   );
   expect(split.ok(), await split.text()).toBeTruthy();
+  const junctionId = (await split.json()).id as string;
+  // The split moved child A WITH its own child B: both must still resolve,
+  // and B keeps child A as its parent (descendant paths rewritten, not lost).
+  const childAAfter = await request.get(
+    `/api/v1/network/connections/${childAId}`,
+    {
+      headers: admin,
+    },
+  );
+  expect(childAAfter.status(), await childAAfter.text()).toBe(200);
+  expect((await childAAfter.json()).parentConnection?.id).toBe(junctionId);
+  const childBAfter = await request.get(
+    `/api/v1/network/connections/${childBId}`,
+    {
+      headers: admin,
+    },
+  );
+  expect(childBAfter.status(), await childBAfter.text()).toBe(200);
+  expect((await childBAfter.json()).parentConnection?.id).toBe(childAId);
+  // P4-MAP-11 with descendants: move child A (and B under it) back to root A.
+  const moveBack = await request.post(
+    `/api/v1/network/connections/${childAId}/move`,
+    {
+      headers: admin,
+      data: { newParentConnectionId: rootAId },
+    },
+  );
+  expect(moveBack.ok(), await moveBack.text()).toBeTruthy();
+  const tree = await request.get(`/api/v1/network/oltes/${olteId}/tree`, {
+    headers: admin,
+  });
+  expect(tree.status(), await tree.text()).toBe(200);
+  expect(await tree.text()).toContain(childBId);
   // P4-MAP-13: merge child A into root A; a node cannot merge into itself.
   expect(
     (
