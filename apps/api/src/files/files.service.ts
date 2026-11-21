@@ -75,6 +75,9 @@ export interface DownloadResult {
   readonly mimeType: string;
 }
 
+/** Entity types whose records may hold attachments (see assertFaultAccess). */
+export const ATTACHABLE_ENTITY_TYPES = ['FAULT'] as const;
+
 @Injectable()
 export class FilesService {
   constructor(
@@ -275,6 +278,13 @@ export class FilesService {
     });
   }
 
+  /**
+   * Record-level access for an attachment. Only entity types with a scope
+   * check here may hold files: every other type used to skip the check, so any
+   * signed-in staff user — even a role with no grants — could upload to,
+   * list, download or delete files on any record of the tenant by id. Unknown
+   * types now fail closed (404, like a missing record).
+   */
   private async assertFaultAccess(
     tenantId: string,
     userId: string | undefined,
@@ -282,7 +292,8 @@ export class FilesService {
     entityId: string,
     action: string | readonly string[],
   ): Promise<void> {
-    if (entityType !== 'FAULT') return;
+    if (!(ATTACHABLE_ENTITY_TYPES as readonly string[]).includes(entityType))
+      throw new NotFoundException('File not found');
     if (!userId) throw new ForbiddenException('A staff identity is required');
     const scopeWhere = await this.faultAccess.scopeForAction(
       tenantId,

@@ -39,6 +39,7 @@ export default defineConfig({
         /faults\.spec\.ts/,
         /geofence\.spec\.ts/,
         /tracking\.spec\.ts/,
+        /phase2\.spec\.ts/,
         /spec-files\.spec\.ts/,
       ],
     },

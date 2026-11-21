@@ -125,6 +125,8 @@ describe('FilesService.openForDownload / deleteFile', () => {
   const row = {
     id: 'file1',
     tenantId: 't1',
+    entityType: 'FAULT',
+    entityId: 'f1',
     fileName: 'doc.pdf',
     mimeType: 'application/pdf',
     storageKey: 't1/file1.pdf',
@@ -133,21 +135,21 @@ describe('FilesService.openForDownload / deleteFile', () => {
 
   it('streams a tenant-owned file', async () => {
     const { service, storage } = makeService(row);
-    const result = await service.openForDownload('t1', 'file1');
+    const result = await service.openForDownload('t1', 'file1', 'u1');
     expect(storage.getStream).toHaveBeenCalledWith('t1/file1.pdf', 'LOCAL');
     expect(result.fileName).toBe('doc.pdf');
   });
 
   it('404s cross-tenant download attempts', async () => {
     const { service } = makeService(null);
-    await expect(service.openForDownload('t2', 'file1')).rejects.toThrow(
+    await expect(service.openForDownload('t2', 'file1', 'u1')).rejects.toThrow(
       NotFoundException,
     );
   });
 
   it('deletes physical bytes before the metadata row', async () => {
     const { service, prisma, storage } = makeService(row);
-    await service.deleteFile('t1', 'file1');
+    await service.deleteFile('t1', 'file1', 'u1');
     expect(storage.delete).toHaveBeenCalledWith('t1/file1.pdf', 'LOCAL');
     expect(prisma.fileAttachment.delete).toHaveBeenCalledWith({
       where: { id: 'file1' },
@@ -156,10 +158,47 @@ describe('FilesService.openForDownload / deleteFile', () => {
 
   it('404s cross-tenant delete attempts without touching storage', async () => {
     const { service, storage } = makeService(row);
-    await expect(service.deleteFile('t2', 'file1')).rejects.toThrow(
+    await expect(service.deleteFile('t2', 'file1', 'u1')).rejects.toThrow(
       NotFoundException,
     );
     expect(storage.delete).not.toHaveBeenCalled();
+  });
+});
+
+describe('FilesService attachments on other entity types', () => {
+  // Only FAULT has a record-level scope check, so anything else fails closed.
+  const row = {
+    id: 'file9',
+    tenantId: 't1',
+    entityType: 'EMPLOYEE',
+    entityId: 'e1',
+    fileName: 'id-proof.pdf',
+    mimeType: 'application/pdf',
+    storageKey: 't1/file9.pdf',
+    storageProvider: 'LOCAL',
+  };
+
+  it('refuses uploads, listing, download and delete', async () => {
+    const { service, storage, prisma } = makeService(row);
+    await expect(
+      service.upload('t1', {
+        ...pngUpload(Buffer.from('png')),
+        entityType: 'EMPLOYEE',
+      }),
+    ).rejects.toThrow(NotFoundException);
+    await expect(
+      service.getFiles('t1', 'EMPLOYEE', 'e1', 'u1'),
+    ).rejects.toThrow(NotFoundException);
+    await expect(service.openForDownload('t1', 'file9', 'u1')).rejects.toThrow(
+      NotFoundException,
+    );
+    await expect(service.deleteFile('t1', 'file9', 'u1')).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(storage.put).not.toHaveBeenCalled();
+    expect(storage.getStream).not.toHaveBeenCalled();
+    expect(storage.delete).not.toHaveBeenCalled();
+    expect(prisma.fileAttachment.findMany).not.toHaveBeenCalled();
   });
 });
 

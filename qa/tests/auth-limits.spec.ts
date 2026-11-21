@@ -577,3 +577,159 @@ test('P3-ATT-15..18/20 history, corrections, manual check-out, timeline', async 
     await request.delete(att(`geofence/${siteId}`), { headers: admin });
   }
 });
+
+/** A password the policy accepts, unique per call. */
+const strongPassword = () =>
+  `Qa!${Math.random().toString(36).slice(2, 10)}X9${Date.now() % 1000}z`;
+
+/**
+ * P2-AUTH-20/21/15 and P2-EMP-01 on a login the admin provisions here:
+ * temporary password forced to change (server side), change password, reuse
+ * refused, sign-in right after the change, and deactivation ending the login.
+ * Fresh rate-limit window; 4 logins.
+ */
+test('P2-AUTH-20/21/15 + P2-EMP-01 temporary password, change, reuse, deactivate', async ({
+  request,
+  accounts,
+}) => {
+  test.setTimeout(150_000);
+  await freshLoginWindow();
+  const admin = bearer(accounts.admin);
+  const roles = (await (
+    await request.get('/api/v1/rbac/roles', { headers: admin })
+  ).json()) as { id: string; code: string }[];
+  const fieldRole = roles.find((r) => r.code === 'EMPLOYEE_FIELD_STAFF');
+  expect(fieldRole, 'field staff role').toBeTruthy();
+
+  const tagged = Math.random().toString(36).slice(2, 10);
+  const email = `new-${tagged}@qa.pingforce.test`;
+  const created = await request.post('/api/v1/employees', {
+    headers: admin,
+    data: {
+      employeeCode: `QA-NEW-${tagged}`,
+      firstName: 'New',
+      lastName: tagged,
+      primaryEmail: email,
+      roleId: fieldRole!.id,
+    },
+  });
+  expect(created.status(), await created.text()).toBe(201);
+  const { id: employeeId, tempPassword } = (await created.json()) as {
+    id: string;
+    tempPassword: string;
+  };
+  expect(tempPassword).toBeTruthy();
+
+  const signIn = (password: string) =>
+    request.post('/api/v1/auth/login', {
+      data: { email, password, tenantCode: 'QA_ALPHA' },
+    });
+
+  // P2-AUTH-20: the temporary password signs in, but nothing else works
+  // until it is changed.
+  const first = await signIn(tempPassword);
+  expect(first.status(), await first.text()).toBe(200);
+  const temp = (await first.json()) as Session;
+  const me = await (
+    await request.get('/api/v1/auth/me', { headers: bearer(temp) })
+  ).json();
+  expect(me.mustChangePassword).toBe(true);
+  const blocked = await request.get('/api/v1/leaves/my', {
+    headers: bearer(temp),
+  });
+  expect(blocked.status(), await blocked.text()).toBe(403);
+  expect((await blocked.json()).errorCode).toBe('PASSWORD_CHANGE_REQUIRED');
+
+  // P2-AUTH-15: the current password cannot be "changed" to itself.
+  const change = (
+    session: Session,
+    currentPassword: string,
+    newPassword: string,
+  ) =>
+    request.post('/api/v1/auth/change-password', {
+      headers: bearer(session),
+      data: { currentPassword, newPassword },
+    });
+  const same = await change(temp, tempPassword, tempPassword);
+  expect(same.status(), await same.text()).toBe(400);
+
+  // P2-AUTH-21: change it; the old session ends, the old password stops.
+  const newPassword = strongPassword();
+  const changed = await change(temp, tempPassword, newPassword);
+  expect(changed.ok(), await changed.text()).toBeTruthy();
+  await expect
+    .poll(
+      async () =>
+        (
+          await request.get('/api/v1/auth/me', { headers: bearer(temp) })
+        ).status(),
+      {
+        timeout: 10_000,
+        intervals: [1_000],
+      },
+    )
+    .toBe(401);
+  expect((await signIn(tempPassword)).status(), 'old password').toBe(401);
+
+  // Signing in straight after the change works at once (no stale cache).
+  const fresh = await signIn(newPassword);
+  expect(fresh.status(), await fresh.text()).toBe(200);
+  const session = (await fresh.json()) as Session;
+  const ok = await request.get('/api/v1/leaves/my', {
+    headers: bearer(session),
+  });
+  expect(ok.status(), await ok.text()).toBe(200);
+  // ... and the previous password is in the history.
+  const back = await change(session, newPassword, tempPassword);
+  expect(back.status(), await back.text()).toBe(400);
+
+  // P2-EMP-01: deleting the employee ends the login.
+  const removed = await request.delete(`/api/v1/employees/${employeeId}`, {
+    headers: admin,
+  });
+  expect(removed.ok(), await removed.text()).toBeTruthy();
+  await expect
+    .poll(
+      async () =>
+        (
+          await request.get('/api/v1/auth/me', { headers: bearer(session) })
+        ).status(),
+      {
+        timeout: 10_000,
+        intervals: [1_000],
+      },
+    )
+    .toBe(401);
+  const after = await signIn(newPassword);
+  expect([401, 403], `deactivated sign-in ${after.status()}`).toContain(
+    after.status(),
+  );
+});
+
+/**
+ * P2-AUTH-14: a successful sign-in resets the failed-attempt counter
+ * (4 wrong, 1 right, 4 wrong, 1 right = 10 logins, a window of its own).
+ */
+test('P2-AUTH-14 success resets the failed-attempt counter', async ({
+  request,
+}) => {
+  test.setTimeout(150_000);
+  await freshLoginWindow();
+  const wrongFour = async (round: number) => {
+    for (let i = 1; i <= 4; i++) {
+      const wrong = await attempt(
+        request,
+        'lockout',
+        `wrong-${round}-${i}-${Date.now()}`,
+      );
+      expect(wrong.status(), `round ${round} wrong ${i}`).toBe(401);
+    }
+  };
+  await wrongFour(1);
+  const right = await attempt(request, 'lockout');
+  expect(right.status(), await right.text()).toBe(200);
+  await wrongFour(2);
+  // Not locked: only 4 failures since the last success.
+  const still = await attempt(request, 'lockout');
+  expect(still.status(), await still.text()).toBe(200);
+});
